@@ -1,7 +1,7 @@
 #EAGLEEYE DEMO集成
 ----
 #### EAGLEEYE DEMO简介
-![](./resource/plugin_demo_app.png)
+![](resource/plugin_demo_app.png)
 依靠EAGLEEYE插件框架构建DEMO APP，主要用于快速验证、展示算法效果，加速算法迭代速度。按照EAGLEEYE插件框架构建的标准插件，可以通过APP主界面的选择插件按钮进行加载。APP可以同时管理多组插件，随时进行插件切换和监控参数调整。目前，APP可以支持图像应用、视频应用和相机应用（通过在构建算法管道时指定数据源类型设置）。
 
 **EAGLEEYE DEMO APP即将开源**
