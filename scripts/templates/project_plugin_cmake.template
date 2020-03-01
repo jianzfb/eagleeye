@@ -1,0 +1,71 @@
+PROJECT({{project}})
+
+cmake_minimum_required(VERSION 3.5)
+add_definitions(-std=c++11)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{abi}})
+set(EXECUTABLE_OUTPUT_PATH {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{abi}})
+set(LIBRARY_OUTPUT_PATH {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{abi}})
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} {{'${CMAKE_CURRENT_SOURCE_DIR}'}}/cmake) 
+
+add_definitions(-DEAGLEEYE_ENABLE_LOG)
+add_definitions(-DEAGLEEYE_ANDROID_APP)
+
+set({{project}}_SRC 
+    ./{{project}}_plugin.cpp)
+
+include_directories({{eagleeye}}/eagleeye/)
+include_directories({{eagleeye}}/)
+include_directories(../)
+link_directories({{eagleeye}}/bin/{{abi}})
+add_library({{project}} SHARED {{'${'}}{{project}}_SRC{{'}'}})  
+
+{% if opencv != "" %}
+set(OpenCV_DIR {{opencv}})
+find_package(OpenCV REQUIRED)
+message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+TARGET_LINK_LIBRARIES({{project}} ${OpenCV_LIBS})
+{% endif %}
+
+{% if opencl %}
+add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
+include_directories({{eagleeye}}/eagleeye/opencl/include)
+add_library(libOpenCL SHARED IMPORTED)
+set_target_properties(
+    libOpenCL
+    PROPERTIES IMPORTED_LOCATION 
+    {{eagleeye}}/eagleeye/opencl/lib/libOpenCL.so
+)
+TARGET_LINK_LIBRARIES({{project}} libOpenCL)
+{% endif %}
+
+{% if neon %}
+add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)
+{% endif %}
+
+TARGET_LINK_LIBRARIES({{project}} 
+                      libeagleeye.so
+                      log)
+
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries({{project}} OpenMP::OpenMP_CXX)
+endif()
+
+message("build {{project}} executable demo")
+set({{project}}_demo_SRC 
+    ./{{project}}_demo.cpp)
+add_executable({{project}}_demo {{'${'}}{{project}}_demo_SRC{{'}'}}) 
+target_link_libraries({{project}}_demo {{project}})
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
+
+# set_target_properties(pipeline PROPERTIES PREFIX "")        # no 'lib' prefix
+# set_target_properties(pipeline PROPERTIES SUFFIX ".so")     # must be .so (not .dylib)
+# set_target_properties(pipeline PROPERTIES LINK_FLAGS "-all_load")
+# TARGET_LINK_LIBRARIES(pipeline 
+#                       libeagleeye.a
+#                       ${PYTHON_LIBRARIES}
+#                       ${Boost_LIBRARIES})
+

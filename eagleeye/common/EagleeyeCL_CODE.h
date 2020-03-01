@@ -1,0 +1,3 @@
+const char* OPENCL_SQUARE_CL = "@OPENCL_SQUARE_CL@";
+const char* OPENCL_MATH_CL = "@OPENCL_MATH_CL@";
+const char* OPENCL_ALGORITHM_CL = "@OPENCL_ALGORITHM_CL@";

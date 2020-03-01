@@ -1,0 +1,57 @@
+#ifndef _EAGLEEYE_TENSOR_H_
+#define _EAGLEEYE_TENSOR_H_
+#include <assert.h>
+#include <stdio.h>
+#include <ostream>
+#include <iomanip>
+#include <vector>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <string>
+#include <numeric>
+#include <functional>
+#include <iostream>
+#include "eagleeye/common/EagleeyeMacro.h"
+#include "eagleeye/basic/Matrix.h"
+#include "eagleeye/basic/MetaOperation.h"
+#include "eagleeye/basic/blob.h"
+#include "eagleeye/common/EagleeyeRuntime.h"
+
+namespace eagleeye{
+template<typename T>
+class Tensor:public Blob{
+public:
+	typedef T 				ElemType;
+	Tensor();
+	Tensor(std::vector<int64_t> shape, EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU), void* data=NULL, bool copy=false); 
+	virtual ~Tensor();
+	T* dataptr();
+
+	std::vector<int64_t> shape();
+	Tensor<T> slice(Range x);
+	Tensor<T> slice(Range x, Range y);
+	Tensor<T> slice(Range x, Range y, Range z);
+	Tensor<T> slice(Range x, Range y, Range z, Range m);
+
+	T& at(int64_t x);
+	T& at(int64_t x, int64_t y);
+	T& at(int64_t x, int64_t y, int64_t z);
+	T& at(int64_t x, int64_t y, int64_t z, int64_t m);
+
+	Tensor<T> clone();
+	Tensor<T> flatten();
+ 
+	int64_t size();
+	int64_t ndim();
+
+	bool isContinue();
+
+protected:
+	int64_t offset(int64_t i);
+	int64_t offset(const std::vector<int64_t>& v, int64_t i);
+};	
+}
+
+#include "Tensor.hpp"
+#endif
