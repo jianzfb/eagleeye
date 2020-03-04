@@ -244,6 +244,17 @@ void MovingDetNode::getA2(float& a2){
 ...
 </code></pre>
 
+####快速创建节点代码模板
+```shell
+python main.py --node=YOUR_NODE_NAME --project=YOUR_PLUGIN_NAME --inputport=INPUT_PORT_NAME,INPUT_PORT_NAME --outputport=OUTPUT_PORT_NAME,OUTPUT_PORT_NAME
+```
+运行脚本后，将获得通用节点的代码模板
+```
+- YOUR_PLUGIN_NAME
+    - YOUR_NODE_NAME.h
+    - YOUR_NODE_NAME.cpp
+```
+
 ####数据流框架编程示例
 下面我们以运动检测作为例子，来讲解如何运行数据流框架
 

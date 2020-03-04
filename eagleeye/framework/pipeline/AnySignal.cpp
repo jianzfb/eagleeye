@@ -70,10 +70,16 @@ void AnySignal::updateUnitInfo(){
 	//there is no necessary to update this node.
 	if (m_link_node){
 		if (!m_link_node->selfcheck()){
-			this->m_prepared_ok = false;
+			// node selfcheck fail
+			this->m_prepared_ok = false;			
            	EAGLEEYE_LOGD("%s failed to selfcheck\n",m_link_node->getUnitName());
 		}
+		else if(m_link_node->getNodeBlockStatus()){
+			// block pipeline 
+			this->m_prepared_ok = false;
+		}
 		else{
+			// node computation OK
 			this->m_prepared_ok = true;
 		}
 

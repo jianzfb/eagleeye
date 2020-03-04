@@ -147,6 +147,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SubPipeline.cpp
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
+    eagleeye/processnode/SkipNode.cpp
     eagleeye/processnode/VideoReadNode.cpp
     eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp

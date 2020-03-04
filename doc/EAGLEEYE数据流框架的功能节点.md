@@ -4,6 +4,20 @@
 在EAGLEEYE数据流框架下的计算节点分为两个类型，（1）普通节点和（2）功能性节点。普通节点是指所有执行数据处理的节点，包括数据变换处理节点（如ImageTransformNode，等）、算法处理节点（如ConsistenceNode，SaliencyDetNode，等）。功能性节点是指管理管理数据流框架执行的节点，如条件节点（ConditionNode），异步节点（AsynNode），等。
 
 ####功能性节点
+#####SkipNode(跳过节点)
+SkipNode是一个跳过节点，当其参数置为false后，所有依赖此节点的后继节点均处于未执行状态。当其参数置为true后，此节点为以透明节点，所有连接其上的输入信号均透明地传递给输出端口。
+代码构建如下
+```c++
+SkipNode* skip_node = new SkipNode();
+A* a = new A();
+B* b = new B();
+skip_node->setInputPort(a,0);
+skip_node->setInputPort(b,1);
+C* c = new c();
+c->setInputPort(skip_node,0);
+c->setInputPort(skip_node,1);
+```
+
 #####ConditionNode(条件节点)
 ConditionNode是一个条件节点，拥有三个输入信号端口和一个输出信号。第0个输入端口接入条件控制信号(BooleanSignal类型信号)，通过分析获得的条件控制信号是True还是False来决定将第1个输入端口的信号还是第2个输入端口的信号输出出去。拓扑结构见下：
 ```mermaid

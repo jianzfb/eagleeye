@@ -16,7 +16,6 @@ set({{project}}_SRC
 
 include_directories({{eagleeye}}/eagleeye/)
 include_directories({{eagleeye}}/)
-include_directories(../)
 link_directories({{eagleeye}}/bin/{{abi}})
 add_library({{project}} SHARED {{'${'}}{{project}}_SRC{{'}'}})  
 

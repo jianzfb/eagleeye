@@ -24,7 +24,7 @@ MovingDetNode::MovingDetNode(){
 
     std::cout<<"init moving detnode"<<std::endl;
 
-    this->m_p = 0.81;
+    this->m_p = 0.6;
     this->m_alpha = 3.23;
     this->m_beta = 2.3;
     this->m_smooth_diff_sig = 20.55;

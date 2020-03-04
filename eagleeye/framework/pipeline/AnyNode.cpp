@@ -11,6 +11,7 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_call_once = true;
 	this->m_node_state = 0;
 	this->m_action = 1;	 // "RUN"
+	this->m_node_block_state = false;
 }
 
 AnyNode::~AnyNode()

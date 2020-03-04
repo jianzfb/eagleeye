@@ -1,0 +1,59 @@
+#include "{{MYNODE}}.h"
+#include "eagleeye/framework/pipeline/AnyMonitor.h"
+#include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/common/EagleeyeTime.h"
+namespace eagleeye
+{
+{{MYNODE}}::{{MYNODE}}(){
+    // 1.step set input port number
+    this->setNumberOfInputSignals({{inputport|length}});
+
+    // 2.step set output port number
+    this->setNumberOfOutputSignals({{outputport|length}});
+
+    // 3.step set output port instance
+    // for example, this->setOutputPort(new ImageSignal<Array<float,2>>, 0);
+    {% for port in outputport -%} 
+    this->setOutputPort(/*OUTPUT SIGNAL INSTANCE*/, OUTPUT_PORT_{{port}});
+    {% endfor %}
+
+    // 4.step add monitor variable
+    EAGLEEYE_MONITOR_VAR(float, setAlpha, getAlpha, "PARAM NAME","","");
+}    
+
+{{MYNODE}}::~{{MYNODE}}(){
+
+}
+
+void {{MYNODE}}::executeNodeInfo(){
+    // 1.step get input signal 
+    {% for port in inputport -%} 
+    AnySignal* {{port}}_sig = this->getInputPort(INPUT_PORT_{{port}});
+    {% endfor %}
+    // get data from input signal
+    // for example, 
+    //      ImageSignal<Array<unsigned char, 3>>* {{inputport[0]}}_rgb_sig= (ImageSignal<Array<unsigned char, 3>>*)({{inputport[0]}}_sig);
+    //      Matrix<Array<unsigned char, 3>> {{inputport[0]}}_rgb = {{inputport[0]}}_rgb_sig->getData();
+
+
+    // 2.step run your algorithm
+
+    // 3.step get output signal
+    {% for port in outputport -%} 
+    AnySignal* {{port}}_sig = this->getOutputPort(OUTPUT_PORT_{{port}});
+    {% endfor %}
+    // set data to output signal
+    // for example, 
+    //      ImageSignal<Array<unsigned char, 3>>* {{outputport[0]}}_rgb_sig= (ImageSignal<Array<unsigned char, 3>>*)({{outputport[0]}}_sig);
+    //      {{outputport[0]}}_rgb_sig->setData({{outputport[0]}}_rgb);
+}
+
+void {{MYNODE}}::setAlpha(float alpha){
+    // set parameter
+    modified();
+}
+
+void {{MYNODE}}::getAlpha(float& alpha){
+    // get parameter
+}
+} // namespace eagleeye

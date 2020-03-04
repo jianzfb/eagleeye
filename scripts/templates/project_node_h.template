@@ -1,0 +1,71 @@
+#ifndef _EAGLEEYE_{{MYNODE}}_H_
+#define _EAGLEEYE_{{MYNODE}}_H_
+#include "eagleeye/common/EagleeyeMacro.h"
+#include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/basic/Matrix.h"
+#include "eagleeye/basic/Array.h"
+
+namespace eagleeye{
+class {{MYNODE}}:public AnyNode{
+public:
+    typedef {{MYNODE}}          Self;
+    typedef AnyNode             Superclass;
+
+    /**
+	 *	@brief Get class identity
+	 */
+    EAGLEEYE_CLASSIDENTITY({{MYNODE}});
+
+    /**
+     * @brief define sig type
+     * 
+     */
+    {% for port in  inputport -%}
+    typedef ImageSignal</*SIGNAL TYPE*/>        {{port}}_SIGNAL_TYPE;
+    {% endfor %}
+    {% for port in  outputport -%}
+    typedef ImageSignal</*SIGNAL TYPE*/>        {{port}}_SIGNAL_TYPE;
+    {% endfor %}
+
+    /**
+     * @brief define input port info
+     * 
+     */
+    {% for port in  inputport -%}
+    EAGLEEYE_INPUT_PORT_TYPE({{port}}_SIGNAL_TYPE,        {{loop.index0}},      {{port}});
+    {% endfor %}
+    
+    /**
+     * @brief define output port info
+     * 
+     */
+    {% for port in outputport -%} 
+    EAGLEEYE_OUTPUT_PORT_TYPE({{port}}_SIGNAL_TYPE,      {{loop.index0}},       {{port}});
+    {% endfor %}
+
+    /**
+     *  @brief constructor/destructor
+     */
+    {{MYNODE}}();
+    virtual ~{{MYNODE}}();
+
+    /**
+	 * @brief execute node 
+	 * 
+	 */
+    virtual void executeNodeInfo();
+
+    /**
+	 * @brief set/get parameter
+	 * 
+	 */
+    void setAlpha(float alpha);
+    void getAlpha(float& alpha);
+
+private:
+    {{MYNODE}}(const {{MYNODE}}&);
+    void operator=(const {{MYNODE}}&);
+};
+}
+#endif

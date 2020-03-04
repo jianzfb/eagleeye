@@ -132,13 +132,6 @@ public:
 	virtual bool selfcheck();
 
 	/**
-	 *	@brief According to some outside info, get the flag whether it \n
-	 *	needs to be processed.
-	 *	@note Sometimes, some outside info would influence the node's behavior.
-	 */
-	virtual bool isNeedProcessed();
-
-	/**
 	 *	@brief get monitor pool of the whole pipeline
 	 *	@note traverse the whole pipeline
 	 */
@@ -193,6 +186,15 @@ public:
 	 * @return std::string 
 	 */
 	int getNodeAction(){return this->m_action;};
+
+	/**
+	 * @brief Get/Set the Node Block object
+	 * 
+	 * @return true 
+	 * @return false 
+	 */
+	bool getNodeBlockStatus(){return m_node_block_state;};
+	void setNodeBlockStatus(bool status){this->m_node_block_state = status;};
 
 	/**
 	 * @brief Set the Node Action object
@@ -264,6 +266,13 @@ protected:
 	 */
 	virtual void clearSomething();
 
+	/**
+	 *	@brief According to some outside info, get the flag whether it \n
+	 *	needs to be processed.
+	 *	@note Sometimes, some outside info would influence the node's behavior.
+	 */
+	virtual bool isNeedProcessed();
+
 	std::vector<AnySignal*> m_input_signals;
 	std::vector<AnySignal*> m_output_signals;
 	std::vector<bool> m_output_port_state;
@@ -279,6 +288,7 @@ protected:
 	 * 
 	 */
 	int m_node_state;
+	bool m_node_block_state;
 	int m_action;
 
 	std::vector<std::string> m_trigger_node;
