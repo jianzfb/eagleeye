@@ -1,8 +1,6 @@
 #include "eagleeye/processnode/TemplateMatchingNode.h"
 #include "eagleeye/common/EagleeyeOpenCL.h"
 #include "eagleeye/basic/MatrixMath.h"
-#include <omp.h>
-
 namespace eagleeye{
 TemplateMatchingNode::TemplateMatchingNode(){
     // 设置输出端口（拥有2个输出端口）

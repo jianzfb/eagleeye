@@ -6,6 +6,10 @@ IfElseNode::IfElseNode(AnyNode* x, AnyNode* y)
     // set output port
     this->setNumberOfOutputSignals(1);
     this->setOutputPort(x->getOutputPort(0)->make(), 0);
+    std::string x_name =x->getUnitName();
+    x->setUnitName((x_name+":x").c_str());
+    std::string y_name =y->getUnitName();
+    y->setUnitName((y_name+":y").c_str());
 
     // set input port number
     // 0 - conditon signal

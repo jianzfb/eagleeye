@@ -30,7 +30,7 @@ bool SkipNode::selfcheck(){
 void SkipNode::setSkip(bool skip){
     this->m_skip = skip;
     // set node state
-    this->setNodeBlockStatus(skip);       
+    this->setIsSatisfiedCondition(!skip);       
     modified();
 }
 

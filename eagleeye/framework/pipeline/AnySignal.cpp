@@ -74,7 +74,7 @@ void AnySignal::updateUnitInfo(){
 			this->m_prepared_ok = false;			
            	EAGLEEYE_LOGD("%s failed to selfcheck\n",m_link_node->getUnitName());
 		}
-		else if(m_link_node->getNodeBlockStatus()){
+		else if(!m_link_node->getIsSatisfiedCondition()){
 			// block pipeline 
 			this->m_prepared_ok = false;
 		}

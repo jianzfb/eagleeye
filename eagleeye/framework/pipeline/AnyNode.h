@@ -188,13 +188,13 @@ public:
 	int getNodeAction(){return this->m_action;};
 
 	/**
-	 * @brief Get/Set the Node Block object
+	 * @brief Get/Set is success state
 	 * 
 	 * @return true 
 	 * @return false 
 	 */
-	bool getNodeBlockStatus(){return m_node_block_state;};
-	void setNodeBlockStatus(bool status){this->m_node_block_state = status;};
+	bool getIsSatisfiedCondition(){return m_node_is_satisfied_cond;};
+	void setIsSatisfiedCondition(bool status){this->m_node_is_satisfied_cond = status;};
 
 	/**
 	 * @brief Set the Node Action object
@@ -288,7 +288,7 @@ protected:
 	 * 
 	 */
 	int m_node_state;
-	bool m_node_block_state;
+	bool m_node_is_satisfied_cond;
 	int m_action;
 
 	std::vector<std::string> m_trigger_node;

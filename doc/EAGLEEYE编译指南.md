@@ -2,10 +2,10 @@
 ---
 
 ####概览
-EAGLEEYE提供插件化的编程框架，方便进行算法插件的更新和维护。主要涉及核心库和插件库。核心库提供提供数据流算法编程框架以及管理插件的加载释放。算法插件负责将所有数据处理节点编织成管线，并向插件管理模块注册。
+EAGLEEYE提供插件化的编程框架，主要涉及核心库和插件库。核心库提供插件管理框架以及数据流编程框架。插件库基于数据流编程框架串起实现具体功能的所有节点，并完成向插件管理中心注册和初始化。
 
-####EAGLEEYE核心库
-EAGLEEYE核心库的工程配置在eagleeye/eagleeye/CmakeLists.txt中定义。主要包括如下几项配置：
+####EAGLEEYE核心库编译
+EAGLEEYE核心库的工程配置在eagleeye/CmakeLists.txt中定义。主要包括如下几项配置：
 * 日志开关
     开启日志
     add_definitions(-DEAGLEEYE_ENABLE_LOG)
@@ -30,9 +30,9 @@ mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=True -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DNN_ENGINE=snpe -DSNPE_PATH=/your path/snpe-1.35.0.698/ -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
 make
-编译后生成libeagleeye.so 核心库，需要APP层进行静态链接。
+编译后生成libeagleeye.so 核心库。
 
-####算法插件库
+####插件库工程创建与编译
 使用在eagleeye/scripts下的脚本，可以快速创建算法插件工程，比如创建实现运动检测的算法插件，调用:
 
 <pre><code>

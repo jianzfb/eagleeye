@@ -210,6 +210,7 @@ bool ModelRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>
 								.setUdlBundle(udlBundle)
 								.setUseUserSuppliedBuffers(useUserSuppliedBuffers)
 								.setPlatformConfig(platformConfig)
+								.setPerformanceProfile(zdl::DlSystem::PerformanceProfile_t::HIGH_PERFORMANCE)
 								.build();
 	if(this->m_snpe.get() == NULL){
 		EAGLEEYE_LOGE("fail to build snpe");
