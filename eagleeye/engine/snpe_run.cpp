@@ -2,6 +2,7 @@
 #include "eagleeye/engine/snpe_run.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/common/EagleeyeTime.h"
 #include <sys/time.h>
 #include <algorithm>
 #include <getopt.h>
@@ -151,7 +152,7 @@ bool ModelRun::initialize(){
 }
 
 zdl::DlSystem::Runtime_t ModelRun::checkRuntime(){
-    static zdl::DlSystem::Runtime_t runtime;
+    zdl::DlSystem::Runtime_t runtime;
     std::stringstream path;
 	if(this->m_writable_path.length() == 0){
 	    path << "/data/local/tmp/dsp/lib;/vendor/lib64/;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp";

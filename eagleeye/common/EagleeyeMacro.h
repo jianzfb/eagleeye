@@ -122,7 +122,8 @@ enum EagleeyeType{
 	EAGLEEYE_FLOAT,
 	EAGLEEYE_DOUBLE,
 	EAGLEEYE_RGB,
-	EAGLEEYE_RGBA
+	EAGLEEYE_RGBA,
+	EAGLEEYE_BOOL
 };
 
 enum EagleeyeError{
@@ -144,6 +145,13 @@ enum InterpMethod
 
 //#pragma warning( disable: 4251 )
 //#pragma warning( disable: 4996 )
+
+enum SignalCategory{
+	SIGNAL_CATEGORY_IMAGE = 0,
+	SIGNAL_CATEGORY_TENSOR = 1,
+	SIGNAL_CATEGORY_CONTROL = 2,
+	SIGNAL_CATEGORY_OTHER
+};
 
 enum SignalType{
 	EAGLEEYE_SIGNAL_IMAGE 	= 0,

@@ -2,14 +2,11 @@ namespace eagleeye
 {
 /* Image Signal */
 template<class T>
-ImageSignal<T>::ImageSignal(Matrix<T> m,char* n,char* info)
-				:BaseImageSignal(TypeTrait<T>::type,
-				TypeTrait<T>::size,
-				info),
+ImageSignal<T>::ImageSignal(Matrix<T> m,char* name,char* info)
+				:BaseImageSignal(TypeTrait<T>::type,TypeTrait<T>::size,info),
 				img(m),
-				name(n)
+				name(name)
 {
-	this->m_derive_type = IMAGE;
 	needed_size[0] = m.rows();
 	needed_size[1] = m.cols();
 	fps = 0.0;
@@ -24,7 +21,7 @@ void ImageSignal<T>::copyInfo(AnySignal* sig){
 	BaseImageSignal::copyInfo(sig);
 
 	//receive some info from the upper signal
-	if(this->m_derive_type == sig->getDeriveType()){
+	if(SIGNAL_CATEGORY_IMAGE == sig->getSignalCategoryType()){
 		ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
 		if (from_sig){
 			name = from_sig->name;
@@ -137,7 +134,6 @@ void ImageSignal<T>::getSignalContent(void*& data, int* data_size, int& data_dim
 template<class T>
 TensorSignal<T>::TensorSignal(Tensor<T> m,char* n,char* info){
 	this->m_data = m;
-	this->m_derive_type = TENSOR;
 	this->m_release_count = 1;
 }
 

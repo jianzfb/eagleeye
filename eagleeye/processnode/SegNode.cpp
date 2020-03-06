@@ -38,7 +38,6 @@ SegNode::SegNode(std::string model_name,
     this->m_output_h = output_size[1];
     this->m_output_w = output_size[2];
     this->m_class_num = output_size[3];
-
     this->m_resized_mode = resized_mode;
 
     // target model

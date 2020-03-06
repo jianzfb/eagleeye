@@ -11,11 +11,6 @@
 
 namespace eagleeye
 {
-enum DeriveType{
-	IMAGE = 0,
-	TENSOR = 1,
-	OTHER
-};
 class AnyNode;
 class EAGLEEYE_API AnySignal:public AnyUnit
 {
@@ -234,9 +229,16 @@ public:
 	/**
 	 * @brief Get the Derive Type object
 	 * 
-	 * @return DeriveType 
+	 * @return SignalCategory 
 	 */
-	inline DeriveType getDeriveType(){return m_derive_type;}
+	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_OTHER;}
+
+	/**
+	 * @brief Get the Signal Value Type object
+	 * 
+	 * @return int 
+	 */
+	virtual EagleeyeType getSignalValueType(){return EAGLEEYE_UNDEFINED;}
 
 	/**
 	 * @brief load/save pipeline configure
@@ -252,7 +254,6 @@ protected:
 	bool m_prepared_ok;
 	int m_delay_time;
 	AnyNode* m_link_node;
-	DeriveType m_derive_type;
 
 private:
 	AnySignal(const AnySignal&);

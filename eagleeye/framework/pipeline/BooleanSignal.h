@@ -58,6 +58,20 @@ public:
 	 */
 	virtual bool isempty();
 
+	/**
+	 * @brief Get the Signal Value Type object
+	 * 
+	 * @return int 
+	 */
+	EagleeyeType getSignalValueType(){return EAGLEEYE_BOOL;};
+
+	/**
+	 * @brief Get the Derive Type object
+	 * 
+	 * @return SignalCategory 
+	 */
+	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_CONTROL;}
+
 private:
 	bool m_boolean;	
 };

@@ -170,13 +170,27 @@ public:
 	 */
 	virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type);
 
-	Matrix<T> img;
+	/**
+	 * @brief Get the Signal Value Type object
+	 * 
+	 * @return int 
+	 */
+	EagleeyeType getSignalValueType(){return TypeTrait<T>::type;};
+
+	/**
+	 * @brief Get the Derive Type object
+	 * 
+	 * @return SignalCategory 
+	 */
+	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_IMAGE;}
+
 	std::string name;
 	double fps;
 	int nb_frames;
 	int frame;
 	bool is_final;
 private:
+	Matrix<T> img;
 };
 
 /* Tensor Signal */
@@ -277,6 +291,21 @@ public:
 	 */
 	virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type);
 
+	/**
+	 * @brief Get the Signal Value Type object
+	 * 
+	 * @return int 
+	 */
+	EagleeyeType getSignalValueType(){return TypeTrait<T>::type;};
+
+	/**
+	 * @brief Get the Derive Type object
+	 * 
+	 * @return SignalCategory 
+	 */
+	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_TENSOR;}
+
+
 private:
 	Tensor<T> m_data;
 	int m_release_count;
@@ -297,7 +326,7 @@ public:
 	typedef T									MetaType;
 	typedef T									DataType;
 
-	ContentSignal(T sth_info=T()):info(sth_info){this->m_derive_type = OTHER;};
+	ContentSignal(T sth_info=T()):info(sth_info){};
 	virtual ~ContentSignal(){};
 
 	/**
@@ -357,18 +386,6 @@ public:
 	virtual void setSignalContent(void* data, const int* data_size, const int data_dims);
 	T info;
 };
-
-#define TO_IMAGE_SIGNAL(TYPE,S) \
-	dynamic_cast<eagleeye::ImageSignal<TYPE>*>(S)
-#define TO_IMAGE(TYPE,S) \
-	(dynamic_cast<eagleeye::ImageSignal<TYPE>*>(S))->img
-
-#define TO_CONTENT_SIGNAL(TYPE,S) \
-	dynamic_cast<eagleeye::ContentSignal<TYPE>*>(S)
-#define TO_CONTENT(TYPE,S) \
-	*((dynamic_cast<eagleeye::ContentSignal<TYPE>*>(S))->info)
-
-
 }
 
 #include "SignalFactory.hpp"

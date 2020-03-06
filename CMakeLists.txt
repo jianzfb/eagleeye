@@ -1,7 +1,9 @@
 PROJECT(eagleeye)
 
 cmake_minimum_required(VERSION 3.5)
-add_definitions(-std=c++11)
+# add_definitions(-std=c++11)
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11")
+
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
 SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
@@ -11,7 +13,7 @@ add_definitions(-DEAGLEEYE_ENABLE_LOG)
 # add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
-    message(STATUS "configure android so")
+    message(STATUS "configure android .so")
     add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
@@ -156,6 +158,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/InstancePersonSegMRCNNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
     eagleeye/processnode/SerialWriteNode.cpp
+    eagleeye/processnode/ImageWriteNode.cpp
+    eagleeye/processnode/ImageReadNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp
@@ -227,6 +231,15 @@ if(DEFINED FFMPEG)
                             libavfilter.so
                             libpostproc.so
                             libx264.so)
+endif()
+
+find_package(pnglib)
+if(pnglib_FOUND)
+    add_definitions(-DEAGLEEYE_PNG)
+    include_directories(${pnglib_INCLUDE_DIRS})
+    target_link_libraries(eagleeye ${pnglib_LIBRARIES})
+else()
+    message(FATAL_ERROR "pnglib")
 endif()
 
 if(${NN_ENGINE} MATCHES "snpe")

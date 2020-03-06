@@ -18,7 +18,7 @@ public:
      * @brief Construct a new Serial Read Node object
      * 
      */
-    SerialWriteNode(EagleeyeType data_type);
+    SerialWriteNode();
     virtual ~SerialWriteNode();
 
     /**
@@ -49,7 +49,6 @@ private:
     std::string m_folder;
     std::string m_prefix;
     bool m_folder_or_prefix_update;
-    EagleeyeType m_data_type;
     int m_order_index;
 };  
 }
