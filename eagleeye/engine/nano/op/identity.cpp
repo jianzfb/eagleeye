@@ -2,6 +2,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 namespace eagleeye
 {
+namespace nano{    
 Identity::Identity(int input_data_num, int output_data_num, std::string op_name):
              FixedCNNOp(input_data_num, output_data_num, FIXED_IDENTITY, op_name){
 }   
@@ -41,5 +42,5 @@ void Identity::run_on_gpu(std::vector<Tensor<float>>& output, std::vector<Tensor
     std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
-
+}
 } // namespace eagleeye

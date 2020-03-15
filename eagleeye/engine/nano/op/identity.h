@@ -7,6 +7,7 @@
 #include "eagleeye/engine/nano/op/FixedCNNOp.h"
 
 namespace eagleeye{
+namespace nano{    
 class Identity:public FixedCNNOp{
 public:
     Identity(int input_data_num, int output_data_num, std::string op_name);
@@ -21,5 +22,6 @@ public:
 private:
 
 };    
+}
 }
 #endif

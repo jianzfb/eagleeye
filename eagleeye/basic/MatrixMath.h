@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <limits>
 #include <assert.h>
+#include "eagleeye/common/EagleeyeLog.h"
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include "eagleeye/common/EagleeyeOpenCL.h"
 #endif
@@ -367,16 +368,49 @@ Matrix<T> msoftmax(const Matrix<T>& x){
 }
 
 template<typename T>
+Matrix<T> msoftmax2(const Matrix<T>& x){
+	unsigned int rows = x.rows();
+	unsigned int cols = x.cols();
+	EAGLEEYE_CHECK(cols == 2, "only support cols = 2");
+
+	Matrix<T> s(rows, cols);
+	for(unsigned int r=0; r<rows; ++r){
+		const T* x_ptr = x.row(r);
+		T* s_ptr = s.row(r);
+		s_ptr[0] = exp(x_ptr[0]);
+		s_ptr[1] = 1.0f - s_ptr[0];
+
+		float d = s_ptr[0] + s_ptr[1];
+		s_ptr[0] /= d;
+		s_ptr[1] /= d;
+	}
+
+	return s;
+}
+
+template<typename T>
 Matrix<T> mmax(const Matrix<T>& b, T a, std::vector<unsigned int> order, int offset=0);
+
+template<typename T>
+Matrix<T> mmax_(Matrix<T>& b, T a, std::vector<unsigned int> order, int offset);
 
 template<typename T>
 Matrix<T> mmax(const Matrix<T>& b, T a);
 
 template<typename T>
+Matrix<T> mmax_(Matrix<T>& b, T a);
+
+template<typename T>
 Matrix<T> mmin(const Matrix<T>& b, T a, std::vector<unsigned int> order, int offset=0);
 
 template<typename T>
+Matrix<T> mmin_(Matrix<T>& b, T a, std::vector<unsigned int> order, int offset);
+
+template<typename T>
 Matrix<T> mmin(const Matrix<T>& b, T a);
+
+template<typename T>
+Matrix<T> mmin_(Matrix<T>& b, T a);
 
 template<typename T>
 void meshgrid(const Matrix<T>& x, const Matrix<T>& y, Matrix<T>& xg, Matrix<T>& yg);
@@ -480,6 +514,40 @@ Matrix<unsigned char> resize(const Matrix<unsigned char> img,
 Matrix<float> resize(const Matrix<float> img,
 							int after_r,int after_c,
 							InterpMethod interp_method);
+
+/**
+ * @brief resize by fixed output(RGB)
+ * 
+ * @param img 
+ * @param output 
+ * @param interp_method 
+ */
+void resize(const Matrix<Array<unsigned char, 3>> input,
+				Matrix<Array<unsigned char, 3>>& output,
+				InterpMethod interp_method);
+
+void resize(const Matrix<Array<unsigned char, 3>> input,
+				unsigned char* output,
+				int output_r,
+				int output_c,
+				InterpMethod interp_method);
+
+/**
+ * @brief resize by fixed output(float)
+ * 
+ * @param img 
+ * @param output 
+ * @param interp_method 
+ */
+void resize(const Matrix<float> input,
+				Matrix<float>& output,
+				InterpMethod interp_method);
+
+void resize(const Matrix<float> input,
+				float* output,
+				int output_r,
+				int output_c,
+				InterpMethod interp_method);
 
 /**
  * @brief compute hanning window

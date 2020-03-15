@@ -2,6 +2,7 @@
 
 namespace eagleeye
 {
+namespace nano{	
 FixedCNNOp::FixedCNNOp(int input_data_num, int output_data_num, int layer_flag, std::string op_name):
 	input_data_num_(),
 	output_data_num_(output_data_num),
@@ -74,5 +75,6 @@ void FixedCNNOp::getOuput(Tensor<float>& tensor, Tensor<FixedType>& fixed_tensor
 	float* data = (float*)tensor.cpu();
 	// 2.step inverse to float
 	
+}
 }
 } // namespace eagleeye

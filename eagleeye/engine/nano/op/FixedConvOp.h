@@ -5,6 +5,7 @@
 #include "eagleeye/engine/nano/op/FixedCNNOp.h"
 
 namespace eagleeye{
+namespace nano{    
 class FixedConvOp:public FixedCNNOp{
 public:
     /**
@@ -101,5 +102,6 @@ bool RunConvForward_KernelLoop(FixedConvType *expand_input_data, int input_chann
 bool RunConvForward_ImageLoop(FixedConvType *expand_input_data, int input_channel, int expand_width, int expand_height, FixedConvType *fixed_weight,
                               FixedType *net_output_data, int output_channel, int output_width, int output_height, int kernel_size, int pad_size, int w_stride_, int h_stride_,
                               FixedBiasType *fixed_bias_value, int *adjust_div_value, int norm_half_add_value, int bool_16Bit_32Bit_Add);
+}
 }
 #endif

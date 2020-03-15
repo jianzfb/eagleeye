@@ -13,7 +13,7 @@ const char* softmax_2c_cl_code="\n" \
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 OpenCLKernelGroup* getMatrixMathCLKernel(const char* module){
     if(strcmp(module, "softmax_2c_cl") == 0){
-        OpenCLEnv::getOpenCLEnv()->addCustomSource("softmax_2c_cl", softmax_2c_cl_code);
+        OpenCLRuntime::getOpenCLEnv()->addCustomSource("softmax_2c_cl", softmax_2c_cl_code);
         EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(softmax_2c);
         EAGLEEYE_OPENCL_KERNEL_GROUP(softmax_2c, softmax_2c_cl, softmax_2c_cl);
         return softmax_2c_kernels;

@@ -2,28 +2,26 @@
 #define _EAGLEEYE_FIXEDBASE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/util/quantization.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
-typedef short FixedType;
-typedef int FixedCalType;
-typedef signed char FixedConvType;
-typedef int FixedCalConvType;
-typedef short FixedBiasType;
+namespace nano{    
 
 #define CNN_CONV_MAX_NORM_VALUE 127
 #define CNN_CONV_DATA_NORM_VALUE 32768
 #define CNN_CONV_DATA_NORM_MOVE 15
 
+
 enum
 {
-	FIXED_PLACEHOLDER,//0
+	FIXED_PLACEHOLDER = 0,//0
 	FIXED_CONV,//1
-	FIXED_POOLING,//2
-	FIXED_INNERPRODUCT,//3
-	FIXED_BATCHNORM,//4
-	FIXED_LRN,//5
+    FIXED_DEPTHWISE_CONV,//2
+	FIXED_POOLING,//3
+	FIXED_INNERPRODUCT,//4
+	FIXED_BATCHNORM,//5
 	FIXED_SOFTMAX,//6
 	FIXED_CONCAT,//7
 	FIXED_PRELU,//8
@@ -32,7 +30,8 @@ enum
 	FIXED_TILING,//11
 	FIXED_SCALE,//12
 	FIXED_ELTWISE,//13
-	FIXED_DROPOUT,//13
+	FIXED_DROPOUT,//14
+    FIXED_RESIZE, //15
 	RECOG_PERMUTE,
 	RECOG_NORMALIZE,
 	RECOG_PRIORBOX,
@@ -146,7 +145,8 @@ protected:
 
 
 	
-	float output_multi_rate_;//fixed data multiple rate of each layer
+	float* m_output_multi_rate; //fixed data multiple rate by channel
+    float* m_input_multi_rate;  //fixed data multiple rate by channel
 
     std::vector<std::vector<int64_t>> m_output_shape;
     std::vector<std::vector<int64_t>> m_input_shape;
@@ -154,6 +154,9 @@ protected:
     int layer_flag_;
     int input_data_num_, output_data_num_;
     int model_size_;
+
+
 };
+}
 }
 #endif

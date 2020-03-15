@@ -89,7 +89,7 @@ TemplateMatchingNode::TemplateMatchingNode(){
     "   sum = sum / (sum2+0.00000001);                                      \n" \
     "   score_arr[jj*org_w+ii] = sum.x+sum.y+sum.z;                         \n" \
     "}";
-    OpenCLEnv::getOpenCLEnv()->addCustomSource("template_matching", source_code);
+    OpenCLRuntime::getOpenCLEnv()->addCustomSource("template_matching", source_code);
     EAGLEEYE_OPENCL_KERNEL_GROUP(TM, template_matching, template_matching);
 #endif
     this->m_tmpl_update = false;

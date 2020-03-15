@@ -110,11 +110,13 @@ std::vector<unsigned int> nms(Matrix<float> dets, float thresh, float prob_thres
 		Matrix<float> xx2 = mmin(x2, x2.at(index), order, 1);
 		Matrix<float> yy2 = mmin(y2, y2.at(index), order, 1);
 
-		Matrix<float> w = mmax(xx2 - xx1 + eagleeye_eps, 0.0f);
-		Matrix<float> h = mmax(yy2 - yy1 + eagleeye_eps, 0.0f);
+		Matrix<float> A = xx2.sub_(xx1).add_(eagleeye_eps);
+		Matrix<float> B = yy2.sub_(yy1).add_(eagleeye_eps);
+		Matrix<float> w = mmax_(A, 0.0f);
+		Matrix<float> h = mmax_(B, 0.0f);
 
-		Matrix<float> inter = w.mul(h);
-		Matrix<float> ovr = inter.div(areas.select(order, 1) + areas.at(index) - inter);
+		Matrix<float> inter = w.mul_(h);
+		Matrix<float> ovr = inter.div_(areas.select(order, 1).add_(areas.at(index)).sub_(inter));
 		Matrix<int> inds = boolean<lt<float>, int>(ovr, thresh);
 		int inds_num = inds.rows()*inds.cols();
 		std::vector<unsigned int> remained_order;

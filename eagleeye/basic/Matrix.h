@@ -500,22 +500,33 @@ public:
 
 	/**
 	 *	@brief get stride of matrix
-	 *	@note sometimes, one matrix is only sub-matrix of some other matrix
+	 *	@note sometimes, it's sub-matrix of some matrix
 	 */
 	inline unsigned int stride() const;
 
 	/**
 	 *	@brief get offset row and offset col
-	 *	@note sometimes, one matrix is only sub-matrix of some other matrix
+	 *	@note sometimes, it's sub-matrix of some matrix
 	 */
 	inline void offset(unsigned int& offset_r,unsigned int& offset_c) const;
 
 	/**
+	 * @brief get memory layout
+	 * 
+	 * @param int 
+	 * @param int 
+	 * @param int 
+	 * @param int 
+	 */
+	inline void layout(unsigned int& offset_r, 
+						unsigned int& offset_c, 
+						unsigned int& h, 
+						unsigned int& w) const;
+
+	/**
 	 *	@brief check whether matrix is full
 	 */
-	inline bool isfull();
 	inline bool isfull() const;
-
 
 	inline Matrix select(const std::vector<unsigned int>& index, unsigned int offset=0) const;
 	inline Matrix gatherND(const Matrix<int>& indices, int group=1) const;

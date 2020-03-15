@@ -19,6 +19,7 @@
 #include "eagleeye/common/EagleeyeRuntime.h"
 
 namespace eagleeye{
+typedef	int64_t 	index_t;
 template<typename T>
 class Tensor:public Blob{
 public:
@@ -28,7 +29,7 @@ public:
 	virtual ~Tensor();
 	T* dataptr();
 
-	std::vector<int64_t> shape();
+	const std::vector<int64_t>& shape();
 	Tensor<T> slice(Range x);
 	Tensor<T> slice(Range x, Range y);
 	Tensor<T> slice(Range x, Range y, Range z);
@@ -41,15 +42,21 @@ public:
 
 	Tensor<T> clone();
 	Tensor<T> flatten();
- 
+	
+	Tensor<T> clear();
+
 	int64_t size();
 	int64_t ndim();
+	int64_t dim(int index);
+	float scale();
 
 	bool isContinue();
 
 protected:
 	int64_t offset(int64_t i);
 	int64_t offset(const std::vector<int64_t>& v, int64_t i);
+	float m_scale;
+	DataFormat m_format;
 };	
 }
 

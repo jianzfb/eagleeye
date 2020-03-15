@@ -2,5 +2,10 @@
 #define _EAGLEEYE_NANO_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 namespace eagleeye{
+namespace nano
+{
+    
+} // namespace nano
+    
 }
 #endif

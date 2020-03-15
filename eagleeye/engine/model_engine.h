@@ -124,6 +124,14 @@ public:
 	 */
 	std::string getModelRoot();
 
+	/**
+	 * @brief Get the Input Ptr object
+	 * 
+	 * @param input_name 
+	 * @return void* 
+	 */
+	void* getInputPtr(std::string input_name){return NULL;};
+
 protected:
 	int m_omp_num_threads;
 	int m_cpu_affinity_policy;

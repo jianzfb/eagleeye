@@ -6,6 +6,7 @@
 #include "eagleeye/engine/nano/op/FixedCNNOp.h"
 
 namespace eagleeye{
+namespace nano{    
 class Placeholder:public FixedCNNOp{
 public:
     Placeholder(std::string op_name);
@@ -30,6 +31,6 @@ private:
     float m_max_val;
 
 };
-
+}
 }
 #endif

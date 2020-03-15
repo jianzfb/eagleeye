@@ -82,10 +82,10 @@ GOTURNTrackingNode::~GOTURNTrackingNode(){
 
 void GOTURNTrackingNode::executeNodeInfo(){
     //get input image signal
-	ImageSignal<Array<unsigned char, 3>>* input_img_sig = dynamic_cast<ImageSignal<Array<unsigned char, 3>>*>(this->m_input_signals[0]);
-    ImageSignal<int>* target_box_sig = dynamic_cast<ImageSignal<int>*>(this->m_input_signals[1]);
-    ImageSignal<int>* tracking_box_sig = dynamic_cast<ImageSignal<int>*>(this->m_output_signals[0]);
-	ImageSignal<float>* tracking_score_sig = dynamic_cast<ImageSignal<float>*>(this->m_output_signals[1]);
+	ImageSignal<Array<unsigned char, 3>>* input_img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->m_input_signals[0]);
+    ImageSignal<int>* target_box_sig = (ImageSignal<int>*)(this->m_input_signals[1]);
+    ImageSignal<int>* tracking_box_sig = (ImageSignal<int>*)(this->m_output_signals[0]);
+	ImageSignal<float>* tracking_score_sig = (ImageSignal<float>*)(this->m_output_signals[1]);
     if (!input_img_sig || !target_box_sig){
 		EAGLEEYE_LOGE("input image is not correct...\n");
 		return;

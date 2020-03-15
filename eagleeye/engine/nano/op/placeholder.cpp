@@ -1,6 +1,7 @@
 #include "eagleeye/engine/nano/op/placeholder.h"
 namespace eagleeye
 {
+namespace nano{    
 Placeholder::Placeholder(std::string op_name):
              FixedCNNOp(0,1,FIXED_PLACEHOLDER, op_name){
 
@@ -37,5 +38,6 @@ int Placeholder::setShape(std::vector<int64_t> shape){
 void Placeholder::setInput(std::vector<Tensor<float>>& data){
     // 1.step transform float to fixed data
 
+}
 }
 } // namespace eagleeye

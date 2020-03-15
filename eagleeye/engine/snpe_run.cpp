@@ -54,8 +54,7 @@ ModelRun::~ModelRun(){
 }
 
 bool ModelRun::run(std::map<std::string, unsigned char*> inputs, 
-				   std::map<std::string, unsigned char*>& outputs){
-	
+				   std::map<std::string, unsigned char*>& outputs){	
 	if(this->isDynamicInputShape()){
 		// for dynamic input, only support slice_num is not fixed
 		int slice_num = this->m_input_shapes[0][0];
@@ -153,14 +152,18 @@ bool ModelRun::initialize(){
 
 zdl::DlSystem::Runtime_t ModelRun::checkRuntime(){
     zdl::DlSystem::Runtime_t runtime;
-    std::stringstream path;
-	if(this->m_writable_path.length() == 0){
-	    path << "/data/local/tmp/dsp/lib;/vendor/lib64/;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp";
+	static bool flag = true;
+	if(flag){
+		std::stringstream path;
+		if(this->m_writable_path.length() == 0){
+			path << "/data/local/tmp/dsp/lib;/vendor/lib64/;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp";
+		}
+		else{
+			path << this->m_writable_path + ";/data/local/tmp/dsp/lib;/vendor/lib64/;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp";
+		}
+		setenv("ADSP_LIBRARY_PATH", path.str().c_str(), 1 /*override*/);
 	}
-	else{
-		path << this->m_writable_path + ";/data/local/tmp/dsp/lib;/vendor/lib64/;/system/lib/rfsa/adsp;/system/vendor/lib/rfsa/adsp;/dsp";
-	}
-    setenv("ADSP_LIBRARY_PATH", path.str().c_str(), 1 /*override*/);
+	flag = false;
 
     if(this->m_device == "CPU"){
     	runtime = zdl::DlSystem::Runtime_t::CPU;
@@ -241,20 +244,22 @@ void ModelRun::createInputTensors(){
 void ModelRun::_run(std::map<std::string, unsigned char*> inputs, 
 			  		std::map<std::string, unsigned char*>& outputs){
 	// step 1. load input tensor
-	zdl::DlSystem::StringList input_tensor_names = this->m_input_tensormap.getTensorNames();
-	std::for_each(input_tensor_names.begin(), input_tensor_names.end(), [&](const char* tensor_name){
-		EAGLEEYE_LOGD("snpe model input tensor name %s", tensor_name);
-		auto tensor_ptr = this->m_input_tensormap.getTensor(tensor_name);
-		zdl::DlSystem::TensorShape shape = tensor_ptr->getShape();
-		int shape_size = 1;
-		for(int i=0; i<shape.rank(); ++i){
-			shape_size *= shape[i];
-		}
+	if(inputs.size() > 0){
+		zdl::DlSystem::StringList input_tensor_names = this->m_input_tensormap.getTensorNames();
+		std::for_each(input_tensor_names.begin(), input_tensor_names.end(), [&](const char* tensor_name){
+			EAGLEEYE_LOGD("snpe model input tensor name %s", tensor_name);
+			auto tensor_ptr = this->m_input_tensormap.getTensor(tensor_name);
+			zdl::DlSystem::TensorShape shape = tensor_ptr->getShape();
+			int shape_size = 1;
+			for(int i=0; i<shape.rank(); ++i){
+				shape_size *= shape[i];
+			}
 
-		std::string name = tensor_name;
-		name = name.substr(0, name.length()-2);
-		memcpy(tensor_ptr->begin().dataPointer(), inputs[name], sizeof(float)* shape_size);
-	});
+			std::string name = tensor_name;
+			name = name.substr(0, name.length()-2);
+			memcpy(tensor_ptr->begin().dataPointer(), inputs[name], sizeof(float)* shape_size);
+		});
+	}
 
 	// step 2. execute model
 	//Execute the network and store the outputs that were specified when creating the network in a TensorMap
@@ -298,6 +303,13 @@ void ModelRun::setWritablePath(std::string writable_path){
 
 	EAGLEEYE_LOGD("dlc path %s", this->m_dlc_path.c_str());
 }
+
+void* ModelRun::getInputPtr(std::string input_name){
+	std::string tensor_name = input_name+":0";
+	auto tensor_ptr = this->m_input_tensormap.getTensor(tensor_name.c_str());
+	return tensor_ptr->begin().dataPointer();
+}
+
 }
 
 #endif

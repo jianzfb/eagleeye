@@ -36,7 +36,7 @@ Blob::Blob(size_t size, EagleeyeRuntime runtime,void* data, bool copy, std::stri
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
         this->m_gpu_data = std::shared_ptr<OpenCLMem>(new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, "t", size), [](OpenCLMem* arr) { delete arr; });        
         if(data != NULL){
-            this->m_gpu_data.get()->copyToDevice(OpenCLEnv::getOpenCLEnv()->getCommandQueue(m_group), data, CL_TRUE);
+            this->m_gpu_data.get()->copyToDevice(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), data, CL_TRUE);
         }
 #endif
     }
@@ -83,12 +83,12 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn){
                 this->m_cpu_data = std::shared_ptr<unsigned char>(new unsigned char[m_size], [](unsigned char* arr) { delete [] arr; });
             }      
             if(asyn){
-                this->m_gpu_data.get()->copyToHost(OpenCLEnv::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_FALSE);
+                this->m_gpu_data.get()->copyToHost(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_FALSE);
                 this->m_is_cpu_waiting_from_gpu = true;
                 this->m_is_cpu_ready = false;
             }      
             else{
-                this->m_gpu_data.get()->copyToHost(OpenCLEnv::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_TRUE);
+                this->m_gpu_data.get()->copyToHost(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_TRUE);
                 this->m_is_cpu_waiting_from_gpu = false;
                 this->m_is_cpu_ready = true;
             }
@@ -113,12 +113,12 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn){
                 this->m_gpu_data = std::shared_ptr<OpenCLMem>(new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, "t", m_size), [](OpenCLMem* arr) { delete arr; });
             }
             if(asyn){
-                this->m_gpu_data.get()->copyToDevice(OpenCLEnv::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_FALSE);
+                this->m_gpu_data.get()->copyToDevice(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_FALSE);
                 this->m_is_gpu_waiting_from_cpu = true;
                 this->m_is_gpu_ready = false;
             }
             else{
-                this->m_gpu_data.get()->copyToDevice(OpenCLEnv::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_TRUE);
+                this->m_gpu_data.get()->copyToDevice(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), this->m_cpu_data.get(), CL_TRUE);
                 this->m_is_gpu_waiting_from_cpu = false;
                 this->m_is_gpu_ready = true;
             }
@@ -155,7 +155,7 @@ void* Blob::gpu(){
 
     if(m_is_gpu_waiting_from_cpu){
         // 同步
-        this->m_gpu_data.get()->finish(OpenCLEnv::getOpenCLEnv()->getCommandQueue(m_group));
+        this->m_gpu_data.get()->finish(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group));
         // 设置
         m_is_gpu_waiting_from_cpu = false;
         m_is_gpu_ready = true;
@@ -201,7 +201,7 @@ void* Blob::cpu(){
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
     if(m_is_cpu_waiting_from_gpu){
         // 同步
-        this->m_gpu_data.get()->finish(OpenCLEnv::getOpenCLEnv()->getCommandQueue(m_group));
+        this->m_gpu_data.get()->finish(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group));
         // 设置
         m_is_cpu_ready = true;
         m_is_cpu_waiting_from_gpu = false;

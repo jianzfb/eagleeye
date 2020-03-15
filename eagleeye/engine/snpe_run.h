@@ -64,6 +64,14 @@ public:
 	 */
 	virtual void setWritablePath(std::string writable_path);
 
+	/**
+	 * @brief Get the Input Ptr object
+	 * 
+	 * @param input_name 
+	 * @return void* 
+	 */
+	void* getInputPtr(std::string input_name);
+
 protected:
 	/**
 	 * [checkRuntime check snpe runtime]

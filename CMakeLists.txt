@@ -140,7 +140,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ConsistenceNode.cpp
     eagleeye/processnode/movingdetnode.cpp
     eagleeye/processnode/GOTURNTrackingNode.cpp
-    eagleeye/processnode/SkySegNode.cpp
     eagleeye/processnode/SegNode.cpp
     eagleeye/processnode/AdaptorNode.cpp
     eagleeye/processnode/TemplateMatchingNode.cpp
@@ -160,6 +159,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SerialWriteNode.cpp
     eagleeye/processnode/ImageWriteNode.cpp
     eagleeye/processnode/ImageReadNode.cpp
+    eagleeye/processnode/HistogramEqualizationNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp
@@ -181,6 +181,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeModule.cpp
     eagleeye/common/EagleeyePy.cpp
     eagleeye/common/EagleeyeIO.cpp
+    eagleeye/common/EagleeyeThreadPool.cpp
     eagleeye/basic/MatrixMath.cpp
     eagleeye/basic/blob.cpp
     eagleeye/basic/MatrixMathCL.cpp
@@ -193,14 +194,16 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeOpenCL.cpp
     eagleeye/tensorop/imageop.cpp
     eagleeye/tensorop/tensorop.cpp
-    eagleeye/engine/nano/op/identity.cpp
-    eagleeye/engine/nano/dataflow/heft.cpp
-    eagleeye/engine/nano/dataflow/schedule.cpp
+    eagleeye/port/linux_base/env.cpp
+    eagleeye/port/android/env.cpp
+    eagleeye/runtime/cpu/cpu_runtime.cpp
+    eagleeye/runtime/gpu/opencl_runtime.cpp
+    eagleeye/engine/nano/util/quantization.cpp
     eagleeye/engine/nano/op/FixedCNNOp.cpp
-    eagleeye/engine/nano/op/FixedConvOp.cpp
-    eagleeye/engine/nano/op/placeholder.cpp
-    eagleeye/engine/nano/op/convolution_int8_neon_32BitAdd.cpp
-    eagleeye/engine/nano/op/convolution_int8_neon_16BItAdd.cpp)
+    eagleeye/engine/nano/op/FixedResizedOp.cpp
+    eagleeye/engine/nano/op/FixedReluOp.cpp
+    eagleeye/engine/nano/op/FixedSoftmaxOp.cpp
+    eagleeye/engine/nano/util/conv_pool_2d_util.cpp)
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 

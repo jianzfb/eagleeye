@@ -20,12 +20,8 @@ Tensor<T>::~Tensor(){
 }
 
 template<typename T>
-std::vector<int64_t> Tensor<T>::shape(){
-	std::vector<int64_t> shape;
-	for(int i=0; i<this->ndim(); ++i){
-		shape.push_back(this->m_range[i].e - this->m_range[i].s);
-	}
-	return shape;
+const std::vector<int64_t>& Tensor<T>::shape(){
+	return this->m_shape;
 }
 
 template<typename T>
@@ -237,4 +233,13 @@ Tensor<T> Tensor<T>::slice(Range x, Range y, Range z, Range m){
 	return slice_tensor;
 }
 
+template<typename T>
+int64_t Tensor<T>::dim(int index){
+	return this->m_shape[index];
+}
+
+template<typename T>
+float Tensor<T>::scale(){
+	return this->m_scale;
+}
 }

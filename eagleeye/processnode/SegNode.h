@@ -8,6 +8,8 @@
 #include "eagleeye/engine/proxy_run.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/common/EagleeyeOpenCL.h"
+
 
 namespace eagleeye{
 enum SegResizeMode{
@@ -64,13 +66,7 @@ public:
      * @param frame 
      * @return Tensor<float> 
      */
-    Tensor<float> runSeg(Matrix<Array<unsigned char,3>> frame);
-
-	/**
-	 *	@brief make self check
-	 *	@note judge whether some preliminary conditions have been satisfied.
-	 */
-	virtual bool selfcheck();
+    void runSeg(const Matrix<Array<unsigned char,3>>& frame, int label, Matrix<float>& label_map);
 
 protected:
     float m_mean_r;
@@ -83,6 +79,10 @@ protected:
 
     int m_model_h;
     int m_model_w;
+
+    int m_frame_width;
+    int m_frame_height;  
+
     SegResizeMode m_resized_mode;
 
 private:
@@ -97,6 +97,12 @@ private:
     int m_output_w;
     int m_class_num;
     Matrix<Array<float,3>> m_model_input_f;
+    unsigned char* m_temp_ptr;
+
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+    EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(segpreprocess);
+#endif
+
 };
 
 }

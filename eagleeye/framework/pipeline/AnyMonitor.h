@@ -55,13 +55,13 @@ public:
 class AnyMonitor
 {
 public:
-	AnyMonitor(MonitorVarType var_type, int var_size, char* monitor_text = "NON",char* min_v="", char* max_v="", char* def_text = "")
+	AnyMonitor(MonitorVarType var_type, int var_size, char* monitor_text = "NON",char* min_v="", char* max_v="", char* description = "")
 		:monitor_var_type(var_type),
 		monitor_var_size(var_size),
 		monitor_var_text(monitor_text),
 		monitor_min_v(min_v),
 		monitor_max_v(max_v),
-		def_var_text(def_text){}
+		monitor_description(description){}
 	virtual ~AnyMonitor(){};
 	virtual void setVar(const void* var)=0;
 	virtual void getVar(void* var)=0;
@@ -75,7 +75,7 @@ public:
 	MonitorVarType monitor_var_type;
 	int monitor_var_size;
 	char* monitor_var_text;
-	char* def_var_text;
+	char* monitor_description;
 	char* monitor_min_v;
 	char* monitor_max_v;	
 };
@@ -111,8 +111,12 @@ public:
 	HostT* monitor_host;
 };
 
-#define EAGLEEYE_MONITOR_VAR(VarT,set_fun,get_fun,text,min_v,max_v) \
-	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,text,min_v,max_v));
+#define EAGLEEYE_MONITOR_VAR(VarT,set_fun,get_fun,name,min_v,max_v) \
+	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,name,min_v,max_v));
+
+#define EAGLEEYE_MONITOR_STRING(VarT,set_fun,get_fun,name,description) \
+	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,name,"","",description));
+
 }
 
 #endif

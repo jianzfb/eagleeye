@@ -131,7 +131,9 @@ enum EagleeyeError{
 	EAGLEEYE_FILE_ERROR			=-2,// file io error
 	EAGLEEYE_MEM_ERROR			=-3,// memory operation error
 	EAGLEEYE_TABLE_ERROR		=-4,// table error
-	EAGLEEYE_UNKNOWN_ERROR		=-5,//	unknown error
+	EAGLEEYE_RUNTIME_ERROR		=-5,// runtime
+	EAGLEEYE_OUT_OF_RESOURCES	=-6,
+	EAGLEEYE_UNKNOWN_ERROR		=-7,// unknown error
 	EAGLEEYE_NO_ERROR			=0	//  no error
 };
 
@@ -159,7 +161,10 @@ enum SignalType{
 	EAGLEEYE_SIGNAL_LINE	= 2,
 	EAGLEEYE_SIGNAL_POINT	= 3,
 	EAGLEEYE_SIGNAL_STRING 	= 4,
-	EAGLEEYE_SIGNAL_MASK	= 5
+	EAGLEEYE_SIGNAL_MASK	= 5,
+	EAGLEEYE_SIGNAL_FILE	= 6,
+	EAGLEEYE_SIGNAL_TEXT	= 7,
+	EAGLEEYE_SIGNAL_MODEL	= 8
 };
 
 enum SignalTarget{
@@ -180,6 +185,50 @@ enum EagleeyeRuntimeType{
 	EAGLEEYE_GPU = 1,
 	EAGLEEYE_QUALCOMM_DSP = 2,
 	EAGLEEYE_QUALCOMM_NPU = 3
+};
+
+enum class DataFormat {
+  NONE = 0, NHWC = 1, NCHW = 2,
+  HWOI = 100, OIHW = 101, HWIO = 102, OHWI = 103,
+  AUTO = 1000,
+};
+
+enum GPUPerfHint {
+  PERF_DEFAULT = 0,
+  PERF_LOW = 1,
+  PERF_NORMAL = 2,
+  PERF_HIGH = 3
+};
+
+enum GPUPriorityHint {
+  PRIORITY_DEFAULT = 0,
+  PRIORITY_LOW = 1,
+  PRIORITY_NORMAL = 2,
+  PRIORITY_HIGH = 3
+};
+
+// AFFINITY_NONE: initiate 'num_threads_hint' threads with no affinity
+// scheduled.
+// If 'num_threads_hint' is -1 or greater than number of available cores,
+// 'num_threads_hint' will be reset to number of available cores.
+// AFFINITY_BIG_ONLY: all available big cores are used, and number of threads
+// is equal to numbers of available big cores.
+// AFFINITY_LITTLE_ONLY: all available little cores are used, and number of
+// threads is equal to numbers of available little cores.
+// AFFINITY_HIGH_PERFORMANCE: initiate 'num_threads_hint' threads on different
+// cores with top-num_threads_hint frequencies.
+// If 'num_threads_hint' is -1 or greater than number of available cores,
+// 'num_threads_hint' will be reset to number of available cores.
+// AFFINITY_POWER_SAVE: initiate 'num_threads_hint' threads on different
+// cores with bottom-num_threads_hint frequencies.
+// If 'num_threads_hint' is -1 or greater than number of available cores,
+// 'num_threads_hint' will be reset to number of available cores.
+enum CPUAffinityPolicy {
+  AFFINITY_NONE = 0,
+  AFFINITY_BIG_ONLY = 1,
+  AFFINITY_LITTLE_ONLY = 2,
+  AFFINITY_HIGH_PERFORMANCE = 3,
+  AFFINITY_POWER_SAVE = 4,
 };
 }
 

@@ -3,102 +3,13 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/common/EagleeyeTime.h"
+#include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include <memory>
 #include <map>
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
 namespace eagleeye{
-// Helper function to get OpenCL error string from constant
-const char* oclErrorString(cl_int error);
-
-// companion inline function for error checking and exit on error WITH Cleanup Callback (if supplied)
-// *********************************************************************
-inline void __oclCheckErrorEX(cl_int iSample, cl_int iReference, void (*pCleanup)(int), const char* cFile, const int iLine)
-{
-    // An error condition is defined by the sample/test value not equal to the reference
-    if (iReference != iSample)
-    {
-        // If the sample/test value isn't equal to the ref, it's an error by defnition, so override 0 sample/test value
-        iSample = (iSample == 0) ? -9999 : iSample; 
-
-        // Log the error info
-        EAGLEEYE_LOGD("\n !!! Error # %i (%s) at line %i , in file %s !!!\n\n", iSample, oclErrorString(iSample), iLine, cFile);
-        // Cleanup and exit, or just exit if no cleanup function pointer provided.  Use iSample (error code in this case) as process exit code.
-        if (pCleanup != NULL)
-        {
-            pCleanup(iSample);
-        }
-        else 
-        {
-            exit(iSample);
-        }
-    }
-}
-// Error and Exit Handling Macros... 
-// *********************************************************************
-// Full error handling macro with Cleanup() callback (if supplied)... 
-// (Companion Inline Function lower on page)
-#define oclCheckErrorEX(a, b, c) __oclCheckErrorEX(a, b, c, __FILE__ , __LINE__) 
-
-// Short version without Cleanup() callback pointer
-// Both Input (a) and Reference (b) are specified as args
-#define oclCheckError(a, b) oclCheckErrorEX(a, b, 0) 
-
-class OpenCLEnv{
-public:
-    static OpenCLEnv* getOpenCLEnv();
-    static void setWritablePath(const char* writable_path="./");
-    virtual ~OpenCLEnv();
-
-    /**
-     * @brief compile program 
-     * 
-     * @param program_name 
-     * @return cl_program 
-     */
-    cl_program compileProgram(std::string program_name);
-
-    /**
-     * @brief add custom source
-     * 
-     * @param name 
-     * @param source 
-     */
-    void addCustomSource(std::string name, std::string source);
-
-    /**
-     * @brief Get the Command Queue object
-     * 
-     * @param group 
-     */
-    cl_command_queue getCommandQueue(std::string group);
-
-    cl_device_id device_id;             // compute device id 
-    cl_context context;                 // compute context
-    // cl_program math_program;
-    // cl_program algorithm_program;
-    // cl_program square_program;
-    cl_platform_id platform_id;
-    cl_uint cu_num;
-    size_t device_group_size;
-    cl_ulong max_global_mem_size;
-    cl_ulong max_constant_buffer_size;
-    cl_ulong max_local_mem_size;
-
-    std::map<std::string, cl_program> m_programs;
-    std::map<std::string, std::string> m_sources;
-    std::map<std::string, cl_command_queue> m_command_queue;
-
-private:
-    OpenCLEnv();
-    bool writeBinaryToFile(const char* fileName, const char* birary, size_t numBytes); 
-    bool readBinaryFromFile(const char* fileName, char*& binary, size_t& numBytes);
-    bool init();
-
-    static std::string m_writable_path;
-    static std::shared_ptr<OpenCLEnv> m_env;
-};
 
 enum OpenCLMemStatus{
     EAGLEEYE_CL_MEM_READ,
@@ -115,7 +26,7 @@ public:
     virtual void copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
     virtual void copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
     virtual void copyToDeviceFromDevice(cl_command_queue queue, void* ptr, cl_bool blocking=CL_TRUE) = 0;
-    virtual void* map(cl_command_queue queue){return NULL;}
+    virtual void* map(cl_command_queue queue, size_t* row_pitch){return NULL;}
     virtual void unmap(cl_command_queue queue){};
 
     void finish(cl_command_queue queue){
@@ -135,7 +46,7 @@ public:
     virtual void copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
     virtual void copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
     virtual void copyToDeviceFromDevice(cl_command_queue queue, void* ptr, cl_bool blocking=CL_TRUE);
-    virtual void* map(cl_command_queue queue);
+    virtual void* map(cl_command_queue queue, size_t* row_pitch=NULL);
     virtual void unmap(cl_command_queue queue);
 
     virtual cl_mem* getObject(){
@@ -157,7 +68,7 @@ public:
     virtual void copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
     virtual void copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
     virtual void copyToDeviceFromDevice(cl_command_queue queue, void* ptr, cl_bool blocking=CL_TRUE);
-    virtual void* map(cl_command_queue queue);
+    virtual void* map(cl_command_queue queue, size_t* row_pitch);
     virtual void unmap(cl_command_queue queue);
 
     virtual cl_mem* getObject(){
@@ -261,7 +172,20 @@ public:
      */
     void swap(std::string left_name, std::string right_name);
 
-    void* map(std::string mem_name);
+    /**
+     * @brief map opencl buffer to host
+     * 
+     * @param mem_name 
+     * @param row_pitch 
+     * @return void* 
+     */
+    void* map(std::string mem_name, size_t* row_pitch=NULL);
+
+    /**
+     * @brief unmap
+     * 
+     * @param mem_name 
+     */
     void unmap(std::string mem_name);
 
 protected:
@@ -277,10 +201,9 @@ private:
     std::map<std::string, OpenCLObject*> m_mems;
     std::map<std::string, cl_kernel> m_kernels;
     cl_command_queue m_queue;
-    OpenCLEnv* m_env;
+    OpenCLRuntime* m_env;
 };
 
-Matrix<float> cl_square(const Matrix<float>& data);
 
 #define EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(group) \
     OpenCLKernelGroup* group##_kernels=NULL;
@@ -289,7 +212,11 @@ Matrix<float> cl_square(const Matrix<float>& data);
         delete group##_kernels;                     \
         group##_kernels = NULL;                     \
     }
-    
+
+#define EAGLEEYE_OPENCL_ADD_CUSTOME_CODE(program, code)    \
+    OpenCLRuntime::getOpenCLEnv()->addCustomSource(#program, code);
+
+
 // #define EAGLEEYE_OPENCL_KERNEL_GROUP(group, program, K1) \
 //     group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#K1}, #program);
 
@@ -353,8 +280,11 @@ Matrix<float> cl_square(const Matrix<float>& data);
 #define EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_IMAGE(group, name, rows, cols, channels, pixel) \ 
     group##_kernels->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_READ_WRITE_PINNED);
 
-#define EAGLEEYE_OPENCL_MAP(group, name) \
+#define EAGLEEYE_OPENCL_MAP_BUFFER(group, name) \
     group##_kernels->map(#name);
+
+#define EAGLEEYE_OPENCL_MAP_IMAGE(group, name, row_pitch) \
+    group##_kernels->map(#name, row_pitch);
 
 #define EAGLEEYE_OPENCL_UNMAP(group, name) \
     group##_kernels->unmap(#name);
@@ -383,12 +313,12 @@ Matrix<float> cl_square(const Matrix<float>& data);
 // #define COPY_VARGS(...) COPY_VARGS_(__VA_ARGS__,1,0)
 
 // #define EAGLEEYE_OPENCL_COPY_FROM_HOST_1(kernel, buff, size, data, tag) \
-//     clEnqueueWriteBuffer(OpenCLEnv::getOpenCLEnv()->m_command_map[tag+#kernel], kernel##_##buff, CL_TRUE, 0, size, data, 0, NULL, NULL);
+//     clEnqueueWriteBuffer(OpenCLRuntime::getOpenCLEnv()->m_command_map[tag+#kernel], kernel##_##buff, CL_TRUE, 0, size, data, 0, NULL, NULL);
 // #define EAGLEEYE_OPENCL_COPY_FROM_HOST_0(kernel, buff, size, data) EAGLEEYE_OPENCL_COPY_FROM_HOST_1(kernel, buff, size, data, std::string("_"))
 // #define EAGLEEYE_OPENCL_COPY_FROM_HOST(...) CONCAT(EAGLEEYE_OPENCL_COPY_FROM_HOST_, COPY_VARGS(__VA_ARGS__))(__VA_ARGS__)
 
 // #define EAGLEEYE_OPENCL_COPY_FROM_DEVICE_1(kernel, buff, size, data,tag) \
-//     clEnqueueReadBuffer(OpenCLEnv::getOpenCLEnv()->m_command_map[tag+#kernel], kernel##_##buff, CL_TRUE, 0, size, data, 0, NULL, NULL );  
+//     clEnqueueReadBuffer(OpenCLRuntime::getOpenCLEnv()->m_command_map[tag+#kernel], kernel##_##buff, CL_TRUE, 0, size, data, 0, NULL, NULL );  
 // #define EAGLEEYE_OPENCL_COPY_FROM_DEVICE_0(kernel, buff, size, data) EAGLEEYE_OPENCL_COPY_FROM_DEVICE_1(kernel, buff, size, data,std::string("_"))
 // #define EAGLEEYE_OPENCL_COPY_FROM_DEVICE(...) CONCAT(EAGLEEYE_OPENCL_COPY_FROM_DEVICE_, COPY_VARGS(__VA_ARGS__))(__VA_ARGS__)
 
@@ -399,8 +329,8 @@ Matrix<float> cl_square(const Matrix<float>& data);
 //     size_t* kernel##_global_size = global_size;    \
 //     size_t* kernel##_local_size = local_size;  \
 //     size_t kernel##_work_dims = work_dims;  \
-//     clEnqueueNDRangeKernel(OpenCLEnv::getOpenCLEnv()->m_command_map[tag+#kernel], OpenCLEnv::getOpenCLEnv()->m_kernel_map[tag+#kernel], kernel##_work_dims, NULL, kernel##_global_size, kernel##_local_size, 0, NULL, NULL); \
-//     clFinish(OpenCLEnv::getOpenCLEnv()->m_command_map[tag+#kernel]);
+//     clEnqueueNDRangeKernel(OpenCLRuntime::getOpenCLEnv()->m_command_map[tag+#kernel], OpenCLRuntime::getOpenCLEnv()->m_kernel_map[tag+#kernel], kernel##_work_dims, NULL, kernel##_global_size, kernel##_local_size, 0, NULL, NULL); \
+//     clFinish(OpenCLRuntime::getOpenCLEnv()->m_command_map[tag+#kernel]);
 
 // #define EAGLEEYE_OPENCL_KERNEL_RUN_0(kernel, work_dims, global_size, local_size) EAGLEEYE_OPENCL_KERNEL_RUN_1(kernel, work_dims, global_size, local_size, std::string("_"))
 // #define EAGLEEYE_OPENCL_KERNEL_RUN(...) CONCAT(EAGLEEYE_OPENCL_KERNEL_RUN_, RUN_VARGS(__VA_ARGS__))(__VA_ARGS__)
@@ -409,14 +339,14 @@ Matrix<float> cl_square(const Matrix<float>& data);
 // #define BUFFER_ARG_VARGS(...) BUFFER_ARG_VARGS_(__VA_ARGS__,1,0)
 
 // #define EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG_1(kernel, index, buff, tag) \ 
-//     clSetKernelArg(OpenCLEnv::getOpenCLEnv()->m_kernel_map[tag+#kernel], index, sizeof(cl_mem), &kernel##_##buff);
+//     clSetKernelArg(OpenCLRuntime::getOpenCLEnv()->m_kernel_map[tag+#kernel], index, sizeof(cl_mem), &kernel##_##buff);
 // #define EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG_0(kernel, index, buff) EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG_1(kernel, index, buff, std::string("_"))
 // #define EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(...) CONCAT(EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG_, BUFFER_ARG_VARGS(__VA_ARGS__))(__VA_ARGS__)
 
 // #define ARG_VARGS_(_5,_4, _3, _2, _1, N, ...) N 
 // #define ARG_VARGS(...) ARG_VARGS_(__VA_ARGS__,1,0)
 // #define EAGLEEYE_OPENCL_KERNEL_SET_ARG_1(kernel, index, size, data, tag) \ 
-//     clSetKernelArg(OpenCLEnv::getOpenCLEnv()->m_kernel_map[tag+#kernel], index, size, &data);
+//     clSetKernelArg(OpenCLRuntime::getOpenCLEnv()->m_kernel_map[tag+#kernel], index, size, &data);
 // #define EAGLEEYE_OPENCL_KERNEL_SET_ARG_0(kernel, index, size, data) EAGLEEYE_OPENCL_KERNEL_SET_ARG_1(kernel, index, size, data, std::string("_"))
 // #define EAGLEEYE_OPENCL_KERNEL_SET_ARG(...) CONCAT(EAGLEEYE_OPENCL_KERNEL_SET_ARG_, ARG_VARGS(__VA_ARGS__))(__VA_ARGS__)
 }

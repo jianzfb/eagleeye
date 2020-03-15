@@ -5,6 +5,7 @@
 
 namespace eagleeye
 {
+namespace nano{	
 FixedConvOp::FixedConvOp(int input_data_num, int output_data_num, std::string op_name):
              FixedCNNOp(input_data_num, output_data_num, FIXED_CONV, op_name){
 	fixed_weight_ = NULL;
@@ -505,5 +506,5 @@ int FixedConvOp::setShape(std::vector<int64_t> shape){
 	this->m_output_shape[0] = out_shape;
     return 0;
 }
-
+}
 } // namespace eagleeye

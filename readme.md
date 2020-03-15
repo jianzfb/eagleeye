@@ -73,6 +73,12 @@ make
     
     EAGLEEYE_END_PIPELINE_INITIALIZE
     </code></pre>
+* 创建自定义数据处理节点
+    调用脚本
+    ```c++
+    python node --name=NODE --inputport=A,B --outputport=C 
+    ```
     
+
 ####项目开发实例
 见doc/。

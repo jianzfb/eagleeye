@@ -8,6 +8,7 @@
 
 namespace eagleeye
 {
+namespace nano{
 void GetMultiOutputChannelResult3x3_2_16Bit(FixedConvType *fixed_weight, FixedConvType *expand_input_data, int input_channel, int expand_width, int expand_height, int cur_channel,
                                             int output_height, FixedType *temp_output_data_0, FixedType *temp_output_data_1, int pad_size,
                                             FixedBiasType *fixed_bias_value, int *adjust_div_value, int norm_half_add_value);
@@ -3326,4 +3327,5 @@ bool RunConvForward_KernelLoop_Temp(FixedConvType *expand_input_data, int input_
 	EAGLEEYE_SAFEFREE(input_ptr);
 	return true;
 }    
+}
 } // namespace eagleeye

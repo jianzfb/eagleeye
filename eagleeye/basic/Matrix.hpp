@@ -195,20 +195,6 @@ const Matrix<T> Matrix<T>::operator ()(Range r_range,Range c_range) const
 }
 
 template<typename T>
-bool Matrix<T>::isfull()
-{
-	if ((m_r_range.e - m_r_range.s) != m_rows)
-	{
-		return false;
-	}
-	if ((m_c_range.e - m_c_range.s) != m_cols)
-	{
-		return false;
-	}
-	return true;
-}
-
-template<typename T>
 bool Matrix<T>::isfull() const 
 {
 	if ((m_r_range.e - m_r_range.s) != m_rows)
@@ -795,6 +781,20 @@ void Matrix<T>::offset(unsigned int& offset_r,unsigned int& offset_c) const
 	offset_r = m_r_range.s;
 	offset_c = m_c_range.s;
 }
+
+template<typename T>
+void Matrix<T>::layout(unsigned int& offset_r, 
+						unsigned int& offset_c, 
+						unsigned int& h, 
+						unsigned int& w) const
+{
+	h = m_rows;
+	w = m_cols;
+
+	offset_r = m_r_range.s;
+	offset_c = m_c_range.s;
+}
+
 
 template<typename T>
 void Matrix<T>::fliplr()

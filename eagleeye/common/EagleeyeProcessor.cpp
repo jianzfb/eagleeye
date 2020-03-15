@@ -59,13 +59,13 @@ double Processor::test_OCL_DeviceToHostTransfer(unsigned int memSize, GPU_Access
     cl_mem cmPinnedData = NULL;
     cl_mem cmDevData = NULL;
     cl_int ciErrNum = CL_SUCCESS;
-    cl_command_queue cqCommandQueue = clCreateCommandQueue(OpenCLEnv::getOpenCLEnv()->context, OpenCLEnv::getOpenCLEnv()->device_id, 0, &ciErrNum);
+    cl_command_queue cqCommandQueue = clCreateCommandQueue(OpenCLRuntime::getOpenCLEnv()->context, OpenCLRuntime::getOpenCLEnv()->device_id, 0, &ciErrNum);
 
     //allocate and init host memory, pinned or conventional
     if(memMode == PINNED)
     {
         // Create a host buffer
-        cmPinnedData = clCreateBuffer(OpenCLEnv::getOpenCLEnv()->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, memSize, NULL, &ciErrNum);
+        cmPinnedData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, memSize, NULL, &ciErrNum);
         oclCheckError(ciErrNum, CL_SUCCESS);
 
         // Get a mapped pointer
@@ -95,7 +95,7 @@ double Processor::test_OCL_DeviceToHostTransfer(unsigned int memSize, GPU_Access
     }
 
     // allocate device memory 
-    cmDevData = clCreateBuffer(OpenCLEnv::getOpenCLEnv()->context, CL_MEM_READ_WRITE, memSize, NULL, &ciErrNum);
+    cmDevData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE, memSize, NULL, &ciErrNum);
     oclCheckError(ciErrNum, CL_SUCCESS);
 
     // initialize device memory 
@@ -176,13 +176,13 @@ double Processor::test_OCL_HostToDeviceTransfer(unsigned int memSize, GPU_Access
     cl_mem cmPinnedData = NULL;
     cl_mem cmDevData = NULL;
     cl_int ciErrNum = CL_SUCCESS;
-    cl_command_queue cqCommandQueue = clCreateCommandQueue(OpenCLEnv::getOpenCLEnv()->context, OpenCLEnv::getOpenCLEnv()->device_id, 0, &ciErrNum);
+    cl_command_queue cqCommandQueue = clCreateCommandQueue(OpenCLRuntime::getOpenCLEnv()->context, OpenCLRuntime::getOpenCLEnv()->device_id, 0, &ciErrNum);
 
     // Allocate and init host memory, pinned or conventional
     if(memMode == PINNED)
     { 
         // Create a host buffer
-        cmPinnedData = clCreateBuffer(OpenCLEnv::getOpenCLEnv()->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, memSize, NULL, &ciErrNum);
+        cmPinnedData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, memSize, NULL, &ciErrNum);
         oclCheckError(ciErrNum, CL_SUCCESS);
 
         // Get a mapped pointer
@@ -213,7 +213,7 @@ double Processor::test_OCL_HostToDeviceTransfer(unsigned int memSize, GPU_Access
     }
 
     // allocate device memory 
-    cmDevData = clCreateBuffer(OpenCLEnv::getOpenCLEnv()->context, CL_MEM_READ_WRITE, memSize, NULL, &ciErrNum);
+    cmDevData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE, memSize, NULL, &ciErrNum);
     oclCheckError(ciErrNum, CL_SUCCESS);
 
     // Sync queue to host, start timer 0, and copy data from Host to GPU

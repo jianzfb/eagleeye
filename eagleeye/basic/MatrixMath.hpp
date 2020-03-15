@@ -334,16 +334,33 @@ Matrix<T> mmax(const Matrix<T>& b, T a, std::vector<unsigned int> order, int off
 	unsigned int rows = b.rows();
 	unsigned int cols = b.cols();
 
-	Matrix<float> mm(order.size() - offset, cols);
+	Matrix<T> mm(order.size() - offset, cols);
 	for (unsigned int i = offset; i < order.size(); ++i) {
-		const float* b_ptr = b.row(order[i]);
-		float* mm_ptr = mm.row(i - offset);
+		const T* b_ptr = b.row(order[i]);
+		T* mm_ptr = mm.row(i - offset);
 		for (unsigned int c = 0; c < cols; ++c) {
 			mm_ptr[c] = a > b_ptr[c] ? a : b_ptr[c];
 		}
 	}
 
 	return mm;
+}
+
+template<typename T>
+Matrix<T> mmax_(Matrix<T>& b, T a, std::vector<unsigned int> order, int offset){
+	unsigned int rows = b.rows();
+	unsigned int cols = b.cols();
+
+	Matrix<T> b_ = b(Range(0, order.size() - offset), Range(0, cols));
+	for (unsigned int i = offset; i < order.size(); ++i) {
+		const T* b_ptr = b.row(order[i]);
+		T* bb_ptr = b_.row(i - offset);
+		for (unsigned int c = 0; c < cols; ++c) {
+			bb_ptr[c] = a > b_ptr[c] ? a : b_ptr[c];
+		}
+	}
+
+	return b_;
 }
 
 template<typename T>
@@ -351,10 +368,10 @@ Matrix<T> mmax(const Matrix<T>& b, T a){
 	unsigned int rows = b.rows();
 	unsigned int cols = b.cols();
 
-	Matrix<float> mm(rows, cols);
+	Matrix<T> mm(rows, cols);
 	for (unsigned int r = 0; r < rows; ++r) {
-		const float* b_ptr = b.row(r);
-		float* mm_ptr = mm.row(r);
+		const T* b_ptr = b.row(r);
+		T* mm_ptr = mm.row(r);
 		for (unsigned int c = 0; c < cols; ++c) {
 			mm_ptr[c] = a > b_ptr[c] ? a : b_ptr[c];
 		}
@@ -364,14 +381,29 @@ Matrix<T> mmax(const Matrix<T>& b, T a){
 }
 
 template<typename T>
+Matrix<T> mmax_(Matrix<T>& b, T a){
+	unsigned int rows = b.rows();
+	unsigned int cols = b.cols();
+
+	for (unsigned int r = 0; r < rows; ++r) {
+		T* b_ptr = b.row(r);
+		for (unsigned int c = 0; c < cols; ++c) {
+			b_ptr[c] = a > b_ptr[c] ? a : b_ptr[c];
+		}
+	}
+
+	return b;
+}
+
+template<typename T>
 Matrix<T> mmin(const Matrix<T>& b, T a, std::vector<unsigned int> order, int offset){
 	unsigned int rows = b.rows();
 	unsigned int cols = b.cols();
 
-	Matrix<float> mm(order.size() - offset, cols);
+	Matrix<T> mm(order.size() - offset, cols);
 	for (unsigned int i = offset; i < order.size(); ++i) {
-		const float* b_ptr = b.row(order[i]);
-		float* mm_ptr = mm.row(i - offset);
+		const T* b_ptr = b.row(order[i]);
+		T* mm_ptr = mm.row(i - offset);
 		for (unsigned int c = 0; c < cols; ++c) {
 			mm_ptr[c] = a < b_ptr[c] ? a : b_ptr[c];
 		}
@@ -381,14 +413,31 @@ Matrix<T> mmin(const Matrix<T>& b, T a, std::vector<unsigned int> order, int off
 }
 
 template<typename T>
+Matrix<T> mmin_(Matrix<T>& b, T a, std::vector<unsigned int> order, int offset){
+	unsigned int rows = b.rows();
+	unsigned int cols = b.cols();
+
+	Matrix<T> b_ = b(Range(0, order.size() - offset), Range(0, cols));
+	for (unsigned int i = offset; i < order.size(); ++i) {
+		const T* b_ptr = b.row(order[i]);
+		T* bb_ptr = b_.row(i - offset);
+		for (unsigned int c = 0; c < cols; ++c) {
+			bb_ptr[c] = a < b_ptr[c] ? a : b_ptr[c];
+		}
+	}
+
+	return b_;
+}
+
+template<typename T>
 Matrix<T> mmin(const Matrix<T>& b, T a){
 	unsigned int rows = b.rows();
 	unsigned int cols = b.cols();
 
-	Matrix<float> mm(rows, cols);
+	Matrix<T> mm(rows, cols);
 	for (unsigned int r = 0; r < rows; ++r) {
-		const float* b_ptr = b.row(r);
-		float* mm_ptr = mm.row(r);
+		const T* b_ptr = b.row(r);
+		T* mm_ptr = mm.row(r);
 		for (unsigned int c = 0; c < cols; ++c) {
 			mm_ptr[c] = a < b_ptr[c] ? a : b_ptr[c];
 		}
@@ -397,4 +446,18 @@ Matrix<T> mmin(const Matrix<T>& b, T a){
 	return mm;
 }
 
+template<typename T>
+Matrix<T> mmin_(Matrix<T>& b, T a){
+	unsigned int rows = b.rows();
+	unsigned int cols = b.cols();
+
+	for (unsigned int r = 0; r < rows; ++r) {
+		T* b_ptr = b.row(r);
+		for (unsigned int c = 0; c < cols; ++c) {
+			b_ptr[c] = a < b_ptr[c] ? a : b_ptr[c];
+		}
+	}
+
+	return b;
+}
 }

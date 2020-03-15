@@ -1,5 +1,7 @@
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/MatrixMath.h"
+#include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/common/EagleeyeTime.h"
 #include <cmath>
 #ifdef EAGLEEYE_NEON_OPTIMIZATION
 #include <arm_neon.h>
@@ -203,7 +205,6 @@ void _BilinearResize_8u_1D_1R_Color(const unsigned char * pSrcImg, unsigned char
 	bi_coef_y = (unsigned char *)malloc(sizeof(char)*desHeight);
 	sub_bi_coef_x = (unsigned char *)malloc(sizeof(char)*desWidth);
 	sub_bi_coef_y = (unsigned char *)malloc(sizeof(char)*desHeight);
-
 
 	if (coord_x == NULL || coord_y == NULL || bi_coef_x == NULL || bi_coef_y == NULL || sub_bi_coef_x == NULL || sub_bi_coef_y == NULL ||
 		pImg_left_top == NULL || pImg_left_down == NULL || pImg_right_top == NULL || pImg_right_down == NULL)
@@ -632,5 +633,87 @@ Matrix<Array<unsigned char,3>> warp(Matrix<Array<unsigned char,3>> img,
 	}
 
 	return warp_img;
+}
+
+void resize(const Matrix<Array<unsigned char, 3>> input,
+				Matrix<Array<unsigned char, 3>>& output,
+				InterpMethod interp_method){
+    Matrix<Array<unsigned char, 3>> img_cp = input;
+	unsigned int offset_r, offset_c;
+	input.offset(offset_r, offset_c);
+	int after_c = output.cols();
+	int after_r = output.rows();
+
+    unsigned char* dst_ptr = (unsigned char*)output.dataptr();
+    _BilinearResize_8u_1D_1R_Color((unsigned char*)input.dataptr(), 
+								dst_ptr,
+									input.cols(), 
+									input.rows(),
+									offset_c,
+									offset_r,
+									input.stride(),
+									after_c, 
+									after_r);
+}
+
+void resize(const Matrix<Array<unsigned char, 3>> input,
+				unsigned char* output,
+				int output_r,
+				int output_c,
+				InterpMethod interp_method){
+    Matrix<Array<unsigned char, 3>> img_cp = input;
+	unsigned int offset_r, offset_c;
+	input.offset(offset_r, offset_c);
+
+    _BilinearResize_8u_1D_1R_Color((unsigned char*)input.dataptr(), 
+									output,
+									input.cols(), 
+									input.rows(),
+									offset_c,
+									offset_r,
+									input.stride(),
+									output_c, 
+									output_r);
+}
+
+void resize(const Matrix<float> input,
+				Matrix<float>& output,
+				InterpMethod interp_method){
+	int after_c = output.cols();
+	int after_r = output.rows();
+	unsigned int offset_r, offset_c;
+	input.offset(offset_r, offset_c);
+
+    const float* img_ptr = input.dataptr();
+    float* dst_ptr = output.dataptr();
+	_BilinearResize_32f_C1(img_ptr, 
+							dst_ptr, 
+							input.cols(), 
+							input.rows(),
+							offset_c, 
+							offset_r, 
+							input.stride(), 
+							after_c, 
+							after_r);
+}
+
+void resize(const Matrix<float> input,
+				float* output,
+				int output_r,
+				int output_c,
+				InterpMethod interp_method){
+	unsigned int offset_r, offset_c;
+	input.offset(offset_r, offset_c);
+
+    const float* img_ptr = input.dataptr();
+	_BilinearResize_32f_C1(img_ptr, 
+							output, 
+							input.cols(), 
+							input.rows(),
+							offset_c, 
+							offset_r, 
+							input.stride(), 
+							output_c, 
+							output_r);
 }
 }
