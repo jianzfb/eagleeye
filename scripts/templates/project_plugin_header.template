@@ -87,10 +87,11 @@ extern "C"{
      * @param data data pointer
      * @param data_size dimension (H,W,C)
      * @param data_dims dimension number
+     * @param data_type data type
      * @return true 
      * @return false 
      */
-    bool eagleeye_{{project}}_set_input(const char* node_name, void* data, const int* data_size, const int data_dims);
+    bool eagleeye_{{project}}_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type);
 
     /**
      * @brief get output data from {{project}} output node

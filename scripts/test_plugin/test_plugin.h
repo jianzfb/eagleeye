@@ -90,7 +90,7 @@ extern "C"{
      * @return true 
      * @return false 
      */
-    bool eagleeye_test_set_input(const char* node_name, void* data, const int* data_size, const int data_dims);
+    bool eagleeye_test_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type);
 
     /**
      * @brief get output data from test output node

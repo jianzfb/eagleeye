@@ -102,13 +102,6 @@ public:
 	void getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool);
 
 	/**
-	 * @brief Get the Pipeline Inputs object
-	 * 
-	 * @param pipeline_inputs 
-	 */
-	void getPipelineInputs(std::map<std::string,AnyNode*>& pipeline_inputs);
-
-	/**
 	 *	@brief clear signal content
 	 */
 	virtual void makeempty(bool auto_empty=true){};

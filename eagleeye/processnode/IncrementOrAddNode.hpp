@@ -39,7 +39,10 @@ void IncrementOrAddNode<SrcT, TargetT>::executeNodeInfo(){
         else{
             SrcT* input_img_sig = dynamic_cast<SrcT*>(this->m_input_signals[i]);
             Matrix<InputPixelType> c = input_img_sig->getData();
-             input = input + c;
+            if(!c.isempty()){
+                input = input + c;
+            }
+            
         }
     }
 

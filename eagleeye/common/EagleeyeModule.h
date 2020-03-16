@@ -95,12 +95,14 @@ bool eagleeye_pipeline_get_param(const char* pipeline_name,
  * @param data 
  * @param data_size 
  * @param data_dims 
+ * @param data_type
  */
 bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const char* node_name, 
                                  void* data, 
                                  const int* data_size, 
-                                 const int data_dims);
+                                 const int data_dims,
+                                 const int data_type);
 
 /**
  * @brief get pipeline node output
@@ -276,8 +278,8 @@ extern "C" { \
     bool eagleeye_##pipeline##_get_param(const char* node_name, const char* param_name, void* value){ \
         return eagleeye_pipeline_get_param(#pipeline, node_name, param_name, value); \
     } \
-    bool eagleeye_##pipeline##_set_input(const char* node_name, void* data, const int* data_size, const int data_dims){ \
-        return eagleeye_pipeline_set_input(#pipeline, node_name, data, data_size, data_dims); \
+    bool eagleeye_##pipeline##_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type){ \
+        return eagleeye_pipeline_set_input(#pipeline, node_name, data, data_size, data_dims, data_type); \
     } \
     bool eagleeye_##pipeline##_get_output(const char* node_name, void*& data, int* data_size, int& data_dims,int& data_type){ \
         return eagleeye_pipeline_get_output(#pipeline, node_name, data, data_size, data_dims, data_type); \

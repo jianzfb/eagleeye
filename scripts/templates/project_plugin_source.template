@@ -32,7 +32,7 @@ data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 3.step add all node to pipeline
 // 3.1.step add data source node
-{{project}}->add(data_source,"data_source");
+{{project}}->add(data_source,"data_source", SOURCE_NODE);
 // 3.2.step add your algorithm node
 // for example:
 // {{project}}->add(instance_person_seg_node, "instance_person_seg_node");

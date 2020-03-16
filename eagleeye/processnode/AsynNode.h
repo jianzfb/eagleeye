@@ -15,13 +15,12 @@
 
 namespace eagleeye{
 
-struct cmp
-{ 
-    bool operator()(std::pair<std::shared_ptr<AnySignal>, int> &a, std::pair<std::shared_ptr<AnySignal>, int> &b) const
-    {
-        return a.second > b.second;
-    }
-};    
+struct AsynMetaData{
+    AsynMetaData(int a, int b):timestamp(a),round(b){}
+    int timestamp;
+    int round;
+};
+
 class AsynNode:public AnyNode{
 public:
     typedef AsynNode                Self;
@@ -33,7 +32,7 @@ public:
      * @brief Construct a new Parallel Node object
      * 
      */
-    AsynNode(int thread_num, std::function<AnyNode*()> generator, int queue_size=1);
+    AsynNode(int thread_num, std::function<AnyNode*()> generator, int input_queue_size=1, int output_queue_size=1);
     
     /**
      * @brief Destroy the Parallel Node object
@@ -86,15 +85,19 @@ private:
     std::vector<AnyNode*> m_run_node;
     std::vector<std::thread> m_run_threads;    
 
-    std::deque<std::pair<std::shared_ptr<AnySignal>, int>> m_input_cache;
-    std::priority_queue<std::pair<std::shared_ptr<AnySignal>, int>,std::vector<std::pair<std::shared_ptr<AnySignal>, int>>, cmp> m_output_cache;
+    std::deque<std::pair<std::shared_ptr<AnySignal>, AsynMetaData>> m_input_cache;
+    std::list<std::pair<std::shared_ptr<AnySignal>, AsynMetaData>> m_output_list;
 
     unsigned int m_process_count;
     std::mutex m_input_mu;
 	std::mutex m_output_mu;	
     std::condition_variable m_input_cond;
     bool m_thread_status;
-    int m_queue_size;
+    int m_input_queue_size;
+    int m_output_queue_size;
+    int m_round;
+
+    bool m_reset_flag;
 };
 }
 #endif

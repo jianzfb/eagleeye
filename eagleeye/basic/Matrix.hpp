@@ -753,14 +753,6 @@ Matrix<T> Matrix<T>::operator*(const Matrix<T>& r)
 }
 
 template<typename T>
-bool Matrix<T>::isempty()
-{
-	if (m_rows == 0 || m_cols == 0)
-		return true;
-	else
-		return false;
-}
-template<typename T>
 bool Matrix<T>::isempty() const
 {
 	if (m_rows == 0 || m_cols == 0)

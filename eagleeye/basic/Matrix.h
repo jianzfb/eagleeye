@@ -110,7 +110,6 @@ public:
 	/**
 	 *	@brief check whether this matrix is empty
 	 */
-	inline bool isempty();
 	inline bool isempty() const;
 
 	/**

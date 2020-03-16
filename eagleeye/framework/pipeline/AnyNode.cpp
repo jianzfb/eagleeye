@@ -12,6 +12,13 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_node_state = 0;
 	this->m_action = 1;	 // "RUN"
 	this->m_node_is_satisfied_cond = true;
+
+	this->m_reset_flag = false;
+	this->m_process_flag = false;
+	this->m_get_monitor_flag = false;
+	this->m_feadback_flag = false;
+	this->m_load_config_flag = false;
+	this->m_save_config_flag = false;
 }
 
 AnyNode::~AnyNode()
@@ -233,11 +240,6 @@ void AnyNode::resetPipeline()
 	modified();
 }
 
-AnySignal* AnyNode::makeOutputSignal()
-{
-	return new AnySignal;
-}
-
 void AnyNode::passonNodeInfo(){
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	std::vector<AnySignal*>::iterator out_iter,out_iend(m_output_signals.end());
@@ -274,12 +276,17 @@ bool AnyNode::start(){
 }
 
 void AnyNode::reset(){
+	if(this->m_reset_flag){
+		return;
+	}
+
 	//reset pipeline backward
+	this->m_reset_flag = true;
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
 		(*in_iter)->reset();
 	}
-
+	this->m_reset_flag = false;
 	EAGLEEYE_LOGD("reset %s node", this->getUnitName());
 }
 
@@ -377,10 +384,16 @@ void AnyNode::updateUnitInfo()
 
 void AnyNode::processUnitInfo()
 {	
+	if(m_process_flag){
+		return;
+	}
+
 	//the upper unit should process unit info firstly.
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
+		m_process_flag = true;
 		(*in_iter)->processUnitInfo();
+		m_process_flag = false;
 	}
 
 	if (isNeedProcessed()){
@@ -414,12 +427,17 @@ void AnyNode::processUnitInfo()
 
 void AnyNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool)
 {	
+	if(m_get_monitor_flag){
+		return;
+	}
+
 	if(pipeline_monitor_pool.find(getUnitName()) == pipeline_monitor_pool.end())
 	{
 		pipeline_monitor_pool[getUnitName()] = m_unit_monitor_pool;
 	}
 
 	//traverse the whole pipeline
+	m_get_monitor_flag = true;
 	std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());
 	for (signal_iter = m_input_signals.begin();signal_iter != signal_iend; ++signal_iter)
 	{
@@ -427,29 +445,7 @@ void AnyNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>
 			(*signal_iter)->getPipelineMonitors(pipeline_monitor_pool);
 		}
 	}
-}
-
-void AnyNode::getPipelineInputs(std::map<std::string,AnyNode*>& pipeline_inputs){
-	//traverse the whole pipeline
-	if (m_input_signals.size() > 0){
-		std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());
-		for (signal_iter = m_input_signals.begin();signal_iter != signal_iend; ++signal_iter)
-		{
-			if ((*signal_iter))
-				(*signal_iter)->getPipelineInputs(pipeline_inputs);
-			else
-				return;
-		}
-	}
-	else{
-		// start node, 
-		std::string input_key = std::string(this->getUnitName());
-		pipeline_inputs[input_key] = this;
-	}
-}
-
-void AnyNode::getPipelineOutputs(std::map<std::string,AnyNode*>& pipeline_outputs){
-	pipeline_outputs[this->getUnitName()] = this;
+	m_get_monitor_flag = false;
 }
 
 void AnyNode::enableOutputPort(int index)
@@ -544,6 +540,12 @@ void AnyNode::addFeadbackRule(std::string trigger_node, int trigger_node_state, 
 }
 
 void AnyNode::feadback(std::map<std::string, int>& node_state_map){
+	if(m_feadback_flag){
+		return;
+	}
+
+	m_feadback_flag = true;
+
 	// change action
 	for(int index=0; index<this->m_trigger_node.size(); ++index){
 		if(node_state_map.find(this->m_trigger_node[index]) != node_state_map.end()){
@@ -561,9 +563,16 @@ void AnyNode::feadback(std::map<std::string, int>& node_state_map){
 	for (signal_iter = m_input_signals.begin();signal_iter != signal_iend; ++signal_iter){
 		(*signal_iter)->feadback(node_state_map);
 	}
+
+	m_feadback_flag = false;
 }
 
 void AnyNode::loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config){
+	if(m_load_config_flag){
+		return;
+	}
+
+	m_load_config_flag = true;
 	// 1.step load node configure
 	if(nodes_config.find(this->m_unit_name) != nodes_config.end()){
 		this->setUnitPara(nodes_config[this->m_unit_name]);
@@ -574,9 +583,15 @@ void AnyNode::loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_c
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
 		(*in_iter)->loadConfigure(nodes_config);
 	}
+	m_load_config_flag = false;
 }
 
 void AnyNode::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config){
+	if(m_save_config_flag){
+		return;
+	}
+
+	m_save_config_flag = true;
 	// 1.step get node configure
 	if(nodes_config.find(this->m_unit_name) == nodes_config.end()){
 		std::shared_ptr<char> node_param;
@@ -589,5 +604,6 @@ void AnyNode::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
 		(*in_iter)->saveConfigure(nodes_config);
 	}
+	m_save_config_flag = false;
 }
 }

@@ -225,8 +225,9 @@ bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const char* node_name, 
                                  void* data, 
                                  const int* data_size, 
-                                 const int data_dims){
-    AnyPipeline::getInstance(pipeline_name)->setInput(node_name, data, data_size, data_dims);
+                                 const int data_dims,
+                                 const int data_type){
+    AnyPipeline::getInstance(pipeline_name)->setInput(node_name, data, data_size, data_dims, data_type);
     return true;
 }
 

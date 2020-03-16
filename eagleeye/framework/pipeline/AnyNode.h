@@ -138,18 +138,6 @@ public:
 	virtual void getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool);
 
 	/**
-	 * @brief Get the Pipeline Input Pool object
-	 * 
-	 */
-	void getPipelineInputs(std::map<std::string,AnyNode*>& pipeline_inputs);
-
-	/**
-	 * @brief Get the Pipeline Output Pool object
-	 * 
-	 */
-	void getPipelineOutputs(std::map<std::string,AnyNode*>& pipeline_outputs);
-
-	/**
 	 *	@brief print this node info
 	 */
 	virtual void printUnit();
@@ -258,7 +246,7 @@ protected:
 	 *	@note If you want a special signal, you have to
 	 *	overload this function in the subclass
 	 */
-	virtual AnySignal* makeOutputSignal();
+	virtual AnySignal* makeOutputSignal(){return NULL;};
 
 	/**
 	 *	@brief After processing unit info, perhaps we would clear some
@@ -300,6 +288,13 @@ protected:
 private:
 	AnyNode(const AnyNode&);
 	void operator=(const AnyNode&);
+
+	bool m_reset_flag;
+	bool m_process_flag;
+	bool m_get_monitor_flag;
+	bool m_feadback_flag;
+	bool m_load_config_flag;
+	bool m_save_config_flag;
 };
 }
 

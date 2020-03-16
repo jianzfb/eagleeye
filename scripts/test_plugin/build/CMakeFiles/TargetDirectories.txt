@@ -1,4 +1,0 @@
-/Users/jian/Documents/GitHub/eagleeye/scripts/test_plugin/build/CMakeFiles/rebuild_cache.dir
-/Users/jian/Documents/GitHub/eagleeye/scripts/test_plugin/build/CMakeFiles/edit_cache.dir
-/Users/jian/Documents/GitHub/eagleeye/scripts/test_plugin/build/CMakeFiles/test_demo.dir
-/Users/jian/Documents/GitHub/eagleeye/scripts/test_plugin/build/CMakeFiles/test.dir

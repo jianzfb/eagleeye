@@ -21,7 +21,7 @@ public:
 	 *	@brief get class identity
 	 */
 	EAGLEEYE_CLASSIDENTITY(DataSourceNode);
-    
+
     /**
 	 *	@brief define output port image signal type
 	 */

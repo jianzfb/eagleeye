@@ -11,6 +11,12 @@ namespace eagleeye{
 
 typedef void (*INITIALIZE_PLUGIN_PIPELINE_FUNC)();
 
+enum PipelineNodeType{
+    SOURCE_NODE,
+    SINK_NODE,
+    OTHER_NODE
+};
+
 class EAGLEEYE_API AnyPipeline{
 public:
     /**
@@ -78,7 +84,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool add(AnyNode* node, const char* node_name);
+    bool add(AnyNode* node, const char* node_name, PipelineNodeType nodetype=OTHER_NODE);
 
     /**
      * @brief link node a to node b
@@ -164,8 +170,9 @@ public:
      * @param data 
      * @param data_size 
      * @param data_dims 
+     * @param data_type
      */
-    void setInput(const char* node_name, void* data, const int* data_size, const int data_dims);
+    void setInput(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type);
     
     /**
      * @brief Get the Node Output object
@@ -244,7 +251,6 @@ private:
     std::string m_version;
     std::string m_signature;
     std::map<std::string, AnyNode*> m_nodes;
-    std::map<std::string, bool> m_is_output_nodes;
 
     bool m_is_initialize;
     INITIALIZE_PLUGIN_PIPELINE_FUNC m_init_func;

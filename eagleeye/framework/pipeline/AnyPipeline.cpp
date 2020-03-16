@@ -3,6 +3,7 @@
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/common/EagleeyeVersion.h"
 #include "eagleeye/common/EagleeyeFile.h"
+#include "eagleeye/framework/pipeline/SignalFactory.h"
 #include <string>
 
 
@@ -136,7 +137,6 @@ void AnyPipeline::reset(){
     m_input_nodes.clear();
     m_output_nodes.clear();
     m_nodes.clear();
-    m_is_output_nodes.clear();
     m_is_initialize = false;
 }
 
@@ -148,7 +148,7 @@ AnyNode* AnyPipeline::get(const char* node_name){
     return this->m_nodes[std::string(node_name)];
 }
 
-bool AnyPipeline::add(AnyNode* node, const char* node_name){
+bool AnyPipeline::add(AnyNode* node, const char* node_name, PipelineNodeType nodetype){
     if(this->m_nodes.find(std::string(node_name)) != this->m_nodes.end()){
         EAGLEEYE_LOGD("node %s has exist in pipeline", node);
         return false;
@@ -157,8 +157,18 @@ bool AnyPipeline::add(AnyNode* node, const char* node_name){
     // set node name
     node->setUnitName(node_name);
     this->m_nodes[std::string(node_name)] = node;
-    this->m_is_output_nodes[std::string(node_name)] = true;
 
+    // 
+    switch(nodetype){
+        case SOURCE_NODE:
+            this->m_input_nodes[std::string(node_name)] = node;
+            break;
+        case SINK_NODE:
+            this->m_output_nodes[std::string(node_name)] = node;
+            break;
+        default:
+            break;
+    }
     return true;
 }
 
@@ -178,7 +188,6 @@ void AnyPipeline::bind(const char* node_a,
     AnyNode* node_a_ptr = this->m_nodes[std::string(node_a)];
     AnyNode* node_b_ptr = this->m_nodes[std::string(node_b)];
     node_b_ptr->setInputPort(node_a_ptr->getOutputPort(port_a), port_b);
-    this->m_is_output_nodes[std::string(node_a)] = false;
 }
 
 void AnyPipeline::loadConfigure(std::string config_file){
@@ -351,19 +360,33 @@ void AnyPipeline::getParameter(const char* node_name,
 
 void AnyPipeline::setInput(const char* node_name, 
                            void* data, 
-        const int* data_size, 
-                           const int data_dims){
+                           const int* data_size, 
+                           const int data_dims,
+                           const int data_type){
     std::string input_key = std::string(node_name);
+    int port = 0;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+
     if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
         EAGLEEYE_LOGE("%s is not input node", node_name);
         return;
     }
     
-    if(data_size[0] == 0 || data_size[1] == 0){
+    if(data_size[0] == 0 || data_size[1] == 0 || data_size[2] == 0){
+        EAGLEEYE_LOGE("data size abnormal %d %d %d", data_size[0], data_size[1], data_size[2]);
         return;
     }
 
-    this->m_input_nodes[input_key]->getOutputPort(0)->setSignalContent(data, data_size, data_dims);
+    if(data_type != this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()){
+        EAGLEEYE_LOGE("data type %d not equal to input %d", data_type, int(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()));
+        return;
+    }
+
+    this->m_input_nodes[input_key]->getOutputPort(port)->setSignalContent(data, data_size, data_dims);
     this->m_input_nodes[input_key]->modified();
 }
 
@@ -494,17 +517,21 @@ void AnyPipeline::initialize(const char* configure_folder){
     // 分析连接关系
     EAGLEEYE_LOGD("analyze pipeline %s structure", this->m_name.c_str());
     // finding output nodes
-    this->m_output_nodes.clear();
-    std::map<std::string, bool>::iterator iter, iend(this->m_is_output_nodes.end());
-    for(iter = this->m_is_output_nodes.begin(); iter != iend; ++iter){
-        if(iter->second){
-            this->m_output_nodes[iter->first] = this->m_nodes[iter->first];
-        }
-    }
+    // this->m_output_nodes.clear();
+    // std::map<std::string, bool>::iterator iter, iend(this->m_is_output_nodes.end());
+    // for(iter = this->m_is_output_nodes.begin(); iter != iend; ++iter){
+    //     if(iter->second){
+    //         this->m_output_nodes[iter->first] = this->m_nodes[iter->first];
+    //     }
+    // }
     EAGLEEYE_LOGD("%s has %d output nodes", this->m_name.c_str(), this->m_output_nodes.size());
     std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
         EAGLEEYE_LOGD("output node name %s", output_iter->first.c_str());
+    }
+    if(m_output_nodes.size() == 0){
+        EAGLEEYE_LOGE("dont have output node in pipeline");
+        return;
     }
 
     // get all monitors
@@ -528,15 +555,19 @@ void AnyPipeline::initialize(const char* configure_folder){
     }
 
     // get all input signals
-    this->m_input_nodes.clear();
-    for(output_node_iter=this->m_output_nodes.begin(); output_node_iter!=output_node_iend; ++output_node_iter){
-        output_node_iter->second->getPipelineInputs(this->m_input_nodes);
-    }
+    // this->m_input_nodes.clear();
+    // for(output_node_iter=this->m_output_nodes.begin(); output_node_iter!=output_node_iend; ++output_node_iter){
+    //     output_node_iter->second->getPipelineInputs(this->m_input_nodes);
+    // }
 
     EAGLEEYE_LOGD("%s has %d input nodes", this->m_name.c_str(), this->m_input_nodes.size());
     std::map<std::string,AnyNode*>::iterator input_iter, input_iend(this->m_input_nodes.end());
     for(input_iter=this->m_input_nodes.begin(); input_iter!=input_iend; ++input_iter){
         EAGLEEYE_LOGD("input node name %s", input_iter->first.c_str());
+    }
+    if(this->m_input_nodes.size() == 0){
+        EAGLEEYE_LOGE("dont have input nodes in pipeline");
+        return;
     }
 
     if(configure_folder != NULL){

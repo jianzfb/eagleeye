@@ -113,12 +113,6 @@ void AnySignal::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*
 	}
 }
 
-void AnySignal::getPipelineInputs(std::map<std::string,AnyNode*>& pipeline_inputs){
-	if(m_link_node){
-		this->m_link_node->getPipelineInputs(pipeline_inputs);
-	}
-}
-
 void AnySignal::printUnit(){
 	if (m_link_node){
 		m_link_node->print();
