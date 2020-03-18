@@ -73,9 +73,10 @@ private:
     AVCodecContext* m_avc_cxt;
 
     Matrix<Array<unsigned char, 3>> m_next;
+    Matrix<Array<unsigned char, 3>> m_nextnext;
     int m_stream_index;
     double m_video_fps;
-    bool m_isover;
+    bool m_decoder_finish;
     bool m_first_call;
 
 }; 

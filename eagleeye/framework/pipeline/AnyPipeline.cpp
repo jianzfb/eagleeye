@@ -64,10 +64,8 @@ void AnyPipeline::releasePipeline(const char* pipeline_name){
     if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
         return;
     }
-
     m_pipeline_map[std::string(pipeline_name)] = std::shared_ptr<AnyPipeline>();
 } 
-
 
 AnyPipeline::AnyPipeline(const char* pipeline_name){
     this->m_is_initialize = false;
@@ -132,12 +130,6 @@ void AnyPipeline::reset(){
     for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
         iter->second->reset();
     }
-
-    m_monitor_params.clear();
-    m_input_nodes.clear();
-    m_output_nodes.clear();
-    m_nodes.clear();
-    m_is_initialize = false;
 }
 
 AnyNode* AnyPipeline::get(const char* node_name){
@@ -564,10 +556,6 @@ void AnyPipeline::initialize(const char* configure_folder){
     std::map<std::string,AnyNode*>::iterator input_iter, input_iend(this->m_input_nodes.end());
     for(input_iter=this->m_input_nodes.begin(); input_iter!=input_iend; ++input_iter){
         EAGLEEYE_LOGD("input node name %s", input_iter->first.c_str());
-    }
-    if(this->m_input_nodes.size() == 0){
-        EAGLEEYE_LOGE("dont have input nodes in pipeline");
-        return;
     }
 
     if(configure_folder != NULL){

@@ -2,6 +2,7 @@
 #define _EAGLEEYE_SUBPIPELINE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/framework/pipeline/AnyPipeline.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -31,9 +32,9 @@ public:
      * @brief add node in subpipeline
      * 
      * @param node 
-     * @param name 
+     * @param nodetype 
      */
-    void add(AnyNode* node, std::string name);
+    void add(AnyNode* node, std::string name, PipelineNodeType nodetype=OTHER_NODE);
 
     /**
      * @brief connect two nodes
@@ -70,7 +71,6 @@ protected:
     std::vector<int> m_input_ports;
 
     AnySignal* m_input_node_placeholder;
-
 private:
     SubPipeline(const SubPipeline&);
     void operator=(const SubPipeline&);

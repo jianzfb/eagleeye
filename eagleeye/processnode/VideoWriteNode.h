@@ -76,8 +76,6 @@ private:
     AVStream* stream;
     AVPacket* packet;
     AVFrame* frame;
-    uint8_t *pointers[4];
-    int linesizes[4];
 };
 }
 #endif

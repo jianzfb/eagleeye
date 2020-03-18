@@ -18,12 +18,10 @@ if(DEFINED ANDROID_ABI)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
-    include_directories(${eagleeye_SOURCE_DIR}/eagleeye/opencl/include)
 else()
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin)
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin)
     set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin)
-    include_directories(${eagleeye_SOURCE_DIR}/eagleeye/opencl/include)
 endif()
 
 # support mace
@@ -79,20 +77,20 @@ endif()
 
 # support opencl
 if(DEFINED OPENCL)
+    message(STATUS "support OPENCL")
+    message(STATUS "OPENCL path "${OPENCL})
     add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
-    file(READ ${eagleeye_SOURCE_DIR}/eagleeye/opencl/src/square.cl A)
-    string(REPLACE "\n" "" OPENCL_SQUARE_CL "${A}")
-    
-    file(READ ${eagleeye_SOURCE_DIR}/eagleeye/opencl/src/algorithm.cl B)
+    file(READ ${eagleeye_SOURCE_DIR}/eagleeye/opencl/algorithm.cl B)
     string(REPLACE "\n" "" OPENCL_ALGORITHM_CL "${B}")
     
     configure_file(${eagleeye_SOURCE_DIR}/eagleeye/common/EagleeyeCL_CODE.h ${eagleeye_SOURCE_DIR}/EagleeyeCL_CODE.h)    
 
+    include_directories(${OPENCL}/include)
     add_library(libOpenCL SHARED IMPORTED)
     set_target_properties(
         libOpenCL
         PROPERTIES IMPORTED_LOCATION 
-        ${eagleeye_SOURCE_DIR}/eagleeye/opencl/lib/libOpenCL.so
+        ${OPENCL}/lib/libOpenCL.so
     )
 endif()
 
@@ -128,12 +126,6 @@ endif()
 
 include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
-
-if(DEFINED FFMPEG)
-add_definitions(-DEAGLEEYE_FFMPEG)
-include_directories(../ffmpeg/arm64-v8a/include/)
-include_directories(../x264/arm64-v8a/include/)
-endif()
 
 set(EAGLEEYE_SRC 
     eagleeye/processnode/OpticalFlowNode.cpp
@@ -221,19 +213,22 @@ if(DEFINED OPENMP)
     endif()
 endif()
 
-if(DEFINED FFMPEG)
-    link_directories(../ffmpeg/arm64-v8a/lib/)
-    link_directories(../x264/arm64-v8a/lib/)
+if(DEFINED FFMPEG AND DEFINED X264)
+    message("use FFMPEG")
+    add_definitions(-DEAGLEEYE_FFMPEG)
+    include_directories(${FFMPEG}/include/)
+    include_directories(${X264}/include/)
+
     target_link_libraries(eagleeye 
-                            libavdevice.so
-                            libavutil.so
-                            libswresample.so
-                            libswscale.so
-                            libavcodec.so
-                            libavformat.so
-                            libavfilter.so
-                            libpostproc.so
-                            libx264.so)
+                            ${FFMPEG}/lib/libavdevice.so
+                            ${FFMPEG}/lib/libavutil.so
+                            ${FFMPEG}/lib/libswresample.so
+                            ${FFMPEG}/lib/libswscale.so
+                            ${FFMPEG}/lib/libavcodec.so
+                            ${FFMPEG}/lib/libavformat.so
+                            ${FFMPEG}/lib/libavfilter.so
+                            ${FFMPEG}/lib/libpostproc.so
+                            ${X264}/lib/libx264.so)
 endif()
 
 find_package(pnglib)

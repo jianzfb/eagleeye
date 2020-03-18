@@ -28,14 +28,14 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 TARGET_LINK_LIBRARIES({{project}} ${OpenCV_LIBS})
 {% endif %}
 
-{% if opencl %}
+{% if opencl != "" %}
 add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
-include_directories({{eagleeye}}/eagleeye/opencl/include)
+include_directories({{opencl}}/include)
 add_library(libOpenCL SHARED IMPORTED)
 set_target_properties(
     libOpenCL
     PROPERTIES IMPORTED_LOCATION 
-    {{eagleeye}}/eagleeye/opencl/lib/libOpenCL.so
+    {{opencl}}/lib/libOpenCL.so
 )
 TARGET_LINK_LIBRARIES({{project}} libOpenCL)
 {% endif %}

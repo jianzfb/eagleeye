@@ -4,18 +4,18 @@
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+
 #include <memory>
 #include <map>
 
 namespace eagleeye{
-
-typedef void (*INITIALIZE_PLUGIN_PIPELINE_FUNC)();
-
 enum PipelineNodeType{
     SOURCE_NODE,
     SINK_NODE,
     OTHER_NODE
 };
+
+typedef void (*INITIALIZE_PLUGIN_PIPELINE_FUNC)();
 
 class EAGLEEYE_API AnyPipeline{
 public:

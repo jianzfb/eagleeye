@@ -1,5 +1,6 @@
 #include "eagleeye/processnode/AsynNode.h"
 #include "eagleeye/common/EagleeyeStr.h"
+#include "eagleeye/common/EagleeyeLog.h"
 namespace eagleeye
 {
 AsynNode::AsynNode(int thread_num, std::function<AnyNode*()> generator, int input_queue_size, int output_queue_size):
@@ -18,7 +19,7 @@ AsynNode::AsynNode(int thread_num, std::function<AnyNode*()> generator, int inpu
     setNumberOfOutputSignals(1);
     AnySignal* output_signal = m_run_node[0]->getOutputPort(0)->make();
     this->setOutputPort(output_signal, 0);
-
+    output_signal->setDelayTime(1);
     this->m_round = 1;
     this->m_reset_flag = true;
 }
@@ -74,7 +75,13 @@ void AsynNode::exit(){
 }
 
 void AsynNode::refresh(){
+    EAGLEEYE_LOGD("asynnode refresh");
     std::unique_lock<std::mutex> output_locker(this->m_output_mu);    
+    if(this->m_output_list.size() == 0){
+        output_locker.unlock();
+        return;
+    }
+
     if(this->m_reset_flag){
         // remove all data in not this round
         this->m_output_list.remove_if([&](std::pair<std::shared_ptr<AnySignal>, AsynMetaData>& a){return a.second.round != m_round;});
@@ -140,11 +147,18 @@ void AsynNode::run(int thread_id){
             // 除去最旧数据
             m_output_list.pop_front();
         }
+
+        // std::list<std::pair<std::shared_ptr<AnySignal>, AsynMetaData>>::iterator iter, iend(m_output_list.end());
+        // for(iter = m_output_list.begin(); iter != iend; ++iter){
+        //     std::cout<<iter->second.timestamp<<"\t";
+        // }
+        // std::cout<<'\n';
         output_locker.unlock();
     }
 }
 
 void AsynNode::reset(){
+    std::cout<<"RESET ASYNNODE"<<std::endl;
     // clear input queue
     std::unique_lock<std::mutex> input_locker(this->m_input_mu);
     this->m_input_cache.clear();

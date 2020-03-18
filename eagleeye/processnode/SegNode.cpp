@@ -120,21 +120,21 @@ SegNode::SegNode(std::string model_name,
     this->m_frame_width = -1;
     this->m_frame_height = -1;
 
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    EAGLEEYE_OPENCL_ADD_CUSTOME_CODE(SEGNODE, preprocess_kernel_code);
-    EAGLEEYE_OPENCL_KERNEL_GROUP(segpreprocess, SEGNODE, preprocess_func);
+// #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+//     EAGLEEYE_OPENCL_ADD_CUSTOME_CODE(SEGNODE, preprocess_kernel_code);
+//     EAGLEEYE_OPENCL_KERNEL_GROUP(segpreprocess, SEGNODE, preprocess_func);
 
-    EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_BUFFER(segpreprocess, output, sizeof(float)*this->m_model_h*this->m_model_w*3);
-    EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(segpreprocess, preprocess_func, 1, output);
-#endif    
+//     EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_BUFFER(segpreprocess, output, sizeof(float)*this->m_model_h*this->m_model_w*3);
+//     EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(segpreprocess, preprocess_func, 1, output);
+// #endif    
 }   
 
 SegNode::~SegNode(){
     delete m_seg_model;
     free(m_temp_ptr);
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    EAGLEEYE_OPENCL_RELEASE_KERNEL_GROUP(segpreprocess);
-#endif
+// #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+//     EAGLEEYE_OPENCL_RELEASE_KERNEL_GROUP(segpreprocess);
+// #endif
 
 } 
 
@@ -146,65 +146,65 @@ void SegNode::runSeg(const Matrix<Array<unsigned char,3>>& frame, int label, Mat
         int roi_rows = frame.rows();
         int roi_cols = frame.cols();
 
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-        if(this->m_frame_width == -1 || this->m_frame_height == -1){
-            unsigned int offset_r, offset_c, layout_h, layout_w;
-            frame.layout(offset_r, offset_c, layout_h, layout_w);
-            EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_IMAGE(segpreprocess, input, layout_h, layout_w, 4, EAGLEEYE_FLOAT);
-            EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(segpreprocess, preprocess_func, 0, input);
-            m_frame_width = layout_h;
-            m_frame_height = layout_w;
-        }
+// #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+//         if(this->m_frame_width == -1 || this->m_frame_height == -1){
+//             unsigned int offset_r, offset_c, layout_h, layout_w;
+//             frame.layout(offset_r, offset_c, layout_h, layout_w);
+//             EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_IMAGE(segpreprocess, input, layout_h, layout_w, 4, EAGLEEYE_FLOAT);
+//             EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(segpreprocess, preprocess_func, 0, input);
+//             m_frame_width = layout_h;
+//             m_frame_height = layout_w;
+//         }
 
-        float height_scale = (float)(roi_rows)/this->m_output_h;
-        float width_scale = (float)(roi_cols)/this->m_output_w;    
-        // update input
-        size_t row_pitch = 0;
-        EAGLEEYE_TIME_START(MAP);
-        float* input_ptr = (float*)EAGLEEYE_OPENCL_MAP_IMAGE(segpreprocess,input, &row_pitch);
+//         float height_scale = (float)(roi_rows)/this->m_output_h;
+//         float width_scale = (float)(roi_cols)/this->m_output_w;    
+//         // update input
+//         size_t row_pitch = 0;
+//         EAGLEEYE_TIME_START(MAP);
+//         float* input_ptr = (float*)EAGLEEYE_OPENCL_MAP_IMAGE(segpreprocess,input, &row_pitch);
 
-        for(int i=0; i<roi_rows; ++i){
-            const unsigned char* roi_ptr = (unsigned char*)frame.row(i);
-            for(int j=0; j<roi_cols; ++j){
-                input_ptr[i*row_pitch/4+j*4] = roi_ptr[j*3];
-                input_ptr[i*row_pitch/4+j*4+1] = roi_ptr[j*3+1];
-                input_ptr[i*row_pitch/4+j*4+2] = roi_ptr[j*3+2];
-            }
-        }
-        EAGLEEYE_OPENCL_UNMAP(segpreprocess, input);
-        EAGLEEYE_TIME_END(MAP);
+//         for(int i=0; i<roi_rows; ++i){
+//             const unsigned char* roi_ptr = (unsigned char*)frame.row(i);
+//             for(int j=0; j<roi_cols; ++j){
+//                 input_ptr[i*row_pitch/4+j*4] = roi_ptr[j*3];
+//                 input_ptr[i*row_pitch/4+j*4+1] = roi_ptr[j*3+1];
+//                 input_ptr[i*row_pitch/4+j*4+2] = roi_ptr[j*3+2];
+//             }
+//         }
+//         EAGLEEYE_OPENCL_UNMAP(segpreprocess, input);
+//         EAGLEEYE_TIME_END(MAP);
 
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 2, height_scale);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 3, width_scale);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 4, roi_rows);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 5, roi_cols);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 6, m_model_h);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 7, m_model_w);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 8, 0);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 9, m_model_h);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 10, 0);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 11, m_model_w);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 12, m_mean_r);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 13, m_mean_g);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 14, m_mean_b);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 15, m_var_r);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 16, m_var_g);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 17, m_var_b);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 2, height_scale);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 3, width_scale);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 4, roi_rows);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 5, roi_cols);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 6, m_model_h);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 7, m_model_w);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 8, 0);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 9, m_model_h);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 10, 0);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 11, m_model_w);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 12, m_mean_r);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 13, m_mean_g);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 14, m_mean_b);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 15, m_var_r);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 16, m_var_g);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 17, m_var_b);
 
-        size_t work_dims = 2;
-        size_t global_size[2] = {EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_h,32),EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_w,32)};
-        size_t local_size[2] = {32,32};
+//         size_t work_dims = 2;
+//         size_t global_size[2] = {EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_h,32),EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_w,32)};
+//         size_t local_size[2] = {32,32};
 
-        EAGLEEYE_TIME_START(RUN);
-        EAGLEEYE_OPENCL_KERNEL_RUN(segpreprocess, preprocess_func, work_dims, global_size, local_size);   
-        EAGLEEYE_TIME_END(RUN);
+//         EAGLEEYE_TIME_START(RUN);
+//         EAGLEEYE_OPENCL_KERNEL_RUN(segpreprocess, preprocess_func, work_dims, global_size, local_size);   
+//         EAGLEEYE_TIME_END(RUN);
 
-        EAGLEEYE_TIME_START(UNMAP);
-        float* out_ptr = (float*)EAGLEEYE_OPENCL_MAP_BUFFER(segpreprocess, output);
-        memcpy((void*)m_model_input_f.dataptr(), out_ptr, sizeof(float)*3*m_model_h*m_model_w);
-        EAGLEEYE_OPENCL_UNMAP(segpreprocess, output);
-        EAGLEEYE_TIME_END(UNMAP);
-#else
+//         EAGLEEYE_TIME_START(UNMAP);
+//         float* out_ptr = (float*)EAGLEEYE_OPENCL_MAP_BUFFER(segpreprocess, output);
+//         memcpy((void*)m_model_input_f.dataptr(), out_ptr, sizeof(float)*3*m_model_h*m_model_w);
+//         EAGLEEYE_OPENCL_UNMAP(segpreprocess, output);
+//         EAGLEEYE_TIME_END(UNMAP);
+// #else
         resize(frame,m_temp_ptr,m_model_h, m_model_w, BILINEAR_INTERPOLATION);
         Matrix<Array<unsigned char,3>> standard_img(m_model_h, m_model_w, m_temp_ptr);
         for(int r=0; r<this->m_model_h; ++r){
@@ -216,7 +216,7 @@ void SegNode::runSeg(const Matrix<Array<unsigned char,3>>& frame, int label, Mat
                 model_input_f_ptr[c*3+2] = ((float)(standard_img_ptr[c*3+2]) - m_mean_b)/m_var_b;
             }
         }
-#endif        
+// #endif        
     }
     else{ 
         EAGLEEYE_LOGD("use same scale resize mode");
@@ -237,64 +237,64 @@ void SegNode::runSeg(const Matrix<Array<unsigned char,3>>& frame, int label, Mat
         int start_c = (this->m_model_w - new_width) / 2;
         int end_c = start_c + new_width;
 
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-        if(this->m_frame_width == -1 || this->m_frame_height == -1){
-            unsigned int offset_r, offset_c, layout_h, layout_w;
-            frame.layout(offset_r, offset_c, layout_h, layout_w);
-            EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_IMAGE(segpreprocess, input, layout_h, layout_w, 4, EAGLEEYE_FLOAT);
-            EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(segpreprocess, preprocess_func, 0, input);
-            m_frame_width = layout_h;
-            m_frame_height = layout_w;
-        }
+// #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+//         if(this->m_frame_width == -1 || this->m_frame_height == -1){
+//             unsigned int offset_r, offset_c, layout_h, layout_w;
+//             frame.layout(offset_r, offset_c, layout_h, layout_w);
+//             EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_IMAGE(segpreprocess, input, layout_h, layout_w, 4, EAGLEEYE_FLOAT);
+//             EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(segpreprocess, preprocess_func, 0, input);
+//             m_frame_width = layout_h;
+//             m_frame_height = layout_w;
+//         }
 
-        float height_scale = (float)(roi_rows)/new_height;
-        float width_scale = (float)(roi_cols)/new_width;    
-        // update input
-         EAGLEEYE_TIME_START(MAP);
-        size_t row_pitch = 0;
-        float* input_ptr = (float*)EAGLEEYE_OPENCL_MAP_IMAGE(segpreprocess,input, &row_pitch);
-        for(int i=0; i<roi_rows; ++i){
-            const unsigned char* roi_ptr = (unsigned char*)frame.row(i);
-            for(int j=0; j<roi_cols; ++j){
-                input_ptr[i*row_pitch/4+j*4] = roi_ptr[j*3];
-                input_ptr[i*row_pitch/4+j*4+1] = roi_ptr[j*3+1];
-                input_ptr[i*row_pitch/4+j*4+2] = roi_ptr[j*3+2];
-            }
-        }
-        EAGLEEYE_OPENCL_UNMAP(segpreprocess, input);
-        EAGLEEYE_TIME_END(MAP);
+//         float height_scale = (float)(roi_rows)/new_height;
+//         float width_scale = (float)(roi_cols)/new_width;    
+//         // update input
+//          EAGLEEYE_TIME_START(MAP);
+//         size_t row_pitch = 0;
+//         float* input_ptr = (float*)EAGLEEYE_OPENCL_MAP_IMAGE(segpreprocess,input, &row_pitch);
+//         for(int i=0; i<roi_rows; ++i){
+//             const unsigned char* roi_ptr = (unsigned char*)frame.row(i);
+//             for(int j=0; j<roi_cols; ++j){
+//                 input_ptr[i*row_pitch/4+j*4] = roi_ptr[j*3];
+//                 input_ptr[i*row_pitch/4+j*4+1] = roi_ptr[j*3+1];
+//                 input_ptr[i*row_pitch/4+j*4+2] = roi_ptr[j*3+2];
+//             }
+//         }
+//         EAGLEEYE_OPENCL_UNMAP(segpreprocess, input);
+//         EAGLEEYE_TIME_END(MAP);
 
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 2, height_scale);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 3, width_scale);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 4, roi_rows);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 5, roi_cols);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 6, m_model_h);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 7, m_model_w);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 8, start_r);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 9, end_r);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 10, start_c);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 11, end_c);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 12, m_mean_r);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 13, m_mean_g);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 14, m_mean_b);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 15, m_var_r);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 16, m_var_g);
-        EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 17, m_var_b);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 2, height_scale);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 3, width_scale);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 4, roi_rows);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 5, roi_cols);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 6, m_model_h);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 7, m_model_w);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 8, start_r);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 9, end_r);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 10, start_c);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 11, end_c);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 12, m_mean_r);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 13, m_mean_g);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 14, m_mean_b);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 15, m_var_r);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 16, m_var_g);
+//         EAGLEEYE_OPENCL_KERNEL_SET_ARG(segpreprocess, preprocess_func, 17, m_var_b);
 
-        size_t work_dims = 2;
-        size_t global_size[2] = {EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_h,32),EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_w,32)};
-        size_t local_size[2] = {32,32};
+//         size_t work_dims = 2;
+//         size_t global_size[2] = {EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_h,32),EAGLEEYE_OPECNCL_GLOBAL_SIZE((size_t)m_model_w,32)};
+//         size_t local_size[2] = {32,32};
 
-        EAGLEEYE_TIME_START(RUN);
-        EAGLEEYE_OPENCL_KERNEL_RUN(segpreprocess, preprocess_func, work_dims, global_size, local_size);   
-        EAGLEEYE_TIME_END(RUN);
+//         EAGLEEYE_TIME_START(RUN);
+//         EAGLEEYE_OPENCL_KERNEL_RUN(segpreprocess, preprocess_func, work_dims, global_size, local_size);   
+//         EAGLEEYE_TIME_END(RUN);
 
-        EAGLEEYE_TIME_START(UNMAP);
-        float* out_ptr = (float*)EAGLEEYE_OPENCL_MAP_BUFFER(segpreprocess, output);
-        memcpy((void*)m_model_input_f.dataptr(), out_ptr, sizeof(float)*3*m_model_h*m_model_w);
-        EAGLEEYE_OPENCL_UNMAP(segpreprocess, output);
-        EAGLEEYE_TIME_END(UNMAP);        
-#else
+//         EAGLEEYE_TIME_START(UNMAP);
+//         float* out_ptr = (float*)EAGLEEYE_OPENCL_MAP_BUFFER(segpreprocess, output);
+//         memcpy((void*)m_model_input_f.dataptr(), out_ptr, sizeof(float)*3*m_model_h*m_model_w);
+//         EAGLEEYE_OPENCL_UNMAP(segpreprocess, output);
+//         EAGLEEYE_TIME_END(UNMAP);        
+// #else
         EAGLEEYE_TIME_START(preprocess_resize);
         resize(frame,m_temp_ptr,new_height, new_width, BILINEAR_INTERPOLATION);
         Matrix<Array<unsigned char, 3>> tmp(new_height, new_width, this->m_temp_ptr);
@@ -313,7 +313,7 @@ void SegNode::runSeg(const Matrix<Array<unsigned char,3>>& frame, int label, Mat
             }   
         }
         EAGLEEYE_TIME_END(preprocess_subdiv);
-#endif
+// #endif
     }
     EAGLEEYE_TIME_END(preprocess);
 

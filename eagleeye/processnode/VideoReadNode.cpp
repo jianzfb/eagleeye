@@ -44,7 +44,7 @@ VideoReadNode::VideoReadNode(){
 
     this->m_frame_count = 0;
     this->m_frame_total = 0;
-    this->m_isover = false;
+    this->m_decoder_finish = false;
     this->m_first_call = true;
 
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
@@ -62,10 +62,19 @@ VideoReadNode::~VideoReadNode(){
 }
 
 void VideoReadNode::executeNodeInfo(){
-    ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
+    ImageSignal<Array<unsigned char,3>>* output_img_signal = 
+                    (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
     if(!m_next.isempty()){
         output_img_signal->setData(m_next);
-        m_next = Matrix<Array<unsigned char,3>>();
+        m_next = m_nextnext;
+        m_nextnext = Matrix<Array<unsigned char,3>>();
+
+        if(m_next.isempty()){
+            m_decoder_finish = true;
+        }
+    }
+    if(m_decoder_finish){
+        return;
     }
 
     // 0.step 解析视频
@@ -150,7 +159,7 @@ void VideoReadNode::executeNodeInfo(){
 
     int iterator_count = 1;
     if(this->m_first_call){
-        iterator_count = 2;
+        iterator_count = 3;
     }
     for(int index=0; index<iterator_count; ++index){
         bool is_finding = false;
@@ -168,41 +177,49 @@ void VideoReadNode::executeNodeInfo(){
 
         if(is_finding){
             // 发现视频帧
-            SwsContext* swsContext = sws_getContext(frame->width, frame->height, AV_PIX_FMT_YUV420P,frame->width, frame->height, AV_PIX_FMT_RGB24,
-                                NULL, NULL, NULL, NULL);
+            SwsContext* swsContext = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,frame->width, frame->height, AV_PIX_FMT_RGB24,
+                                SWS_BILINEAR, NULL, NULL, NULL);
+            int num_bytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, frame->width, frame->height, 1);
+            // std::cout<<"num bytes "<<num_bytes<<std::endl;
+            // std::cout<<"size "<<frame->width*frame->height*3<<std::endl;
+            // std::cout<<"height "<<frame->height<<" width "<<frame->width<<std::endl;
+            // std::cout<<"linesize "<<frame->linesize[0]<<" "<<frame->linesize[1]<<" "<<frame->linesize[2]<<std::endl;
 
-            int linesize[8] = {frame->linesize[0] * 3};
-            int num_bytes = av_image_get_buffer_size(AV_PIX_FMT_BGR24, frame->width, frame->height, 1);
-            uint8_t* p_global_bgr_buffer = (uint8_t*) malloc(num_bytes * sizeof(uint8_t));
-            uint8_t* bgr_buffer[8] = {p_global_bgr_buffer};
-            
-            sws_scale(swsContext, frame->data, frame->linesize, 0, frame->height, bgr_buffer, linesize);
-            Matrix<Array<unsigned char,3>> frame_rgb_data(frame->height, frame->width, (void*)bgr_buffer[0], true);
-            if(index==0 && iterator_count==2){
+            Matrix<Array<unsigned char,3>> frame_rgb_data(frame->height, frame->width);
+            uint8_t* rgb_buffer[1] = {(uint8_t*)frame_rgb_data.dataptr()};
+            int rgb_stride[1] = { 3 * frame->width};
+
+            sws_scale(swsContext, frame->data, frame->linesize, 0, frame->height, rgb_buffer, rgb_stride);
+            if(index==0 && iterator_count==3){
                 // 首次调用,直接输出赋值
                 output_img_signal->setData(frame_rgb_data);
             }
-            else{
-                // 每次调用，获得下次数据
+            else if(index == 1 && iterator_count==3){
                 m_next = frame_rgb_data;
+            }
+            else{
+                // 每次调用，获得下下次数据
+                m_nextnext = frame_rgb_data;
             }
 
             sws_freeContext(swsContext);
-            free(p_global_bgr_buffer);
         }
         else{
             // 没有发现
-            m_next = Matrix<Array<unsigned char,3>>();
+            m_nextnext = Matrix<Array<unsigned char,3>>();
         }
     }
 
-    if(m_next.isempty()){
-        this->m_isover = true;
+    if(m_nextnext.isempty()){
         output_img_signal->is_final=true;
     }
+
+    av_free_packet(packet);
     av_packet_free(&packet);
     av_frame_free(&frame);
     this->m_frame_count += 1;
+
+    EAGLEEYE_LOGD("extract frame %d (total %d)", this->m_frame_count, this->m_frame_total);
     this->m_first_call = false;
 }
 
@@ -211,19 +228,22 @@ void VideoReadNode::setFilePath(std::string file_path)
 	m_file_path = file_path;
     this->m_frame_count = 0;
     this->m_frame_total = 0;
-    this->m_isover = false;
+    this->m_decoder_finish = false;
     this->m_first_call = true;
     ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
     output_img_signal->is_final=false;
+    m_next = Matrix<Array<unsigned char, 3>>();
+    m_nextnext = Matrix<Array<unsigned char, 3>>();
 	//force time to update
 	modified();
 }
+
 void VideoReadNode::getFilePath(std::string& file_path){
     file_path = this->m_file_path;
 }
 
 bool VideoReadNode::selfcheck(){
-    return !this->m_isover;
+    return !this->m_decoder_finish && (m_file_path.size() > 0);
 }
 
 void VideoReadNode::feadback(std::map<std::string, int>& node_state_map){

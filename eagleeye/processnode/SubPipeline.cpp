@@ -1,6 +1,7 @@
 #include "eagleeye/processnode/SubPipeline.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/AnyPipeline.h"
 namespace eagleeye
 {
 SubPipeline::SubPipeline(){
@@ -20,7 +21,7 @@ SubPipeline::~SubPipeline(){
 }
 
 void SubPipeline::executeNodeInfo(){
-    // 0.step 绑定子管道输入
+    // 1.step 绑定子管道输入
     if(m_input_node_placeholder == NULL){
         m_input_node_placeholder = this->getInputPort(0)->make();
         for(int i=0; i<this->m_input_nodes.size(); ++i){
@@ -28,51 +29,53 @@ void SubPipeline::executeNodeInfo(){
         }
     }
 
-    // 1.step copy input node signal to subpipeline
+    // 2.step copy input node signal to subpipeline
     this->m_input_node_placeholder->copy(this->getInputPort(0));
     for(int i=0; i<this->m_input_nodes.size(); ++i){
         this->m_input_nodes[i]->modified();
     }
 
-    // 2.step run subpipeline
+    // 3.step run subpipeline
     m_output_node->start();
-    // 3.step copy output signal to subpipeline
+    // 4.step copy output signal to subpipeline
     for(int i=0; i<this->m_output_node->getNumberOfOutputSignals(); ++i){
         this->getOutputPort(i)->copy(m_output_node->getOutputPort(i));
     }
 }
 
-void SubPipeline::add(AnyNode* node, std::string name){
+void SubPipeline::add(AnyNode* node, std::string name, PipelineNodeType nodetype){
     m_subpipeline[name] = node;
     m_in_deg[name] = 0;
     m_out_deg[name] = 0;
     node->setUnitName(name.c_str());
-}
 
-void SubPipeline::bind(std::string fromname, int fromport, std::string toname, int toport){
-    if(fromname == "SOURCE"){
-        // 强制源只能一个0端口
-        assert(fromport == 0);
-        this->m_input_nodes.push_back(m_subpipeline[toname]);
-        this->m_input_ports.push_back(toport);
-        // 暂缓绑定subpipeline的输入到对应的节点
-        // 放到具体执行中绑定
-        return;
-    }
-
-    if(toname == "SINK"){
-        if(this->m_output_node != NULL){
-            assert(this->m_output_node == m_subpipeline[fromname]);
-        }
-
-        this->m_output_node = m_subpipeline[fromname];
-        this->m_output_node_name = fromname;
-
+    switch (nodetype)
+    {
+    case SOURCE_NODE:
+        this->m_input_nodes.push_back(node);
+        this->m_input_ports.push_back(0);
+        break;
+    case SINK_NODE:
+        this->m_output_node = node;
+        this->m_output_node_name = name;   
         if(this->getNumberOfOutputSignals() == 0){
             int output_signal_num = this->m_output_node->getNumberOfOutputSignals();
             this->setNumberOfOutputSignals(output_signal_num);
         }
-        this->setOutputPort(this->m_output_node->getOutputPort(fromport)->make(), toport);
+        this->setOutputPort(this->m_output_node->getOutputPort(0)->make(), 0);
+        break;
+    default:
+        break;
+    }
+}
+
+void SubPipeline::bind(std::string fromname, int fromport, std::string toname, int toport){
+    if(m_subpipeline.find(fromname) == m_subpipeline.end()){
+        EAGLEEYE_LOGE("%s node not int subpipeline", fromname.c_str());
+        return;
+    }
+    if(m_subpipeline.find(toname) == m_subpipeline.end()){
+        EAGLEEYE_LOGE("%s node not int subpipeline", toname.c_str());
         return;
     }
 

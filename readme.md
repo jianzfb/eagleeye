@@ -59,10 +59,10 @@ make
         new IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >(2,1);
     
     // 第二步：将节点加入管线
-    test->add(data_source,"data_source");
+    test->add(data_source,"data_source", SOURCE_NODE);
     test->add(a,"a");
     test->add(b,"b");
-    test->add(c,"c");
+    test->add(c,"c", SINK_NODE);
     
     // 第三步：建立节点间的关系（a->c,b->c）
     // 实现 c=a+b

@@ -1,5 +1,5 @@
 #include "eagleeye/processnode/VideoWriteNode.h"
-
+#include "eagleeye/processnode/ImageWriteNode.h"
 #ifdef EAGLEEYE_FFMPEG
 extern "C" { 
 #include "libavformat/avformat.h"
@@ -22,13 +22,12 @@ extern "C" {
 #include "libavutil/bprint.h"
 #include "libavutil/time.h"
 #include "libavutil/threadmessage.h"
-
 #include "libavfilter/avfilter.h"
 #include "libavfilter/buffersrc.h"
 #include "libavfilter/buffersink.h"
 #include "libavutil/frame.h"
 #include "libavcodec/avcodec.h"
-#include <libavformat/avformat.h>
+#include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 }
 namespace  eagleeye
@@ -52,7 +51,8 @@ VideoWriteNode::~VideoWriteNode(){
 } 
 
 void VideoWriteNode::executeNodeInfo(){
-    ImageSignal<Array<unsigned char,3>>* input_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
+    ImageSignal<Array<unsigned char,3>>* input_img_signal = 
+                    (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
     Matrix<Array<unsigned char, 3>> image = input_img_signal->getData();
     if(this->m_file_path.empty()){
         // 未设置输出文件，直接返回
@@ -78,6 +78,7 @@ void VideoWriteNode::executeNodeInfo(){
             EAGLEEYE_LOGD("couldnt build new stream");
             return;
         }
+
         stream->time_base.num = 1;
         stream->time_base.den = 30;
 
@@ -112,6 +113,7 @@ void VideoWriteNode::executeNodeInfo(){
             EAGLEEYE_LOGD("couldnt find encoder");
             return;
         }
+
         if(avcodec_open2(m_codec_cxt,codec,NULL) < 0){
             EAGLEEYE_LOGD("couldnt open encoder");
             return;
@@ -125,8 +127,13 @@ void VideoWriteNode::executeNodeInfo(){
         packet = av_packet_alloc();
         av_new_packet(packet, m_codec_cxt->width * m_codec_cxt->height * 3);        
         frame = av_frame_alloc();
-        av_image_alloc(pointers, linesizes,m_codec_cxt->width, m_codec_cxt->height, AV_PIX_FMT_YUV420P, 32);
-
+        // std::cout<<m_codec_cxt->width<<" "<<m_codec_cxt->height<<std::endl;
+        // std::cout<<linesizes[0]<<" "<<linesizes[1]<<" "<<linesizes[2]<<" "<<linesizes[3]<<std::endl;
+        // av_image_alloc(pointers, linesizes, m_codec_cxt->width, m_codec_cxt->height, AV_PIX_FMT_YUV420P, 32);
+        // std::cout<<frame->data<<std::endl;
+        // std::cout<<frame->linesize<<std::endl;
+        
+        av_image_alloc(frame->data, frame->linesize, m_codec_cxt->width, m_codec_cxt->height,AV_PIX_FMT_YUV420P,32);
         m_is_init = true;
         m_is_finish = false;
     }
@@ -148,15 +155,6 @@ void VideoWriteNode::executeNodeInfo(){
     frame->format = m_codec_cxt->pix_fmt;
     frame->width  = image.cols();
     frame->height = image.rows();
-    frame->data[0] = pointers[0];
-    frame->data[1] = pointers[1];
-    frame->data[2] = pointers[2];
-    frame->data[3] = pointers[3];
-
-    frame->linesize[0] = linesizes[0];
-    frame->linesize[1] = linesizes[1];
-    frame->linesize[2] = linesizes[2];
-    frame->linesize[3] = linesizes[3];
 
     sws_scale(swsContext, rgb_bufer, srcStride, 0, image.rows(), frame->data, frame->linesize);
     sws_freeContext(swsContext);
@@ -174,8 +172,8 @@ void VideoWriteNode::executeNodeInfo(){
         packet->pos = -1;
         av_interleaved_write_frame(m_output_cxt, packet);
 
-        av_packet_unref(packet);
-        av_frame_unref(frame);
+        // av_packet_unref(packet);
+        // av_frame_unref(frame);
     }
 
     if(input_img_signal->is_final){
@@ -213,10 +211,11 @@ void VideoWriteNode::finish(){
 
     av_freep(&frame->data[0]);
     av_frame_free(&frame);
+    av_free_packet(packet);
     av_packet_free(&packet);
+
     frame = NULL;
     packet = NULL;
-
     m_output_cxt = NULL;
     m_codec_cxt = NULL;
     this->m_is_finish = true;

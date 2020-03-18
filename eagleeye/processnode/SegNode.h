@@ -99,9 +99,9 @@ private:
     Matrix<Array<float,3>> m_model_input_f;
     unsigned char* m_temp_ptr;
 
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(segpreprocess);
-#endif
+// #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+//     EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(segpreprocess);
+// #endif
 
 };
 
