@@ -189,14 +189,14 @@
 使用scripts/main.py快速创建插件模板
 
 <pre><code>
-python main.py --project=movingdet \\ 定义要生成的插件名字
+eagleeye-cli project --project=movingdet \\ 定义要生成的插件名字
         --version=1.0.0.0 \\            定义插件版本
         --signature=xxxxx \\            定义插件签名（目前未启用）
         --build_type=Release \\         定义编译版本
         --opencv=OPENCV_PATH \\         定义opencv路径(选择性设置)
         --abi=arm64-v8a \\              定义abi
         --eagleeye=EAGLEEYE_PATH \\     定义eagleeye路径
-        --opencl=1 \\                   定义OPENCL加速(1/0)
+        --opencl=OPENCL_PATH \\         定义OPENCL路径（选择性设置）
         --neon=1                        定义NEON加速(1/0)
 </code></pre>
 

@@ -9,9 +9,9 @@ from __future__ import unicode_literals
 from jinja2 import Environment, FileSystemLoader
 import sys
 import os
-from flags import *
-from prepare import *
-import flags
+from .prepare import *
+from . import flags
+from . import help
 import zipfile
 
 flags.DEFINE_string('project', None, 'project name')
@@ -42,6 +42,11 @@ def main():
     template_file_folder = os.path.join(os.path.dirname(__file__), 'templates')
     file_loader = FileSystemLoader(template_file_folder)
     env = Environment(loader=file_loader)
+
+    if len(sys.argv) < 2 or sys.argv[1] == 'help':
+      help.printhelp()
+      return
+
 
     if(sys.argv[1] == 'node'):
       flags.cli_param_flags(sys.argv[2:])
@@ -110,74 +115,77 @@ def main():
         z.close()
         print("success to build package")
         return
+    elif sys.argv[1] == "project":
+      # 生成插件模板
+      flags.cli_param_flags(sys.argv[2:])
+      project_name = FLAGS.project()
+      if project_name is None:
+        project_name = FLAGS.name()
+      print("generate project %s"%project_name)
 
-    # 生成插件模板
-    flags.cli_param_flags(sys.argv[1:])
-    project_name = FLAGS.project()
-    project_version = FLAGS.version()
-    project_signature = FLAGS.signature()
+      project_version = FLAGS.version()
+      project_signature = FLAGS.signature()
 
-    # 生成插件头文件
-    template = env.get_template('project_plugin_header.template')
-    output = template.render(project=project_name)
+      # 生成插件头文件
+      template = env.get_template('project_plugin_header.template')
+      output = template.render(project=project_name)
 
-    if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
-        os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
-    
-    with open(os.path.join(os.curdir, "%s_plugin"%project_name, '%s_plugin.h'%project_name),'w') as fp:
-      fp.write(output)
+      if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
+          os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
+      
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, '%s_plugin.h'%project_name),'w') as fp:
+        fp.write(output)
 
-    # 生成插件源文件
-    template = env.get_template('project_plugin_source.template')
-    output = template.render(project=project_name,
-                             version=project_version,
-                             signature=project_signature)
+      # 生成插件源文件
+      template = env.get_template('project_plugin_source.template')
+      output = template.render(project=project_name,
+                              version=project_version,
+                              signature=project_signature)
 
-    if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
-        os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
-    
-    with open(os.path.join(os.curdir, "%s_plugin"%project_name, '%s_plugin.cpp'%project_name),'w') as fp:
-      fp.write(output)
+      if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
+          os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
+      
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, '%s_plugin.cpp'%project_name),'w') as fp:
+        fp.write(output)
 
-    # 生成CMakeList.txt
-    template = env.get_template('project_plugin_cmake.template')
-    output = template.render(project=project_name,
-                             eagleeye=FLAGS.eagleeye(),
-                             abi=FLAGS.abi(),
-                             opencv=FLAGS.opencv(),
-                             opencl=FLAGS.opencl(),
-                             neon=FLAGS.neon())
+      # 生成CMakeList.txt
+      template = env.get_template('project_plugin_cmake.template')
+      output = template.render(project=project_name,
+                              eagleeye=FLAGS.eagleeye(),
+                              abi=FLAGS.abi(),
+                              opencv=FLAGS.opencv(),
+                              opencl=FLAGS.opencl(),
+                              neon=FLAGS.neon())
 
-    if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
-        os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
-    
-    with open(os.path.join(os.curdir, "%s_plugin"%project_name, "CMakeLists.txt"),'w') as fp:
-      fp.write(output)
+      if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
+          os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
+      
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, "CMakeLists.txt"),'w') as fp:
+        fp.write(output)
 
-    # 生成build.sh
-    template = env.get_template('project_shell.template')
-    output = template.render(abi=FLAGS.abi(),
-                             build_type=FLAGS.build_type(),
-                             api_level=FLAGS.api_level())
+      # 生成build.sh
+      template = env.get_template('project_shell.template')
+      output = template.render(abi=FLAGS.abi(),
+                              build_type=FLAGS.build_type(),
+                              api_level=FLAGS.api_level())
 
-    if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
-        os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
-    
-    with open(os.path.join(os.curdir, "%s_plugin"%project_name, "build.sh"),'w') as fp:
-      fp.write(output)
+      if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
+          os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
+      
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, "build.sh"),'w') as fp:
+        fp.write(output)
 
-    # 生成demo.cpp
-    template = env.get_template('project_demo.template')
-    output = template.render(project=project_name)
+      # 生成demo.cpp
+      template = env.get_template('project_demo.template')
+      output = template.render(project=project_name)
 
-    if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
-        os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
-    
-    with open(os.path.join(os.curdir, "%s_plugin"%project_name, '%s_demo.cpp'%project_name),'w') as fp:
-      fp.write(output)
+      if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
+          os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
+      
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, '%s_demo.cpp'%project_name),'w') as fp:
+        fp.write(output)
 
-    # 生成说明文档
-    
+      # 生成说明文档
 
 if __name__ == '__main__':
   main()

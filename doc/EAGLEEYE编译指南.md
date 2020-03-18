@@ -17,7 +17,7 @@ EAGLEEYE核心库的工程配置在eagleeye/CmakeLists.txt中定义。主要包�
     构建时外部指定 -DNN_ENGINE=snpe -DSNPE_PATH=/your folder/snpe-1.35.0.698/
 
 * OPENCL加速开启\关闭
-    构建时外部指定 -DOPENCL=True。将会添加EAGLEEYE_OPENCL_OPTIMIZATION宏定义。所有存在OPENCL加速的模块，将启动OPENCL计算。
+    构建时外部指定 -DOPENCL=OPENCL_PATH。将会添加EAGLEEYE_OPENCL_OPTIMIZATION宏定义。所有存在OPENCL加速的模块，将启动OPENCL计算。
 
 * NEON加速开启\关闭
     构建时外部指定 -DANDROID_ABI=arm64-v8a。对于构建ARM端应用，将自动添加EAGLEEYE_NEON_OPTIMIZATION宏定义。所有存在NEON加速的模块，将启动NEON计算。
@@ -28,7 +28,7 @@ EAGLEEYE核心库的工程配置在eagleeye/CmakeLists.txt中定义。主要包�
 编译64位ARM核心库，使用如下命令：
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=True -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DNN_ENGINE=snpe -DSNPE_PATH=/your path/snpe-1.35.0.698/ -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=OPENCL_PATH -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DNN_ENGINE=snpe -DSNPE_PATH=/your path/snpe-1.35.0.698/ -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
 make
 编译后生成libeagleeye.so 核心库。
 
@@ -36,14 +36,14 @@ make
 使用在eagleeye/scripts下的脚本，可以快速创建算法插件工程，比如创建实现运动检测的算法插件，调用:
 
 <pre><code>
-python main.py --project=movingdet \\ 定义要生成的插件名字
+eagleeye-cli project --project=movingdet \\ 定义要生成的插件名字
         --version=1.0.0.0 \\            定义插件版本
         --signature=xxxxx \\            定义插件签名（目前未启用）
         --build_type=Release \\         定义编译版本
         --opencv=OPENCV_PATH \\         定义opencv路径(选择性设置)
         --abi=arm64-v8a \\              定义abi
         --eagleeye=EAGLEEYE_PATH \\     定义eagleeye路径
-        --opencl=1 \\                   定义OPENCL加速(1/0)
+        --opencl=OPENCL_PATH \\         定义OPENCL路径（选择性设置）
         --neon=1                        定义NEON加速(1/0)
 </code></pre>
 

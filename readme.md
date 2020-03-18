@@ -15,14 +15,20 @@ make
 
 注意：需要提前安装Android NDK。
 
-####快速入手
-* 创建算法管线插件模板
-    调用脚本
-    <pre><code>
-    python main.py --project=your plugin --version=1.0.0.0  --signature=xxxxxxxxxx
-    </code></pre>
+####EAGLEEYE项目脚手架
+安装脚手架
+```shell
+cd scripts
+pip3 install -r requirements.txt
+python3 setup.py install
+```
 
-    生成开发模板（--project=test），实现c=a+b功能
+####快速入手
+* 创建工程模板(实现c=a+b)
+    ```shell
+    eagleeye-cli project --project=YOUR_PLUGIN --version=1.0.0.0  --signature=xxxxxxxxxx
+    ```
+
     <pre><code>
     test_plugin
         - test_plugin.h
@@ -76,7 +82,7 @@ make
 * 创建自定义数据处理节点
     调用脚本
     ```c++
-    python node --name=NODE --inputport=A,B --outputport=C 
+    eagleeye-cli node --name=NODE --inputport=A,B --outputport=C 
     ```
     
 
