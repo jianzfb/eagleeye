@@ -307,6 +307,15 @@ void AnyPipeline::saveConfigure(std::string config_file){
 void AnyPipeline::setParameter(const char* node_name, 
                                const char* param_name, 
                                const void* value){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("node name is empty");
+        return;
+    }
+    if(param_name == NULL || strcmp(param_name, "") == 0){
+        EAGLEEYE_LOGE("param name is empty");
+        return;
+    }
+    
     // node_name/{}/param_name
     bool issuccess=false;
     std::map<std::string, AnyMonitor*>::iterator iter, iend(this->m_monitor_params.end());
@@ -331,6 +340,15 @@ void AnyPipeline::setParameter(const char* node_name,
 void AnyPipeline::getParameter(const char* node_name, 
                                const char* param_name,
                                void* value){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("node name is empty");
+        return;
+    }
+    if(param_name == NULL || strcmp(param_name, "") == 0){
+        EAGLEEYE_LOGE("param name is empty");
+        return;
+    }
+
     // node_name/{}/param_name
     std::map<std::string, AnyMonitor*>::iterator iter, iend(this->m_monitor_params.end());
     for(iter = this->m_monitor_params.begin(); iter != iend; ++iter){
@@ -355,7 +373,12 @@ void AnyPipeline::setInput(const char* node_name,
                            const int* data_size, 
                            const int data_dims,
                            const int data_type){
-    std::string input_key = std::string(node_name);
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("node name is empty");
+        return;
+    }
+
+    std::string input_key = std::string(node_name);    
     int port = 0;
     if(input_key.find("/") != std::string::npos){
         std::vector<std::string> kterms = split(input_key, "/");
@@ -387,6 +410,11 @@ void AnyPipeline::getOutput(const char* node_name,
                             int* data_size, 
                             int& data_dims,
                             int& data_type){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("node name is empty");
+        return;
+    }
+
     std::string output_key = std::string(node_name);
     int port = 0;
     if(output_key.find("/") != std::string::npos){
@@ -404,6 +432,11 @@ void AnyPipeline::getOutput(const char* node_name,
 }
 
 void AnyPipeline::getNodeOutput(const char* node_name, void*& data, int* data_size, int& data_dims, int& data_type){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("node name is empty");
+        return;
+    }
+    
     std::string output_key = std::string(node_name);
     int port = 0;
     if(output_key.find("/") != std::string::npos){
