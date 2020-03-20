@@ -130,7 +130,7 @@ public:
 	 * @param input_name 
 	 * @return void* 
 	 */
-	void* getInputPtr(std::string input_name){return NULL;};
+	virtual void* getInputPtr(std::string input_name){return NULL;};
 
 protected:
 	int m_omp_num_threads;

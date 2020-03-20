@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include "eagleeye/engine/model_engine.h"
+#include "eagleeye/common/EagleeyeLog.h"
 #ifdef EAGLEEYE_MACE_SUPPORT
 #include "eagleeye/engine/mace_run.h"
 #elif EAGLEEYE_TF_SUPPORT
@@ -35,7 +36,7 @@ public:
 				 omp_num_threads,
 				 cpu_affinity_policy,
 				 writable_path){
-		std::cout<<"hello"<<std::endl;
+		EAGLEEYE_LOGD("do nothing in <constructor> (empty engine)");
 	}
 	/**
 	 * 
@@ -50,13 +51,18 @@ public:
 	 * @return         {boolean} true or false
 	 */
 	virtual bool run(std::map<std::string, unsigned char*> inputs, 
-					 std::map<std::string, unsigned char*>& outputs){}
+					 std::map<std::string, unsigned char*>& outputs){
+		EAGLEEYE_LOGD("do nothing in <run> func (empty engine)");
+		return false;
+	}
 
 	/**
 	 * [initialize description]
 	 * @return [description]
 	 */
-	virtual bool initialize(){};
+	virtual bool initialize(){
+		EAGLEEYE_LOGD("do nothing in <initialize> func (empty engine)");
+	};
 
 protected:
 	std::vector<std::string> m_input_names;

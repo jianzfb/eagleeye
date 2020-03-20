@@ -155,6 +155,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp
+    eagleeye/engine/nn_run.cpp
     eagleeye/common/EagleeyeFile.cpp 
     eagleeye/common/EagleeyeTime.cpp 
     eagleeye/common/EagleeyeProcessor.cpp

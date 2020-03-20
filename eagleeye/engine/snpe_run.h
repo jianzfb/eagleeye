@@ -1,9 +1,6 @@
 #ifndef _SNPE_MODEL_RUN_H_
 #define _SNPE_MODEL_RUN_H_
 #ifdef EAGLEEYE_SNPE_SUPPORT
-#include <string>
-#include <map>
-#include <vector>
 #include "eagleeye/engine/model_engine.h"
 #include "SNPE/SNPE.hpp"
 #include "SNPE/SNPEBuilder.hpp"
@@ -20,6 +17,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <map>
 #include<memory> 
 
 namespace eagleeye{
@@ -70,7 +68,7 @@ public:
 	 * @param input_name 
 	 * @return void* 
 	 */
-	void* getInputPtr(std::string input_name);
+	virtual void* getInputPtr(std::string input_name);
 
 protected:
 	/**
