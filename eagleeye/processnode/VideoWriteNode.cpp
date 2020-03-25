@@ -41,6 +41,9 @@ VideoWriteNode::VideoWriteNode(){
     this->m_fps = 0;
     m_output_cxt = NULL;
     m_codec_cxt = NULL;
+    stream = NULL;
+    packet = NULL;
+    frame = NULL;
     avcodec_register_all();
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
 }   

@@ -47,6 +47,8 @@ VideoReadNode::VideoReadNode(){
     this->m_decoder_finish = false;
     this->m_first_call = true;
 
+    m_avf_cxt = NULL;
+    m_avc_cxt = NULL;
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
 }   
 
@@ -76,7 +78,6 @@ void VideoReadNode::executeNodeInfo(){
     if(m_decoder_finish){
         return;
     }
-
     // 0.step 解析视频
     if(this->m_frame_total == 0){
         // 解析新视频
@@ -88,9 +89,9 @@ void VideoReadNode::executeNodeInfo(){
             avcodec_close(m_avc_cxt);
             m_avc_cxt = NULL;
         }
-
         m_avf_cxt = avformat_alloc_context();
         int ret = avformat_open_input(&m_avf_cxt,m_file_path.c_str(),NULL,NULL);
+
         if(ret < 0){
             EAGLEEYE_LOGD("couldnt open video file");
             avformat_free_context(m_avf_cxt);
