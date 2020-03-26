@@ -1,5 +1,6 @@
 #include "eagleeye/processnode/VideoReadNode.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/framework/pipeline/SignalFactory.h"
 
 #ifdef EAGLEEYE_FFMPEG
 extern "C" { 
@@ -64,6 +65,12 @@ VideoReadNode::~VideoReadNode(){
 }
 
 void VideoReadNode::executeNodeInfo(){
+    if((m_decoder_finish || m_first_call) && this->getNumberOfInputSignals() > 0){
+        StringSignal* input_sig = (StringSignal*)(this->getInputPort(0));
+        std::string video_path = input_sig->getData();
+        this->setFilePath(video_path);
+    }
+
     ImageSignal<Array<unsigned char,3>>* output_img_signal = 
                     (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
     if(!m_next.isempty()){
@@ -76,6 +83,7 @@ void VideoReadNode::executeNodeInfo(){
         }
     }
     if(m_decoder_finish){
+        output_img_signal->is_final = false;
         return;
     }
     // 0.step 解析视频
@@ -243,20 +251,14 @@ void VideoReadNode::getFilePath(std::string& file_path){
     file_path = this->m_file_path;
 }
 
-bool VideoReadNode::selfcheck(){
-    return !this->m_decoder_finish && (m_file_path.size() > 0);
-}
-
 void VideoReadNode::feadback(std::map<std::string, int>& node_state_map){
-    // 1.step call base feadback
-    Superclass::feadback(node_state_map);
-
-    // 2.step whether need to update
-    if(!m_next.isempty()){
+    if(m_decoder_finish){
+        Superclass::feadback(node_state_map);
+    }
+    else if(!m_next.isempty()){
         this->modified();
     }
 }
-
 } // namespace  eagleeye
 
 #endif

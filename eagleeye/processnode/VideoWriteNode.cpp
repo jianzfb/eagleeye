@@ -1,5 +1,7 @@
 #include "eagleeye/processnode/VideoWriteNode.h"
 #include "eagleeye/processnode/ImageWriteNode.h"
+#include "eagleeye/common/EagleeyeFile.h"
+#include "eagleeye/common/EagleeyeTime.h"
 #ifdef EAGLEEYE_FFMPEG
 extern "C" { 
 #include "libavformat/avformat.h"
@@ -46,6 +48,10 @@ VideoWriteNode::VideoWriteNode(){
     frame = NULL;
     avcodec_register_all();
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
+    this->m_prefix = "video_";
+    this->m_folder = "./";
 }   
 VideoWriteNode::~VideoWriteNode(){
     if(!this->m_is_finish){
@@ -58,30 +64,34 @@ void VideoWriteNode::executeNodeInfo(){
                     (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
     Matrix<Array<unsigned char, 3>> image = input_img_signal->getData();
     if(this->m_file_path.empty()){
-        // 未设置输出文件，直接返回
-        return;
+        if(this->m_folder != "./"){
+            if(!isdirexist(this->m_folder.c_str())){
+                createdirectory(this->m_folder.c_str());
+            }
+        }
+
+        this->setFilePath(this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp()+".mp4");
+        EAGLEEYE_LOGD("video path %s", this->m_file_path.c_str());
     }
 
     if(!this->m_is_init){
-        //新建一个输出的AVFormatContext 并分配内存
+        EAGLEEYE_LOGD("initial new video write");
+        //新建一个输出的AVFormatContext并分配内存
         m_output_cxt = avformat_alloc_context();
         AVOutputFormat* fmt = av_guess_format(NULL, this->m_file_path.c_str(), NULL);
         m_output_cxt->oformat = fmt;
-
         //创建和初始化一个和该URL相关的AVIOContext
         if(avio_open(&m_output_cxt->pb,this->m_file_path.c_str(),AVIO_FLAG_READ_WRITE) < 0){
             EAGLEEYE_LOGD("couldnt open write file");
             avformat_free_context(m_output_cxt);
             return;
         }
-
         //构建新的Stream
         stream = avformat_new_stream(m_output_cxt, NULL);
         if(stream == NULL){
             EAGLEEYE_LOGD("couldnt build new stream");
             return;
         }
-
         stream->time_base.num = 1;
         stream->time_base.den = 30;
 
@@ -116,7 +126,6 @@ void VideoWriteNode::executeNodeInfo(){
             EAGLEEYE_LOGD("couldnt find encoder");
             return;
         }
-
         if(avcodec_open2(m_codec_cxt,codec,NULL) < 0){
             EAGLEEYE_LOGD("couldnt open encoder");
             return;
@@ -189,13 +198,35 @@ void VideoWriteNode::executeNodeInfo(){
 
 void VideoWriteNode::setFilePath(std::string file_path){
     if(!this->m_is_finish){
-        this->finish();
+        EAGLEEYE_LOGD("force finish in setfilepath");
+        assert(1==0);
+        exit();
+        this->finish();        
     }
 
     this->m_is_init = false;
     this->m_file_path = file_path;
     this->m_is_finish = true;
     this->m_fps = 0;
+}
+
+void VideoWriteNode::getFilePath(std::string& file_path){
+    file_path = this->m_file_path;
+}
+
+void VideoWriteNode::setPrefix(std::string prefix){
+    this->m_prefix = prefix;
+}
+
+void VideoWriteNode::getPrefix(std::string& prefix){
+    prefix = this->m_prefix;
+}
+
+void VideoWriteNode::setFolder(std::string folder){
+    this->m_folder = folder;
+}
+void VideoWriteNode::getFolder(std::string& folder){
+    folder = this->m_folder;
 }
 
 void VideoWriteNode::finish(){
@@ -222,6 +253,10 @@ void VideoWriteNode::finish(){
     m_output_cxt = NULL;
     m_codec_cxt = NULL;
     this->m_is_finish = true;
+
+    // static int ss = 0;
+    // EAGLEEYE_LOGD("ss is %d", ss);
+    // ss += 1;
 }
 
 int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_index)

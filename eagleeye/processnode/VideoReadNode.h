@@ -58,11 +58,6 @@ public:
     virtual void setFilePath(std::string file_path);
     virtual void getFilePath(std::string& file_path);
 
-    /**
-	 *	@brief data is ok
-	 */
-	virtual bool selfcheck();
-
 private:
     VideoReadNode(const VideoReadNode&);
     void operator=(const VideoReadNode&);

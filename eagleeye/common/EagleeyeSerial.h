@@ -35,7 +35,14 @@ public:
 	 * 
 	 * @return int64_t 
 	 */
-	virtual int64_t count();
+	int64_t count();
+
+	/**
+	 * @brief current index
+	 * 
+	 * @return int64_t 
+	 */
+	int64_t cur();
 
 protected:
 	std::string formatName(const std::string input);

@@ -2,11 +2,13 @@
 #define _EAGLEEYETIME_H_
 #include<sys/time.h>
 #include "eagleeye/common/EagleeyeLog.h"
+#include <string>
 
 namespace eagleeye{
 class EagleeyeTime{
 public:
 	static long getCurrentTime();	
+	static std::string getTimeStamp();
 };
 
 #ifndef EAGLEEYE_TIME_LOGD

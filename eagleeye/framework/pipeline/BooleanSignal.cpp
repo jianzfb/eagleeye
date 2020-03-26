@@ -37,6 +37,7 @@ typename BooleanSignal::DataType BooleanSignal::getData(){
 
 void BooleanSignal::setData(BooleanSignal::DataType data){
 	this->m_boolean = data;
+	modified();
 }
 
 } // namespace eagleeye

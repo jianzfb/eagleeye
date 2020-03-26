@@ -7,6 +7,7 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/MetaOperation.h"
+#include <string>
 
 class AVFormatContext;
 class AVCodecContext;
@@ -47,7 +48,23 @@ public:
      * @param file_path 
      */
     virtual void setFilePath(std::string file_path);
-    virtual void getFilePath(std::string& file_path){};
+    virtual void getFilePath(std::string& file_path);
+
+    /**
+     * @brief Set/Get the Prefix object
+     * 
+     * @param prefix 
+     */
+    virtual void setPrefix(std::string prefix);
+    virtual void getPrefix(std::string& prefix);
+
+    /**
+     * @brief Set/Get the Prefix object
+     * 
+     * @param prefix 
+     */
+    virtual void setFolder(std::string folder);
+    virtual void getFolder(std::string& folder);
 
 private:
     VideoWriteNode(const VideoWriteNode&);
@@ -76,6 +93,9 @@ private:
     AVStream* stream;
     AVPacket* packet;
     AVFrame* frame;
+
+    std::string m_prefix;
+    std::string m_folder;
 };
 }
 #endif

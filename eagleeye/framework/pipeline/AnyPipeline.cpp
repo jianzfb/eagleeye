@@ -179,6 +179,9 @@ void AnyPipeline::bind(const char* node_a,
 
     AnyNode* node_a_ptr = this->m_nodes[std::string(node_a)];
     AnyNode* node_b_ptr = this->m_nodes[std::string(node_b)];
+    if(node_b_ptr->getNumberOfInputSignals() < port_b+1){
+        node_b_ptr->setNumberOfInputSignals(port_b+1);
+    }
     node_b_ptr->setInputPort(node_a_ptr->getOutputPort(port_a), port_b);
 }
 

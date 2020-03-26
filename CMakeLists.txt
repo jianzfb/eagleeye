@@ -152,6 +152,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageWriteNode.cpp
     eagleeye/processnode/ImageReadNode.cpp
     eagleeye/processnode/HistogramEqualizationNode.cpp
+    eagleeye/processnode/ReadLineFromfileNode.cpp
+    eagleeye/processnode/SerialStringNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp
@@ -165,6 +167,7 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/AnySignal.cpp 
     eagleeye/framework/pipeline/AnyUnit.cpp 
     eagleeye/framework/pipeline/BooleanSignal.cpp
+    eagleeye/framework/pipeline/StringSignal.cpp
     eagleeye/common/EagleeyeLog.cpp 
     eagleeye/engine/snpe_run.cpp 
     eagleeye/engine/model_engine.cpp 

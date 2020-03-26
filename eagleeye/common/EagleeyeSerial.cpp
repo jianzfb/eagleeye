@@ -66,4 +66,8 @@ std::string SerialStringReader::next(){
 int64_t SerialStringReader::count(){
 	return this->m_count;
 }	
+
+int64_t SerialStringReader::cur(){
+	return this->m_current_index;
+}
 }

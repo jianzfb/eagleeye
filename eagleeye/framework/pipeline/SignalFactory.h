@@ -5,6 +5,7 @@
 
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/framework/pipeline/BooleanSignal.h"
+#include "eagleeye/framework/pipeline/StringSignal.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/type.h"
