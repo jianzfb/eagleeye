@@ -13,7 +13,7 @@ ImageReadNode::ImageReadNode(){
 	this->setNumberOfOutputSignals(1);
 	this->setOutputPort(new ImageSignal<Array<unsigned char,3>>,0);
 
-    EAGLEEYE_MONITOR_VAR(std::string, setImagePath, getImagePath, "image","", "");
+    EAGLEEYE_MONITOR_VAR(std::string, setImagePath, getImagePath, "file","", "");
 }
 
 ImageReadNode::~ImageReadNode(){
@@ -22,8 +22,15 @@ ImageReadNode::~ImageReadNode(){
 
 void ImageReadNode::executeNodeInfo(){
     if(this->m_image_path == ""){
-        EAGLEEYE_LOGD("image path is empty");
-        return;
+        if(this->getNumberOfInputSignals() > 0){
+            StringSignal* input_sig = (StringSignal*)(this->getInputPort(0));
+            std::string image_path = input_sig->getData();
+            this->setImagePath(image_path);
+        }
+        else{
+            EAGLEEYE_LOGD("dont set image path");
+            return;
+        }
     }
 
     if(!isfileexist(this->m_image_path.c_str())){
