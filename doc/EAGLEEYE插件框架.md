@@ -284,7 +284,7 @@ std::string str_value;
 eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &str_value);
 ```
 
-* 获取插件输入列表
+* 获取插件输入节点配置
 ```c++
 // 函数原型
 // bool eagleeye_pipeline_get_input_config(const char* pipeline_name,
@@ -316,7 +316,7 @@ eagleeye_pipeline_get_input_config(pipeline_name.c_str(), input_nodes, input_typ
 	"EAGLEEYE_CAPTURE_MASK"	 数据绘制手指绘制的mask
 	"EAGLEEYE_CAPTURE_VIDEO_IMAGE"  数据来源视频
 
-* 获取插件输出列表
+* 获取插件输出节点配置
 ```c++
 // 函数原型
 // bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
@@ -330,6 +330,20 @@ std::vector<std::string> output_targets;
 eagleeye_pipeline_get_output_config(pipeline_name.c_str(), output_nodes, output_types, output_targets);
 ```
 其中，output_nodes存储着输出节点名字，output_types存储着输出节点数据种类（定义见上一节），output_targets输出节点输出位置（定义见上一节，需要上层APP支持）。
+
+* 加载/保存插件参数配置
+```c++
+// 加载插件参数配置函数原型
+// bool eagleeye_pipeline_load_config(const char* pipeline_name, const char* config_file);
+const char* config_file = "../pipeline_config.bin";
+eagleeye_pipeline_load_config(pipeline_name.c_str(), config_file);
+
+
+// 保存插件参数配置函数原型
+// bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config_file);
+const char* config_file = "../pipeline_config.bin";
+eagleeye_pipeline_save_config(pipeline_name.c_str(), config_file);
+```
 
 
 ####快速生成插件代码模板
@@ -360,7 +374,7 @@ movingdet_plugin
 开发者可以直接在自动生成的模板下进行插件开发。调用build.sh后，将会构建插件和对应DEMO工程。
 
 
-####特定算法插件直接集成/调用
+####特定算法插件集成/调用
 在一些特定应用中，不需要支持动态加载插件的能力。此时可以直接使用插件特有接口，实现算法调用。在这种集成方式下，编译出的插件.so文件需要静态链接进工程中。
 
 以上面自动生成的插件模板（movingdet）为例，插件特有接口定义在movingdet_plugin.h中。
@@ -437,10 +451,11 @@ extern "C"{
      * @param data data pointer
      * @param data_size dimension (H,W,C)
      * @param data_dims dimension number
+     * @param data_type data type
      * @return true 
      * @return false 
      */
-    bool eagleeye_movingdet_set_input(const char* node_name, void* data, const int* data_size, const int data_dims);
+    bool eagleeye_movingdet_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type);
 
     /**
      * @brief get output data from movingdet output node
@@ -456,7 +471,16 @@ extern "C"{
     bool eagleeye_movingdet_get_output(const char* node_name, void*& data, int* data_size, int& data_dims,int& data_type);
 }
 ```
-
+进入这些针对插件特有接口的实现中可以看到，其内部仅是使用固定的插件名字来调用上一节中对应的通用接口。比如，管线重置函数
+```c++
+eagleeye_movingdet_reset()
+```
+其内部的实现是
+```c++
+    bool eagleeye_movingdet_reset(){ 
+        return eagleeye_pipeline_reset("movingdet");
+    } 
+```
 在集成时，依然分为三个步骤
 
 * 插件初始化
@@ -468,7 +492,7 @@ extern "C"{
     // 第一步：设置输入
     void* data = image.data;
     int data_size[] = {image.rows, image.cols, 3}; 
-    eagleeye_movingdet_set_input("data_source", data, data_size, 3);
+    eagleeye_movingdet_set_input("data_source", data, data_size, 3，8);
     // 第二步：驱动管线运行
     eagleeye_movingdet_run();
     ```

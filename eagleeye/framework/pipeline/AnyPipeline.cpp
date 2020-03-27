@@ -191,6 +191,11 @@ void AnyPipeline::loadConfigure(std::string config_file){
 
     // 2.step load parameter of pipeline
     FILE* fp = fopen(config_file.c_str(), "rb");
+    if(fp == NULL){
+        EAGLEEYE_LOGD("configure file %s donot exist", config_file.c_str());
+        return;
+    }
+
     // 2.1.step load pipeline name
     int name_size;
     fread(&name_size, 1, sizeof(int), fp);
@@ -261,6 +266,10 @@ void AnyPipeline::saveConfigure(std::string config_file){
 
     EAGLEEYE_LOGD("write pipeline %s configure to file", this->m_name.c_str());
     FILE* fp = fopen(config_file.c_str(),"wb");
+    if(fp == NULL){
+        EAGLEEYE_LOGD("couldnt build file");
+        return;
+    }
     // 1.step save structure of pipeline
 
     // 2.step save parameter of pipeline
