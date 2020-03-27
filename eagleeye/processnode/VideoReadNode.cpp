@@ -1,6 +1,7 @@
 #include "eagleeye/processnode/VideoReadNode.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/basic/MatrixMath.h"
 
 #ifdef EAGLEEYE_FFMPEG
 extern "C" { 
@@ -24,6 +25,7 @@ extern "C" {
 #include "libavutil/bprint.h"
 #include "libavutil/time.h"
 #include "libavutil/threadmessage.h"
+#include "libavutil/dict.h"
 
 #include "libavfilter/avfilter.h"
 #include "libavfilter/buffersrc.h"
@@ -83,7 +85,7 @@ void VideoReadNode::executeNodeInfo(){
         }
     }
     if(m_decoder_finish){
-        output_img_signal->is_final = false;
+        output_img_signal->meta()->is_end_frame = false;
         return;
     }
     // 0.step 解析视频
@@ -156,9 +158,22 @@ void VideoReadNode::executeNodeInfo(){
             return;
         }
 
-        output_img_signal->fps = this->m_video_fps;
-        output_img_signal->nb_frames = this->m_frame_total;
+        output_img_signal->meta()->fps = this->m_video_fps;
+        output_img_signal->meta()->nb_frames = this->m_frame_total;
+
+        AVDictionaryEntry *tag = NULL;
+        tag = av_dict_get(m_avf_cxt->streams[m_stream_index]->metadata,"rotate", tag, 0);
+        if (tag==NULL){
+            m_rotate_degree = 0;
+        }
+        else{
+            int angle = atoi(tag->value);
+            angle %= 360;
+            m_rotate_degree = angle;
+        }
     }
+
+    EAGLEEYE_LOGD("video direction %d", m_rotate_degree);
 
     // 1.step 逐帧解析
     //为avpacket分配内存
@@ -197,8 +212,8 @@ void VideoReadNode::executeNodeInfo(){
             Matrix<Array<unsigned char,3>> frame_rgb_data(frame->height, frame->width);
             uint8_t* rgb_buffer[1] = {(uint8_t*)frame_rgb_data.dataptr()};
             int rgb_stride[1] = { 3 * frame->width};
-
             sws_scale(swsContext, frame->data, frame->linesize, 0, frame->height, rgb_buffer, rgb_stride);
+            output_img_signal->meta()->rotation = this->m_rotate_degree;
             if(index==0 && iterator_count==3){
                 // 首次调用,直接输出赋值
                 output_img_signal->setData(frame_rgb_data);
@@ -220,7 +235,7 @@ void VideoReadNode::executeNodeInfo(){
     }
 
     if(m_nextnext.isempty()){
-        output_img_signal->is_final=true;
+        output_img_signal->meta()->is_end_frame=true;
     }
 
     av_free_packet(packet);
@@ -240,7 +255,7 @@ void VideoReadNode::setFilePath(std::string file_path)
     this->m_decoder_finish = false;
     this->m_first_call = true;
     ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
-    output_img_signal->is_final=false;
+    output_img_signal->meta()->is_end_frame=false;
     m_next = Matrix<Array<unsigned char, 3>>();
     m_nextnext = Matrix<Array<unsigned char, 3>>();
 	//force time to update

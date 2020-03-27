@@ -575,6 +575,30 @@ Matrix<float> outer(Matrix<float> a, Matrix<float> b);
  */
 Matrix<Array<unsigned char,3>> warp(Matrix<Array<unsigned char,3>> img, Matrix<Array<float,2>> op_flow);
 
+/**
+ * @brief rotation90 
+ * 
+ * @param img 
+ * @return Matrix<Array<unsigned char,3>> 
+ */
+Matrix<Array<unsigned char,3>> rotation90right(Matrix<Array<unsigned char,3>> img);
+
+/**
+ * @brief rotation180 
+ * 
+ * @param img 
+ * @return Matrix<Array<unsigned char,3>> 
+ */
+Matrix<Array<unsigned char,3>> rotation180right(Matrix<Array<unsigned char,3>> img);
+
+/**
+ * @brief rotation270
+ * 
+ * @param img 
+ * @return Matrix<Array<unsigned char,3>> 
+ */
+Matrix<Array<unsigned char,3>> rotation270right(Matrix<Array<unsigned char,3>> img);
+
 /********************* MatrixMath CL version **************************************/
 
 // /**

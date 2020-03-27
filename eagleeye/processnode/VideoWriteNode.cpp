@@ -188,7 +188,7 @@ void VideoWriteNode::executeNodeInfo(){
         // av_frame_unref(frame);
     }
 
-    if(input_img_signal->is_final){
+    if(input_img_signal->meta()->is_end_frame){
         // 当前是视频流的最后一帧
         this->m_file_path = "";
         this->m_is_finish = true;

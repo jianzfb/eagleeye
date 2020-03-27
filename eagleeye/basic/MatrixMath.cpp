@@ -716,4 +716,171 @@ void resize(const Matrix<float> input,
 							output_c, 
 							output_r);
 }
+
+void _rotation90right(unsigned char* src, int x_offset, int y_offset, int stride, unsigned char* dst, int srcW, int srcH, int channel){
+    int i, j, offset, start;
+    if (channel == 1) {
+        start = srcH - 1;
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;
+            offset = start - i;
+            for (j = 0; j < srcW; j++) {
+                //dst[j * srcH + (srcH - 1 - i)] = *src++;
+                dst[offset] = *src_ptr++;
+                offset += srcH;
+            }
+        }
+    } else if (channel == 3) {
+        start = 3 * (srcH - 1);
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;
+            offset = start - (i << 1) - i;
+            for (j = 0; j < srcW; j++) {
+                //dst[(j * srcH + (srcH - 1 - i)) * 3 + 0] = *src++;
+                //dst[(j * srcH + (srcH - 1 - i)) * 3 + 1] = *src++;
+                //dst[(j * srcH + (srcH - 1 - i)) * 3 + 2] = *src++;
+                dst[offset + 0] = *src_ptr++;
+                dst[offset + 1] = *src_ptr++;
+                dst[offset + 2] = *src_ptr++;
+                offset += (srcH << 1) + srcH; //3 * srcH;
+            }
+        }
+    } else if(channel == 4){
+        start = 4 * (srcH - 1);
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;
+            offset = start - (i << 2);
+            for (j = 0; j < srcW; j++) {
+                dst[offset + 0] = *src_ptr++;
+                dst[offset + 1] = *src_ptr++;
+                dst[offset + 2] = *src_ptr++;
+                dst[offset + 3] = *src_ptr++;
+                offset += (srcH << 2); //4 * srcH;
+            }
+        }
+    }
+}
+
+void _rotation180right(unsigned char* src, int x_offset, int y_offset, int stride, unsigned char* dst, int srcW, int srcH, int channel) {
+    int i, j, offset;
+    if (channel == 1) {
+        offset = srcH * srcW - 1;
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;
+            for (j = 0; j < srcW; j++) {
+                //dst[(srcH - 1 - i) * srcW + (srcW - 1 - j)] = *src++;
+                dst[offset] = *src_ptr++;
+                offset -= 1;
+            }
+        }
+    } else if (channel == 3) {
+        offset = 3 * (srcH * srcW - 1);
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;			
+            for (j = 0; j < srcW; j++) {
+                //dst[((srcH - 1 - i) * srcW + (srcW - 1 - j)) * 3 + 0] = *src++;
+                //dst[((srcH - 1 - i) * srcW + (srcW - 1 - j)) * 3 + 1] = *src++;
+                //dst[((srcH - 1 - i) * srcW + (srcW - 1 - j)) * 3 + 2] = *src++;
+                dst[offset + 0] = *src_ptr++;
+                dst[offset + 1] = *src_ptr++;
+                dst[offset + 2] = *src_ptr++;
+                offset -= 3;
+            }
+        }
+    } else if(channel == 4){
+        offset = 4 * (srcH * srcW - 1);
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;			
+            for (j = 0; j < srcW; j++) {
+                //dst[((srcH - 1 - i) * srcW + (srcW - 1 - j)) * 3 + 0] = *src++;
+                //dst[((srcH - 1 - i) * srcW + (srcW - 1 - j)) * 3 + 1] = *src++;
+                //dst[((srcH - 1 - i) * srcW + (srcW - 1 - j)) * 3 + 2] = *src++;
+                dst[offset + 0] = *src_ptr++;
+                dst[offset + 1] = *src_ptr++;
+                dst[offset + 2] = *src_ptr++;
+                dst[offset + 3] = *src_ptr++;
+                offset -= 4;
+            }
+        }
+    }
+
+}
+
+void _rotation270right(unsigned char* src, int x_offset, int y_offset, int stride,unsigned char* dst, int srcW, int srcH, int channel) {
+    int i, j, offset, start;
+    if (channel == 1) {
+        start = (srcW - 1) * srcH;
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;			
+            offset = start + i;
+            for (j = 0; j < srcW; j++) {
+                //dst[(srcW - 1 - j) * srcH + i] = *src++;
+                dst[offset] = *src_ptr++;
+                offset -= srcH;
+            }
+        }
+    } else if (channel == 3) {
+        start = 3 * (srcW - 1) * srcH;
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;			
+            offset = start + (i << 1) + i; //3 * i
+            for (j = 0; j < srcW; j++) {
+                //dst[((srcW - 1 - j) * srcH + i) * 3 + 0] = *src++;
+                //dst[((srcW - 1 - j) * srcH + i) * 3 + 1] = *src++;
+                //dst[((srcW - 1 - j) * srcH + i) * 3 + 2] = *src++;
+                dst[offset + 0] = *src_ptr++;
+                dst[offset + 1] = *src_ptr++;
+                dst[offset + 2] = *src_ptr++;
+                offset -= ((srcH << 1) + srcH); //3 * srcH;
+            }
+        }
+    } else if(channel == 4){
+        start = 4 * (srcW - 1) * srcH;
+        for (i = 0; i < srcH; i++) {
+			unsigned char* src_ptr = src + (y_offset+i) * stride*channel + x_offset*channel;			
+            offset = start + (i << 1) + i; //3 * i
+            for (j = 0; j < srcW; j++) {
+                //dst[((srcW - 1 - j) * srcH + i) * 3 + 0] = *src++;
+                //dst[((srcW - 1 - j) * srcH + i) * 3 + 1] = *src++;
+                //dst[((srcW - 1 - j) * srcH + i) * 3 + 2] = *src++;
+                dst[offset + 0] = *src_ptr++;
+                dst[offset + 1] = *src_ptr++;
+                dst[offset + 2] = *src_ptr++;
+                dst[offset + 3] = *src_ptr++;
+                offset -= ((srcH << 1) + srcH); //3 * srcH;
+            }
+        }
+    }
+
+}
+Matrix<Array<unsigned char,3>> rotation90right(Matrix<Array<unsigned char,3>> img){
+	int rows = img.rows(); int cols = img.cols();
+	unsigned int y_offset, x_offset;
+	img.offset(y_offset, x_offset);
+	int stride = img.stride();
+	Matrix<Array<unsigned char,3>> rotated_img(cols, rows);
+	_rotation90right((unsigned char*)img.dataptr(), x_offset, y_offset, stride, (unsigned char*)rotated_img.dataptr(), cols, rows, 3);
+	return rotated_img;
+}
+
+Matrix<Array<unsigned char,3>> rotation180right(Matrix<Array<unsigned char,3>> img){
+	int rows = img.rows(); int cols = img.cols();
+	unsigned int y_offset, x_offset;
+	img.offset(y_offset, x_offset);
+	int stride = img.stride();
+	Matrix<Array<unsigned char,3>> rotated_img(rows, cols);
+	_rotation180right((unsigned char*)img.dataptr(), x_offset, y_offset, stride, (unsigned char*)rotated_img.dataptr(), cols, rows, 3);
+	return rotated_img;
+}
+
+Matrix<Array<unsigned char,3>> rotation270right(Matrix<Array<unsigned char,3>> img){
+	int rows = img.rows(); int cols = img.cols();
+	unsigned int y_offset, x_offset;
+	img.offset(y_offset, x_offset);
+	int stride = img.stride();
+	Matrix<Array<unsigned char,3>> rotated_img(cols, rows);
+	_rotation270right((unsigned char*)img.dataptr(), x_offset, y_offset, stride, (unsigned char*)rotated_img.dataptr(), cols, rows, 3);
+	return rotated_img;
+}
+
 }

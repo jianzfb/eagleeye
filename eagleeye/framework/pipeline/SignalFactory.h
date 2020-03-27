@@ -17,6 +17,18 @@
 
 namespace eagleeye
 {
+struct ImageMetaData{
+	std::string name;		// name
+	std::string info;		// info
+	double fps;				// frame rate for video
+	int nb_frames;			// frame number for video
+	int frame;				// frame index for video
+	bool is_end_frame;		// end frame flag for video
+	bool is_start_frame; 	// start frame flag for video
+	int rotation;			// rotation  (0,90,180,270)
+	int needed_rows;		// rows
+	int needed_cols;		// cols
+};
 //////////////////////////////////////////////////////////////////////////
 class EAGLEEYE_API BaseImageSignal:public AnySignal
 {
@@ -30,34 +42,26 @@ public:
 
 	BaseImageSignal(EagleeyeType p_type,int cha,char* info = "")
 		:AnySignal("ImgSig"),pixel_type(p_type),
-		channels(cha),
-		ext_info(info){
+		channels(cha){
 			this->m_release_count = 1;
 		}
 	virtual ~BaseImageSignal(){};
 
 	/**
-	 *	@brief copy info
+	 * @brief get image meta information
+	 * 
+	 * @return ImageMetaData* 
 	 */
-	virtual void copyInfo(AnySignal* sig){	
-		//call the base class
-		AnySignal::copyInfo(sig);
-
-		//receive some info from the upper signal
-		BaseImageSignal* from_sig = dynamic_cast<BaseImageSignal*>(sig);
-		if (from_sig){
-			ext_info = from_sig->ext_info;
-			needed_size = from_sig->needed_size;
-		}
+	ImageMetaData* meta(){
+		return &m_meta;
 	}
 
 	const EagleeyeType pixel_type;
 	const int channels;
-	std::string ext_info;
-	Array<int,2> needed_size;
 
 protected:
 	int m_release_count;
+	ImageMetaData m_meta;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,12 +136,12 @@ public:
 	 */
 	virtual bool isempty();
 
-	/**
-	 *	@brief create one image
-	 *	@note most of time, we should use this function to load one image,\n
-	 *	it would force updating 'data time'
-	 */
-	virtual void createImage(Matrix<T> m,char* name="",char* info="");
+	// /**
+	//  *	@brief create one image
+	//  *	@note most of time, we should use this function to load one image,\n
+	//  *	it would force updating 'data time'
+	//  */
+	// virtual void createImage(Matrix<T> m,char* name="",char* info="");
 
 	/**
 	 * @brief Get the Data object
@@ -185,11 +189,6 @@ public:
 	 */
 	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_IMAGE;}
 
-	std::string name;
-	double fps;
-	int nb_frames;
-	int frame;
-	bool is_final;
 private:
 	Matrix<T> img;
 };

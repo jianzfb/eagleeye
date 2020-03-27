@@ -166,15 +166,19 @@ zdl::DlSystem::Runtime_t ModelRun::checkRuntime(){
 	flag = false;
 
     if(this->m_device == "CPU"){
+		EAGLEEYE_LOGD("configure CPU runtime for snpe");
     	runtime = zdl::DlSystem::Runtime_t::CPU;
     }
     else if(this->m_device == "GPU"){
+		EAGLEEYE_LOGD("configure GPU runtime for snpe");
     	runtime = zdl::DlSystem::Runtime_t::GPU;
     }
     else if(this->m_device == "DSP"){
+		EAGLEEYE_LOGD("configure DSP runtime for snpe");
     	runtime = zdl::DlSystem::Runtime_t::DSP;
     }
     else if(this->m_device == "NPU"){
+		EAGLEEYE_LOGD("configure NPU runtime for snpe");
     	runtime = zdl::DlSystem::Runtime_t::AIP_FIXED8_TF;
     }
     else{
@@ -209,6 +213,7 @@ bool ModelRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>
 
     zdl::DlSystem::UDLBundle udlBundle;
     zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
+	//
     this->m_snpe = snpeBuilder.setOutputLayers(snpe_output_names)
 								.setRuntimeProcessor(runtime)
 								.setUdlBundle(udlBundle)
@@ -269,7 +274,6 @@ void ModelRun::_run(std::map<std::string, unsigned char*> inputs,
     // step 3. fill output
     zdl::DlSystem::StringList output_tensor_names = this->m_output_tensormap.getTensorNames();
     std::for_each( output_tensor_names.begin(), output_tensor_names.end(), [&](const char* tensor_name){
-		// EAGLEEYE_LOGD("snpe model output tensor name %s", tensor_name);
         auto tensor_ptr = this->m_output_tensormap.getTensor(tensor_name);
         zdl::DlSystem::TensorShape shape = tensor_ptr->getShape();
 
@@ -281,7 +285,7 @@ void ModelRun::_run(std::map<std::string, unsigned char*> inputs,
 			assert(this->m_inv_output_name_map2.find(name) != this->m_inv_output_name_map2.end());
 			transformed_name = this->m_inv_output_name_map2[name];
 		}
-		// EAGLEEYE_LOGD("pair %s and %s",tensor_name, transformed_name.c_str());
+		EAGLEEYE_LOGD("pair %s and %s",tensor_name, transformed_name.c_str());
         outputs[transformed_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
 	});
 }

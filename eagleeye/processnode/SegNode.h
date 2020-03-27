@@ -33,7 +33,8 @@ public:
                  std::string output_node,
                  std::vector<int> output_size,
                  std::vector<std::string> snpe_special_nodes,
-                 SegResizeMode resized_mode=DEFAULT_RESIZE);
+                 SegResizeMode resized_mode=DEFAULT_RESIZE,
+                 bool need_softmax=false);
     virtual ~SegNode();
 
     /**
@@ -99,6 +100,7 @@ private:
     Matrix<Array<float,3>> m_model_input_f;
     unsigned char* m_temp_ptr;
 
+    bool m_need_softmax;
 // #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 //     EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(segpreprocess);
 // #endif

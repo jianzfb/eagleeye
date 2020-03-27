@@ -73,7 +73,7 @@ private:
     double m_video_fps;
     bool m_decoder_finish;
     bool m_first_call;
-
+    int m_rotate_degree;
 }; 
 }
 #endif

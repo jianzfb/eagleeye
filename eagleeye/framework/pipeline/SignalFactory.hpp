@@ -2,17 +2,20 @@ namespace eagleeye
 {
 /* Image Signal */
 template<class T>
-ImageSignal<T>::ImageSignal(Matrix<T> m,char* name,char* info)
+ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 				:BaseImageSignal(TypeTrait<T>::type,TypeTrait<T>::size,info),
-				img(m),
-				name(name)
+				img(data)
 {
-	needed_size[0] = m.rows();
-	needed_size[1] = m.cols();
-	fps = 0.0;
-	nb_frames = 0;
-	frame = 0;
-	is_final = false;
+	this->m_meta.name = name;
+	this->m_meta.info = info;
+	this->m_meta.fps = 0.0;
+	this->m_meta.nb_frames = 0;
+	this->m_meta.frame = 0;
+	this->m_meta.is_end_frame = false;
+	this->m_meta.is_start_frame = false;
+	this->m_meta.rotation = 0;
+	this->m_meta.needed_rows = 0;
+	this->m_meta.needed_cols = 0;	
 }
 
 template<class T>
@@ -24,11 +27,7 @@ void ImageSignal<T>::copyInfo(AnySignal* sig){
 	if(SIGNAL_CATEGORY_IMAGE == sig->getSignalCategoryType()){
 		ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
 		if (from_sig){
-			name = from_sig->name;
-			fps = from_sig->fps;
-			nb_frames = from_sig->nb_frames;
-			frame = from_sig->frame;
-			is_final = from_sig->is_final;
+			this->m_meta = *(from_sig->meta());
 		}
 	}
 }
@@ -44,7 +43,7 @@ void ImageSignal<T>::printUnit()
 {
 	Superclass::printUnit();
 
-	EAGLEEYE_LOGD("image name %s \n",name.c_str());
+	EAGLEEYE_LOGD("image name %s \n",this->meta()->name.c_str());
 	EAGLEEYE_LOGD("image type %d channels %d rows %d cols %d \n",pixel_type,channels,img.rows(),img.cols());
 }
 
@@ -59,12 +58,17 @@ void ImageSignal<T>::makeempty(bool auto_empty)
 	}
 
 	img = Matrix<T>();
-	name = "";
-	ext_info = "";
-	fps = 0.0;
-	nb_frames = 0;
-	frame = 0;
-	is_final = false;
+	this->m_meta.name = "";
+	this->m_meta.info = "";
+	this->m_meta.fps = 0.0;
+	this->m_meta.nb_frames = 0;
+	this->m_meta.frame = 0;
+	this->m_meta.is_end_frame = false;
+	this->m_meta.is_start_frame = false;
+	this->m_meta.rotation = 0;
+	this->m_meta.needed_rows = 0;
+	this->m_meta.needed_cols = 0;	
+
 	if(auto_empty){
 		// reset count
 		this->m_release_count = 1;
@@ -84,19 +88,19 @@ bool ImageSignal<T>::isempty(){
 	}
 }
 
-template<class T>
-void ImageSignal<T>::createImage(Matrix<T> m,char* name,char* info)
-{
-	img = m;
-	name = name;
-	ext_info = info;
-	fps = 0.0;
-	nb_frames = 0;
-	frame = 0;
-	is_final = false;
-	//force time update
-	modified();
-}
+// template<class T>
+// void ImageSignal<T>::createImage(Matrix<T> m,char* name,char* info)
+// {
+// 	img = m;
+// 	name = name;
+// 	ext_info = info;
+// 	fps = 0.0;
+// 	nb_frames = 0;
+// 	frame = 0;
+// 	is_final = false;
+// 	//force time update
+// 	modified();
+// }
 
 template<class T>
 typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
