@@ -117,14 +117,6 @@ public:
         }
     }
 
-    template<>
-    void setKernelArg<std::string>(std::string kernel_name, int index, std::string name){
-        int err = clSetKernelArg(m_kernels[kernel_name], index, sizeof(cl_mem), m_mems[name]->getObject());
-        if(err != CL_SUCCESS){
-            EAGLEEYE_LOGE("Failed to set arg %d for kernel %s", index, kernel_name.c_str());
-        }
-    }    
-
     /**
      * @brief copy device mem to host
      * 
@@ -203,6 +195,9 @@ private:
     cl_command_queue m_queue;
     OpenCLRuntime* m_env;
 };
+
+template<>
+void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int index, std::string name);
 
 
 #define EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(group) \

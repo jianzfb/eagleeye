@@ -58,7 +58,6 @@ protected:
 	 */
 	template<class T>
 	void switchPixelChannels(Matrix<T>& img){};
-	template<>
 	void switchPixelChannels(Matrix<ERGB>& img)
 	{
 		switch(m_channels_order)
@@ -70,7 +69,6 @@ protected:
 			}
 		}
 	}
-	template<>
 	void switchPixelChannels(Matrix<ERGBA>& img)
 	{
 		switch(m_channels_order)

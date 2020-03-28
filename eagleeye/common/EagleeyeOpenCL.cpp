@@ -5,6 +5,16 @@
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
 namespace eagleeye{
+
+
+template<>
+void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int index, std::string name){
+    int err = clSetKernelArg(m_kernels[kernel_name], index, sizeof(cl_mem), m_mems[name]->getObject());
+    if(err != CL_SUCCESS){
+        EAGLEEYE_LOGE("Failed to set arg %d for kernel %s", index, kernel_name.c_str());
+    }
+}
+
 //******************        OpenCLMem        ******************//
 OpenCLMem::OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size){
     int err;

@@ -137,7 +137,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/TemplateMatchingNode.cpp
     eagleeye/processnode/SaliencyDetNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
-    eagleeye/processnode/SSDReIDPersonDetNode.cpp
+    eagleeye/processnode/SSDReidPersonDetNode.cpp
     eagleeye/processnode/SubPipeline.cpp
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
@@ -152,7 +152,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageWriteNode.cpp
     eagleeye/processnode/ImageReadNode.cpp
     eagleeye/processnode/HistogramEqualizationNode.cpp
-    eagleeye/processnode/ReadLineFromfileNode.cpp
+    eagleeye/processnode/ReadLineFromFileNode.cpp
     eagleeye/processnode/SerialStringNode.cpp
     eagleeye/processnode/DrawNode.cpp
     eagleeye/processnode/AutoNode.cpp
