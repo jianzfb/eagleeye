@@ -24,6 +24,8 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 	mSupportSignalType[EAGLEEYE_SIGNAL_POINT] = "POINT";
 	mSupportSignalType[EAGLEEYE_SIGNAL_STRING] = "STRING";
 	mSupportSignalType[EAGLEEYE_SIGNAL_MASK] = "MASK";
+	mSupportSignalType[EAGLEEYE_ADVANCED_SIGNAL_DET] = "DET";
+	this->m_signal_type = "UNDEFINED";
 
 	mSupportSignalTarget[EAGLEEYE_CAPTURE_STILL_IMAGE] = "CAPTURE_STILL_IMAGE";
 	mSupportSignalTarget[EAGLEEYE_PHOTO_GALLERY_IMAGE] = "PHOTO_GALLERY_IMAGE";
@@ -35,6 +37,9 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 	mSupportSignalTarget[EAGLEEYE_CAPTURE_MASK] = "CAPTURE_MASK";
 	mSupportSignalTarget[EAGLEEYE_CAPTURE_VIDEO_IMAGE] = "CAPTURE_VIDEO_IMAGE";
 	this->m_signal_target = "UNDEFINED";
+
+	m_signal_type_value = EAGLEEYE_UNDEFINED_SIGNAL;
+	m_signal_target_value = EAGLEEYE_UNDEFINED_TARGET;
 }
 AnySignal::~AnySignal()
 {
@@ -127,8 +132,27 @@ void AnySignal::reset(){
 	}
 }
 
+void AnySignal::exit(){
+	if(m_link_node){
+		this->m_link_node->exit();
+	}	
+}
+
+void AnySignal::init(){
+	if(m_link_node){
+		this->m_link_node->init();
+	}	
+}
+
 void AnySignal::setSignalType(const char* type){
 	this->m_signal_type = type;
+	
+	std::map<SignalType,std::string>::iterator iter, iend(this->mSupportSignalType.end());
+	for(iter = this->mSupportSignalType.begin(); iter != iend; ++iter){
+		if(iter->second == std::string(type)){
+			this->m_signal_type_value = iter->first;
+		}
+	}
 }
 
 void AnySignal::setSignalType(SignalType type){
@@ -137,6 +161,7 @@ void AnySignal::setSignalType(SignalType type){
 		return;
 	}
 	this->m_signal_type = this->mSupportSignalType[type];
+	this->m_signal_type_value = type;
 }
 
 const char* AnySignal::getSignalType(){
@@ -145,6 +170,13 @@ const char* AnySignal::getSignalType(){
 
 void AnySignal::setSignalTarget(const char* target){
 	this->m_signal_target = target;
+
+	std::map<SignalTarget,std::string>::iterator iter, iend(this->mSupportSignalTarget.end());
+	for(iter = this->mSupportSignalTarget.begin(); iter != iend; ++iter){
+		if(iter->second == std::string(target)){
+			this->m_signal_target_value = iter->first;
+		}
+	}
 }
 
 void AnySignal::setSignalTarget(SignalTarget target){
@@ -153,6 +185,7 @@ void AnySignal::setSignalTarget(SignalTarget target){
 		return;
 	}
 	this->m_signal_target = this->mSupportSignalTarget[target];
+	this->m_signal_target_value = target;
 }
 
 const char* AnySignal::getSignalTarget(){

@@ -131,7 +131,7 @@ void ParallelNode::refresh(){
     this->m_waiting_count += 1;
 }
 
-void ParallelNode::exit(){
+void ParallelNode::postexit(){
     std::unique_lock<std::mutex> input_locker(this->m_input_mu);
     for(int i=0; i<this->m_run_threads.size(); ++i){
         this->m_input_cache.push(std::pair<std::shared_ptr<AnySignal>, int>(std::shared_ptr<AnySignal>(),0));

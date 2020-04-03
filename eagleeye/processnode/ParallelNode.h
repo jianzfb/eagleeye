@@ -41,7 +41,7 @@ public:
      * @brief exit node
      * 
      */
-    virtual void exit();
+    virtual void postexit();
 
     /**
      * @brief refresh data (special design for delay node)

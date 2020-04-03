@@ -70,7 +70,7 @@ public:
 	 * 
 	 * @return SignalCategory 
 	 */
-	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_CONTROL;}
+	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_CONTROL;}
 
 private:
 	bool m_boolean;	

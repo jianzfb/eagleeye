@@ -16,6 +16,7 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_meta.rotation = 0;
 	this->m_meta.needed_rows = 0;
 	this->m_meta.needed_cols = 0;	
+	m_sig_category = SIGNAL_CATEGORY_IMAGE;
 }
 
 template<class T>
@@ -24,7 +25,7 @@ void ImageSignal<T>::copyInfo(AnySignal* sig){
 	BaseImageSignal::copyInfo(sig);
 
 	//receive some info from the upper signal
-	if(SIGNAL_CATEGORY_IMAGE == sig->getSignalCategoryType()){
+	if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
 		ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
 		if (from_sig){
 			this->m_meta = *(from_sig->meta());
@@ -80,41 +81,63 @@ void ImageSignal<T>::makeempty(bool auto_empty)
 
 template<class T>
 bool ImageSignal<T>::isempty(){
-	if(img.rows() == 0 || img.cols() == 0){
-		return true;
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
+		if(img.rows() == 0 || img.cols() == 0){
+			return true;
+		}
+		else{
+			return false;
+		}
 	}
 	else{
 		return false;
 	}
 }
 
-// template<class T>
-// void ImageSignal<T>::createImage(Matrix<T> m,char* name,char* info)
-// {
-// 	img = m;
-// 	name = name;
-// 	ext_info = info;
-// 	fps = 0.0;
-// 	nb_frames = 0;
-// 	frame = 0;
-// 	is_final = false;
-// 	//force time update
-// 	modified();
-// }
-
 template<class T>
 typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
-	// refresh data
-	if(this->m_delay_time > 0){
-		this->m_link_node->refresh();
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
+		// SIGNAL_CATEGORY_IMAGE
+		// refresh data
+		if(this->m_delay_time > 0){
+			this->m_link_node->refresh();
+		}
+		// return img
+		return img;
 	}
-	// return img
-	return img;
+	else{
+		// SIGNAL_CATEGORY_IMAGE_QUEUE
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		while(this->m_queue.size() == 0){
+            this->m_cond.wait(locker);
+
+			if(this->m_queue.size() > 0){
+				break;
+			}
+        }
+		this->img = this->m_queue.front();
+        this->m_queue.pop();
+        locker.unlock();
+		return this->img;
+	}
 }
 
 template<class T>
 void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
-	this->img = data;
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
+		// SIGNAL_CATEGORY_IMAGE
+		this->img = data;
+	}
+	else{
+		// SIGNAL_CATEGORY_IMAGE_QUEUE
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		this->m_queue.push(data);
+		locker.unlock();
+
+		// notify
+		// this->m_cond.notify_one();
+		this->m_cond.notify_all();
+	}
 }
 
 template<class T>

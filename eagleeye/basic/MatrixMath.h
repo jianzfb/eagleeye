@@ -349,13 +349,23 @@ Matrix<T> msoftmax(const Matrix<T>& x){
 	unsigned int rows = x.rows();
 	unsigned int cols = x.cols();
 
+	T x_max = x.at(0,0);
+	for(unsigned int r=0; r<rows; ++r){
+		const T* x_ptr = x.row(r);
+		for(unsigned int c=0; c<cols; ++c){
+			if(x_max < x_ptr[c]){
+				x_max = x_ptr[c];
+			}
+		}
+	}
+
 	Matrix<T> s(rows, cols);
 	for(unsigned int r=0; r<rows; ++r){
-		float d = 0.0;
 		const T* x_ptr = x.row(r);
 		T* s_ptr = s.row(r);
+		float d = 0.0f;		
 		for(unsigned int c=0; c<cols; ++c){
-			s_ptr[c] = exp(x_ptr[c]);
+			s_ptr[c] = expf(x_ptr[c] - x_max);
 			d += s_ptr[c];
 		}
 
@@ -373,16 +383,25 @@ Matrix<T> msoftmax2(const Matrix<T>& x){
 	unsigned int cols = x.cols();
 	EAGLEEYE_CHECK(cols == 2, "only support cols = 2");
 
+	T x_max = x.at(0,0);
+	for(unsigned int r=0; r<rows; ++r){
+		const T* x_ptr = x.row(r);
+		for(unsigned int c=0; c<cols; ++c){
+			if(x_max < x_ptr[c]){
+				x_max = x_ptr[c];
+			}
+		}
+	}
+
 	Matrix<T> s(rows, cols);
 	for(unsigned int r=0; r<rows; ++r){
 		const T* x_ptr = x.row(r);
 		T* s_ptr = s.row(r);
-		s_ptr[0] = exp(x_ptr[0]);
+		s_ptr[0] = expf(x_ptr[0] - x_max);
+		s_ptr[1] = expf(x_ptr[1] - x_max);
+		
+		s_ptr[0] = s_ptr[0]/(s_ptr[0] + s_ptr[1]);
 		s_ptr[1] = 1.0f - s_ptr[0];
-
-		float d = s_ptr[0] + s_ptr[1];
-		s_ptr[0] /= d;
-		s_ptr[1] /= d;
 	}
 
 	return s;

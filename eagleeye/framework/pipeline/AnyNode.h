@@ -210,13 +210,15 @@ public:
 	 * @brief exit node
 	 * 
 	 */
-	virtual void exit(){};
+	virtual void exit();
+	virtual void preexit(){};
+	virtual void postexit(){};
 
 	/**
 	 * @brief initialize node
 	 * 
 	 */
-	virtual void init(){}
+	virtual void init();
 
 	/**
 	 * @brief refresh data (special design for delay node)
@@ -290,6 +292,8 @@ private:
 	void operator=(const AnyNode&);
 
 	bool m_reset_flag;
+	bool m_exit_flag;
+	bool m_init_flag;
 	bool m_process_flag;
 	bool m_get_monitor_flag;
 	bool m_feadback_flag;

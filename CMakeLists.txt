@@ -154,6 +154,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/HistogramEqualizationNode.cpp
     eagleeye/processnode/ReadLineFromfileNode.cpp
     eagleeye/processnode/SerialStringNode.cpp
+    eagleeye/processnode/DrawNode.cpp
+    eagleeye/processnode/AutoNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp

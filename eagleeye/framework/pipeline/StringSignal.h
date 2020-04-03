@@ -64,7 +64,7 @@ public:
 	 * 
 	 * @return SignalCategory 
 	 */
-	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_STRING;}
+	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_STRING;}
 
 private:
     std::string m_str;

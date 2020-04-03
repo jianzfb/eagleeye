@@ -65,7 +65,8 @@ SegNode::SegNode(std::string model_name,
                  std::vector<int> output_size,
                  std::vector<std::string> snpe_special_nodes,
                  SegResizeMode resized_mode,
-                 bool need_softmax){
+                 bool need_softmax,
+                 float seg_thres){
     // 设置输出端口（拥有1个输出端口）
     this->setNumberOfOutputSignals(1);
     // 设置输出端口(端口0)及携带数据类型(TargetT)
@@ -121,6 +122,7 @@ SegNode::SegNode(std::string model_name,
 
     this->m_frame_width = -1;
     this->m_frame_height = -1;
+    this->m_seg_thres = seg_thres;
 
 // #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 //     EAGLEEYE_OPENCL_ADD_CUSTOME_CODE(SEGNODE, preprocess_kernel_code);
@@ -338,6 +340,7 @@ void SegNode::runSeg(const Matrix<Array<unsigned char,3>>& frame, int label, Mat
         float *label_map_ptr = label_map.row(i);
         for (int j = 0; j < this->m_model_w; ++j) {
             label_map_ptr[j] = softmax_score_ptr[(i * this->m_model_w + j) * m_class_num + label];
+            label_map_ptr[j] = label_map_ptr[j] > this->m_seg_thres ? label_map_ptr[j] : 0;
         }
     }
 }

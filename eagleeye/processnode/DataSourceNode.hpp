@@ -1,13 +1,14 @@
 namespace eagleeye{
 template<class T>
-DataSourceNode<T>::DataSourceNode(const char* unit_name, const char* type, const char* source)
-        :ImageIONode<T>(unit_name){
+DataSourceNode<T>::DataSourceNode(bool queue_mode)
+        :ImageIONode<T>("DATASOURCE"){
 	this->setNumberOfOutputSignals(1);
 	this->setOutputPort(this->makeOutputSignal(),OUTPUT_PORT_IMAGE_DATA);
 
-    this->getOutputPort(OUTPUT_PORT_IMAGE_DATA)->setSignalType(type);
-    this->getOutputPort(OUTPUT_PORT_IMAGE_DATA)->setSignalTarget(source);
-    this->m_enable_empty = false;
+    this->m_queue_mode = queue_mode;
+    if(this->m_queue_mode){
+        this->getOutputPort(OUTPUT_PORT_IMAGE_DATA)->transformCategoryToQ();
+    }
 }   
 
 template<class T>
@@ -40,23 +41,30 @@ void DataSourceNode<T>::executeNodeInfo(){
 
 template<class T>
 bool DataSourceNode<T>::selfcheck(){
-    if(m_enable_empty){
+    if(!this->m_queue_mode){
+        bool is_ok = ImageIONode<T>::selfcheck();
+        if(this->getOutputPort(OUTPUT_PORT_IMAGE_DATA)->isempty()){
+            is_ok = false;
+        }
+        return is_ok;
+    }
+    else{
         return true;
     }
 
-    bool is_ok = ImageIONode<T>::selfcheck();
-    if(this->getOutputPort(OUTPUT_PORT_IMAGE_DATA)->isempty()){
-        is_ok = false;
-    }
-    return is_ok;
 }
 
 template<class T>
-void DataSourceNode<T>::enableEmpty(){
-    this->m_enable_empty = true;
+void DataSourceNode<T>::preexit(){
+
 }
+
 template<class T>
-void DataSourceNode<T>::disableEmpty(){
-    this->m_enable_empty = false;
+void DataSourceNode<T>::postexit(){
+    if(this->m_queue_mode){
+        T* output_img_signal = (T*)(this->getOutputPort(OUTPUT_PORT_IMAGE_DATA));
+        // dont care data is what
+        output_img_signal->setData(Matrix<OutputPixelType>());
+    }
 }
 }

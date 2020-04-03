@@ -193,6 +193,8 @@ void VideoWriteNode::executeNodeInfo(){
         this->m_file_path = "";
         this->m_is_finish = true;
         this->finish();
+
+        EAGLEEYE_LOGD("this is the end frame");
     }
 }
 
@@ -200,7 +202,6 @@ void VideoWriteNode::setFilePath(std::string file_path){
     if(!this->m_is_finish){
         EAGLEEYE_LOGD("force finish in setfilepath");
         assert(1==0);
-        exit();
         this->finish();        
     }
 
@@ -254,9 +255,9 @@ void VideoWriteNode::finish(){
     m_codec_cxt = NULL;
     this->m_is_finish = true;
 
-    // static int ss = 0;
-    // EAGLEEYE_LOGD("ss is %d", ss);
-    // ss += 1;
+    static int ss = 0;
+    EAGLEEYE_LOGD("ss is %d", ss);
+    ss += 1;
 }
 
 int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_index)

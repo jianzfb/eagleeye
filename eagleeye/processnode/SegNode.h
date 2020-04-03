@@ -34,7 +34,8 @@ public:
                  std::vector<int> output_size,
                  std::vector<std::string> snpe_special_nodes,
                  SegResizeMode resized_mode=DEFAULT_RESIZE,
-                 bool need_softmax=false);
+                 bool need_softmax=false,
+                 float seg_thres=0.5);
     virtual ~SegNode();
 
     /**
@@ -101,6 +102,7 @@ private:
     unsigned char* m_temp_ptr;
 
     bool m_need_softmax;
+    float m_seg_thres;
 // #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 //     EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(segpreprocess);
 // #endif

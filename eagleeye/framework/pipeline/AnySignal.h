@@ -22,7 +22,9 @@ public:
 	typedef AnySignal							Self;
 	typedef AnyUnit								Superclass;
 
-	AnySignal(const char* unit_name = "AnySignal", const char* signal_type="", const char* signal_target="");
+	AnySignal(const char* unit_name = "AnySignal", 
+				const char* signal_type="", 
+				const char* signal_target="");
 	virtual ~AnySignal();
 
 	/**
@@ -90,6 +92,18 @@ public:
 	virtual void reset();
 
 	/**
+	 * @brief exit node backward
+	 * 
+	 */
+	virtual void exit();
+
+	/**
+	 * @brief init node
+	 * 
+	 */
+	virtual void init();
+
+	/**
 	 *	@brief one easy explained function, which notify itself
 	 *	update.
 	 */
@@ -134,6 +148,13 @@ public:
 	 * @return const char* 
 	 */
 	const char* getSignalType();
+	
+	/**
+	 * @brief Get the Signal Type Value object
+	 * 
+	 * @return SignalType 
+	 */
+	SignalType getSignalType2(){return this->m_signal_type_value;};
 
 	/**
 	 * @brief Set the Signal Target object
@@ -156,6 +177,13 @@ public:
 	 */
 	const char* getSignalTarget();
 	
+	/**
+	 * @brief Get the Signal Target Value object
+	 * 
+	 * @return SignalTarget 
+	 */
+	SignalTarget getSignalTargetValue(){return this->m_signal_target_value;};
+
 	/**
 	 * @brief Set the Signal Content object
 	 * 
@@ -224,7 +252,13 @@ public:
 	 * 
 	 * @return SignalCategory 
 	 */
-	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_OTHER;}
+	virtual SignalCategory getSignalCategory(){return EAGLEEYE_UNDEFINED_CATEGORY;}
+	
+	/**
+	 * @brief upgrade signal to queue version
+	 * 
+	 */
+	virtual void transformCategoryToQ(){};
 
 	/**
 	 * @brief Get the Signal Value Type object
@@ -244,6 +278,10 @@ public:
 protected:
 	std::string m_signal_type;
 	std::string m_signal_target;
+
+	SignalType m_signal_type_value;
+	SignalTarget m_signal_target_value;
+
 	bool m_prepared_ok;
 	int m_delay_time;
 	AnyNode* m_link_node;

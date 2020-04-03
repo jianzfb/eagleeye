@@ -58,10 +58,12 @@ public:
 
 	const EagleeyeType pixel_type;
 	const int channels;
-
+	
 protected:
 	int m_release_count;
 	ImageMetaData m_meta;
+	std::mutex m_mu;
+	std::condition_variable m_cond;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -136,13 +138,6 @@ public:
 	 */
 	virtual bool isempty();
 
-	// /**
-	//  *	@brief create one image
-	//  *	@note most of time, we should use this function to load one image,\n
-	//  *	it would force updating 'data time'
-	//  */
-	// virtual void createImage(Matrix<T> m,char* name="",char* info="");
-
 	/**
 	 * @brief Get the Data object
 	 * 
@@ -187,10 +182,18 @@ public:
 	 * 
 	 * @return SignalCategory 
 	 */
-	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_IMAGE;}
+	virtual SignalCategory getSignalCategory(){return m_sig_category;}
+	
+	/**
+	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
+	 * 
+	 */
+	virtual void transformCategoryToQ(){m_sig_category = SIGNAL_CATEGORY_IMAGE_QUEUE;};
 
 private:
 	Matrix<T> img;
+	std::queue<Matrix<T>> m_queue;
+	SignalCategory m_sig_category;
 };
 
 /* Tensor Signal */
@@ -303,7 +306,7 @@ public:
 	 * 
 	 * @return SignalCategory 
 	 */
-	virtual SignalCategory getSignalCategoryType(){return SIGNAL_CATEGORY_TENSOR;}
+	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_TENSOR;}
 
 
 private:

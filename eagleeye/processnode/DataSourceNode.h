@@ -14,7 +14,15 @@ public:
 
     typedef typename T::MetaType            OutputPixelType;
 
-    DataSourceNode(const char* unit_name="", const char* type="", const char* source="");
+	/**
+	 * @brief Construct a new Data Source Node object
+	 * 
+	 * @param unit_name 
+	 * @param type 
+	 * @param source 
+	 * @param queue_mode 
+	 */
+    DataSourceNode(bool queue_mode=false);
     virtual ~DataSourceNode();
 
     /**
@@ -58,14 +66,18 @@ public:
 	 */
 	virtual bool selfcheck();
 
-	void enableEmpty();
-	void disableEmpty();
+	/**
+     * @brief (pre/post) exit
+     * 
+     */
+    virtual void preexit();
+    virtual void postexit();
 
 private:    
     DataSourceNode(const DataSourceNode&);
     void operator=(const DataSourceNode&);
 
-	bool m_enable_empty;
+	bool m_queue_mode;
 };
 }
 

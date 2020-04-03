@@ -73,9 +73,14 @@ AnyPipeline::AnyPipeline(const char* pipeline_name){
 }   
 
 AnyPipeline::~AnyPipeline(){
+    // notify exit
+    std::map<std::string, AnyNode*>::iterator output_node_iter, output_node_iend(this->m_output_nodes.end());
+    for(output_node_iter=this->m_output_nodes.begin(); output_node_iter!=output_node_iend; ++output_node_iter){
+        output_node_iter->second->exit();
+    }
+
     std::map<std::string, AnyNode*>::iterator iter, iend(m_nodes.end());
     for(iter=this->m_nodes.begin(); iter!=iend; ++iter){
-        iter->second->exit();
         delete iter->second;
     }
 }
@@ -547,20 +552,12 @@ void AnyPipeline::initialize(const char* configure_folder){
     EAGLEEYE_LOGD("version      %s", this->m_version.c_str());
     EAGLEEYE_LOGD("signature    %s", this->m_signature.c_str());
 
-    // 初始化管道
+    // 初始化管道结构
     EAGLEEYE_LOGD("build pipeline %s structure", this->m_name.c_str());
     m_init_func();
-    
+
     // 分析连接关系
     EAGLEEYE_LOGD("analyze pipeline %s structure", this->m_name.c_str());
-    // finding output nodes
-    // this->m_output_nodes.clear();
-    // std::map<std::string, bool>::iterator iter, iend(this->m_is_output_nodes.end());
-    // for(iter = this->m_is_output_nodes.begin(); iter != iend; ++iter){
-    //     if(iter->second){
-    //         this->m_output_nodes[iter->first] = this->m_nodes[iter->first];
-    //     }
-    // }
     EAGLEEYE_LOGD("%s has %d output nodes", this->m_name.c_str(), this->m_output_nodes.size());
     std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
@@ -571,7 +568,14 @@ void AnyPipeline::initialize(const char* configure_folder){
         return;
     }
 
+    // 初始化管道所有节点
+    EAGLEEYE_LOGD("initialize all node in pipeline %s", this->m_name.c_str());
+    for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
+        output_iter->second->init();
+    }
+
     // get all monitors
+    EAGLEEYE_LOGD("get all monitors in pipeline %s", this->m_name.c_str());
     this->m_monitor_params.clear();
     std::map<std::string,std::vector<AnyMonitor*>> pipeline_monitors;
     std::map<std::string, AnyNode*>::iterator output_node_iter, output_node_iend(this->m_output_nodes.end());
@@ -590,12 +594,6 @@ void AnyPipeline::initialize(const char* configure_folder){
             this->m_monitor_params[param_key] = monitor_iter->second[i];
         }
     }
-
-    // get all input signals
-    // this->m_input_nodes.clear();
-    // for(output_node_iter=this->m_output_nodes.begin(); output_node_iter!=output_node_iend; ++output_node_iter){
-    //     output_node_iter->second->getPipelineInputs(this->m_input_nodes);
-    // }
 
     EAGLEEYE_LOGD("%s has %d input nodes", this->m_name.c_str(), this->m_input_nodes.size());
     std::map<std::string,AnyNode*>::iterator input_iter, input_iend(this->m_input_nodes.end());

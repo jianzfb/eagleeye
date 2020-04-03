@@ -34,7 +34,7 @@ public:
      * @param node 
      * @param nodetype 
      */
-    void add(AnyNode* node, std::string name, PipelineNodeType nodetype=OTHER_NODE);
+    void add(AnyNode* node, std::string name, PipelineNodeType nodetype=OTHER_NODE, int dontcare=-1);
 
     /**
      * @brief connect two nodes
@@ -47,10 +47,22 @@ public:
     void bind(std::string fromname, int fromport, std::string toname, int toport);
 
     /**
-     * @brief reset asynnode
+     * @brief reset subpipeline
      * 
      */
     virtual void reset();
+
+    /**
+     * @brief init subpipeline
+     * 
+     */
+    virtual void init();
+
+    /**
+     * @brief exit subpipeline
+     * 
+     */
+    virtual void exit();
 
     /**
 	 *	@brief get monitor pool of the whole pipeline
@@ -60,17 +72,17 @@ public:
 
 protected:
     std::map<std::string, AnyNode*> m_subpipeline;
-    std::map<std::string, int> m_out_deg;
-    std::map<std::string, int> m_in_deg;
-    
-    std::string m_output_node_name;
-    AnyNode* m_output_node;
 
+    AnyNode* m_source_node;
+    int m_source_ignore_port;
+    int* m_source_port_map;
 
-    std::vector<AnyNode*> m_input_nodes;
-    std::vector<int> m_input_ports;
+    AnyNode* m_sink_node;
+    int m_sink_ignore_port;
+    int* m_sink_port_map;
 
-    AnySignal* m_input_node_placeholder;
+    std::vector<AnySignal*> m_placeholders;
+
 private:
     SubPipeline(const SubPipeline&);
     void operator=(const SubPipeline&);

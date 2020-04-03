@@ -54,7 +54,7 @@ void AsynNode::executeNodeInfo(){
     this->m_process_count += 1;
 }
 
-void AsynNode::exit(){
+void AsynNode::postexit(){
     std::unique_lock<std::mutex> input_locker(this->m_input_mu);
     // clear input queue
     while (this->m_input_cache.size() > 0){

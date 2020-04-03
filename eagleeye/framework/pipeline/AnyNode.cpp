@@ -14,6 +14,8 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_node_is_satisfied_cond = true;
 
 	this->m_reset_flag = false;
+	this->m_exit_flag = false;
+	this->m_init_flag = false;
 	this->m_process_flag = false;
 	this->m_get_monitor_flag = false;
 	this->m_feadback_flag = false;
@@ -276,9 +278,12 @@ bool AnyNode::start(){
 }
 
 void AnyNode::reset(){
+	std::cout<<"before in reset "<<this->getUnitName()<<std::endl;
 	if(this->m_reset_flag){
 		return;
 	}
+	std::cout<<"run in reset "<<this->getUnitName()<<std::endl;
+
 
 	//reset pipeline backward
 	this->m_reset_flag = true;
@@ -605,5 +610,36 @@ void AnyNode::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_
 		(*in_iter)->saveConfigure(nodes_config);
 	}
 	m_save_config_flag = false;
+}
+
+void AnyNode::exit(){
+	if(m_exit_flag){
+		return;
+	}
+
+	m_exit_flag = true;
+	// process (pre exit)
+	this->preexit();
+
+	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
+	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
+		(*in_iter)->exit();
+	}
+
+	// process (post exit)
+	this->postexit();
+	// m_exit_flag = false;
+}
+
+void AnyNode::init(){
+	if(m_init_flag){
+		return;
+	}
+	m_init_flag = true;
+	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
+	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
+		(*in_iter)->init();
+	}
+	m_init_flag = false;
 }
 }

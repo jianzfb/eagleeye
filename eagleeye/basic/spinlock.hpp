@@ -5,8 +5,8 @@
 #include <thread>
 
 namespace eagleeye{
-struct spinlock {
-
+class spinlock {
+public:
   void lock () {
     while (f_.test_and_set(std::memory_order_acquire)) {
 //       std::this_thread::yield();

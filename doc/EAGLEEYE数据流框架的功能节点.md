@@ -503,3 +503,5 @@ public:
 ```
 
 其中第一个参数thread_num，设置多线程数；第二个参数generator，依靠lambda函数创建待并行的计算节点；第三个参数queue_size，设置队列大小。在AsynNode维护一个优先队列，最新数据始终位于队列头部。
+
+#####AutoNode(自动节点)

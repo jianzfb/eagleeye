@@ -2,12 +2,17 @@
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/framework/pipeline/AnyPipeline.h"
+#include "eagleeye/common/EagleeyeLog.h"
 namespace eagleeye
 {
 SubPipeline::SubPipeline(){
-	this->setNumberOfInputSignals(1);
-    this->m_input_node_placeholder=NULL;
-    this->m_output_node = NULL;
+    this->m_source_node = NULL;
+    this->m_source_ignore_port = -1;
+    this->m_sink_node = NULL;
+    this->m_sink_ignore_port = -1;
+
+    this->m_source_port_map = NULL;
+    this->m_sink_port_map = NULL;
 }
 
 SubPipeline::~SubPipeline(){
@@ -15,57 +20,109 @@ SubPipeline::~SubPipeline(){
     for(iter=this->m_subpipeline.begin(); iter!=iend; ++iter){
         delete iter->second;
     }
-    if(m_input_node_placeholder){
-        delete m_input_node_placeholder;
-    }    
+
+    if(m_source_port_map != NULL){
+        delete m_source_port_map;
+    }
+    if(m_sink_port_map != NULL){
+        delete m_sink_port_map;
+    }
+
+    std::vector<AnySignal*>::iterator sig_iter, sig_iend(this->m_placeholders.end());
+    for(sig_iter = this->m_placeholders.begin(); sig_iter != sig_iend; ++sig_iter){
+        delete *sig_iter;
+    }
 }
 
 void SubPipeline::executeNodeInfo(){
-    // 1.step 绑定子管道输入
-    if(m_input_node_placeholder == NULL){
-        m_input_node_placeholder = this->getInputPort(0)->make();
-        for(int i=0; i<this->m_input_nodes.size(); ++i){
-            this->m_input_nodes[i]->setInputPort(m_input_node_placeholder, this->m_input_ports[i]);
+    // 1.step copy input
+    std::vector<AnySignal*> signal_list;
+    if(this->m_placeholders.size() == 0){
+        for(int i=0; i<this->getNumberOfInputSignals(); ++i){
+            AnySignal* signal_cp = this->getInputPort(i)->make();
+            this->m_source_node->setInputPort(signal_cp, this->m_source_port_map[i]);
+            this->m_placeholders.push_back(signal_cp);
         }
     }
-
-    // 2.step copy input node signal to subpipeline
-    this->m_input_node_placeholder->copy(this->getInputPort(0));
-    for(int i=0; i<this->m_input_nodes.size(); ++i){
-        this->m_input_nodes[i]->modified();
+    for(int i=0; i<this->getNumberOfInputSignals(); ++i){
+        this->m_placeholders[i]->copy(this->getInputPort(i));
     }
+    this->m_source_node->modified();
 
-    // 3.step run subpipeline
-    m_output_node->start();
-    // 4.step copy output signal to subpipeline
-    for(int i=0; i<this->m_output_node->getNumberOfOutputSignals(); ++i){
-        this->getOutputPort(i)->copy(m_output_node->getOutputPort(i));
+    // 2.step run subpipeline
+    this->m_sink_node->start();
+
+    // 3.step copy output
+    for(int i=0; i<this->getNumberOfOutputSignals(); ++i){
+        this->getOutputPort(i)->copy(this->m_sink_node->getOutputPort(this->m_sink_port_map[i]));
     }
 }
 
-void SubPipeline::add(AnyNode* node, std::string name, PipelineNodeType nodetype){
-    m_subpipeline[name] = node;
-    m_in_deg[name] = 0;
-    m_out_deg[name] = 0;
-    node->setUnitName(name.c_str());
-
-    switch (nodetype)
-    {
-    case SOURCE_NODE:
-        this->m_input_nodes.push_back(node);
-        this->m_input_ports.push_back(0);
-        break;
-    case SINK_NODE:
-        this->m_output_node = node;
-        this->m_output_node_name = name;   
-        if(this->getNumberOfOutputSignals() == 0){
-            int output_signal_num = this->m_output_node->getNumberOfOutputSignals();
-            this->setNumberOfOutputSignals(output_signal_num);
+void SubPipeline::add(AnyNode* node, std::string name, PipelineNodeType nodetype, int dontcare){
+    if(this->m_subpipeline.find(name) == this->m_subpipeline.end()){
+        m_subpipeline[name] = node;
+        node->setUnitName(name.c_str());
+    }
+    
+    if(nodetype == SOURCE_NODE){
+        if(this->m_source_node != NULL){
+            EAGLEEYE_LOGE("source node has been set");
+            return;
         }
-        this->setOutputPort(this->m_output_node->getOutputPort(0)->make(), 0);
-        break;
-    default:
-        break;
+
+        this->m_source_node = node;
+        this->m_source_ignore_port = dontcare;
+        
+        int source_input_signal_num = node->getNumberOfInputSignals();
+        if(dontcare < 0){
+            this->setNumberOfInputSignals(source_input_signal_num);
+            m_source_port_map = new int[source_input_signal_num];
+            for(int i=0; i<source_input_signal_num; ++i){
+                m_source_port_map[i] = i;
+            }
+        }
+        else{
+            this->setNumberOfInputSignals(source_input_signal_num - 1);
+            m_source_port_map = new int[source_input_signal_num - 1];
+            int count = 0;
+            for(int i=0; i<source_input_signal_num; ++i){
+                if(i != dontcare){
+                    m_source_port_map[count] = i;
+                    count += 1;
+                }
+            }
+        }
+    }
+    else if(nodetype == SINK_NODE){
+       if(this->m_sink_node != NULL){
+            EAGLEEYE_LOGE("sink node has been set");
+            return;
+        }
+
+        this->m_sink_node = node;
+        this->m_sink_ignore_port = dontcare;
+
+        int source_output_signal_num = node->getNumberOfOutputSignals();
+        if(dontcare < 0){
+            this->setNumberOfOutputSignals(source_output_signal_num);
+            m_sink_port_map = new int[source_output_signal_num];
+            for(int i=0; i<source_output_signal_num; ++i){
+                m_sink_port_map[i] = i;
+                this->setOutputPort(node->getOutputPort(i)->make(), i);
+            }
+        }
+        else{
+            this->setNumberOfOutputSignals(source_output_signal_num-1);
+            m_sink_port_map = new int[source_output_signal_num - 1];
+            int count = 0;
+            for(int i=0; i<source_output_signal_num; ++i){
+                if(i != dontcare){
+                    m_sink_port_map[count] = i;
+                    this->setOutputPort(node->getOutputPort(i)->make(), count);
+                    count += 1;
+                }
+            }
+        }
     }
 }
 
@@ -79,23 +136,35 @@ void SubPipeline::bind(std::string fromname, int fromport, std::string toname, i
         return;
     }
 
-    m_subpipeline[toname]->setInputPort(m_subpipeline[fromname]->getOutputPort(fromport), toport);
-    m_in_deg[toname] += 1;
-    m_out_deg[fromname] += 1;
+    AnyNode* node_to_ptr = this->m_subpipeline[std::string(toname)];
+    AnyNode* node_from_ptr = this->m_subpipeline[std::string(fromname)];
+    if(node_to_ptr->getNumberOfInputSignals() < toport+1){
+        node_to_ptr->setNumberOfInputSignals(toport+1);
+    }
+    node_to_ptr->setInputPort(node_from_ptr->getOutputPort(fromport), toport);
 }
 
 void SubPipeline::reset(){
-    std::map<std::string, AnyNode*>::iterator iter, iend(this->m_subpipeline.end());
-    for(iter=this->m_subpipeline.begin(); iter!=iend; ++iter){
-        iter->second->reset();
-    }
+    this->m_sink_node->reset();
 
     Superclass::reset();
 }
 
+void SubPipeline::init(){
+    this->m_sink_node->init();
+
+    Superclass::init();
+}
+
+void SubPipeline::exit(){
+    this->m_sink_node->exit();
+
+    Superclass::exit();
+}
+
 void SubPipeline::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool){
     // collect all node monitors in subpipeline
-    this->m_output_node->getPipelineMonitors(pipeline_monitor_pool);
+    this->m_sink_node->getPipelineMonitors(pipeline_monitor_pool);
 
 	//traverse the whole pipeline
 	std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());
