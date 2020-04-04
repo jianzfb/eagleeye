@@ -11,6 +11,34 @@
 
 namespace eagleeye
 {
+class MetaData{
+public:
+	MetaData(){
+		name = "";
+		info = "";
+		fps = 0.0;
+		nb_frames = 0;
+		frame = 0;
+		is_end_frame = false;
+		is_start_frame = false;
+		rotation = 0;
+		needed_rows = 0;
+		needed_cols = 0;	
+		timestamp = 0;
+	}
+	std::string name;		// name
+	std::string info;		// info
+	double fps;				// frame rate for video
+	int nb_frames;			// frame number for video
+	int frame;				// frame index for video
+	bool is_end_frame;		// end frame flag for video
+	bool is_start_frame; 	// start frame flag for video
+	int rotation;			// rotation  (0,90,180,270)
+	int needed_rows;		// rows
+	int needed_cols;		// cols
+	unsigned int timestamp;
+};	
+
 class AnyNode;
 class EAGLEEYE_API AnySignal:public AnyUnit
 {
@@ -235,19 +263,6 @@ public:
 	void feadback(std::map<std::string, int>& node_state_map);
 
 	/**
-	 * @brief Get the Delay Time object
-	 * 
-	 * @return int 
-	 */
-	int getDelayTime(){return m_delay_time;}
-
-	/**
-	 * @brief Set the Delay Time object
-	 * 
-	 * @param delay_time 
-	 */
-	void setDelayTime(int delay_time){this->m_delay_time=delay_time;}
-	/**
 	 * @brief Get the Derive Type object
 	 * 
 	 * @return SignalCategory 
@@ -275,6 +290,13 @@ public:
 	void loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config);
 	void saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config);
 
+	/**
+	 * @brief get metadata
+	 * 
+	 * @return MetaData
+	 */
+	virtual MetaData& meta(){return this->m_meta;};
+
 protected:
 	std::string m_signal_type;
 	std::string m_signal_target;
@@ -283,8 +305,9 @@ protected:
 	SignalTarget m_signal_target_value;
 
 	bool m_prepared_ok;
-	int m_delay_time;
 	AnyNode* m_link_node;
+	MetaData m_meta;
+	bool m_signal_exit;
 
 private:
 	AnySignal(const AnySignal&);

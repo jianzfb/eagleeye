@@ -50,6 +50,7 @@ VideoWriteNode::VideoWriteNode(){
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
     EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
     EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
+    EAGLEEYE_MONITOR_VAR(bool, setFinish, getFinish, "isfinish","","");
     this->m_prefix = "video_";
     this->m_folder = "./";
 }   
@@ -62,7 +63,8 @@ VideoWriteNode::~VideoWriteNode(){
 void VideoWriteNode::executeNodeInfo(){
     ImageSignal<Array<unsigned char,3>>* input_img_signal = 
                     (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
-    Matrix<Array<unsigned char, 3>> image = input_img_signal->getData();
+    MetaData image_meta_data;
+    Matrix<Array<unsigned char, 3>> image = input_img_signal->getData(image_meta_data);
     if(this->m_file_path.empty()){
         if(this->m_folder != "./"){
             if(!isdirexist(this->m_folder.c_str())){
@@ -188,7 +190,7 @@ void VideoWriteNode::executeNodeInfo(){
         // av_frame_unref(frame);
     }
 
-    if(input_img_signal->meta()->is_end_frame){
+    if(image_meta_data.is_end_frame){
         // 当前是视频流的最后一帧
         this->m_file_path = "";
         this->m_is_finish = true;
@@ -294,6 +296,12 @@ int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_
     return ret;
 }
 
+void VideoWriteNode::setFinish(bool is_finish){
+    // do nothing
+}
+void VideoWriteNode::getFinish(bool& is_finish){
+    is_finish = this->m_is_finish;
+}
 } // namespace  eagleeye
 
 #endif

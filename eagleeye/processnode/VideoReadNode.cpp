@@ -53,6 +53,7 @@ VideoReadNode::VideoReadNode(){
     m_avf_cxt = NULL;
     m_avc_cxt = NULL;
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
+    EAGLEEYE_MONITOR_VAR(int, setFramesNumber, getFramesNumber, "frames", "", "");
 }   
 
 VideoReadNode::~VideoReadNode(){
@@ -71,13 +72,14 @@ void VideoReadNode::executeNodeInfo(){
         StringSignal* input_sig = (StringSignal*)(this->getInputPort(0));
         std::string video_path = input_sig->getData();
         this->setFilePath(video_path);
+        std::cout<<video_path<<std::endl;
     }
-
     ImageSignal<Array<unsigned char,3>>* output_img_signal = 
                     (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
     if(!m_next.isempty()){
-        output_img_signal->setData(m_next);
+        output_img_signal->setData(m_next, m_next_meta);
         m_next = m_nextnext;
+        m_next_meta = m_nextnext_meta;
         m_nextnext = Matrix<Array<unsigned char,3>>();
 
         if(m_next.isempty()){
@@ -85,7 +87,7 @@ void VideoReadNode::executeNodeInfo(){
         }
     }
     if(m_decoder_finish){
-        output_img_signal->meta()->is_end_frame = false;
+        std::cout<<"decoder finish "<<std::endl;
         return;
     }
     // 0.step 解析视频
@@ -158,8 +160,8 @@ void VideoReadNode::executeNodeInfo(){
             return;
         }
 
-        output_img_signal->meta()->fps = this->m_video_fps;
-        output_img_signal->meta()->nb_frames = this->m_frame_total;
+        output_img_signal->meta().fps = this->m_video_fps;
+        output_img_signal->meta().nb_frames = this->m_frame_total;
 
         AVDictionaryEntry *tag = NULL;
         tag = av_dict_get(m_avf_cxt->streams[m_stream_index]->metadata,"rotate", tag, 0);
@@ -213,17 +215,20 @@ void VideoReadNode::executeNodeInfo(){
             uint8_t* rgb_buffer[1] = {(uint8_t*)frame_rgb_data.dataptr()};
             int rgb_stride[1] = { 3 * frame->width};
             sws_scale(swsContext, frame->data, frame->linesize, 0, frame->height, rgb_buffer, rgb_stride);
-            output_img_signal->meta()->rotation = this->m_rotate_degree;
+            output_img_signal->meta().rotation = this->m_rotate_degree;
+            MetaData frame_meta = output_img_signal->meta();
             if(index==0 && iterator_count==3){
                 // 首次调用,直接输出赋值
-                output_img_signal->setData(frame_rgb_data);
+                output_img_signal->setData(frame_rgb_data, frame_meta);
             }
             else if(index == 1 && iterator_count==3){
                 m_next = frame_rgb_data;
+                m_next_meta = frame_meta;
             }
             else{
                 // 每次调用，获得下下次数据
                 m_nextnext = frame_rgb_data;
+                m_nextnext_meta = frame_meta;
             }
 
             sws_freeContext(swsContext);
@@ -231,11 +236,10 @@ void VideoReadNode::executeNodeInfo(){
         else{
             // 没有发现
             m_nextnext = Matrix<Array<unsigned char,3>>();
-        }
-    }
 
-    if(m_nextnext.isempty()){
-        output_img_signal->meta()->is_end_frame=true;
+            // m_next is final frame
+            m_next_meta.is_end_frame = true;
+        }
     }
 
     av_free_packet(packet);
@@ -247,15 +251,14 @@ void VideoReadNode::executeNodeInfo(){
     this->m_first_call = false;
 }
 
-void VideoReadNode::setFilePath(std::string file_path)
-{
+void VideoReadNode::setFilePath(std::string file_path){
 	m_file_path = file_path;
     this->m_frame_count = 0;
     this->m_frame_total = 0;
     this->m_decoder_finish = false;
     this->m_first_call = true;
     ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
-    output_img_signal->meta()->is_end_frame=false;
+    output_img_signal->meta().is_end_frame=false;
     m_next = Matrix<Array<unsigned char, 3>>();
     m_nextnext = Matrix<Array<unsigned char, 3>>();
 	//force time to update
@@ -273,6 +276,14 @@ void VideoReadNode::feadback(std::map<std::string, int>& node_state_map){
     else if(!m_next.isempty()){
         this->modified();
     }
+}
+
+void VideoReadNode::setFramesNumber(int num){
+    // do nothing
+}
+
+void VideoReadNode::getFramesNumber(int& num){
+    num = this->m_frame_total;
 }
 } // namespace  eagleeye
 

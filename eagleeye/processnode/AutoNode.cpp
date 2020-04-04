@@ -18,7 +18,6 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator){
 
     this->m_thread_status = true;
     this->m_is_ini = false;
-    this->m_lock = std::shared_ptr<spinlock>(new spinlock(), [](spinlock* d) { delete d; });
 }   
 
 AutoNode::~AutoNode(){
@@ -36,20 +35,29 @@ void AutoNode::run(){
         signal_list.push_back(signal_cp);
     }
 
+    bool running_ischange = false;
     while (true){
-        // 1.step get input
-        int signal_num = this->getNumberOfInputSignals();
-        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-            signal_list[signal_i]->copyInfo(this->getInputPort(signal_i));
-            // block call
-            signal_list[signal_i]->copy(this->getInputPort(signal_i));
+        if(!this->m_thread_status){
+            break;
+        }
 
-            if(!this->m_thread_status){
-                break;
+        if(!running_ischange){
+            // 1.step get input
+            int signal_num = this->getNumberOfInputSignals();
+            std::cout<<"auto node has input signal "<<signal_num<<std::endl;
+            for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+                // block call
+                std::cout<<"copy string"<<std::endl;
+                std::cout<<"signal list size "<<signal_list.size()<<std::endl;
+                signal_list[signal_i]->copy(this->getInputPort(signal_i));
+                std::cout<<"finish copy "<<std::endl;
+                if(!this->m_thread_status){
+                    break;
+                }
+
+                // set input
+                m_auto_node->setInputPort(signal_list[signal_i], signal_i);
             }
-
-            // set input
-            m_auto_node->setInputPort(signal_list[signal_i], signal_i);
         }
 
         if(!this->m_thread_status){
@@ -57,14 +65,15 @@ void AutoNode::run(){
         }
 
         // 2.step run node
-        this->m_lock->lock();
-        m_auto_node->start();
-        this->m_lock->unlock();
-
+        running_ischange = m_auto_node->start();
+        std::cout<<"runing runing runing"<<std::endl;
+        if(!running_ischange){
+            continue;
+        }
+        std::cout<<"GGGG"<<std::endl;
         // 3.step get output
-        signal_num = m_auto_node->getNumberOfOutputSignals();
+        int signal_num = m_auto_node->getNumberOfOutputSignals();
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-            this->getOutputPort(signal_i)->copyInfo(m_auto_node->getOutputPort(signal_i));
             this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));
         }
     }
@@ -94,9 +103,7 @@ void AutoNode::postexit(){
 void AutoNode::reset(){
     Superclass::reset();
     
-    this->m_lock->lock();
     m_auto_node->reset();
-    this->m_lock->unlock();
 }
 
 void AutoNode::init(){
@@ -106,6 +113,11 @@ void AutoNode::init(){
         m_auto_thread = std::thread(std::bind(&AutoNode::run,this));
         this->m_is_ini = true;
     }   
+}
+
+void AutoNode::updateUnitInfo(){
+    modified();
+    Superclass::updateUnitInfo();
 }
 
 void AutoNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool){

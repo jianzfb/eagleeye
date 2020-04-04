@@ -58,6 +58,14 @@ public:
     virtual void setFilePath(std::string file_path);
     virtual void getFilePath(std::string& file_path);
 
+    /**
+     * @brief Set/Get the Frames Number object
+     * 
+     * @param num 
+     */
+    void setFramesNumber(int num);
+    void getFramesNumber(int& num);
+
 private:
     VideoReadNode(const VideoReadNode&);
     void operator=(const VideoReadNode&);
@@ -69,6 +77,10 @@ private:
 
     Matrix<Array<unsigned char, 3>> m_next;
     Matrix<Array<unsigned char, 3>> m_nextnext;
+
+    MetaData m_next_meta;
+    MetaData m_nextnext_meta;
+
     int m_stream_index;
     double m_video_fps;
     bool m_decoder_finish;

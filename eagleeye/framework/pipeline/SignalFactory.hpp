@@ -16,7 +16,9 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_meta.rotation = 0;
 	this->m_meta.needed_rows = 0;
 	this->m_meta.needed_cols = 0;	
+	this->m_meta.timestamp = 0;
 	m_sig_category = SIGNAL_CATEGORY_IMAGE;
+	this->m_timestamp = 0;
 }
 
 template<class T>
@@ -28,15 +30,21 @@ void ImageSignal<T>::copyInfo(AnySignal* sig){
 	if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
 		ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
 		if (from_sig){
-			this->m_meta = *(from_sig->meta());
+			this->m_meta = from_sig->meta();
 		}
 	}
 }
 
 template<class T>
 void ImageSignal<T>::copy(AnySignal* sig){
+	if(SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
+		return;
+	}
 	ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
-	this->setData(from_sig->getData());
+
+	MetaData from_data_meta;
+	Matrix<T> from_data = from_sig->getData(from_data_meta);
+	this->setData(from_data, from_data_meta);
 }
 
 template<class T>
@@ -44,7 +52,7 @@ void ImageSignal<T>::printUnit()
 {
 	Superclass::printUnit();
 
-	EAGLEEYE_LOGD("image name %s \n",this->meta()->name.c_str());
+	EAGLEEYE_LOGD("image name %s \n",this->m_meta.name.c_str());
 	EAGLEEYE_LOGD("image type %d channels %d rows %d cols %d \n",pixel_type,channels,img.rows(),img.cols());
 }
 
@@ -69,7 +77,8 @@ void ImageSignal<T>::makeempty(bool auto_empty)
 	this->m_meta.rotation = 0;
 	this->m_meta.needed_rows = 0;
 	this->m_meta.needed_cols = 0;	
-
+	this->m_meta.timestamp = 0;
+	this->m_timestamp = 0;
 	if(auto_empty){
 		// reset count
 		this->m_release_count = 1;
@@ -96,13 +105,13 @@ bool ImageSignal<T>::isempty(){
 
 template<class T>
 typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
+	// refresh data
+	if(this->m_link_node != NULL){
+		this->m_link_node->refresh();
+	}
+
 	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
 		// SIGNAL_CATEGORY_IMAGE
-		// refresh data
-		if(this->m_delay_time > 0){
-			this->m_link_node->refresh();
-		}
-		// return img
 		return img;
 	}
 	else{
@@ -111,14 +120,20 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
 
-			if(this->m_queue.size() > 0){
+			if(this->m_queue.size() > 0 || this->m_signal_exit){
 				break;
 			}
         }
-		this->img = this->m_queue.front();
+
+		if(this->m_signal_exit){
+			return Matrix<T>();
+		}
+
+		Matrix<T> data = this->m_queue.front();
         this->m_queue.pop();
+		this->m_meta_queue.pop();
         locker.unlock();
-		return this->img;
+		return data;
 	}
 }
 
@@ -131,28 +146,91 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
-		this->m_queue.push(data);
+		this->m_queue.push(data); 
+		MetaData mm;
+		this->m_meta_queue.push(mm);
+		locker.unlock();
+
+		// notify
+		this->m_cond.notify_all();
+	}
+
+	modified();
+}
+
+template<class T>
+typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm){
+	// refresh data
+	if(this->m_link_node != NULL){
+		this->m_link_node->refresh();
+	}
+
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
+		// SIGNAL_CATEGORY_IMAGE
+		mm = this->m_meta;
+		return img;
+	}
+	else{
+		// SIGNAL_CATEGORY_IMAGE_QUEUE
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		while(this->m_queue.size() == 0){
+            this->m_cond.wait(locker);
+
+			if(this->m_queue.size() > 0 || this->m_signal_exit){
+				break;
+			}
+        }
+		if(this->m_signal_exit){
+			return Matrix<T>();
+		}
+
+		Matrix<T> data = this->m_queue.front();
+		mm = this->m_meta_queue.front();
+        this->m_queue.pop();
+		this->m_meta_queue.pop();
+        locker.unlock();
+		return data;
+	}
+}
+
+template<class T>
+void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
+		// SIGNAL_CATEGORY_IMAGE
+		this->img = data;
+		this->m_meta = mm;
+	}
+	else{
+		// SIGNAL_CATEGORY_IMAGE_QUEUE
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		this->m_queue.push(data); 
+		this->m_meta_queue.push(mm);
 		locker.unlock();
 
 		// notify
 		// this->m_cond.notify_one();
 		this->m_cond.notify_all();
 	}
+
+	modified();
 }
 
 template<class T>
 void ImageSignal<T>::setSignalContent(void* data, const int* data_size, const int data_dims){
 	Matrix<T> signal_content(data_size[0], data_size[1], data, true);
-	this->setData(signal_content);
+	MetaData meta_data;
+	meta_data.timestamp = this->m_timestamp;
+	this->m_timestamp += 1;
+	this->setData(signal_content, meta_data);
 }
 
 template<class T>
 void ImageSignal<T>::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
-	Matrix<T> matrix_data = this->getData();
-	data = (void*)matrix_data.dataptr();
+	this->m_tmp = this->getData();
+	data = (void*)this->m_tmp.dataptr();
 	data_dims = 3;
-	data_size[0] = matrix_data.rows();
-	data_size[1] = matrix_data.cols();
+	data_size[0] = this->m_tmp.rows();
+	data_size[1] = this->m_tmp.cols();
 	data_size[2] = TypeTrait<T>::size;
 	data_type = TypeTrait<T>::type;
 }
@@ -217,9 +295,10 @@ bool TensorSignal<T>::isempty(){
 template<class T>
 typename TensorSignal<T>::DataType TensorSignal<T>::getData(){
 	// refresh data
-	if(this->m_delay_time > 0){
+	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
 	}
+
 	// return img
 	return this->m_data;
 }

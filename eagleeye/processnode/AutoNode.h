@@ -49,6 +49,12 @@ public:
 	 */
 	virtual void getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool);
 
+    /**
+     * @brief overload
+     * @note force tobe updated
+     */
+    virtual void updateUnitInfo();
+
 protected:
     /**
      * @brief run in independent thread
@@ -65,8 +71,6 @@ private:
     bool m_thread_status;
     std::thread m_auto_thread;
     bool m_is_ini;
-
-    std::shared_ptr<spinlock> m_lock;
 };
 }
 #endif

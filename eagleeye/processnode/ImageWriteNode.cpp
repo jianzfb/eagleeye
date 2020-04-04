@@ -37,7 +37,7 @@ void ImageWriteNode::executeNodeInfo(){
             // gray image
             ImageSignal<unsigned char>* input_uchar_signal = (ImageSignal<unsigned char>*)(this->getInputPort(0));
             Matrix<unsigned char> data_uchar = input_uchar_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_uchar_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_uchar_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".png";
             writePngFile(file_path.c_str(), data_uchar.row(0), data_uchar.rows(), data_uchar.cols(), data_uchar.stride(), 1);
         }
@@ -45,7 +45,7 @@ void ImageWriteNode::executeNodeInfo(){
             // rgb image
             ImageSignal<Array<unsigned char,3>>* input_rgb_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
             Matrix<Array<unsigned char,3>> data_rgb = input_rgb_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_rgb_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_rgb_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".png";
             writePngFile(file_path.c_str(), (unsigned char*)data_rgb.row(0), data_rgb.rows(), data_rgb.cols(), data_rgb.stride(), 3);
         }
@@ -53,7 +53,7 @@ void ImageWriteNode::executeNodeInfo(){
             // rgba image
             ImageSignal<Array<unsigned char,4>>* input_rgba_signal = (ImageSignal<Array<unsigned char,4>>*)(this->getInputPort(0));
             Matrix<Array<unsigned char,4>> data_rgba = input_rgba_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_rgba_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_rgba_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".png";
             writePngFile(file_path.c_str(), (unsigned char*)data_rgba.row(0), data_rgba.rows(), data_rgba.cols(), data_rgba.stride(), 4);
         }
@@ -62,49 +62,49 @@ void ImageWriteNode::executeNodeInfo(){
         if(data_type == EAGLEEYE_CHAR){
             ImageSignal<char>* input_char_signal = (ImageSignal<char>*)(this->getInputPort(0));
             Matrix<char> data_char = input_char_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_char_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_char_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".bin";
             EagleeyeIO::write(data_char, file_path.c_str(), WRITE_BINARY_MODE);
         }
         else if(data_type == EAGLEEYE_SHORT){
             ImageSignal<short>* input_short_signal = (ImageSignal<short>*)(this->getInputPort(0));
             Matrix<short> data_short = input_short_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_short_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_short_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".bin";
             EagleeyeIO::write(data_short, file_path.c_str(), WRITE_BINARY_MODE);
         }
         else if(data_type == EAGLEEYE_USHORT){
             ImageSignal<unsigned short>* input_ushort_signal = (ImageSignal<unsigned short>*)(this->getInputPort(0));
             Matrix<unsigned short> data_ushort = input_ushort_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_ushort_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_ushort_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".bin";
             EagleeyeIO::write(data_ushort, file_path.c_str(), WRITE_BINARY_MODE);
         }
         else if(data_type == EAGLEEYE_INT){
             ImageSignal<int>* input_int_signal = (ImageSignal<int>*)(this->getInputPort(0));
             Matrix<int> data_int = input_int_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_int_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_int_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".bin";
             EagleeyeIO::write(data_int, file_path.c_str(), WRITE_BINARY_MODE);
         }
         else if(data_type == EAGLEEYE_UINT){
             ImageSignal<unsigned int>* input_uint_signal = (ImageSignal<unsigned int>*)(this->getInputPort(0));
             Matrix<unsigned int> data_uint = input_uint_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_uint_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_uint_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".bin";
             EagleeyeIO::write(data_uint, file_path.c_str(), WRITE_BINARY_MODE);
         }
         else if(data_type == EAGLEEYE_FLOAT){
             ImageSignal<float>* input_float_signal = (ImageSignal<float>*)(this->getInputPort(0));
             Matrix<float> data_float = input_float_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_float_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_float_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".bin";
             EagleeyeIO::write(data_float, file_path.c_str(), WRITE_BINARY_MODE);
         }
         else if(data_type == EAGLEEYE_DOUBLE){
             ImageSignal<double>* input_double_signal = (ImageSignal<double>*)(this->getInputPort(0));
             Matrix<double> data_double = input_double_signal->getData();
-            std::string file_prefix = this->getFileNamePrefix(input_double_signal->meta()->name);
+            std::string file_prefix = this->getFileNamePrefix(input_double_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".bin";
             EagleeyeIO::write(data_double, file_path.c_str(), WRITE_BINARY_MODE);
         }

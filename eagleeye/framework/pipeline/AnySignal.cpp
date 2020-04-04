@@ -14,7 +14,6 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 	m_signal_type = signal_type;
 	m_signal_target = signal_target;
 	this->m_prepared_ok = false;
-	this->m_delay_time = 0;
 	this->m_out_degree = 0;
 
 	// set support signal type and target
@@ -40,6 +39,8 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 
 	m_signal_type_value = EAGLEEYE_UNDEFINED_SIGNAL;
 	m_signal_target_value = EAGLEEYE_UNDEFINED_TARGET;
+
+	this->m_signal_exit = false;
 }
 AnySignal::~AnySignal()
 {
@@ -133,6 +134,7 @@ void AnySignal::reset(){
 }
 
 void AnySignal::exit(){
+	m_signal_exit = true;
 	if(m_link_node){
 		this->m_link_node->exit();
 	}	

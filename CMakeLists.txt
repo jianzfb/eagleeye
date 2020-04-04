@@ -156,6 +156,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SerialStringNode.cpp
     eagleeye/processnode/DrawNode.cpp
     eagleeye/processnode/AutoNode.cpp
+    eagleeye/processnode/QueueNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp

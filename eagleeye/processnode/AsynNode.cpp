@@ -19,7 +19,6 @@ AsynNode::AsynNode(int thread_num, std::function<AnyNode*()> generator, int inpu
     setNumberOfOutputSignals(1);
     AnySignal* output_signal = m_run_node[0]->getOutputPort(0)->make();
     this->setOutputPort(output_signal, 0);
-    output_signal->setDelayTime(1);
     this->m_round = 1;
     this->m_reset_flag = true;
 }
@@ -34,7 +33,6 @@ AsynNode::~AsynNode(){
 void AsynNode::executeNodeInfo(){
     // 1.step generate input signal clone
     AnySignal* input_signal_cp = this->getInputPort(0)->make();
-    input_signal_cp->copyInfo(this->getInputPort(0));
     input_signal_cp->copy(this->getInputPort(0));
 
     // 2.step get input and push to queue
@@ -94,7 +92,6 @@ void AsynNode::refresh(){
     m_output_list.pop_front();
     output_locker.unlock();
 
-    this->m_output_signals[0]->copyInfo(result.first.get());
     this->m_output_signals[0]->copy(result.first.get());
 }
 
@@ -134,7 +131,6 @@ void AsynNode::run(int thread_id){
         // 3.step 运行节点
         m_run_node[thread_id]->start();
         AnySignal* output_signal = m_run_node[thread_id]->getOutputPort(0)->make();
-        output_signal->copyInfo(m_run_node[thread_id]->getOutputPort(0));
         output_signal->copy(m_run_node[thread_id]->getOutputPort(0));
 
         // 4.step 输出到队列

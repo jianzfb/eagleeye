@@ -284,7 +284,6 @@ void AnyNode::reset(){
 	}
 	std::cout<<"run in reset "<<this->getUnitName()<<std::endl;
 
-
 	//reset pipeline backward
 	this->m_reset_flag = true;
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());

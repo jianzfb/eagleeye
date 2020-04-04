@@ -12,6 +12,14 @@
 #include <memory>
 
 namespace eagleeye{
+
+struct ParallelPriorityComp
+{
+    bool operator() (std::pair<std::shared_ptr<AnySignal>, int> a, std::pair<std::shared_ptr<AnySignal>, int> b) 
+    {
+        return a.second > b.second; 
+    }
+};    
 class ParallelNode:public AnyNode{
 public:
     typedef ParallelNode            Self;
@@ -23,7 +31,7 @@ public:
      * @brief Construct a new Parallel Node object
      * 
      */
-    ParallelNode(int delay_time, int thread_num, std::function<AnyNode*()> generator);
+    ParallelNode(int thread_num, std::function<AnyNode*()> generator);
     
     /**
      * @brief Destroy the Parallel Node object
@@ -38,9 +46,10 @@ public:
 	virtual void executeNodeInfo();
 
     /**
-     * @brief exit node
+     * @brief (pre/post) exit
      * 
      */
+    virtual void preexit();
     virtual void postexit();
 
     /**
@@ -56,25 +65,22 @@ public:
     virtual void reset();
 
     /**
-     * @brief Set/Get the Delay Time object
+     * @brief init node
      * 
-     * @param delay_time 
      */
-    void setDelayTime(int delay_time);
-    void getDelayTime(int& delay_time);
-
-    /**
-     * @brief feadback after run
-     * 
-     * @param node_state_map 
-     */
-    void feadback(std::map<std::string, int>& node_state_map);
+    virtual void init();
 
     /**
 	 *	@brief get monitor pool of the whole pipeline
 	 *	@note traverse the whole pipeline
 	 */
 	virtual void getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool);
+
+    /**
+     * @brief overload
+     * @note force tobe updated
+     */
+    virtual void updateUnitInfo();
 
 protected:
     /**
@@ -89,17 +95,13 @@ private:
     void operator=(const ParallelNode&);
     std::vector<AnyNode*> m_run_node;
     std::vector<std::thread> m_run_threads;    
-    std::queue<std::pair<std::shared_ptr<AnySignal>, int>> m_input_cache;
-    std::list<std::pair<std::shared_ptr<AnySignal>, int>> m_output_cache;
+    std::vector<std::priority_queue<std::pair<std::shared_ptr<AnySignal>, int>, std::vector<std::pair<std::shared_ptr<AnySignal>, int>>, ParallelPriorityComp>> m_output_cache;
 
-    unsigned int m_process_count;
     unsigned int m_waiting_count;
-    std::mutex m_input_mu;
 	std::mutex m_output_mu;	
-    std::condition_variable m_input_cond;
     std::condition_variable m_output_cond;
     bool m_thread_status;
-
+    bool m_is_ini;
 };
 
 }

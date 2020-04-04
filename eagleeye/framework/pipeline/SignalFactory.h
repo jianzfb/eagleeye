@@ -17,18 +17,6 @@
 
 namespace eagleeye
 {
-struct ImageMetaData{
-	std::string name;		// name
-	std::string info;		// info
-	double fps;				// frame rate for video
-	int nb_frames;			// frame number for video
-	int frame;				// frame index for video
-	bool is_end_frame;		// end frame flag for video
-	bool is_start_frame; 	// start frame flag for video
-	int rotation;			// rotation  (0,90,180,270)
-	int needed_rows;		// rows
-	int needed_cols;		// cols
-};
 //////////////////////////////////////////////////////////////////////////
 class EAGLEEYE_API BaseImageSignal:public AnySignal
 {
@@ -47,21 +35,12 @@ public:
 		}
 	virtual ~BaseImageSignal(){};
 
-	/**
-	 * @brief get image meta information
-	 * 
-	 * @return ImageMetaData* 
-	 */
-	ImageMetaData* meta(){
-		return &m_meta;
-	}
 
 	const EagleeyeType pixel_type;
 	const int channels;
 	
 protected:
 	int m_release_count;
-	ImageMetaData m_meta;
 	std::mutex m_mu;
 	std::condition_variable m_cond;
 };
@@ -153,6 +132,22 @@ public:
 	void setData(DataType data);
 
 	/**
+	 * @brief Get the Data object with meta
+	 * 
+	 * @param meta 
+	 * @return DataType 
+	 */
+	DataType getData(MetaData& mm);
+
+	/**
+	 * @brief Set the Data object with meta
+	 * 
+	 * @param data 
+	 * @param meta 
+	 */
+	void setData(DataType data, MetaData mm);
+
+	/**
 	 * @brief Set the Signal Content object
 	 * 
 	 * @param data 
@@ -192,8 +187,13 @@ public:
 
 private:
 	Matrix<T> img;
+	Matrix<T> m_tmp;
+	MetaData m_tmp_meta;
 	std::queue<Matrix<T>> m_queue;
+	std::queue<MetaData> m_meta_queue;
 	SignalCategory m_sig_category;
+
+	unsigned int m_timestamp;
 };
 
 /* Tensor Signal */
