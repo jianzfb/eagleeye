@@ -1,6 +1,7 @@
 #EAGLEEYE图像应用开发框架
 
 ####简介
+![](./doc/resource/readme.png)
 EAGLEEYE图像应用开发框架针对于快速将图像算法推向落地而设计。依靠统一通用的模块接口定义和数据流管线架构设计，极度简化团队协同开发。
 
 ####EAGLEEYE核心库编译
@@ -29,19 +30,19 @@ python3 setup.py install
     eagleeye-cli project --project=YOUR_PLUGIN --version=1.0.0.0  --signature=xxxxxxxxxx
     ```
 
-    <pre><code>
+    ```
     test_plugin
         - test_plugin.h
         - test_plugin.cpp
         - test_demo.cpp
         - CMakeLists.txt
         - build.sh
-    </code></pre>
+    ```
     调用build.sh，将会构建插件和DEMO工程。
 
 * 编写算法管线
     实现c=a+b功能，在test_plugin.cpp文件中
-    <pre><code>
+    ```c++
     namespace eagleeye{
     // 注册算法管线
     EAGLEEYE_PIPELINE_REGISTER(test, 1.0.0.0, xxxxx);
@@ -78,13 +79,7 @@ python3 setup.py install
     test->bind("b",0,"c",1);
     
     EAGLEEYE_END_PIPELINE_INITIALIZE
-    </code></pre>
-* 创建自定义数据处理节点
-    调用脚本
-    ```c++
-    eagleeye-cli node --name=NODE --inputport=A,B --outputport=C 
     ```
-    
 
 ####项目开发实例
 见doc/。
