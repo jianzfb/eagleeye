@@ -5,7 +5,16 @@
 
 ####功能性节点
 #####SkipNode(跳过节点)
-SkipNode是一个跳过节点，当其参数置为true后，所有依赖此节点的后继节点均处于未执行状态。当其参数置为false后，此节点为以透明节点，所有连接其上的输入信号均透明地传递给输出端口。
+SkipNode是一个跳过节点，当其参数置为true后，内部节点跳过。当其参数置为false后，关闭跳过功能，执行内部所有节点。
+```mermaid
+graph LR
+    N-->B
+    A-->X
+    A--SHORTCUT-->N
+    subgraph T[SkipNode]
+        X-->N(("S"))
+    end
+```
 代码构建如下
 ```c++
 /**
@@ -14,18 +23,23 @@ SkipNode是一个跳过节点，当其参数置为true后，所有依赖此节�
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-DataSourceNode<ImageSignal<Array<unsigned char, 3>>>* data_source = new DataSourceNode<ImageSignal<Array<unsigned char, 3>>>();
-data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
 // InstancePersonSegMRCNNNode* instance_person_seg_node = new InstancePersonSegMRCNNNode("maskrcnn", "GPU");
 //
 DummyNode* a = new DummyNode();
-SkipNode* skip_node = new SkipNode();
+SkipNode* skip_node = new SkipNode(
+    ()[]{
+        DummyNode* X = new DummyNode();
+        return X;
+    }
+);
 DummyNode* b = new DummyNode();
-DummyNode* c = new DummyNode();
+
 
 // 3.step add all node to pipeline
 // 3.1.step add data source node
@@ -36,34 +50,31 @@ test->add(data_source,"data_source");
 test->add(a, "a");
 test->add(skip_node, "skip_node");
 test->add(b, "b");
-test->add(c, "c");
 
 // 4.step link all node in pipeline
 // for example:
 // test->bind("data_source",0,"instance_person_seg_node",0);
 test->bind("data_source", 0, "a", 0);
 test->bind("a",0 , "skip_node",0);
-test->bind("skip_node", 0, "b",0);
-test->bind("b",0,"c",0);
+test->bind("skip_node",0,"b",0);
 
 EAGLEEYE_END_PIPELINE_INITIALIZE
 ```
-当”skip_node“节点的skip参数设置为false时，依赖于节点"skip_node"的所有后续节点可以正常执行。运行结果日志如下
+当”skip_node“节点的skip参数设置为false时，执行内部节点。运行结果日志如下
 ```
 eagleeye D ->   start run execute node (a)
 eagleeye I ->   finish run node (DummyNode) -- (a) (5 us)
 
 eagleeye D ->   start run execute node (skip_node)
+eagleeye D ->   start run execute node (X)
+eagleeye I ->   finish run node (DummyNode) -- (X) (5 us)
 eagleeye I ->   finish run node (SkipNode) -- (skip_node) (1 us)
 
 eagleeye D ->   start run execute node (b)
 eagleeye I ->   finish run node (DummyNode) -- (b) (5 us)
 
-eagleeye D ->   start run execute node (c)
-eagleeye I ->   finish run node (DummyNode) -- (c) (5 us)
-
 ```
-反之设置为true时，依赖于"skip_node"的后续节点均不满足运行条件。运行日志如下
+反之设置为true时，不执行内部节点。运行日志如下
 ```
 eagleeye D ->   start run execute node (a)
 eagleeye D ->   run in dummy node a
@@ -73,9 +84,8 @@ eagleeye I ->   finish run node (DummyNode) -- (a) (194 us)
 eagleeye D ->   start run execute node (skip_node)
 eagleeye I ->   finish run node (SkipNode) -- (skip_node) (0 us)
 
-eagleeye I ->   skip execute node (DummyNode) -- (b)
-
-eagleeye I ->   skip execute node (DummyNode) -- (c)
+eagleeye D ->   start run execute node (b)
+eagleeye I ->   finish run node (DummyNode) -- (b) (5 us)
 
 ```
 
@@ -98,9 +108,9 @@ graph LR
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-DataSourceNode<ImageSignal<Array<unsigned char, 3>>>* data_source = new DataSourceNode<ImageSignal<Array<unsigned char, 3>>>();
-data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
@@ -204,9 +214,9 @@ graph LR
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-DataSourceNode<ImageSignal<Array<unsigned char, 3>>>* data_source = new DataSourceNode<ImageSignal<Array<unsigned char, 3>>>();
-data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
@@ -290,9 +300,9 @@ graph LR
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-DataSourceNode<ImageSignal<Array<unsigned char, 3>>>* data_source = new DataSourceNode<ImageSignal<Array<unsigned char, 3>>>();
-data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
@@ -304,9 +314,9 @@ SubPipeline* subpipeline = new SubPipeline();
 DummyNode<ImageSignal<int>,ImageSignal<int>>* x = new DummyNode<ImageSignal<int>,ImageSignal<int>>();
 DummyNode<ImageSignal<int>,ImageSignal<int>>* y = new DummyNode<ImageSignal<int>,ImageSignal<int>>();
 DummyNode<ImageSignal<int>,ImageSignal<int>>* z = new DummyNode<ImageSignal<int>,ImageSignal<int>>();
-subpipeline->add(x, "x");// 加入节点x，并命名为x
+subpipeline->add(x, "x", SOURCE_NODE);// 加入节点x，并命名为x
 subpipeline->add(y, "y");// 加入节点y，并命名为y
-subpipeline->add(z, "z");// 加入节点z，并命名为z
+subpipeline->add(z, "z", SINK_NODE);// 加入节点z，并命名为z
 subpipeline->bind("SOURCE",0,"x",0);    //关联子管道的源连接到节点x
 subpipeline->bind("x",0,"y",0);         //关联节点x连接到节点y
 subpipeline->bind("y",0,"z",0);         //关联节点x连接到节点y
@@ -381,9 +391,9 @@ graph LR
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-DataSourceNode<ImageSignal<Array<unsigned char, 3>>>* data_source = new DataSourceNode<ImageSignal<Array<unsigned char, 3>>>();
-data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
@@ -391,7 +401,7 @@ data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
 //
 DummyNode<ImageSignal<Array<unsigned char, 3>>,ImageSignal<int>>* a = new DummyNode<ImageSignal<Array<unsigned char, 3>>,ImageSignal<int>>();
 
-ParallelNode* parallel_node = new ParallelNode(2, 3, [](){
+ParallelNode* parallel_node = new ParallelNode(3, [](){
     // 启动3个线程，每个线程维护一个X节点的副本
     // 并行节点的执行拥有保序性，也就是说顺序输入数据将获得顺序输出结果
     DummyNode<ImageSignal<int>,ImageSignal<int>>* x = new DummyNode<ImageSignal<int>,ImageSignal<int>>();
@@ -425,12 +435,12 @@ EAGLEEYE_END_PIPELINE_INITIALIZE
 ```c++
 class ParallelNode:public AnyNode{
 public:
-    ParallelNode(int delay_time, int thread_num, std::function<AnyNode*()> generator);
+    ParallelNode(int thread_num, std::function<AnyNode*()> generator);
 
     ...
 };
 ```
-其中构造函数的第一个参数是delay_time，表明在并行节点压入delay_time个数据后允许获取数据；第二个参数thread_num，表明启动的线程数；第三个参数generator，依靠lambda函数创建待并行的计算节点。在ParallelNode构造函数中，通过设置的线程数使用generator生成待并行计算的节点副本。在管线运行时，每个节点副本并行处理传进来的数据。
+其中构造函数的第一个参数thread_num，表明启动的线程数；第二个参数generator，依靠lambda函数创建待并行的计算节点。在ParallelNode构造函数中，通过设置的线程数使用generator生成待并行计算的节点副本。在管线运行时，每个节点副本并行处理传进来的数据。
 
 
 #####AsynNode(异步节点)
@@ -453,9 +463,9 @@ graph LR
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-DataSourceNode<ImageSignal<Array<unsigned char, 3>>>* data_source = new DataSourceNode<ImageSignal<Array<unsigned char, 3>>>();
-data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
@@ -464,7 +474,7 @@ data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
 DummyNode<ImageSignal<Array<unsigned char, 3>>,ImageSignal<int>>* a = new DummyNode<ImageSignal<Array<unsigned char, 3>>,ImageSignal<int>>();
 
 AsynNode* asyn_node = new AsynNode(2, [](){
-    // 启动3个线程，每个线程维护一个X节点的副本
+    // 启动2个线程，每个线程维护一个X节点的副本
     // 无保序性，也就谁说顺序输出的数据，无法保证同样顺序输出
     DummyNode<ImageSignal<int>,ImageSignal<int>>* x = new DummyNode<ImageSignal<int>,ImageSignal<int>>();
 
@@ -505,3 +515,4 @@ public:
 其中第一个参数thread_num，设置多线程数；第二个参数generator，依靠lambda函数创建待并行的计算节点；第三个参数queue_size，设置队列大小。在AsynNode维护一个优先队列，最新数据始终位于队列头部。
 
 #####AutoNode(自动节点)
+自动驱动节点运行，并将计算结果输出到队列。

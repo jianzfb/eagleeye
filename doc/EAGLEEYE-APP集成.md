@@ -1,22 +1,22 @@
-#EAGLEEYE DEMO集成
+#EAGLEEYE APP集成
 ----
-#### EAGLEEYE DEMO简介
+#### EAGLEEYE APP简介
 ![](../doc/resource/plugin_demo_app.png)
 依靠EAGLEEYE插件框架构建DEMO APP，主要用于快速验证、展示算法效果，加速算法迭代速度。按照EAGLEEYE插件框架构建的标准插件，可以通过APP主界面的选择插件按钮进行加载。APP可以同时管理多组插件，随时进行插件切换和监控参数调整。目前，APP可以支持图像应用、视频应用和相机应用（通过在构建算法管道时指定数据源类型设置）。
 
-**EAGLEEYE DEMO APP即将开源**
+**EAGLEEYE APP即将开源**
 #### 算法插件创建
 使用在EAGLEEYE插件框架中引入的例子——movingdet。在构建插件时，仅需要为输入节点和输出节点分别指定输出目标和数据类型即可完成和APP的对接。具体代码如下
 ```c++
   EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(movingdet)
   // 实现算法处理管线搭建（详见数据流编程框架介绍）
   // 第一步：定义数据源，用以接收外部传入的数据
-  DataSourceNode>>* data_source = 
-              new DataSourceNode>>();
+  Placeholder<ImageSignal<Array<unsigned char,3>>>* data_source = 
+              new Placeholder<ImageSignal<Array<unsigned char,3>>>();
   // 设置数据源类型
-  data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
+  data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
   // 设置数据源目标（这里指定EAGLEEYE_CAPTURE_PREVIEW_IMAGE，表明从相机预览流中获取数据）
-  data_source->setSourceTarget(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
+  data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
   
   // 第二步：定义数据变换节点，resize到指定大小
   ImageTransformNode* image_transform_node = new ImageTransformNode(false);

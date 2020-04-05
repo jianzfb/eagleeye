@@ -50,10 +50,10 @@ python3 setup.py install
     // 初始换算法管线
     EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
     // 建立数据源节点
-    DataSourceNode<ImageSignal<float>>* data_source = 
-                new DataSourceNode<ImageSignal<float>>();
-    data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-    data_source->setSourceTarget(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
+    Placeholder<ImageSignal<float>>* data_source = 
+                new Placeholder<ImageSignal<float>>();
+    data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+    data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
     
     // 第一步：建立节点 a,b,c
     IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >* a = 
@@ -80,6 +80,3 @@ python3 setup.py install
     
     EAGLEEYE_END_PIPELINE_INITIALIZE
     ```
-
-####项目开发实例
-见doc/。

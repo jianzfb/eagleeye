@@ -12,7 +12,7 @@ public:
 	typedef SkipNode								Self;
 	typedef AnyNode								    Superclass;
 
-    SkipNode();
+    SkipNode(std::function<AnyNode*()> generator);
     virtual ~SkipNode();
 
     /**
@@ -53,6 +53,7 @@ private:
     void operator=(const SkipNode&);
 
     bool m_skip;
+    AnyNode* m_execute_node;
 };
 }
 #endif

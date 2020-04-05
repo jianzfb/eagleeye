@@ -3,7 +3,7 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/framework/pipeline/AnyPipeline.h"
-#include "eagleeye/processnode/DataSourceNode.h"
+#include "eagleeye/processnode/Placeholder.h"
 #include "eagleeye/common/EagleeyeVisTool.h"
 #include "eagleeye/processnode/IncrementOrAddNode.h"
 #include "test_plugin.h"
@@ -22,10 +22,10 @@ EAGLEEYE_PIPELINE_REGISTER(test, 1.0.0.0, xxxxx);
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-DataSourceNode<ImageSignal<float>>* data_source = 
-                new DataSourceNode<ImageSignal<float>>();
-data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setSourceTarget(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<float>>* data_source = 
+                new Placeholder<ImageSignal<float>>();
+data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 
 // 2.step build your algorithm node

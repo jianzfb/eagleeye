@@ -4,8 +4,9 @@
 
 namespace eagleeye
 {
-SkipNode::SkipNode()
+SkipNode::SkipNode(std::function<AnyNode*()> generator)
     :AnyNode("skipnode"){
+    this->m_execute_node = generator();
     EAGLEEYE_MONITOR_VAR(bool, setSkip, getSkip, "skip","","");
 }    
 
@@ -21,6 +22,23 @@ void SkipNode::executeNodeInfo(){
             this->getOutputPort(sig_i)->copy(this->getInputPort(sig_i));
         }
     }
+    else{
+        int input_sigs_num = this->getNumberOfInputSignals();
+        std::vector<AnySignal*> signal_list;
+        signal_list.resize(input_sigs_num);
+        for(int sig_i=0; sig_i<input_sigs_num; ++sig_i){
+            signal_list[sig_i] = this->getInputPort(sig_i)->make();
+            signal_list[sig_i]->copy(this->getInputPort(sig_i));
+            this->m_execute_node->setInputPort(signal_list[sig_i], sig_i);
+        }
+
+        // execute 
+        this->m_execute_node->start();
+
+        for(int sig_i=0; sig_i<input_sigs_num; ++sig_i){
+            delete signal_list[sig_i];
+        }
+    }
 }
 
 bool SkipNode::selfcheck(){
@@ -29,8 +47,6 @@ bool SkipNode::selfcheck(){
 
 void SkipNode::setSkip(bool skip){
     this->m_skip = skip;
-    // set node state
-    this->setIsSatisfiedCondition(!skip);       
     modified();
 }
 

@@ -84,10 +84,10 @@
     EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(movingdet)
     // 实现算法处理管线搭建（详见数据流编程框架介绍）
     // 第一步：定义数据源，用以接收外部传入的数据
-    DataSourceNode<ImageSignal<Array<unsigned char, 3>>>* data_source = 
-                new DataSourceNode<ImageSignal<Array<unsigned char, 3>>>();
-    data_source->setSourceType(EAGLEEYE_SIGNAL_IMAGE);
-    data_source->setSourceTarget(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
+    Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = 
+                new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+    data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+    data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
     
     // 第二步：定义数据变换节点，resize到指定大小
     ImageTransformNode* image_transform_node = new ImageTransformNode(false);
