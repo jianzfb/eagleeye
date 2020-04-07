@@ -9,6 +9,7 @@
 #include <limits>
 #include <assert.h>
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/basic/ApproxMath.h"
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include "eagleeye/common/EagleeyeOpenCL.h"
 #endif
@@ -378,29 +379,33 @@ Matrix<T> msoftmax(const Matrix<T>& x){
 }
 
 template<typename T>
-Matrix<T> msoftmax2(const Matrix<T>& x){
+Matrix<T> msoftmaxApprox2(const Matrix<T>& x){
 	unsigned int rows = x.rows();
 	unsigned int cols = x.cols();
 	EAGLEEYE_CHECK(cols == 2, "only support cols = 2");
-
-	T x_max = x.at(0,0);
-	for(unsigned int r=0; r<rows; ++r){
-		const T* x_ptr = x.row(r);
-		for(unsigned int c=0; c<cols; ++c){
-			if(x_max < x_ptr[c]){
-				x_max = x_ptr[c];
-			}
-		}
-	}
 
 	Matrix<T> s(rows, cols);
 	for(unsigned int r=0; r<rows; ++r){
 		const T* x_ptr = x.row(r);
 		T* s_ptr = s.row(r);
-		s_ptr[0] = expf(x_ptr[0] - x_max);
-		s_ptr[1] = expf(x_ptr[1] - x_max);
-		
-		s_ptr[0] = s_ptr[0]/(s_ptr[0] + s_ptr[1]);
+		s_ptr[0] = 1.0f/(1.0f + expapprox(x_ptr[1] - x_ptr[0]));
+		s_ptr[1] = 1.0f - s_ptr[0];
+	}
+
+	return s;
+}
+
+template<typename T>
+Matrix<T> msoftmax2(const Matrix<T>& x){
+	unsigned int rows = x.rows();
+	unsigned int cols = x.cols();
+	EAGLEEYE_CHECK(cols == 2, "only support cols = 2");
+
+	Matrix<T> s(rows, cols);
+	for(unsigned int r=0; r<rows; ++r){
+		const T* x_ptr = x.row(r);
+		T* s_ptr = s.row(r);
+		s_ptr[0] = 1.0f/(1.0f + expf(x_ptr[1] - x_ptr[0]));
 		s_ptr[1] = 1.0f - s_ptr[0];
 	}
 
