@@ -145,7 +145,9 @@ void ParallelNode::postexit(){
     }
 
     for(int i=0; i<this->m_run_threads.size(); ++i){
-        this->m_run_threads[i].join();
+        if(this->m_run_threads[i].joinable()){
+            this->m_run_threads[i].join();
+        }
     }
 }
 

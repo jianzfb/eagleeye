@@ -4,17 +4,22 @@ namespace eagleeye{
 IfElseNode::IfElseNode(AnyNode* x, AnyNode* y)
     :AnyNode("ifelse"){
     // set output port
-    this->setNumberOfOutputSignals(1);
-    this->setOutputPort(x->getOutputPort(0)->make(), 0);
+    int x_output_signal_num = x->getNumberOfOutputSignals();
+    this->setNumberOfOutputSignals(x_output_signal_num);
+    for(int i=0; i<x_output_signal_num; ++i){
+        this->setOutputPort(x->getOutputPort(i)->make(), i);
+    }
+
     std::string x_name =x->getUnitName();
-    x->setUnitName((x_name+":x").c_str());
+    x->setUnitName((x_name+":TRUE").c_str());
     std::string y_name =y->getUnitName();
-    y->setUnitName((y_name+":y").c_str());
+    y->setUnitName((y_name+":FALSE").c_str());
 
     // set input port number
     // 0 - conditon signal
     // 1 - data signal
-    this->setNumberOfInputSignals(2);
+    // 2 - data signal
+    // ...
 
     this->m_x = x;
     this->m_y = y;
@@ -30,27 +35,72 @@ IfElseNode::~IfElseNode(){
 }
 
 void IfElseNode::executeNodeInfo(){
+    if(m_placeholders.size() == 0){
+        int input_sig_num = this->getNumberOfInputSignals();
+        for(int i=1; i<input_sig_num; ++i){  
+            m_placeholders.push_back(this->getInputPort(i)->make());
+        }
+    }
+
+    int input_sig_num = this->getNumberOfInputSignals();
+    for(int i=1; i<input_sig_num; ++i){  
+        m_placeholders[i-1]->copy(this->getInputPort(i));
+    }
+
     // get input / output signal
     // 1.step 条件信号
     BooleanSignal* condition_sig = (BooleanSignal*)(this->getInputPort(0));
-    AnySignal* input_sig = this->getInputPort(1);
     if(condition_sig->getData()){
         // 执行X
-        this->m_x->setInputPort(input_sig);
+        // 赋值所有输入信号到X
+        EAGLEEYE_LOGD("true branch in IFELSE");
+        for(int i=0; i<m_placeholders.size(); ++i){  
+            this->m_x->setInputPort(m_placeholders[i], i);
+        }
+
         this->m_x->start();
 
-        this->getOutputPort(0)->copy(this->m_x->getOutputPort(0));
+        int output_sig_num = this->getNumberOfOutputSignals();
+        for(int i=0; i<output_sig_num; ++i){
+            this->getOutputPort(i)->copy(this->m_x->getOutputPort(i));
+        }
     }
     else{
         // 执行Y
-        this->m_y->setInputPort(input_sig);
+        EAGLEEYE_LOGD("false branch in IFELSE");
+        for(int i=0; i<m_placeholders.size(); ++i){  
+            this->m_y->setInputPort(m_placeholders[i], i);
+        }
+
         this->m_y->start();
 
-        this->getOutputPort(0)->copy(this->m_y->getOutputPort(0));
+        int output_sig_num = this->getNumberOfOutputSignals();
+        for(int i=0; i<output_sig_num; ++i){
+            this->getOutputPort(i)->copy(this->m_y->getOutputPort(i));
+        }
     }
 }
 
 bool IfElseNode::selfcheck(){
     return true;
+}
+
+void IfElseNode::init(){
+    Superclass::init();
+    this->m_x->init();
+    this->m_y->init();
+}
+
+void IfElseNode::reset(){
+    this->m_x->reset();
+    this->m_y->reset();
+
+    Superclass::reset();
+}
+
+void IfElseNode::exit(){
+    this->m_x->exit();
+    this->m_y->exit();
+    Superclass::exit();
 }
 }

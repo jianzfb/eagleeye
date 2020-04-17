@@ -5,7 +5,7 @@ void empty_deleter(T* x) {
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols)
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols, Aligned aligned)
 {
 	m_rows = rows;
 	m_cols = cols;
@@ -15,18 +15,18 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols)
 	m_c_range.s = 0;
 	m_c_range.e = m_cols;
 
-	// m_ptr = new PtrType(new T[rows * cols]);
-	// memset(m_ptr->data,0,sizeof(T) * rows * cols);
 	if(rows == 0 || cols == 0){
 		return;
 	}
-
-	this->m_ptr = std::shared_ptr<T>(new T[rows*cols], [](T* arr) { delete [] arr; });
+	
+	void* aligned_mem_ptr;
+	posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
+	this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
 	memset(this->m_ptr.get(), 0, sizeof(T)*rows*cols);
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val)
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned)
 {
 	m_rows = rows;
 	m_cols = cols;
@@ -40,8 +40,9 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val)
 		return;
 	}
 
-	// m_ptr = new PtrType(new T[rows * cols]);
-	this->m_ptr = std::shared_ptr<T>(new T[rows*cols], [](T* arr) { delete [] arr; });
+	void* aligned_mem_ptr;
+	posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
+	this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
 	T* data = m_ptr.get();
 	int total = rows * cols;
 	for (int i = 0; i < total; ++i){
@@ -50,7 +51,7 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val)
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag)
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag, Aligned aligned)
 {
 	m_rows = rows;
 	m_cols = cols;
@@ -61,35 +62,15 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag)
 	m_c_range.e = m_cols;
 	
 	if (copy_flag){
-		this->m_ptr = std::shared_ptr<T>(new T[rows*cols], [](T* arr) { delete [] arr; });
+		void* aligned_mem_ptr;
+		posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
+		this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
 		memcpy(m_ptr.get(), data, sizeof(T)*rows*cols);
 	}
 	else{
 		m_ptr = std::shared_ptr<T>((T*)data, empty_deleter<T>);
 	}
 }
-
-// template<typename T>
-// Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T* data,bool charge_data)
-// {
-// 	m_rows = rows;
-// 	m_cols = cols;
-// 
-// 	m_r_range.s = 0;
-// 	m_r_range.e = m_rows;
-// 	m_c_range.s = 0;
-// 	m_c_range.e = m_cols;
-// 
-// 	if (charge_data)
-// 	{
-// 		m_ptr = new PtrType(data);
-// 	}
-// 	else
-// 	{
-// 		m_ptr = new PtrType(new T[rows * cols]);
-// 		memcpy(m_ptr->data,data,sizeof(T) * rows * cols);
-// 	}
-// }
 
 template<typename T>
 T& Matrix<T>::at(unsigned int r_index,unsigned int c_index) const

@@ -39,12 +39,32 @@ public:
 	 */
 	virtual bool selfcheck();
 
+    /**
+     * @brief init node
+     * 
+     */
+    virtual void init();
+
+	/**
+     * @brief reset
+     * 
+     */
+    virtual void reset();
+
+    /**
+     * @brief exit subpipeline
+     * 
+     */
+    virtual void exit();
+	
 private:
     IfElseNode(const IfElseNode&);
     void operator=(const IfElseNode&);
 
     AnyNode* m_x;
     AnyNode* m_y;
+
+	std::vector<AnySignal*> m_placeholders;
 };    
 }
 #endif

@@ -77,6 +77,8 @@ protected:
     int m_source_ignore_port;
     int* m_source_port_map;
 
+    std::map<int, std::pair<std::string, int>> m_special_source_port_map;
+
     AnyNode* m_sink_node;
     int m_sink_ignore_port;
     int* m_sink_port_map;

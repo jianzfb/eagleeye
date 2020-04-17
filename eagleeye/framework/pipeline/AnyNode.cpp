@@ -278,17 +278,17 @@ bool AnyNode::start(){
 }
 
 void AnyNode::reset(){
-	std::cout<<"before in reset "<<this->getUnitName()<<std::endl;
 	if(this->m_reset_flag){
 		return;
 	}
-	std::cout<<"run in reset "<<this->getUnitName()<<std::endl;
 
 	//reset pipeline backward
 	this->m_reset_flag = true;
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
-		(*in_iter)->reset();
+		if(*in_iter != NULL){
+			(*in_iter)->reset();
+		}
 	}
 	this->m_reset_flag = false;
 	EAGLEEYE_LOGD("reset %s node", this->getUnitName());
@@ -622,22 +622,27 @@ void AnyNode::exit(){
 
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
-		(*in_iter)->exit();
+		if(*in_iter != NULL){
+			(*in_iter)->exit();
+		}
 	}
 
 	// process (post exit)
 	this->postexit();
-	// m_exit_flag = false;
+	m_exit_flag = false;
 }
 
 void AnyNode::init(){
 	if(m_init_flag){
 		return;
 	}
+
 	m_init_flag = true;
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
-		(*in_iter)->init();
+		if(*in_iter != NULL){
+			(*in_iter)->init();	
+		}
 	}
 	m_init_flag = false;
 }

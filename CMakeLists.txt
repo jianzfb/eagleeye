@@ -2,7 +2,7 @@ PROJECT(eagleeye)
 
 cmake_minimum_required(VERSION 3.5)
 # add_definitions(-std=c++11)
-set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -O3 -march=native")
 
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
@@ -157,6 +157,9 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/DrawNode.cpp
     eagleeye/processnode/AutoNode.cpp
     eagleeye/processnode/QueueNode.cpp
+    eagleeye/processnode/DebugNode.cpp
+    eagleeye/processnode/LogicalNode.cpp
+    eagleeye/processnode/State2BooleanNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp
@@ -171,6 +174,7 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/AnyUnit.cpp 
     eagleeye/framework/pipeline/BooleanSignal.cpp
     eagleeye/framework/pipeline/StringSignal.cpp
+    eagleeye/framework/pipeline/StateSignal.cpp
     eagleeye/common/EagleeyeLog.cpp 
     eagleeye/engine/snpe_run.cpp 
     eagleeye/engine/model_engine.cpp 

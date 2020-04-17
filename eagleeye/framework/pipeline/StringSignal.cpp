@@ -14,15 +14,12 @@ void StringSignal::copyInfo(AnySignal* sig){
 }
 
 void StringSignal::copy(AnySignal* sig){
-	std::cout<<"in string signal copy"<<std::endl;
 	if(SIGNAL_CATEGORY_STRING != (sig->getSignalCategory() & SIGNAL_CATEGORY_STRING)){
 		return;
 	}
-	std::cout<<"AAAA"<<std::endl;
 
 	StringSignal* from_sig = (StringSignal*)(sig);
 	this->setData(from_sig->getData());
-	std::cout<<"BBBBB"<<std::endl;
 }
 
 void StringSignal::printUnit(){
@@ -83,8 +80,6 @@ void StringSignal::setData(StringSignal::DataType data){
 
 		// notify
 		this->m_cond.notify_all();		
-
-		std::cout<<"in string queue setdata"<<std::endl;
 	}
 
     modified();
@@ -92,8 +87,6 @@ void StringSignal::setData(StringSignal::DataType data){
 
 void StringSignal::setSignalContent(void* data, const int* data_size, const int data_dims){
 	std::string str = *((std::string*)data);
-	std::cout<<"set video path"<<std::endl;
-	std::cout<<str;
 	this->setData(str);
 }
 

@@ -8,11 +8,11 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/type.h"
 #include <memory>
+#include <stdlib.h>
+#include <cstdlib>
 
 namespace eagleeye
 {
-enum Order{ROW,COL,OTHERS};
-
 class Range
 {
 public:
@@ -24,6 +24,14 @@ public:
 
 	unsigned int s;
 	unsigned int e;
+};
+
+class Aligned{
+public:
+	Aligned(int aligned_bits):m_aligned_bits(aligned_bits){}
+	~Aligned(){};
+
+	int m_aligned_bits;
 };
 
 template<typename T>
@@ -45,19 +53,16 @@ public:
 		m_c_range.s = 0;
 		m_c_range.e = 0;
 	};
-	Matrix(unsigned int rows,unsigned int cols);
-	Matrix(unsigned int rows,unsigned int cols,T val);
+	Matrix(unsigned int rows,unsigned int cols, Aligned aligned=Aligned(64));
+	Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned=Aligned(64));
 
 	/**
 	 *	@brief using matrix structure to wrap outside data
 	 *	@note if copy_flag == true, it would copy this outside data; 
 	 */
-	Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag = false);
+	Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag = false, Aligned aligned=Aligned(64));
 
-	virtual ~Matrix()
-	{
-	}
-
+	virtual ~Matrix(){}
 	inline Matrix(const Matrix &m)
 	{
 		m_rows = m.m_rows;
@@ -542,6 +547,7 @@ private:
 
 	unsigned int m_rows;
 	unsigned int m_cols;
+
 	std::shared_ptr<T> m_ptr;
 };
 

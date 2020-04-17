@@ -22,8 +22,6 @@ MovingDetNode::MovingDetNode(){
     // port 1: optical flow
 	this->setNumberOfInputSignals(2);
 
-    std::cout<<"init moving detnode"<<std::endl;
-
     this->m_p = 0.6;
     this->m_alpha = 3.23;
     this->m_beta = 2.3;

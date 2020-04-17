@@ -36,22 +36,32 @@ SubPipeline::~SubPipeline(){
 
 void SubPipeline::executeNodeInfo(){
     // 1.step copy input
-    std::vector<AnySignal*> signal_list;
     if(this->m_placeholders.size() == 0){
-        for(int i=0; i<this->getNumberOfInputSignals(); ++i){
-            AnySignal* signal_cp = this->getInputPort(i)->make();
-            this->m_source_node->setInputPort(signal_cp, this->m_source_port_map[i]);
-            this->m_placeholders.push_back(signal_cp);
+        if(m_special_source_port_map.size() == 0){
+            // 基于默认方式绑定输入信号到 内部节点
+            for(int i=0; i<this->getNumberOfInputSignals(); ++i){
+                AnySignal* signal_cp = this->getInputPort(i)->make();
+                this->m_source_node->setInputPort(signal_cp, this->m_source_port_map[i]);
+                this->m_placeholders.push_back(signal_cp);
+            }
+        }
+        else{
+            // 基于特殊指定方式绑定输入信号的 内部节点
+            for(int i=0; i<this->getNumberOfInputSignals(); ++i){
+                AnySignal* signal_cp = this->getInputPort(i)->make();
+                std::string to_node_name = m_special_source_port_map[i].first;
+                int to_node_port = m_special_source_port_map[i].second;
+                m_subpipeline[to_node_name]->setInputPort(signal_cp,to_node_port);
+                this->m_placeholders.push_back(signal_cp);
+            }
         }
     }
     for(int i=0; i<this->getNumberOfInputSignals(); ++i){
         this->m_placeholders[i]->copy(this->getInputPort(i));
     }
-    this->m_source_node->modified();
 
     // 2.step run subpipeline
     this->m_sink_node->start();
-
     // 3.step copy output
     for(int i=0; i<this->getNumberOfOutputSignals(); ++i){
         this->getOutputPort(i)->copy(this->m_sink_node->getOutputPort(this->m_sink_port_map[i]));
@@ -75,6 +85,7 @@ void SubPipeline::add(AnyNode* node, std::string name, PipelineNodeType nodetype
         
         int source_input_signal_num = node->getNumberOfInputSignals();
         if(dontcare < 0){
+            // 默认方式，将subpipeline接入的所有信号传递给SOURCE节点
             this->setNumberOfInputSignals(source_input_signal_num);
             m_source_port_map = new int[source_input_signal_num];
             for(int i=0; i<source_input_signal_num; ++i){
@@ -82,6 +93,7 @@ void SubPipeline::add(AnyNode* node, std::string name, PipelineNodeType nodetype
             }
         }
         else{
+            // 默认方式，将subpipeline接入的所有信号传递给SOURCE节点（忽略dontcare port）
             this->setNumberOfInputSignals(source_input_signal_num - 1);
             m_source_port_map = new int[source_input_signal_num - 1];
             int count = 0;
@@ -127,12 +139,23 @@ void SubPipeline::add(AnyNode* node, std::string name, PipelineNodeType nodetype
 }
 
 void SubPipeline::bind(std::string fromname, int fromport, std::string toname, int toport){
-    if(m_subpipeline.find(fromname) == m_subpipeline.end()){
-        EAGLEEYE_LOGE("%s node not int subpipeline", fromname.c_str());
-        return;
-    }
     if(m_subpipeline.find(toname) == m_subpipeline.end()){
         EAGLEEYE_LOGE("%s node not int subpipeline", toname.c_str());
+        return;
+    }
+
+    if(fromname == "UPPER"){
+        // reserved keyword
+        m_special_source_port_map[fromport] = std::pair<std::string, int>(toname, toport);
+        AnyNode* node_to_ptr = this->m_subpipeline[std::string(toname)];
+        if(node_to_ptr->getNumberOfInputSignals() < toport+1){
+            node_to_ptr->setNumberOfInputSignals(toport+1);
+        }
+        return;
+    }
+
+    if(m_subpipeline.find(fromname) == m_subpipeline.end()){
+        EAGLEEYE_LOGE("%s node not int subpipeline", fromname.c_str());
         return;
     }
 

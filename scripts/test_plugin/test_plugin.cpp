@@ -22,10 +22,10 @@ EAGLEEYE_PIPELINE_REGISTER(test, 1.0.0.0, xxxxx);
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-Placeholder<ImageSignal<float>>* data_source = 
+Placeholder<ImageSignal<float>>* placeholder = 
                 new Placeholder<ImageSignal<float>>();
-data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
+placeholder->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+placeholder->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 
 // 2.step build your algorithm node
@@ -42,7 +42,7 @@ IncrementOrAddNode<ImageSignal<float>,ImageSignal<float>>* b =
 
 // 3.step add all node to pipeline
 // 3.1.step add data source node
-test->add(data_source,"data_source", SOURCE_NODE);
+test->add(placeholder,"placeholder", SOURCE_NODE);
 
 // 3.2.step add your algorithm node
 // for example:
@@ -52,8 +52,8 @@ test->add(b, "b", SINK_NODE);
 
 // 4.step link all node in pipeline
 // for example:
-// test->bind("data_source",0,"instance_person_seg_node",0);
-test->bind("data_source", 0, "a", 0);
+// test->bind("placeholder",0,"instance_person_seg_node",0);
+test->bind("placeholder", 0, "a", 0);
 test->bind("a", 0, "b", 0);
 test->bind("b", 0, "a", 1);
 

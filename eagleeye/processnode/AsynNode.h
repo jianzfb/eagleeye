@@ -50,6 +50,7 @@ public:
      * @brief exit node
      * 
      */
+    virtual void preexit();
     virtual void postexit();
 
     /**
@@ -85,14 +86,14 @@ private:
     std::vector<AnyNode*> m_run_node;
     std::vector<std::thread> m_run_threads;    
 
-    std::deque<std::pair<std::shared_ptr<AnySignal>, AsynMetaData>> m_input_cache;
-    std::list<std::pair<std::shared_ptr<AnySignal>, AsynMetaData>> m_output_list;
+    std::deque<std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>> m_input_cache;
+    std::list<std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>> m_output_list;
 
     unsigned int m_process_count;
     std::mutex m_input_mu;
 	std::mutex m_output_mu;	
     std::condition_variable m_input_cond;
-    bool m_thread_status;
+    volatile bool m_thread_status;
     int m_input_queue_size;
     int m_output_queue_size;
     int m_round;

@@ -21,9 +21,9 @@ EAGLEEYE_PIPELINE_REGISTER({{project}}, {{version}}, {{signature}});
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE({{project}})
 // 1.step build datasource node
-Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
-data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
-data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* placeholder = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+placeholder->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+placeholder->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
@@ -32,14 +32,14 @@ data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 3.step add all node to pipeline
 // 3.1.step add data source node
-{{project}}->add(data_source,"data_source", SOURCE_NODE);
+{{project}}->add(placeholder,"placeholder", SOURCE_NODE);
 // 3.2.step add your algorithm node
 // for example:
 // {{project}}->add(instance_person_seg_node, "instance_person_seg_node");
 
 // 4.step link all node in pipeline
 // for example:
-// {{project}}->bind("data_source",0,"instance_person_seg_node",0);
+// {{project}}->bind("placeholder",0,"instance_person_seg_node",0);
 
 EAGLEEYE_END_PIPELINE_INITIALIZE
 }

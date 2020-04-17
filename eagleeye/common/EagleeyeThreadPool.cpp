@@ -287,7 +287,7 @@ void ThreadPool::Compute2D(const std::function<void(const int64_t,
   const int64_t items0 = 1 + (end0 - start0 - 1) / step0;
   const int64_t items1 = 1 + (end1 - start1 - 1) / step1;
 
-  std::cout<<threads_.size()<<std::endl;
+  // std::cout<<threads_.size()<<std::endl;
   if (threads_.size() <= 1 || (cost_per_item >= 0
       && items0 * items1 * cost_per_item < kMaxCostUsingSingleThread)) {
     func(start0, end0, step0, start1, end1, step1);

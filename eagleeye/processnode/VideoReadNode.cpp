@@ -72,7 +72,6 @@ void VideoReadNode::executeNodeInfo(){
         StringSignal* input_sig = (StringSignal*)(this->getInputPort(0));
         std::string video_path = input_sig->getData();
         this->setFilePath(video_path);
-        std::cout<<video_path<<std::endl;
     }
     ImageSignal<Array<unsigned char,3>>* output_img_signal = 
                     (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
@@ -87,7 +86,6 @@ void VideoReadNode::executeNodeInfo(){
         }
     }
     if(m_decoder_finish){
-        std::cout<<"decoder finish "<<std::endl;
         return;
     }
     // 0.step 解析视频

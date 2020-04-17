@@ -36,13 +36,11 @@ public:
         EAGLEEYE_LOGD("input data");
         SrcT* input_sig = (SrcT*)(this->getInputPort(0));
         typename SrcT::DataType input = input_sig->getData();
-        std::cout<<input;
 
         EAGLEEYE_LOGD("output data");
         TargetT* output_sig = (TargetT*)(this->getOutputPort(0));
         output_sig->setData(this->m_fixed_output);
         typename TargetT::DataType output = output_sig->getData();
-        std::cout<<output;
     }
 
 private:

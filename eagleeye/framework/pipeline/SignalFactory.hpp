@@ -306,6 +306,7 @@ typename TensorSignal<T>::DataType TensorSignal<T>::getData(){
 template<class T>
 void TensorSignal<T>::setData(TensorSignal<T>::DataType data){
 	this->m_data = data;
+	modified();
 }
 
 template<class T>
@@ -368,6 +369,7 @@ typename ContentSignal<T>::DataType ContentSignal<T>::getData(){
 template<class T>
 void ContentSignal<T>::setData(ContentSignal<T>::DataType data){
 	this->info = data;
+	modified();
 }
 
 template<class T>

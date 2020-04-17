@@ -1,6 +1,11 @@
 #include "eagleeye/processnode/AsynNode.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include<stdio.h>
+#include<stdlib.h>
+ #include <cstdlib>
+#include <unistd.h> // sleep 的头文件
+
 namespace eagleeye
 {
 AsynNode::AsynNode(int thread_num, std::function<AnyNode*()> generator, int input_queue_size, int output_queue_size):
@@ -8,17 +13,20 @@ AsynNode::AsynNode(int thread_num, std::function<AnyNode*()> generator, int inpu
     m_output_queue_size(output_queue_size),
     m_process_count(0),
     m_thread_status(true){
+    // 开启线程        
     for(int i=0; i<thread_num; ++i){
         m_run_node.push_back(generator());
         m_run_threads.push_back(std::thread(std::bind(&AsynNode::run,this, i)));
     }
 
-    // 设置输入端口
-    setNumberOfInputSignals(1);
     // 设置输出端口
-    setNumberOfOutputSignals(1);
-    AnySignal* output_signal = m_run_node[0]->getOutputPort(0)->make();
-    this->setOutputPort(output_signal, 0);
+    int signal_num = m_run_node[0]->getNumberOfOutputSignals();
+    this->setNumberOfOutputSignals(signal_num);
+    for(int signal_i=0; signal_i<signal_num; ++signal_i){
+        AnySignal* output_signal = m_run_node[0]->getOutputPort(signal_i)->make();
+        this->setOutputPort(output_signal, signal_i);
+    }
+
     this->m_round = 1;
     this->m_reset_flag = true;
 }
@@ -32,8 +40,12 @@ AsynNode::~AsynNode(){
 
 void AsynNode::executeNodeInfo(){
     // 1.step generate input signal clone
-    AnySignal* input_signal_cp = this->getInputPort(0)->make();
-    input_signal_cp->copy(this->getInputPort(0));
+    std::vector<std::shared_ptr<AnySignal>> input_signals_cp;
+    for(int i=0; i<this->getNumberOfInputSignals(); ++i){
+        AnySignal* signal_cp = this->getInputPort(i)->make();
+        signal_cp->copy(this->getInputPort(i));
+        input_signals_cp.push_back(std::shared_ptr<AnySignal>(signal_cp, [](AnySignal* a){delete a;}));
+    }
 
     // 2.step get input and push to queue
 	std::unique_lock<std::mutex> input_locker(this->m_input_mu);
@@ -42,7 +54,7 @@ void AsynNode::executeNodeInfo(){
         this->m_input_cache.pop_front();
     }
     // push the newest frame
-    m_input_cache.push_back(std::pair<std::shared_ptr<AnySignal>, AsynMetaData>(std::shared_ptr<AnySignal>(input_signal_cp,[](AnySignal* a){delete a;}), AsynMetaData(this->m_process_count, this->m_round)));
+    m_input_cache.push_back(std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>(input_signals_cp, AsynMetaData(this->m_process_count, this->m_round)));
     input_locker.unlock();
 
 	// 3.step notify thread
@@ -50,6 +62,10 @@ void AsynNode::executeNodeInfo(){
     
     // 4.step update process count
     this->m_process_count += 1;
+}
+
+void AsynNode::preexit(){
+    this->m_thread_status = false;
 }
 
 void AsynNode::postexit(){
@@ -61,41 +77,46 @@ void AsynNode::postexit(){
     
     // push empty 
     for(int i=0; i<this->m_run_threads.size(); ++i){
-        this->m_input_cache.push_back(std::pair<std::shared_ptr<AnySignal>, AsynMetaData>(std::shared_ptr<AnySignal>(),AsynMetaData(0,0)));
+        this->m_input_cache.push_back(std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>(std::vector<std::shared_ptr<AnySignal>>(),AsynMetaData(0,0)));
     }
-    this->m_thread_status = false;
     input_locker.unlock();
-    this->m_input_cond.notify_all();
+    this->m_input_cond.notify_one();
 
     for(int i=0; i<this->m_run_threads.size(); ++i){
-        this->m_run_threads[i].join();
+        if(this->m_run_threads[i].joinable()){
+            this->m_run_threads[i].join();
+        }
     }
 }
 
 void AsynNode::refresh(){
-    EAGLEEYE_LOGD("asynnode refresh");
     std::unique_lock<std::mutex> output_locker(this->m_output_mu);    
+    if(this->m_reset_flag){
+        // remove all data in not this round
+        this->m_output_list.remove_if([&](std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>& a){return a.second.round != m_round;});
+        
+        if(this->m_output_list.size() > 0){
+            this->m_reset_flag = false;
+        }
+    }
+    
     if(this->m_output_list.size() == 0){
         output_locker.unlock();
         return;
     }
 
-    if(this->m_reset_flag){
-        // remove all data in not this round
-        this->m_output_list.remove_if([&](std::pair<std::shared_ptr<AnySignal>, AsynMetaData>& a){return a.second.round != m_round;});
-        this->m_reset_flag = false;
-    }
-    
     // get the newest output
-    std::pair<std::shared_ptr<AnySignal>, AsynMetaData> result = m_output_list.back();
+    std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData> result = m_output_list.back();
     // remove the oldest output
     m_output_list.pop_front();
     output_locker.unlock();
 
-    this->m_output_signals[0]->copy(result.first.get());
+    for(int i=0; i<this->getNumberOfOutputSignals(); ++i){
+        this->getOutputPort(i)->copy(result.first[i].get());
+    }
 }
 
-bool LatestPriority(const std::pair<std::shared_ptr<AnySignal>, AsynMetaData>& a,const std::pair<std::shared_ptr<AnySignal>, AsynMetaData>& b) { 
+bool LatestPriority(const std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>& a,const std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>& b) { 
     return a.second.timestamp < b.second.timestamp; 
 }
 
@@ -113,30 +134,41 @@ void AsynNode::run(int thread_id){
 		}
 
         // get the newest frame
-        std::pair<std::shared_ptr<AnySignal>, AsynMetaData> input_data = this->m_input_cache.back();
+        std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData> input_data = this->m_input_cache.back();
         // pop this
         this->m_input_cache.pop_back();
         input_locker.unlock();
 
-        if(input_data.first.get() == NULL){
-            return;
+        if(input_data.first.size() == 0){
+            break;
         }
 
         // 2.step 更新输入数据
-        AnySignal* input_signal = input_data.first.get();
         int timestamp = input_data.second.timestamp;        
         int round = input_data.second.round;
-        m_run_node[thread_id]->setInputPort(input_signal, 0);
+        
+        if(m_run_node[thread_id]->getNumberOfInputSignals() != input_data.first.size()){
+            m_run_node[thread_id]->setNumberOfInputSignals(input_data.first.size());
+        }
+        for(int i=0; i<input_data.first.size(); ++i){
+            AnySignal* sig = input_data.first[i].get();
+            m_run_node[thread_id]->setInputPort(sig, i);
+        }
 
         // 3.step 运行节点
         m_run_node[thread_id]->start();
-        AnySignal* output_signal = m_run_node[thread_id]->getOutputPort(0)->make();
-        output_signal->copy(m_run_node[thread_id]->getOutputPort(0));
+
+        std::vector<std::shared_ptr<AnySignal>> ll;
+        for(int i=0; i<m_run_node[thread_id]->getNumberOfOutputSignals(); ++i){
+            AnySignal* output_signal = m_run_node[thread_id]->getOutputPort(i)->make();
+            output_signal->copy(m_run_node[thread_id]->getOutputPort(i));
+            ll.push_back(std::shared_ptr<AnySignal>(output_signal, [](AnySignal* a){delete a;}));
+        }
 
         // 4.step 输出到队列
         std::unique_lock<std::mutex> output_locker(this->m_output_mu);
         // 加入最新结果
-        m_output_list.push_back(std::pair<std::shared_ptr<AnySignal>, AsynMetaData>(std::shared_ptr<AnySignal>(output_signal, [](AnySignal* a){delete a;}), AsynMetaData(timestamp,round)));
+        m_output_list.push_back(std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>(ll, AsynMetaData(timestamp,round)));
         // 按时间排序，最新结果置于列尾
         m_output_list.sort(LatestPriority);
         if(m_output_list.size() > this->m_output_queue_size){
@@ -144,17 +176,11 @@ void AsynNode::run(int thread_id){
             m_output_list.pop_front();
         }
 
-        // std::list<std::pair<std::shared_ptr<AnySignal>, AsynMetaData>>::iterator iter, iend(m_output_list.end());
-        // for(iter = m_output_list.begin(); iter != iend; ++iter){
-        //     std::cout<<iter->second.timestamp<<"\t";
-        // }
-        // std::cout<<'\n';
         output_locker.unlock();
     }
 }
 
 void AsynNode::reset(){
-    std::cout<<"RESET ASYNNODE"<<std::endl;
     // clear input queue
     std::unique_lock<std::mutex> input_locker(this->m_input_mu);
     this->m_input_cache.clear();

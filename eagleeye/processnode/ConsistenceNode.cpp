@@ -61,7 +61,6 @@ void ConsistenceNode::executeNodeInfo(){
 	// ss += 1;
 
 	if(this->m_is_first){
-		std::cout<<"is first frame"<<std::endl;
 		this->m_pre_input = input_img;
 		this->m_pre_solution = input_process.clone();
 		

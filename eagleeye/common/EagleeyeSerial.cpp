@@ -13,6 +13,7 @@ SerialStringReader::SerialStringReader(std::string prefix, std::string folder){
 		EAGLEEYE_LOGE("couldnt open folder");
 	}
 	struct dirent* entry = readdir(this->m_dir_parent);
+
 	while(entry){
 		std::string file_name = std::string(entry->d_name);
     	std::string prefix = this->formatName(this->m_prefix);
@@ -21,8 +22,8 @@ SerialStringReader::SerialStringReader(std::string prefix, std::string folder){
         	std::vector<std::string> file_name_keys = eagleeye::split(file_name, ".");
         	std::vector<std::string> file_name_index = eagleeye::split(file_name_keys[0], "_");
 
-        	int file_index = atoi(file_name_index[1].c_str());
-        	this->m_serials[file_index] = file_path;
+        	int file_index = std::stoi(file_name_index[1]);
+        	this->m_serials[int64_t(file_index)] = file_path;
         	this->m_count += 1;	
 	    }
 
@@ -32,7 +33,11 @@ SerialStringReader::SerialStringReader(std::string prefix, std::string folder){
 	if(this->m_serials.size() != this->m_count){
 		EAGLEEYE_LOGD("file number not consistent with subfix");
 	}
-	this->m_current_index=0;
+
+	this->m_current_index = 0;
+	if(this->m_serials.find(this->m_current_index) == this->m_serials.end()){
+		this->m_current_index = 1;
+	}
 }
 
 SerialStringReader::~SerialStringReader(){

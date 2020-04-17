@@ -27,9 +27,7 @@ public:
      *  @note user must finish this function
 	 */
 	virtual void executeNodeInfo(){
-        std::cout<<"before in copy run"<<std::endl;
         this->getOutputPort(0)->copy(this->getInputPort(0));
-        std::cout<<"after in copy run"<<std::endl;
     }
 
 private:

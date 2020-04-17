@@ -1,25 +1,23 @@
-#ifndef _EAGLEEYE_BOOLEANSIGNAL_H_
-#define _EAGLEEYE_BOOLEANSIGNAL_H_
+#ifndef _EAGLEEYE_STATESIGNAL_H_
+#define _EAGLEEYE_STATESIGNAL_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
 
 namespace eagleeye{
-
-class BooleanSignal:public AnySignal
-{
+class StateSignal:public AnySignal{
 public:
 	/**
 	 *	@brief define some basic type
 	 *	@note you must do these
 	 */
-	typedef BooleanSignal							Self;
-	typedef AnySignal								Superclass;
+    typedef StateSignal                     Self;
+    typedef AnySignal                       Superclass;
 
-	typedef bool									MetaType;
-	typedef bool									DataType;
+	typedef int								MetaType;
+	typedef int								DataType;
 
-	BooleanSignal(bool ini_boolean=false);
-	virtual ~BooleanSignal();
+    StateSignal(int ini_state=0);
+    virtual ~StateSignal();
 
 	/**
 	 *	@brief copy info
@@ -71,7 +69,7 @@ public:
 	 * @return AnySignal* 
 	 */
 	virtual AnySignal* make(){
-		return new BooleanSignal();
+		return new StateSignal();
 	}
 
 	/**
@@ -79,19 +77,18 @@ public:
 	 * 
 	 * @return int 
 	 */
-	EagleeyeType getSignalValueType(){return EAGLEEYE_BOOL;};
+	EagleeyeType getSignalValueType(){return EAGLEEYE_INT;};
 
 	/**
 	 * @brief Get the Derive Type object
 	 * 
 	 * @return SignalCategory 
 	 */
-	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_CONTROL;}
+	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_STATE;}
 
 private:
-	bool m_boolean;	
-	bool m_ini_boolean;
+	int m_state;	
+    int m_ini_state;
 };
-
 }
 #endif
