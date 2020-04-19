@@ -20,7 +20,7 @@
     
     参数：
     * plugin_folder指定存放插件的目录
-    * pipeline_names获得返回的符合要求的插件
+    * pipeline_names获得返回的符合要求的插件名字
 
     说明：
     调用此函数获得所有符合要求的插件列表
@@ -137,14 +137,15 @@
 
     ```
 * 插件运行
-    包括设置计算管线的输入、计算管线运行、计算管线输出
+    包括管线输入、运行和输出
     * 设置管线输入
 
         ```c++
+        char* in_data_name = "source";          // 占位节点名字（在构建管线时，Placeholder指定的名字）
         void* in_data = ...;                    // 数据指针
         int in_data_size[] = {rows, cols, 3};   // 数据形状
         int in_data_type = ...;                 // 数据类型
-        eagleeye_pipeline_set_input(pipeline_name.c_str(), "data_source", in_data, in_data_size, 3, in_data_type);
+        eagleeye_pipeline_set_input(pipeline_name.c_str(), in_data_name, in_data, in_data_size, 3, in_data_type);
         ```
     * 检查管线是否满足运行条件
         ```c++
@@ -152,34 +153,40 @@
         eagleeye_pipeline_isready(pipeline_name.c_str(), is_ready);
         ```
         如果返回is_ready==true，表明管线处在可运行状态，反之处在不可运行状态。
+        注：只有当所有占位节点均设置了输入，管线才处在可运行状态。
     * 管线运行
 
         ```c++
-        eagleeye_pipeline_run(pipeline_name.c_str());
+        bool status = false;
+        status = eagleeye_pipeline_run(pipeline_name.c_str());
         ```
+        当返回状态status==true，则说明管线输出节点数据发生更新。否则输出节点数据无变化。
     * 获得管线输出
 
         ```c++
-        void* out_data;
-        int out_data_size[3];
-        int out_data_dims=0;
-        int out_data_type=0;
-        eagleeye_pipeline_get_output(pipeline_name.c_str(), "mdn/0",out_data, out_data_size, out_data_dims, out_data_type);
+        char* out_data_name="mdn/0";    //输出节点名字/端口号
+        void* out_data;                 //输出数据指针
+        int out_data_size[3];           //数据尺寸
+        int out_data_dims=0;            //数据维度
+        int out_data_type=0;            //数据类型
+        eagleeye_pipeline_get_output(pipeline_name.c_str(), out_data_name, out_data, out_data_size, out_data_dims, out_data_type);
         ```
         
         其中，out_data获得的数据指针；out_data_size获得的数据大小包括高、宽、通道数；out_data_type数据类型。
         数据类型定义如下
-        char            - 0
-        unsigned char   - 1
-        short           - 2
-        unsigned short  - 3
-        int             - 4
-        unsigned int    - 5
-        float           - 6
-        double          - 7
-        Array< unsigned char, 3 >    - 8
-        Array< unsigned char, 4 >    - 9
-        std::string     -10
+        |数据类型|值|
+        |----|----|
+        |char|0|
+        |unsigned char|1|
+        |short|2|
+        |unsigned short|3|
+        |int|4|
+        |unsigned int|5|
+        |float|6|
+        |double|7|
+        |Array<unsigned char,3>|8|
+        |Array<unsigned char,4>|9|
+        |std::string|10|
     * 管线状态重置
         ```c++
         eagleeye_pipeline_reset(pipeline_name.c_str());
@@ -197,153 +204,159 @@
 
 #####插件集成其余接口分析
 * 插件版本号
-```c++
-char* pipeline_version = (char*)malloc(1024);
-eagleeye_pipeline_version(pipeline_name.c_str(), pipeline_version);
+    ```c++
+    char* pipeline_version = (char*)malloc(1024);
+    eagleeye_pipeline_version(pipeline_name.c_str(), pipeline_version);
+    ```
+    获得指定插件的版本编号（x.x.x.x）。
 
-```
 * 插件中可配置参数列表
-```c++
-// 函数原型
-// bool eagleeye_pipeline_get_monitor_config(const char* pipeline_name,
-//                                           std::vector<std::string>& monitor_names,
-//                                           std::vector<int>& monitor_types,
-//                                           std::vector<std::string>& monitor_range);
+    ```c++
+    // 函数原型
+    // bool eagleeye_pipeline_get_monitor_config(const char* pipeline_name,
+    //                                           std::vector<std::string>& monitor_names,
+    //                                           std::vector<int>& monitor_types,
+    //                                           std::vector<std::string>& monitor_range);
 
-std::vector<std::string> monitor_names;
-std::vector<int> monitor_types;
-std::vector<std::string> monitor_range;
-eagleeye_pipeline_get_monitor_config(pipeline_name.c_str(), monitor_names, monitor_types, monitor_range);
+    std::vector<std::string> monitor_names;
+    std::vector<int> monitor_types;
+    std::vector<std::string> monitor_range;
+    eagleeye_pipeline_get_monitor_config(pipeline_name.c_str(), monitor_names, monitor_types, monitor_range);
 
-```
-monitor_names中每个字符串按照node/param格式存储着数据处理节点的名字和对应的参数名字。monitor_types中存储着参数的类型，目前支持的参数类型如下
-EAGLEEYE_MONITOR_BOOL   = 0     （bool）
-EAGLEEYE_MONITOR_INT    = 1      (int)
-EAGLEEYE_MONITOR_FLOAT  = 2      (float)
-EAGLEEYE_MONITOR_STR    = 3      (std::string)
-
-monitor_range中按照min/max格式存储着允许调节的最大最小值。
+    ```
+    monitor_names中每个字符串按照node/param格式存储着数据处理节点的名字和对应的参数名字。monitor_types中存储着参数的类型，目前支持的参数类型如下
+    |枚举标识|参数类型|值|
+    |----|---|----|
+    |EAGLEEYE_MONITOR_BOOL|bool|0|
+    |EAGLEEYE_MONITOR_INT|int|1|
+    |EAGLEEYE_MONITOR_FLOAT|float|2|
+    |EAGLEEYE_MONITOR_STR|std::string|3|
+    monitor_range中按照min/max格式存储着允许调节的最大最小值。
 * 设置/获取参数值
-```c++
-// 设置参数函数原型
-// bool eagleeye_pipeline_set_param(const char* pipeline_name,
-//                                  const char* node_name, 
-//                                  const char* param_name, 
-//                                  const void* value);
-// bool类型参数类型
-std::string node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-std::string param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-bool bool_value = true;
-eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &bool_value);
+    ```c++
+    // 设置参数函数原型
+    // bool eagleeye_pipeline_set_param(const char* pipeline_name,
+    //                                  const char* node_name, 
+    //                                  const char* param_name, 
+    //                                  const void* value);
+    // bool类型参数类型
+    std::string node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    std::string param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    bool bool_value = true;
+    eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &bool_value);
 
-// int 类型参数类型
-node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-int int_value = 10;
-eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &int_value);
+    // int 类型参数类型
+    node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    int int_value = 10;
+    eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &int_value);
 
-// float 类型参数类型
-node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-float float_value = 10.0f;
-eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &float_value);
+    // float 类型参数类型
+    node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    float float_value = 10.0f;
+    eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &float_value);
 
-// std::string 类型参数类型
-node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-std::string str_value = "hello the world";
-eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &str_value);
+    // std::string 类型参数类型
+    node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    std::string str_value = "hello the world";
+    eagleeye_pipeline_set_param(pipeline_name.c_str(), node_name, param_name, &str_value);
 
-// 获取参数函数原型
-// bool eagleeye_pipeline_get_param(const char* pipeline_name,
-//                                  const char* node_name, 
-//                                  const char* param_name, 
-//                                  void* value);
-// bool 类型参数
-node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-bool bool_value;
-eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &bool_value);
+    // 获取参数函数原型
+    // bool eagleeye_pipeline_get_param(const char* pipeline_name,
+    //                                  const char* node_name, 
+    //                                  const char* param_name, 
+    //                                  void* value);
+    // bool 类型参数
+    node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    bool bool_value;
+    eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &bool_value);
 
-// int 类型参数
-node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-int int_value;
-eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &int_value);
+    // int 类型参数
+    node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    int int_value;
+    eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &int_value);
 
-// float 类型参数
-node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-float float_value;
-eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &float_value);
+    // float 类型参数
+    node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    float float_value;
+    eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &float_value);
 
-// std::string 类型参数
-node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
-std::string str_value;
-eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &str_value);
-```
+    // std::string 类型参数
+    node_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    param_name = ...; (可以从上一步中获得的参数列表(node/param)中解析得到)
+    std::string str_value;
+    eagleeye_pipeline_get_param(pipeline_name.c_str(), node_name, param_name, &str_value);
+    ```
 
 * 获取插件输入节点配置
-```c++
-// 函数原型
-// bool eagleeye_pipeline_get_input_config(const char* pipeline_name,
-//                                         std::vector<std::string>& input_nodes,
-//                                         std::vector<std::string>& input_types,
-//                                         std::vector<std::string>& input_sources);
+    ```c++
+    // 函数原型
+    // bool eagleeye_pipeline_get_input_config(const char* pipeline_name,
+    //                                         std::vector<std::string>& input_nodes,
+    //                                         std::vector<std::string>& input_types,
+    //                                         std::vector<std::string>& input_sources);
 
-std::vector<std::string> input_nodes;
-std::vector<std::string> input_types;
-std::vector<std::string> input_sources;
-eagleeye_pipeline_get_input_config(pipeline_name.c_str(), input_nodes, input_types, input_sources);
+    std::vector<std::string> input_nodes;
+    std::vector<std::string> input_types;
+    std::vector<std::string> input_sources;
+    eagleeye_pipeline_get_input_config(pipeline_name.c_str(), input_nodes, input_types, input_sources);
 
-```
-其中，input_nodes保存着输入节点名字；input_types保存着输入节点数据种类；input_sources保存着数据数据的来源。上层APP需要根据输入数据来源确定插件应用场景，并绑定指定输入数据。
-数据种类定义
-	"EAGLEEYE_SIGNAL_IMAGE"  图像数据
-	"EAGLEEYE_SIGNAL_RECT"   矩形数据（x,y,w,h）
-	"EAGLEEYE_SIGNAL_LINE"	 直线数据 (x1,y1,x2,y2)
-	"EAGLEEYE_SIGNAL_POINT"	 点数据（x,y）
+    ```
+    其中，input_nodes保存着输入节点名字；input_types保存着输入节点数据种类；input_sources保存着数据数据的来源。上层APP需要根据输入数据来源确定插件应用场景，并绑定指定输入数据。
+    数据种类定义
+    |类型字符串标识|含义|
+    |----|----|
+    |EAGLEEYE_SIGNAL_IMAGE|图像数据|
+    |EAGLEEYE_SIGNAL_RECT|矩形数据（x,y,w,h）|
+    |EAGLEEYE_SIGNAL_LINE|直线数据 (x1,y1,x2,y2)|
+    |EAGLEEYE_SIGNAL_POINT|点数据（x,y）|
 
-数据来源定义
-	"EAGLEEYE_CAPTURE_STILL_IMAGE" 	数据来源相机（拍照应用）
-	"EAGLEEYE_PHOTO_GALLERY_IMAGE"  数据来源相册
-	"EAGLEEYE_CAPTURE_PREVIEW_IMAGE"数据来源相机预览
-	"EAGLEEYE_CAPTURE_CLICK" 数据来源点击
-	"EAGLEEYE_CAPTURE_LINE"	 数据来源绘制直线
-	"EAGLEEYE_CAPTURE_RECT"	 数据来源绘制矩形
-	"EAGLEEYE_CAPTURE_POINT" 同"EAGLEEYE_CAPTURE_CLICK"
-	"EAGLEEYE_CAPTURE_MASK"	 数据绘制手指绘制的mask
-	"EAGLEEYE_CAPTURE_VIDEO_IMAGE"  数据来源视频
+    数据来源定义
+    |类型字符串标识|含义|
+    |----|----|
+    |EAGLEEYE_CAPTURE_STILL_IMAGE|数据来源相机（拍照应用）|
+    |EAGLEEYE_PHOTO_GALLERY_IMAGE|数据来源相册|
+    |EAGLEEYE_CAPTURE_PREVIEW_IMAGE|数据来源相机预览|
+    |EAGLEEYE_CAPTURE_CLICK|数据来源点击|
+    |EAGLEEYE_CAPTURE_LINE|数据来源绘制直线|
+    |EAGLEEYE_CAPTURE_RECT|数据来源绘制矩形|
+    |EAGLEEYE_CAPTURE_POINT|同"EAGLEEYE_CAPTURE_CLICK"|
+    |EAGLEEYE_CAPTURE_MASK|数据绘制手指绘制的mask|
+    |EAGLEEYE_CAPTURE_VIDEO_IMAGE|数据来源视频|
 
 * 获取插件输出节点配置
-```c++
-// 函数原型
-// bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
-//                                          std::vector<std::string>& output_nodes,
-//                                          std::vector<std::string>& output_types,
-//                                          std::vector<std::string>& output_targets);
+    ```c++
+    // 函数原型
+    // bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
+    //                                          std::vector<std::string>& output_nodes,
+    //                                          std::vector<std::string>& output_types,
+    //                                          std::vector<std::string>& output_targets);
 
-std::vector<std::string> output_nodes;
-std::vector<std::string> output_types;
-std::vector<std::string> output_targets;
-eagleeye_pipeline_get_output_config(pipeline_name.c_str(), output_nodes, output_types, output_targets);
-```
-其中，output_nodes存储着输出节点名字，output_types存储着输出节点数据种类（定义见上一节），output_targets输出节点输出位置（定义见上一节，需要上层APP支持）。
+    std::vector<std::string> output_nodes;
+    std::vector<std::string> output_types;
+    std::vector<std::string> output_targets;
+    eagleeye_pipeline_get_output_config(pipeline_name.c_str(), output_nodes, output_types, output_targets);
+    ```
+    其中，output_nodes存储着输出节点名字，output_types存储着输出节点数据种类（定义见上一节），output_targets输出节点输出位置（定义见上一节，需要上层APP支持）。
 
 * 加载/保存插件参数配置
-```c++
-// 加载插件参数配置函数原型
-// bool eagleeye_pipeline_load_config(const char* pipeline_name, const char* config_file);
-const char* config_file = "../pipeline_config.bin";
-eagleeye_pipeline_load_config(pipeline_name.c_str(), config_file);
+    ```c++
+    // 加载插件参数配置函数原型
+    // bool eagleeye_pipeline_load_config(const char* pipeline_name, const char* config_file);
+    const char* config_file = "../pipeline_config.bin";
+    eagleeye_pipeline_load_config(pipeline_name.c_str(), config_file);
 
 
-// 保存插件参数配置函数原型
-// bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config_file);
-const char* config_file = "../pipeline_config.bin";
-eagleeye_pipeline_save_config(pipeline_name.c_str(), config_file);
-```
+    // 保存插件参数配置函数原型
+    // bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config_file);
+    const char* config_file = "../pipeline_config.bin";
+    eagleeye_pipeline_save_config(pipeline_name.c_str(), config_file);
+    ```
 
 
 ####快速生成插件代码模板
@@ -358,7 +371,7 @@ eagleeye-cli project --project=movingdet \\ 定义要生成的插件名字
         --abi=arm64-v8a \\              定义abi
         --eagleeye=EAGLEEYE_PATH \\     定义eagleeye路径
         --opencl=OPENCL_PATH \\         定义OPENCL路径（选择性设置）
-        --neon=1                        定义NEON加速(1/0)
+        --neon=true                     定义NEON加速(true/false)
 ```
 
 运行脚本后将在当前目录下生成以指定的插件名命名的文件夹（这里--project=movingdet），例如
@@ -492,7 +505,7 @@ eagleeye_movingdet_reset()
     // 第一步：设置输入
     void* data = image.data;
     int data_size[] = {image.rows, image.cols, 3}; 
-    eagleeye_movingdet_set_input("data_source", data, data_size, 3，8);
+    eagleeye_movingdet_set_input("source", data, data_size, 3，8);
     // 第二步：驱动管线运行
     eagleeye_movingdet_run();
     ```

@@ -2,11 +2,18 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 namespace eagleeye
 {
-StringSignal::StringSignal(){
+StringSignal::StringSignal(std::string ini_str){
+	this->m_ini_str = ini_str;
 	this->m_sig_category = SIGNAL_CATEGORY_STRING;
+
+	this->m_release_count = 1;
 }   
 StringSignal::~StringSignal(){
 } 
+
+void StringSignal::setInit(std::string ini_str){
+    this->m_ini_str = ini_str;
+}
 
 void StringSignal::copyInfo(AnySignal* sig){
 	//call the base class
@@ -27,7 +34,19 @@ void StringSignal::printUnit(){
 }
 
 void StringSignal::makeempty(bool auto_empty){
-    this->m_str = std::string();
+	if(auto_empty){
+		if(this->m_release_count % this->getOutDegree() != 0){
+			this->m_release_count += 1;
+			return;
+		}
+	}
+
+    this->m_str = this->m_ini_str;
+
+	if(auto_empty){
+		this->m_release_count = 1;
+	}
+
 	//force time update
 	modified();
 }

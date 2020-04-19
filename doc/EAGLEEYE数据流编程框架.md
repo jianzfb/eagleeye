@@ -8,7 +8,7 @@ _____
 ####数据流框架原理
 ![](./resource/dataflow_framework.png)
 
-数据流框架依靠定义的AnySignal和AnyNode串起所有的计算节点。AnySignal是信号的基类，框架中已经基于其创建了图像信号ImageSignal、张量信号TensorSignal和控制信号BooleanSignal。AnyNode是数据处理节点的基类，所有数据处理算法均继承于此类。每个数据处理节点需要预先指定输入和输出信号个数，并生成输出信号。数据处理节点间通过信号建立连接。
+数据流框架依靠定义的AnySignal和AnyNode构建数据处理网络。AnySignal是信号的基类，目前已经实现图像信号ImageSignal、张量信号TensorSignal、字符串信号StringSignal、状态信号StateSignal和控制信号BooleanSignal。AnyNode是数据处理节点的基类，所有数据处理算法均继承于此类。每个数据处理节点需要预先指定输入和输出信号个数，并生成输出信号。数据处理节点间通过信号建立连接。
 
 如下代码将节点node_a的第0输出信号与节点node_b的第1输入端口建立联系：
 ```c++
@@ -19,7 +19,7 @@ node_b->setInputPort(node_a->getOutputPort(0), 1);
 
 依靠类似代码便可建立所有数据处理节点的连接。
 
-整个计算网路依靠输出节点进行驱动。通过调用
+整个计算网络依靠输出节点进行驱动。通过调用
 ```c++
 AnyNode* output_node = ...
 output_node->start()
@@ -127,7 +127,7 @@ void MovingDetNode::executeNodeInfo(){
 
 
 ####如何创建一个数据处理节点
-下面我们以运动检测作为例子，来具体看一下如何创建计算节点
+下面我们以运动检测作为例子，来具体看一下如何创建数据处理节点
 movingdetnode.h
 
 ```c++

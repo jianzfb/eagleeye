@@ -297,6 +297,14 @@ public:
 	 */
 	virtual MetaData& meta(){return this->m_meta;};
 
+	/**
+	 * @brief find input signal
+	 * 
+	 * @param ptr 
+	 * @param ll 
+	 */
+	void findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll);
+
 protected:
 	std::string m_signal_type;
 	std::string m_signal_target;

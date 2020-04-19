@@ -5,10 +5,16 @@ namespace eagleeye
 StateSignal::StateSignal(int ini_state){
     this->m_ini_state = ini_state;
     this->m_state = this->m_ini_state;
+
+    this->m_release_count = 1;
 }   
 
 StateSignal::~StateSignal(){
     
+}
+
+void StateSignal::setInit(int ini_state){
+    this->m_ini_state = ini_state;
 }
 
 void StateSignal::copyInfo(AnySignal* sig){
@@ -29,7 +35,18 @@ void StateSignal::setData(DataType data){
 }
 
 void StateSignal::makeempty(bool auto_empty){
+    if(auto_empty){
+		if(this->m_release_count % this->getOutDegree() != 0){
+			this->m_release_count += 1;
+			return;
+		}
+	}
+
     this->m_state = this->m_ini_state;
+
+    if(auto_empty){
+		this->m_release_count = 1;
+	}
     modified();
 }
 

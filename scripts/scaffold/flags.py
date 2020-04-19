@@ -126,9 +126,21 @@ class _BooleanFlag(VarFlag):
   def value(self):
     global _options
     if '--' + self.name in _options:
-      return bool(int(_options['--' + self.name]))
+      vv = _options['--' + self.name]
+      if vv.lower() == "true":
+        return True
+      else if vv.lower() == 'false':
+        return False
+      else:
+        return bool(int(vv))
     elif '-' + self.name in _options:
-      return bool(int(_options['--' + self.name]))
+      vv = _options['--' + self.name]
+      if vv.lower() == "true":
+        return True
+      else if vv.lower() == 'false':
+        return False
+      else:
+        return bool(int(vv))
 
     return bool(self.default) if self.default is not None else None
 

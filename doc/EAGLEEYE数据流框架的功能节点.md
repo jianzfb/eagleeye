@@ -1,7 +1,7 @@
 #EAGLEEYE数据流框架的功能性节点
 ----
 ####简介
-在EAGLEEYE数据流框架下的计算节点分为两个类型，（1）普通节点和（2）功能性节点。普通节点是指所有执行数据处理的节点，包括数据变换处理节点（如ImageTransformNode，等）、算法处理节点（如ConsistenceNode，SaliencyDetNode，等）。功能性节点是指管理管理数据流框架执行的节点，如条件节点（ConditionNode），异步节点（AsynNode），等。
+在EAGLEEYE数据流框架下的计算节点分为两个类型，（1）普通节点和（2）功能性节点。普通节点是指所有执行数据处理的节点，包括数据变换处理节点（如ImageTransformNode，等）、算法节点（如ConsistenceNode，SaliencyDetNode，等）。功能性节点是指管理管理数据流框架执行的节点，如条件节点（ConditionNode），异步节点（AsynNode），等。
 
 ####功能性节点
 #####SkipNode(跳过节点)
@@ -189,7 +189,7 @@ eagleeye I ->   finish run node (DummyNode) -- (d) (10 us)
 ```
 
 #####IfElseNode
-IfElseNode是开关节点，根据控制信号自动选择执行的管道分支路线。IFElseNode在第0端口接入控制信号，在第1端口接入上游数据。IFElseNode将根据在第0端口接入的控制信号的输出true/false，判断将输入上游节点的输出对接到IFElseNode内的对应分支并运行输出。如果控制信号输出true，则运行分支x；如果控制信号输出false，则运行分支y。
+IfElseNode是选择节点，根据控制信号自动选择执行的管道分支路线。IfElseNode在第0端口接入控制信号，其余端口接入上游信号（端口可数任意）。IfElseNode将根据在第0端口接入的控制信号的输出true/false，判断将输入上游节点的输出对接到IfElseNode内的对应分支并运行输出。如果控制信号输出true，则运行分支x；如果控制信号输出false，则运行分支y。
 
 拓扑结果见下：
 ```mermaid
@@ -371,7 +371,7 @@ eagleeye I ->   finish run node (DummyNode) -- (c) (4 us)
 ```
 
 #####ParallelNode(并行节点)
-并行节点是指，依靠多线程执行内部控制的节点，在执行时拥有保序性。拓扑结构见下：
+并行节点是指，依靠多线程执行内部控制的节点，在执行时拥有保序性。接入的上游信号需要是队列信号，在执行时自动从上游队列信号中抓取数据，送入多线程中执行，并保存到输出队列中。拓扑结构见下：
 ```mermaid
 graph LR
     A-->S
@@ -391,7 +391,8 @@ graph LR
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
 // 1.step build datasource node
-Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+// placeholder队列信号
+Placeholder<ImageSignal<Array<unsigned char, 3>>>* data_source = new Placeholder<ImageSignal<Array<unsigned char, 3>>>(true);
 data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
 data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
@@ -443,8 +444,21 @@ public:
 其中构造函数的第一个参数thread_num，表明启动的线程数；第二个参数generator，依靠lambda函数创建待并行的计算节点。在ParallelNode构造函数中，通过设置的线程数使用generator生成待并行计算的节点副本。在管线运行时，每个节点副本并行处理传进来的数据。
 
 
+#####AutoNode(自动节点)
+自动驱动节点同并性节点类似，主动抓取上游队列信号中的数据并送入独立线程中进行执行，并将输出数据保存到输出队列中。可以看做是线程个数为1的并行节点。
+构建代码
+```c++
+AutoNode* auto_node = new AutoNode(
+    [](){
+        DummyNode* nn = new DummyNode();
+        return nn;
+});
+```
+
 #####AsynNode(异步节点)
-异步节点是指，依靠多线程执行内部控制的节点，在执行时无法保证每次获取结果都能得到。拓扑结构见下：
+不同于并行节点和自动节点，异步节点属于被动式驱动多线程获取数据并执行。在整个管线外部驱动运行时，将数据送入多线程执行。同时从此节点获取的数据，是在此时刻的已经处理完成的最新数据。由于非阻塞执行，从而不可以保证每次从异步节点都能取到数据。
+
+拓扑结构见下：
 ```mermaid
 graph LR
     A-->S
@@ -506,13 +520,44 @@ EAGLEEYE_END_PIPELINE_INITIALIZE
 ```c++
 class AsynNode:public AnyNode{
 public:
-    AsynNode(int thread_num, std::function<AnyNode*()> generator, int queue_size=1);
+    AsynNode(int thread_num, std::function<AnyNode*()> generator, int input_queue_size=1, int output_queue_size=1);
 
     ...
 }；
 ```
 
-其中第一个参数thread_num，设置多线程数；第二个参数generator，依靠lambda函数创建待并行的计算节点；第三个参数queue_size，设置队列大小。在AsynNode维护一个优先队列，最新数据始终位于队列头部。
+其中第一个参数thread_num，设置多线程数；第二个参数generator，依靠lambda函数创建待并行的计算节点；第三个参数是内部维护的输入队列大小；第四个参数是内部维护的输出队列大小。输出队列是优先队列，保证最新处理结果位于队列头部。
 
-#####AutoNode(自动节点)
-自动驱动节点运行，并将计算结果输出到队列。
+#####QueueNode(队列节点)
+将数据推入同类型队列信号。通常用于对接并行节点（ParallelNode）或自动节点（AutoNode）。
+构建代码如下
+```c++
+QueueNode* qn = new QueueNode();
+// 将上游信号连接入qn第0端口
+// 在pipeline run时，将上游信号送入qn维护的队列信号中，共下游节点使用（通常下游节点为并行节点和自动节点）。
+qn->setInputPort(..., 0);
+```
+
+#####State2BooleanNode(状态转控制)
+将状态信号转换为控制信号。通过设置状态到true/false的映射关系，实现根据数据处理的需求，生成控制信号。
+```mermaid
+graph LR
+    A((StateSignal))-->B((ControlSignal))
+```
+构建代码如下
+```c++
+std::map<int, bool> tracking_state_map;
+tracking_state_map[0] = false;      // 状态0映射为false
+tracking_state_map[1] = true;       // 状态1映射为true
+State2BooleanNode* tracking_state_feadback = new State2BooleanNode(tracking_state_map);
+
+```
+
+#####LogicalNode(逻辑节点)
+实现控制信号的逻辑控制。接收两个控制信号，根据指定的与、或算子，实现输出。
+```mermaid
+graph LR
+    A((ControlSignal))-->C((AND/OR))
+    B((ControlSignal))-->C
+```
+

@@ -4,6 +4,8 @@
 #include "eagleeye/common/EagleeyeVersion.h"
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/processnode/CopyNode.h"
+#include "eagleeye/processnode/Placeholder.h"
 #include <string>
 
 
@@ -83,6 +85,11 @@ AnyPipeline::~AnyPipeline(){
     for(iter=this->m_nodes.begin(); iter!=iend; ++iter){
         delete iter->second;
     }
+
+    std::vector<AnyNode*>::iterator placeholder_iter, placeholder_iend(m_using_placeholders.end());
+    for(placeholder_iter=m_using_placeholders.begin(); placeholder_iter!=placeholder_iend; ++placeholder_iter){
+        delete *placeholder_iter;
+    }
 }
 
 void AnyPipeline::setPipelineName(const char* name){
@@ -112,6 +119,10 @@ bool AnyPipeline::start(const char* node_name){
     }
     else{
         // run at ...
+        if(this->m_nodes.find(std::string(node_name)) == this->m_nodes.end()){
+            return false;
+        }
+
         this->m_nodes[std::string(node_name)]->start();
         is_finish = is_finish & this->m_nodes[std::string(node_name)]->isDataHasBeenUpdate();
     }
@@ -188,6 +199,33 @@ void AnyPipeline::bind(const char* node_a,
         node_b_ptr->setNumberOfInputSignals(port_b+1);
     }
     node_b_ptr->setInputPort(node_a_ptr->getOutputPort(port_a), port_b);
+}
+
+AnyNode* AnyPipeline::getNode(std::string node_name){
+    if(this->m_nodes.find(node_name) == this->m_nodes.end()){
+        return NULL;
+    }
+    return this->m_nodes[node_name];
+}
+
+AnyNode* AnyPipeline::branch(std::string pipeline_name, std::string node_name, int port, bool inplace){
+    if(m_pipeline_map.find(pipeline_name) == m_pipeline_map.end()){
+        return NULL;
+    }
+
+    std::shared_ptr<AnyPipeline> source_pipeline = m_pipeline_map[pipeline_name];
+    AnyNode* source_node = source_pipeline->getNode(node_name);
+    if(source_node == NULL){
+        return NULL;
+    }
+
+    if(port >= source_node->getNumberOfOutputSignals()){
+        return NULL;
+    }
+
+    CopyNode* copy_node = new CopyNode(inplace);
+    copy_node->setInputPort(source_node->getOutputPort(port), 0);
+    return copy_node;
 }
 
 void AnyPipeline::loadConfigure(std::string config_file){
@@ -395,6 +433,28 @@ void AnyPipeline::setInput(const char* node_name,
         return;
     }
 
+    // check m_using_placeholders(用户临时插入的替代性占位符)
+    if(this->m_using_placeholders.size() > 0){
+        int finding_index = -1;
+        for(int i=0; i<this->m_using_placeholders.size(); ++i){
+            std::string placeholder_port_name = this->m_using_placeholders[i]->getUnitName();
+            placeholder_port_name = placeholder_port_name + "/" +tos(this->m_replace_ports[i]);
+
+            if(placeholder_port_name == std::string(node_name)){
+                finding_index = i;
+                break;
+            }
+        }
+
+        if(finding_index != -1){
+            EAGLEEYE_LOGD("set custom placeholder %s", node_name);
+            m_using_placeholders[finding_index]->getOutputPort(0)->setSignalContent(data, data_size, data_dims);
+            m_using_placeholders[finding_index]->modified();
+            return;
+        }
+    }
+
+    EAGLEEYE_LOGD("set pipeline input %s", node_name);
     std::string input_key = std::string(node_name);    
     int port = 0;
     if(input_key.find("/") != std::string::npos){
@@ -621,4 +681,141 @@ void AnyPipeline::addFeadbackRule(const char* trigger_node, int trigger_node_sta
 void AnyPipeline::setInitFunc(INITIALIZE_PLUGIN_PIPELINE_FUNC func){
     m_init_func = func;
 }
+
+void AnyPipeline::replaceAt(std::string node_name, int port){
+    if(this->m_nodes.find(node_name) == this->m_nodes.end()){
+        EAGLEEYE_LOGD("%s node not in pipeline", node_name.c_str());
+        return;
+    }
+    int output_sig_num = this->m_nodes[node_name]->getNumberOfOutputSignals();
+    if(port >= output_sig_num){
+        EAGLEEYE_LOGD("%s node only have %d ports but you want to replace at port %d", node_name.c_str(), output_sig_num, port);
+        return;
+    }
+
+    SignalCategory category = this->m_nodes[node_name]->getOutputPort(port)->getSignalCategory();
+    EagleeyeType type = this->m_nodes[node_name]->getOutputPort(port)->getSignalValueType();
+    AnyNode* n = this->placeholder(category, type);
+    n->setUnitName(this->m_nodes[node_name]->getUnitName());
+
+    std::vector<std::pair<AnyNode*,int>> ll;
+    std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
+    for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
+        iter->second->findIn(this->m_nodes[node_name]->getOutputPort(port),ll);
+    }
+    if(ll.size() == 0){
+        EAGLEEYE_LOGE("dont finding %s node %d port position", node_name.c_str(), port);
+        return;
+    }
+
+    for(int i=0; i<ll.size(); ++i){
+        AnyNode* influenced_node = ll[i].first;
+        int influenced_port = ll[i].second;
+
+        influenced_node->setInputPort(n->getOutputPort(0), influenced_port);
+        EAGLEEYE_LOGD("reset node %s port %d link", influenced_node->getUnitName(), influenced_port);
+    }
+
+    this->m_replace_nodes.push_back(node_name);
+    this->m_replace_ports.push_back(port);
+    this->m_using_placeholders.push_back(n);
+    EAGLEEYE_LOGD("success replace node %s at port %d", node_name.c_str(), port);
+}
+
+void AnyPipeline::restoreAt(std::string node_name, int port){
+    if(this->m_nodes.find(node_name) == this->m_nodes.end()){
+        EAGLEEYE_LOGD("%s node not in pipeline", node_name.c_str());
+        return;
+    }
+    int output_sig_num = this->m_nodes[node_name]->getNumberOfOutputSignals();
+    if(port >= output_sig_num){
+        EAGLEEYE_LOGD("%s node only have %d ports but you want to replace at port %d", node_name.c_str(), output_sig_num, port);
+        return;
+    }
+
+    int replaced_num = this->m_replace_nodes.size();
+    bool ok = false;
+    int index = -1;
+    for(int i=0; i<replaced_num; ++i){
+        if(this->m_replace_nodes[i] == node_name && this->m_replace_ports[i] == port){
+            ok = true;
+            index = i;
+            break;
+        }
+    }
+
+    if(!ok){
+        EAGLEEYE_LOGD("%s node %d port not be replaced by placeholder", node_name.c_str(), port);
+        return;
+    }
+
+    std::vector<std::pair<AnyNode*,int>> ll;
+    std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
+    for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
+        iter->second->findIn(this->m_using_placeholders[index]->getOutputPort(0),ll);
+    }
+    if(ll.size() == 0){
+        EAGLEEYE_LOGE("dont finding placeholder position");
+        return;
+    }
+    
+    for(int i=0; i<ll.size(); ++i){
+        AnyNode* influenced_node = ll[i].first;
+        int influenced_port = ll[i].second;
+
+        influenced_node->setInputPort(this->m_nodes[node_name]->getOutputPort(port), influenced_port);
+        EAGLEEYE_LOGD("reset node %s port %d link", influenced_node->getUnitName(), influenced_port);
+    }
+
+    // reset info
+    std::vector<std::string> tmp_replace_nodes;
+    std::vector<int> tmp_replace_ports;
+    std::vector<AnyNode*> tmp_using_placeholders;
+    for(int i=0; i<replaced_num; ++i){
+        if(i != index){
+            tmp_replace_nodes.push_back(m_replace_nodes[i]);
+            tmp_replace_ports.push_back(m_replace_ports[i]);
+            tmp_using_placeholders.push_back(m_using_placeholders[i]);
+        }
+    }
+
+    delete m_using_placeholders[index];
+    this->m_replace_nodes = tmp_replace_nodes;
+    this->m_replace_ports = tmp_replace_ports;
+    this->m_using_placeholders = tmp_using_placeholders;
+    EAGLEEYE_LOGD("success restore node %s at port %d", node_name.c_str(), port);
+}
+
+AnyNode* AnyPipeline::placeholder(SignalCategory category, EagleeyeType type){
+    switch (category)
+    {
+    case SIGNAL_CATEGORY_IMAGE:
+        if(type == EAGLEEYE_UCHAR){
+            return new Placeholder<ImageSignal<unsigned char>>();
+        }
+        else if(type == EAGLEEYE_INT){
+            return new Placeholder<ImageSignal<int>>();
+        }
+        else if(type == EAGLEEYE_FLOAT){
+            return new Placeholder<ImageSignal<float>>();
+        }
+        else if(type == EAGLEEYE_RGB){
+            return new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
+        }
+        break;
+    case SIGNAL_CATEGORY_TENSOR:
+        return new Placeholder<TensorSignal<float>>();
+    case SIGNAL_CATEGORY_STRING:
+        return new Placeholder<StringSignal>();
+    case SIGNAL_CATEGORY_CONTROL:
+        return new Placeholder<BooleanSignal>();
+    case SIGNAL_CATEGORY_STATE:
+        return new Placeholder<StateSignal>();
+    default:
+        break;
+    }
+
+    return NULL;
+}
+
 }

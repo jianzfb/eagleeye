@@ -160,6 +160,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/DebugNode.cpp
     eagleeye/processnode/LogicalNode.cpp
     eagleeye/processnode/State2BooleanNode.cpp
+    eagleeye/processnode/CopyNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/mace_run.cpp

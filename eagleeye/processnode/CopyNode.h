@@ -4,7 +4,6 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 
 namespace eagleeye{
-template<class T>
 class CopyNode:public AnyNode{
 public:
     typedef CopyNode                Self;
@@ -12,27 +11,28 @@ public:
 
     EAGLEEYE_CLASSIDENTITY(CopyNode);
 
-    CopyNode(){
-        this->setNumberOfOutputSignals(1);
-        this->setOutputPort(new T, 0);
+    CopyNode(bool inplace=false);
+    virtual ~CopyNode();
 
-        this->setNumberOfInputSignals(1);
-    }
-    virtual ~CopyNode(){
-
-    }
+    /**
+     * @brief add/set input port
+     * 
+     * @param sig 
+     */
+	virtual void addInputPort(AnySignal* sig);
+	virtual void setInputPort(AnySignal* sig,int index=0);
 
     /**
 	 *	@brief execute Node
      *  @note user must finish this function
 	 */
-	virtual void executeNodeInfo(){
-        this->getOutputPort(0)->copy(this->getInputPort(0));
-    }
+	virtual void executeNodeInfo();
 
 private:
     CopyNode(const CopyNode&);
     void operator=(const CopyNode&);
+
+    bool m_inplace;
 };
 }
 #endif

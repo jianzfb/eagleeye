@@ -20,6 +20,13 @@ public:
     virtual ~StateSignal();
 
 	/**
+	 * @brief Set the Init object
+	 * 
+	 * @param ini_state 
+	 */
+	void setInit(int ini_state);
+
+	/**
 	 *	@brief copy info
 	 */
 	virtual void copyInfo(AnySignal* sig);
@@ -89,6 +96,8 @@ public:
 private:
 	int m_state;	
     int m_ini_state;
+
+	int m_release_count;
 };
 }
 #endif

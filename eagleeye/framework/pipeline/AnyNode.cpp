@@ -12,6 +12,7 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_node_state = 0;
 	this->m_action = 1;	 // "RUN"
 	this->m_node_is_satisfied_cond = true;
+	this->m_auto_clear = false;
 
 	this->m_reset_flag = false;
 	this->m_exit_flag = false;
@@ -21,6 +22,7 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_feadback_flag = false;
 	this->m_load_config_flag = false;
 	this->m_save_config_flag = false;
+	this->m_findin_flag = false;
 }
 
 AnyNode::~AnyNode()
@@ -45,6 +47,9 @@ void AnyNode::addInputPort(AnySignal* sig)
 
 void AnyNode::setInputPort(AnySignal* sig,int index)
 {
+	if(m_input_signals[index] != NULL){
+		m_input_signals[index]->decrementOutDegree();
+	}
 	m_input_signals[index] = sig;
 	// increment input signal out degree
 	sig->incrementOutDegree();
@@ -206,27 +211,26 @@ void AnyNode::setNumberOfOutputSignals(unsigned int outputnum)
 		m_output_port_state = output_port_states;
 	}
 }
-void AnyNode::setNumberOfInputSignals(unsigned int inputnum)
-{
-	if (inputnum != m_input_signals.size())
-	{
+void AnyNode::setNumberOfInputSignals(unsigned int inputnum){
+	if (inputnum != m_input_signals.size()){
 		std::vector<AnySignal*> input_signals;
 		input_signals.resize(inputnum);
-		if (inputnum < m_input_signals.size())
-		{
-			for (int i = 0; i < int(inputnum); ++i)
-			{
+		if (inputnum < m_input_signals.size()){
+			for (int i = 0; i < int(inputnum); ++i){
 				input_signals[i] = m_input_signals[i];
+			}
+
+			for(int i=int(inputnum); i<m_input_signals.size(); ++i){
+				if(m_input_signals[i] != NULL){
+					m_input_signals[i]->decrementOutDegree();
+				}
 			}
 		}
-		else
-		{
-			for (int i = 0; i < int(m_input_signals.size()); ++i)
-			{
+		else{
+			for (int i = 0; i < int(m_input_signals.size()); ++i){
 				input_signals[i] = m_input_signals[i];
 			}
-			for (int i = int(m_input_signals.size()); i < int(inputnum); ++i)
-			{
+			for (int i = int(m_input_signals.size()); i < int(inputnum); ++i){
 				input_signals[i] = NULL;
 			}
 		}
@@ -513,7 +517,7 @@ bool AnyNode::isNeedProcessed(){
 }
 
 void AnyNode::clearSomething(){
-	if(AnyNode::m_saved_resource){
+	if(AnyNode::m_saved_resource || this->m_auto_clear){
 		// clear middle resource
 		std::vector<AnySignal*>::iterator iter,iend(m_input_signals.end());
 		for (iter = m_input_signals.begin();iter != iend; ++iter){
@@ -530,6 +534,13 @@ void AnyNode::enableSavedResource(){
 void AnyNode::disableSavedResource(){
 	AnyNode::m_saved_resource = false;
 } 
+
+void AnyNode::enableAutoClear(){
+	this->m_auto_clear = true;
+}
+void AnyNode::disableAutoClear(){
+	this->m_auto_clear = false;
+}
 
 void AnyNode::addFeadbackRule(std::string trigger_node, int trigger_node_state, std::string response_action){
 	this->m_trigger_node.push_back(trigger_node);
@@ -646,4 +657,34 @@ void AnyNode::init(){
 	}
 	m_init_flag = false;
 }
+
+void AnyNode::findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll){
+	if(m_findin_flag){
+		return;
+	}
+
+	m_findin_flag = true;
+	for(int i=0; i<m_input_signals.size(); ++i){
+		if(ptr == m_input_signals[i]){
+			bool ok = true;
+			for(int m = 0; m<ll.size(); ++m){
+				if(ll[m].first == this){
+					ok = false;
+					break;
+				}
+			}
+
+			if(ok){
+				ll.push_back(std::pair<AnyNode*, int>(this, i));
+			}
+		}
+
+		if(m_input_signals[i] != NULL){
+			m_input_signals[i]->findIn(ptr, ll);
+		}
+	}
+
+	m_findin_flag = false;
 }
+}
+

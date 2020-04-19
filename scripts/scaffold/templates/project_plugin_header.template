@@ -105,4 +105,24 @@ extern "C"{
      * @return false 
      */
     bool eagleeye_{{project}}_get_output(const char* node_name, void*& data, int* data_size, int& data_dims,int& data_type);
+
+    /**
+     * @brief replace node/port with placeholder(debug)
+     * 
+     * @param node_name node name in pipeline
+     * @param port port
+     * @return true 
+     * @return false 
+     */
+    bool eagleeye_{{project}}_debug_replace_at(const char* node_name, int port);
+
+    /**
+     * @brief restore node/port(debug)
+     * 
+     * @param node_name node name in pipeline
+     * @param port port
+     * @return true 
+     * @return false 
+     */
+    bool eagleeye_{{project}}_debug_restore_at(const char* node_name, int port);
 }

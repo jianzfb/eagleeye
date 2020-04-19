@@ -22,6 +22,13 @@ public:
 	virtual ~BooleanSignal();
 
 	/**
+	 * @brief Set the Init object
+	 * 
+	 * @param ini_boolean 
+	 */
+	void setInit(bool ini_boolean);
+
+	/**
 	 *	@brief copy info
 	 */
 	virtual void copyInfo(AnySignal* sig);
@@ -91,6 +98,7 @@ public:
 private:
 	bool m_boolean;	
 	bool m_ini_boolean;
+	int m_release_count;
 };
 
 }

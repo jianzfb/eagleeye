@@ -1,8 +1,7 @@
 #EAGLEEYE编译指南
 ---
-
 ####概览
-EAGLEEYE提供插件化的编程框架，主要涉及核心库和插件库。核心库提供插件管理框架以及数据流编程框架。插件库基于数据流编程框架串起实现具体功能的所有节点，并完成向插件管理中心注册和初始化。
+EAGLEEYE提供插件化的编程框架，主要涉及核心库和插件库。核心库提供插件管理框架以及数据流编程框架。插件库基于数据流编程框架，构建输出处理节点并搭建节点网络，并完成向插件管理中心注册和初始化。
 
 ####EAGLEEYE核心库编译
 EAGLEEYE核心库的工程配置在eagleeye/CmakeLists.txt中定义。主要包括如下几项配置：
@@ -44,7 +43,7 @@ eagleeye-cli project --project=movingdet \\ 定义要生成的插件名字
         --abi=arm64-v8a \\              定义abi
         --eagleeye=EAGLEEYE_PATH \\     定义eagleeye路径
         --opencl=OPENCL_PATH \\         定义OPENCL路径（选择性设置）
-        --neon=1                        定义NEON加速(1/0)
+        --neon=true\\                   定义NEON加速(true/false)
 </code></pre>
 
 运行脚本后将在当前目录下生成以指定的插件名命名的文件夹（这里--project=movingdet）：

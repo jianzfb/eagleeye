@@ -229,10 +229,44 @@ public:
                              std::vector<std::string>& monitor_range);
 
     /**
+     * @brief Get the Node object
+     * 
+     * @param node_name 
+     * @return AnyNode* 
+     */
+    AnyNode* getNode(std::string node_name);
+
+    /**
+     * @brief branch from 3rd pipleline
+     * 
+     * @param pipeline_name 
+     * @param node 
+     * @param port 
+     * @return AnyNode* 
+     */
+    AnyNode* branch(std::string pipeline_name, std::string node, int port, bool inplace=false);
+
+    /**
+     * @brief insert/restore placeholder
+     * 
+     * @param node_name 
+     * @param port 
+     */
+    void replaceAt(std::string node_name, int port);
+    void restoreAt(std::string node_name, int port);
+
+    /**
      * @brief Destroy the Any Pipeline object
      * 
      */
     virtual ~AnyPipeline();
+
+    /**
+     * @brief placeholder
+     * 
+     * @return AnyNode* 
+     */
+    AnyNode* placeholder(SignalCategory category, EagleeyeType type);
 
 protected:
     /**
@@ -251,6 +285,10 @@ private:
     std::string m_version;
     std::string m_signature;
     std::map<std::string, AnyNode*> m_nodes;
+
+    std::vector<std::string> m_replace_nodes;
+    std::vector<int> m_replace_ports;
+    std::vector<AnyNode*> m_using_placeholders;
 
     bool m_is_initialize;
     INITIALIZE_PLUGIN_PIPELINE_FUNC m_init_func;

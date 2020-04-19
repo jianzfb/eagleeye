@@ -4,10 +4,16 @@ namespace eagleeye
 BooleanSignal::BooleanSignal(bool ini_boolean){
 	this->m_ini_boolean = ini_boolean;
 	this->m_boolean = ini_boolean;
+
+	this->m_release_count = 1;
 }   
 BooleanSignal::~BooleanSignal(){
 
 } 
+
+void BooleanSignal::setInit(bool ini_boolean){
+	this->m_ini_boolean = ini_boolean;
+}
 
 void BooleanSignal::copyInfo(AnySignal* sig)
 {
@@ -22,7 +28,19 @@ void BooleanSignal::printUnit()
 
 void BooleanSignal::makeempty(bool auto_empty)
 {
+	if(auto_empty){
+		if(this->m_release_count % this->getOutDegree() != 0){
+			this->m_release_count += 1;
+			return;
+		}
+	}
+
     this->m_boolean = this->m_ini_boolean;
+
+	if(auto_empty){
+		this->m_release_count = 1;
+	}
+
 	//force time update
 	modified();
 }

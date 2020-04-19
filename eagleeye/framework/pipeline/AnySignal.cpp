@@ -212,4 +212,9 @@ void AnySignal::saveConfigure(std::map<std::string, std::shared_ptr<char>>& node
 	}
 }
 
+void AnySignal::findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll){
+	if(m_link_node){
+		m_link_node->findIn(ptr, ll);
+	}
+}
 }

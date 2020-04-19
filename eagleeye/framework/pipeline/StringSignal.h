@@ -16,8 +16,15 @@ public:
 
 	typedef std::string					DataType;
 
-	StringSignal();
+	StringSignal(std::string ini_str="");
 	virtual ~StringSignal();
+
+	/**
+	 * @brief Set the Init object
+	 * 
+	 * @param ini_str 
+	 */
+	void setInit(std::string ini_str);
 
 	/**
 	 *	@brief copy info
@@ -119,6 +126,9 @@ private:
 
 	std::mutex m_mu;
 	std::condition_variable m_cond;
+
+	std::string m_ini_str;
+	int m_release_count;
 };
 
 }

@@ -46,15 +46,6 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
  */
 bool eagleeye_release_module();
 
-// /**
-//  * @brief get registed pipeline
-//  * 
-//  * @param pipeline_name 
-//  * @return true 
-//  * @return false 
-//  */
-// bool eagleeye_registed_pipeline(std::string& pipeline_name);
-
 /**
  * @brief register pipeline plugin
  * 
@@ -215,6 +206,29 @@ bool eagleeye_pipeline_release(const char* pipeline_name);
  */
 bool eagleeye_pipeline_version(const char* pipeline_name, char* pipeline_version);
 
+/**
+ * @brief replace (debug pipeline)
+ * 
+ * @param pipeline_name 
+ * @param node_name 
+ * @param port 
+ * @return true 
+ * @return false 
+ */
+bool eagleeye_pipeline_debug_replace_at(const char* pipeline_name, const char* node_name, int port);
+
+/**
+ * @brief restore (debug pipeline)
+ * 
+ * @param pipeline_name 
+ * @param node_name 
+ * @param port 
+ * @return true 
+ * @return false 
+ */
+bool eagleeye_pipeline_debug_restore_at(const char* pipeline_name, const char* node_name, int port);
+
+
 // 注册插件函数类型
 typedef const char* (*REGISTER_PLUGIN_FUNC)();
 // 初始化插件函数类型
@@ -289,6 +303,12 @@ extern "C" { \
     } \
     bool eagleeye_##pipeline##_save_config(const char* config_file){ \
         return eagleeye_pipeline_save_config(#pipeline, config_file); \
+    } \
+    bool eagleeye_##pipeline##_debug_replace_at(const char* node_name, int port){ \
+        return eagleeye_pipeline_debug_replace_at(#pipeline, node_name, port); \
+    } \
+    bool eagleeye_##pipeline##_debug_restore_at(const char* node_name, int port){ \
+        return eagleeye_pipeline_debug_restore_at(#pipeline, node_name, port); \
     } \
 } 
 

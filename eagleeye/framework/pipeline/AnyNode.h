@@ -155,6 +155,18 @@ public:
 	static void disableSavedResource();
 
 	/**
+	 * @brief enable auto clear input data
+	 * 
+	 */
+	void enableAutoClear();
+
+	/**
+	 * @brief disable auto clear input data
+	 * 
+	 */
+	void disableAutoClear();
+
+	/**
 	 * @brief Set the Node State object
 	 * 
 	 * @param node_state 
@@ -242,6 +254,14 @@ public:
 	void loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config);
 	void saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config);
 
+	/**
+	 * @brief find input signal
+	 * 
+	 * @param ptr 
+	 * @param ll 
+	 */
+	void findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll);
+
 protected:
 	/**
 	 *	@brief make one output signal
@@ -273,6 +293,8 @@ protected:
 	static bool m_saved_resource;
 	static bool m_run_in_last_round;
 
+	bool m_auto_clear;
+
 	/**
 	 * @brief after executing node, node state maybe change. which would influence other node action.
 	 * 
@@ -299,6 +321,8 @@ private:
 	bool m_feadback_flag;
 	bool m_load_config_flag;
 	bool m_save_config_flag;
+
+	bool m_findin_flag;
 };
 }
 

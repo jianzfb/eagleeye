@@ -237,6 +237,7 @@ bool eagleeye_pipeline_get_node_output(const char* pipeline_name,
                                   int* data_size, 
                                   int& data_dims,
                                   int& data_type){
+    EAGLEEYE_LOGD("%s pipeline get data from node %s", pipeline_name, node_name);
     AnyPipeline::getInstance(pipeline_name)->getNodeOutput(node_name, data, data_size, data_dims, data_type);
     return true;
 }
@@ -253,6 +254,16 @@ bool eagleeye_pipeline_get_output(const char* pipeline_name,
 }
 
 bool eagleeye_pipeline_run(const char* pipeline_name){
+    std::string s_pipeline_name = pipeline_name;
+    if(s_pipeline_name.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(s_pipeline_name, "/");
+        std::string pn = kterms[0];
+        std::string nn = kterms[1];
+        
+        bool r = AnyPipeline::getInstance(pn.c_str())->start(nn.c_str());
+        return r;
+    }
+
     bool result = AnyPipeline::getInstance(pipeline_name)->start();
     return result;
 }
@@ -267,6 +278,18 @@ bool eagleeye_pipeline_reset(const char* pipeline_name){
     AnyPipeline::getInstance(pipeline_name)->reset();
     EAGLEEYE_LOGD("finish pipeline %s reset", pipeline_name);
 
+    return true;
+}
+
+bool eagleeye_pipeline_debug_replace_at(const char* pipeline_name, const char* node_name, int port){
+    EAGLEEYE_LOGD("replace node %s at port %d in pipeline %s", node_name, port, pipeline_name);
+    AnyPipeline::getInstance(pipeline_name)->replaceAt(node_name, port);
+    return true;
+}
+
+bool eagleeye_pipeline_debug_restore_at(const char* pipeline_name, const char* node_name, int port){
+    EAGLEEYE_LOGD("restore node %s at port %d in pipeline %s", node_name, port, pipeline_name);
+    AnyPipeline::getInstance(pipeline_name)->restoreAt(node_name, port);
     return true;
 }
 

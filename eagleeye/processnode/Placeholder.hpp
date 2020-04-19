@@ -36,6 +36,7 @@ bool Placeholder<T>::selfcheck(){
         bool is_ok = true;
         if(this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->isempty()){
             is_ok = false;
+            EAGLEEYE_LOGD("placeholder %s is empty", this->getUnitName());
         }
         return is_ok;
     }
