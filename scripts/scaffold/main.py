@@ -9,9 +9,9 @@ from __future__ import unicode_literals
 from jinja2 import Environment, FileSystemLoader
 import sys
 import os
-from .prepare import *
-from . import flags
-from . import help
+from prepare import *
+import flags
+import help
 import zipfile
 
 flags.DEFINE_string('project', None, 'project name')
@@ -184,6 +184,40 @@ def main():
           os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
       
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, '%s_demo.cpp'%project_name),'w') as fp:
+        fp.write(output)
+
+      # 生成VS CODE 配置文件
+      if not os.path.exists(os.path.join(os.curdir,  "%s_plugin"%project_name, ".vscode")):
+        os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode"))
+
+      # VS CODE - settings.json
+      template = env.get_template('project_VS_settings_json.template')
+      output = template.render(abi=FLAGS.abi(),
+                              build_type=FLAGS.build_type(),
+                              api_level=FLAGS.api_level(),
+                              snpe=FLAGS.snpe(),
+                              mace=FLAGS.mace())
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode", "settings.json"), 'w') as fp:
+        fp.write(output)
+
+      # VS CODE - c_cpp_properties.json
+      template = env.get_template('project_VS_c_cpp_properties.template')
+      output = template.render(eagleeye=FLAGS.eagleeye())
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode", "c_cpp_properties.json"), 'w') as fp:
+        fp.write(output)
+
+      # VS CODE - tasks.json
+      template = env.get_template('project_VS_tasks_json.template')
+      output = template.render(project=project_name)
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode", "tasks.json"), 'w') as fp:
+        fp.write(output)
+
+      # VS CODE - run.sh
+      template = env.get_template('project_run.template')
+      output = template.render(project=project_name,
+                                eagleeye=FLAGS.eagleeye())
+
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, "run.sh"), 'w') as fp:
         fp.write(output)
 
       # 生成说明文档

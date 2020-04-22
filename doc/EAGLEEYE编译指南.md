@@ -34,7 +34,7 @@ make
 ####插件库工程创建与编译
 使用在eagleeye/scripts下的脚本，可以快速创建算法插件工程，比如创建实现运动检测的算法插件，调用:
 
-<pre><code>
+```shell
 eagleeye-cli project --project=movingdet \\ 定义要生成的插件名字
         --version=1.0.0.0 \\            定义插件版本
         --signature=xxxxx \\            定义插件签名（目前未启用）
@@ -44,16 +44,21 @@ eagleeye-cli project --project=movingdet \\ 定义要生成的插件名字
         --eagleeye=EAGLEEYE_PATH \\     定义eagleeye路径
         --opencl=OPENCL_PATH \\         定义OPENCL路径（选择性设置）
         --neon=true\\                   定义NEON加速(true/false)
-</code></pre>
+```
 
 运行脚本后将在当前目录下生成以指定的插件名命名的文件夹（这里--project=movingdet）：
-<pre><code>
+```
 movingdet_plugin
+    - .vscode
+        - c_cpp_properties.json
+        - settings.json
+        - tasks.json
     - movingdet_plugin.h
     - movingdet_plugin.cpp
     - movingdet_demo.cpp
     - CMakeLists.txt
     - build.sh
-</code></pre>
+    - run.sh
+```
 
-开发者可以直接在自动生成的模板下进行插件开发。调用build.sh后，将会构建和编译插件和对应DEMO工程。
+开发者可以直接在自动生成的模板下进行插件开发。在控制台下，可以通过调用 build.sh，构建和编译插件和对应DEMO工程。如果开发者使用VSCODE开发环境，脚手架工具为开发者自动生成VSCODE工程配置文件。

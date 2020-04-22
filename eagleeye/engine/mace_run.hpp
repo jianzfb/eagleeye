@@ -1,21 +1,4 @@
-#include "eagleeye/engine/mace_run.h"
-#ifdef EAGLEEYE_MACE_SUPPORT
-#include <dirent.h>
-#include <fcntl.h>
-#include <malloc.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <numeric>
-#include "mace/public/mace.h"
-#include "mace/public/mace_engine_factory.h"
-#include "eagleeye/common/EagleeyeFile.h"
-#include "eagleeye/common/EagleeyeTime.h"
+
 #ifdef MACE_ENABLE_OPENCL
 namespace mace {
 const unsigned char *LoadOpenCLBinary();
@@ -24,9 +7,8 @@ const unsigned char *LoadOpenCLParameter();
 size_t OpenCLParameterSize();
 }  // namespace mace
 #endif
-
 namespace eagleeye{
-ModelRun::ModelRun(std::string model_name, 
+MaceRun::MaceRun(std::string model_name, 
 				   std::string device,
 				   std::vector<std::string> input_names,
 				   std::vector<std::vector<int64_t>> input_shapes,
@@ -63,10 +45,10 @@ ModelRun::ModelRun(std::string model_name,
 	   this->m_writable_path = this->m_writable_path.substr(0,this->m_writable_path.length() -1);
   }
 }
-ModelRun::~ModelRun(){
+MaceRun::~MaceRun(){
 }
 
-mace::DeviceType ModelRun::parseDeviceType(const std::string device_str){
+mace::DeviceType MaceRun::parseDeviceType(const std::string device_str){
 	if (device_str.compare("CPU") == 0) {
 	    return mace::DeviceType::CPU;
 	} else if (device_str.compare("GPU") == 0) {
@@ -81,7 +63,7 @@ mace::DeviceType ModelRun::parseDeviceType(const std::string device_str){
 	}
 }
 
-bool ModelRun::initialize(){
+bool MaceRun::initialize(){
   // load model
   mace::DeviceType device_type = this->parseDeviceType(this->m_device);
   // configuration
@@ -174,7 +156,7 @@ bool ModelRun::initialize(){
   return this->m_is_ready;
 }
 
-bool ModelRun::run(std::map<std::string, unsigned char*> inputs, 
+bool MaceRun::run(std::map<std::string, unsigned char*> inputs, 
 				           std::map<std::string, unsigned char*>& outputs){
 	if(this->m_is_ready == false){
 		return false;
@@ -237,7 +219,7 @@ bool ModelRun::run(std::map<std::string, unsigned char*> inputs,
 	return true;
 }
 
-void ModelRun::setWritablePath(std::string writable_path){
+void MaceRun::setWritablePath(std::string writable_path){
 	this->m_writable_path = writable_path;
 	if(this->m_writable_path[this->m_writable_path.length() - 1] == '\\' || 
 	   this->m_writable_path[this->m_writable_path.length() - 1] == '/'){
@@ -245,4 +227,3 @@ void ModelRun::setWritablePath(std::string writable_path){
   }
 }
 }
-#endif

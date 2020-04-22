@@ -1,8 +1,7 @@
 PROJECT(eagleeye)
 
 cmake_minimum_required(VERSION 3.5)
-# add_definitions(-std=c++11)
-set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -O3 -march=native")
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11")
 
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
@@ -26,36 +25,36 @@ endif()
 
 # support mace
 if(${NN_ENGINE} MATCHES "mace")
-    message(STATUS "support mace NN engine")
-    add_definitions(-DEAGLEEYE_MACE_SUPPORT)
-    add_definitions(-DMACE_ENABLE_OPENCL)
-    # copy model to 
-    include_directories(${MACE_PATH}/public/)
-    file(COPY ${eagleeye_SOURCE_DIR}/eagleeye/models/mace/${ANDROID_ABI}/srpn_103_183.a DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
-    file(COPY ${eagleeye_SOURCE_DIR}/eagleeye/models/mace/${ANDROID_ABI}/portrait_segmentation.a DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
-    file(COPY ${MACE_PATH}/model/${ANDROID_ABI}/libmace.so DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
+    # message(STATUS "support mace NN engine")
+    # add_definitions(-DEAGLEEYE_MACE_SUPPORT)
+    # add_definitions(-DMACE_ENABLE_OPENCL)
+    # # copy model to 
+    # include_directories(${MACE_PATH}/public/)
+    # file(COPY ${eagleeye_SOURCE_DIR}/eagleeye/models/mace/${ANDROID_ABI}/srpn_103_183.a DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
+    # file(COPY ${eagleeye_SOURCE_DIR}/eagleeye/models/mace/${ANDROID_ABI}/portrait_segmentation.a DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
+    # file(COPY ${MACE_PATH}/model/${ANDROID_ABI}/libmace.so DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
 
-    # load detect lib 
-    add_library(srpn_103_183 STATIC IMPORTED)
-    set_target_properties(
-        srpn_103_183
-        PROPERTIES IMPORTED_LOCATION 
-        ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/srpn_103_183.a
-    )
-    add_library(portrait_segmentation STATIC IMPORTED)
-    set_target_properties(
-        portrait_segmentation
-        PROPERTIES IMPORTED_LOCATION 
-        ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/portrait_segmentation.a
-    )
+    # # load detect lib 
+    # add_library(srpn_103_183 STATIC IMPORTED)
+    # set_target_properties(
+    #     srpn_103_183
+    #     PROPERTIES IMPORTED_LOCATION 
+    #     ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/srpn_103_183.a
+    # )
+    # add_library(portrait_segmentation STATIC IMPORTED)
+    # set_target_properties(
+    #     portrait_segmentation
+    #     PROPERTIES IMPORTED_LOCATION 
+    #     ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/portrait_segmentation.a
+    # )
     
-    # load mace lib
-    add_library(libmace SHARED IMPORTED)
-    set_target_properties(
-        libmace
-        PROPERTIES IMPORTED_LOCATION 
-        ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/libmace.so
-    )
+    # # load mace lib
+    # add_library(libmace SHARED IMPORTED)
+    # set_target_properties(
+    #     libmace
+    #     PROPERTIES IMPORTED_LOCATION 
+    #     ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/libmace.so
+    # )
 elseif(${NN_ENGINE} MATCHES "snpe")
     message(STATUS "support snpe NN engine")
     add_definitions(-DEAGLEEYE_SNPE_SUPPORT)
@@ -163,7 +162,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/CopyNode.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
-    eagleeye/engine/mace_run.cpp
     eagleeye/engine/nn_run.cpp
     eagleeye/common/EagleeyeFile.cpp 
     eagleeye/common/EagleeyeTime.cpp 
@@ -244,12 +242,10 @@ if(DEFINED FFMPEG AND DEFINED X264)
 endif()
 
 find_package(pnglib)
-if(pnglib_FOUND)
+if(DEFINED PNG AND pnglib_FOUND)
     add_definitions(-DEAGLEEYE_PNG)
     include_directories(${pnglib_INCLUDE_DIRS})
     target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
-else()
-    message(FATAL_ERROR "pnglib")
 endif()
 
 if(${NN_ENGINE} MATCHES "snpe")

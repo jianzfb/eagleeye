@@ -24,7 +24,7 @@ namespace eagleeye{
 class ModelRun: public ModelEngine{
 public:
 	/**
-	 * 
+	 * [constructor: build snpe model]
 	 */
 	ModelRun(std::string model_name, 
 			 std::string device,
@@ -36,12 +36,12 @@ public:
 		     int cpu_affinity_policy=-1, 
 		     std::string writable_path="/data/local/tmp/");
 	/**
-	 * 
+	 * [destructor]
 	 */
 	virtual ~ModelRun();
 
 	/**
-	 * [run run neural network model]
+	 * [run neural network model]
 	 * @param  inputs  {map} <name, data> pair
 	 * @param  outputs {map} <name, data> pair
 	 * @return         {boolean} true or false

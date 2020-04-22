@@ -1,19 +1,32 @@
 #ifndef _MACE_MODEL_RUN_H_
 #define _MACE_MODEL_RUN_H_
-#ifdef EAGLEEYE_MACE_SUPPORT
 #include <string>
 #include <map>
 #include <vector>
+#include <dirent.h>
+#include <fcntl.h>
+#include <malloc.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <numeric>
+#include "eagleeye/common/EagleeyeFile.h"
+#include "eagleeye/common/EagleeyeTime.h"
 #include "eagleeye/engine/model_engine.h"
 #include "mace/public/mace.h"
-
+#include "mace/public/mace_engine_factory.h"
 namespace eagleeye{
-class ModelRun: public ModelEngine{
+class MaceRun: public ModelEngine{
 public:
 	/**
-	 * 
+	 * [constructor: build mace model]
 	 */
-	ModelRun(std::string model_name, 
+	MaceRun(std::string model_name, 
 			 std::string device,
 			 std::vector<std::string> input_names=std::vector<std::string>(),
 		     std::vector<std::vector<int64_t>> input_shapes=std::vector<std::vector<int64_t>>(),
@@ -23,12 +36,12 @@ public:
 		     int cpu_affinity_policy=-1, 
 		     std::string writable_path="/data/local/tmp/");
 	/**
-	 * 
+	 * [destructor]
 	 */
-	virtual ~ModelRun();
+	virtual ~MaceRun();
 
 	/**
-	 * [run description]
+	 * [run neural network model]
 	 * run model 
 	 * @param  inputs  {map} <name, data> pair
 	 * @param  outputs {map} <name, data> pair
@@ -51,7 +64,6 @@ public:
 	 */
 	virtual void setWritablePath(std::string writable_path);
 
-
 protected:
 	/**
 	 * [parseDeviceType description]
@@ -72,5 +84,6 @@ private:
     bool m_is_ready;
 };	
 }
-#endif
+
+#include "mace_run.hpp"
 #endif

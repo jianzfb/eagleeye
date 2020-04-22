@@ -1,0 +1,12 @@
+{
+    "configurations": [
+        {
+            "includePath": [
+                "${workspaceFolder}/**",
+                "{{eagleeye}}",
+                "{{eagleeye}}/eagleeye/"
+            ]
+        }
+    ],
+    "version": 4
+}

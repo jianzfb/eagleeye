@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "iosfwd": "cpp",
+        "vector": "cpp"
+    },
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "${env:ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake",
+        "ANDROID_NDK": "${env:ANDROID_NDK_HOME}",
+        "CMAKE_BUILD_TYPE": "{{build_type}}",
+        "ANDROID_ABI": {{abi}},
+        "ANDROID_NATIVE_API_LEVEL": "{{api_level}}",
+        "ANDROID_STL": "c++_shared",
+        "ANDROID_NDK_ABI_NAME": {{abi}},
+        {% if snpe != "" %}
+        "SNPE_PATH":"{{snpe}}"
+        {% endif %}
+        {% if mace != "" %}
+        "MACE_PATH":"{{mace}}"
+        {% endif %}
+     }
+}

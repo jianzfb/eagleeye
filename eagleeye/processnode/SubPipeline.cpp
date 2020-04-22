@@ -62,6 +62,7 @@ void SubPipeline::executeNodeInfo(){
 
     // 2.step run subpipeline
     this->m_sink_node->start();
+
     // 3.step copy output
     for(int i=0; i<this->getNumberOfOutputSignals(); ++i){
         this->getOutputPort(i)->copy(this->m_sink_node->getOutputPort(this->m_sink_port_map[i]));

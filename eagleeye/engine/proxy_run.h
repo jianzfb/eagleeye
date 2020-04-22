@@ -5,9 +5,7 @@
 #include <vector>
 #include "eagleeye/engine/model_engine.h"
 #include "eagleeye/common/EagleeyeLog.h"
-#ifdef EAGLEEYE_MACE_SUPPORT
-#include "eagleeye/engine/mace_run.h"
-#elif EAGLEEYE_TF_SUPPORT
+#if EAGLEEYE_TF_SUPPORT
 #include "eagleeye/engine/tf_run.h"
 #elif EAGLEEYE_SNPE_SUPPORT
 #include "eagleeye/engine/snpe_run.h"

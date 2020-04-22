@@ -129,7 +129,7 @@ class _BooleanFlag(VarFlag):
       vv = _options['--' + self.name]
       if vv.lower() == "true":
         return True
-      else if vv.lower() == 'false':
+      elif vv.lower() == 'false':
         return False
       else:
         return bool(int(vv))
@@ -137,7 +137,7 @@ class _BooleanFlag(VarFlag):
       vv = _options['--' + self.name]
       if vv.lower() == "true":
         return True
-      else if vv.lower() == 'false':
+      elif vv.lower() == 'false':
         return False
       else:
         return bool(int(vv))

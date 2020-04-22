@@ -43,6 +43,7 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned)
 	void* aligned_mem_ptr;
 	posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
 	this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
+
 	T* data = m_ptr.get();
 	int total = rows * cols;
 	for (int i = 0; i < total; ++i){
