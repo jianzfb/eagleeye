@@ -1,5 +1,5 @@
-#ifndef _EAGLEEYE_IncrementOrAddNode_H_
-#define _EAGLEEYE_IncrementOrAddNode_H_
+#ifndef _EAGLEEYE_Add_H_
+#define _EAGLEEYE_Add_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/MetaOperation.h"
@@ -11,20 +11,20 @@
 
 namespace eagleeye{
 template<class SrcT, class TargetT>
-class IncrementOrAddNode:public ImageProcessNode<SrcT, TargetT>{
+class Add:public ImageProcessNode<SrcT, TargetT>{
 public:
     /**
      * @brief define basic info
      * @note you must do these
      */
-    typedef IncrementOrAddNode                               Self;
+    typedef Add                               Self;
     typedef ImageProcessNode<SrcT, TargetT>             Superclass;
 
     typedef typename SrcT::MetaType						InputPixelType;
 	typedef typename TargetT::MetaType					OutputPixelType;
 
-    IncrementOrAddNode(int input_port_num=1, int output_port_num=1);
-    virtual ~IncrementOrAddNode();
+    Add();
+    virtual ~Add();
 
 	/**
 	 *	@brief execute segmentation algorithm
@@ -56,15 +56,15 @@ public:
      * @brief get class identity
      * 
      */
-    EAGLEEYE_CLASSIDENTITY(IncrementOrAddNode);
+    EAGLEEYE_CLASSIDENTITY(Add);
 
 private:
     /**
      * @brief Construct a new Test Increment Node object
      * @note prohibit
      */
-    IncrementOrAddNode(const IncrementOrAddNode&);
-	void operator=(const IncrementOrAddNode&);
+    Add(const Add&);
+	void operator=(const Add&);
 
     int m_parameter;
     bool m_b; 
@@ -72,5 +72,5 @@ private:
 };
 }
 
-#include "eagleeye/processnode/IncrementOrAddNode.hpp"
+#include "eagleeye/processnode/Add.hpp"
 #endif

@@ -19,7 +19,8 @@ eagleeye-cli project --project=movingdet    \\ 定义要生成的插件名字
             --abi=arm64-v8a         \\ 定义abi
             --eagleeye=EAGLEEYE_PATH \\ 定义eagleeye路径
             --opencl=OPENCL_PATH    \\ 定义OPENCL路径（选择性设置）
-            --neon=true                \\定义NEON加速(1/0)
+            --neon=true             \\定义NEON加速(true/false)
+            --host_platform=MACOS   \\ 设置主机平台（MACOS/LINUX）
 ```
 ####生成数据处理节点模板
 ```shell

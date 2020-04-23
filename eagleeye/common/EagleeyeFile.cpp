@@ -78,10 +78,10 @@ bool isdirexist(const char* path){
   if(path == NULL){
     return false;
   }
-  if(opendir(path) == NULL){
-    return false;
-  }
-  return true;
+  DIR *dirptr = opendir(path);
+  bool isnotnull = (dirptr != NULL);
+  closedir(dirptr);
+  return isnotnull;
 }
 
 bool isfileexist(const char* path){

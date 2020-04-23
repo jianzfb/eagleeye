@@ -5,16 +5,20 @@
 EAGLEEYE图像应用开发框架针对于快速将图像算法推向落地而设计。依靠统一通用的模块接口定义和数据流管线架构设计，极度简化团队协同开发。
 
 ####EAGLEEYE核心库编译
-编译移动端EAGLEEYE库（使用高通AI推理库SNPE）
+编译移动端EAGLEEYE库
 ```c++
 mkdir ./build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=True -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DNN_ENGINE=snpe -DSNPE_PATH=YOUR SNPE FOLDER/snpe-1.35.0.698/ -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
 
 make
 ```
 
-注意：需要提前安装Android NDK。
+> 注意: 如果需要支持SNPE，OPENCL，则需要在编译eagleeye核心库时指定相关参数。
+> 支持SNPE，需要添加 -DNN_ENGINE=snpe -DSNPE_PATH=SNPE_PATH
+> 支持OPENCL，需要添加 -DOPENCL=OPENCL_PATH
+
+> 注意：需要提前安装Android NDK。
 
 ####EAGLEEYE项目脚手架
 安装脚手架
@@ -24,59 +28,133 @@ pip3 install -r requirements.txt
 python3 setup.py install
 ```
 
-####快速入手
-* 创建工程模板(实现c=a+b)
-    ```shell
-    eagleeye-cli project --project=YOUR_PLUGIN --version=1.0.0.0  --signature=xxxxxxxxxx
-    ```
+####创建第一个项目
+```shell
+eagleeye-cli project --project=PLUGIN_NAME      \\ 定义要生成的插件名字
+            --version=1.0.0.0                   \\ 定义插件版本
+            --signature=xxxxx                   \\ 定义插件签名（目前未启用）
+            --build_type=Release                \\ 定义编译版本
+            --opencv=OPENCV_PATH                \\ 定义opencv路径(选择性设置)
+            --abi=arm64-v8a                     \\ 定义abi
+            --eagleeye=EAGLEEYE_PATH            \\ 定义eagleeye路径
+            --opencl=OPENCL_PATH                \\ 定义OPENCL路径（选择性设置）
+            --neon=true                         \\ 定义NEON加速(true/false)
+            --host_platform=MACOS               \\ 设置主机平台（MACOS/LINUX）
+```
+运行后将生成模板工程。如果您使用的是VSCODE编辑器，那么脚手架将生成工程配置信息。
 
-    ```
-    test_plugin
-        - test_plugin.h
-        - test_plugin.cpp
-        - test_demo.cpp
-        - CMakeLists.txt
-        - build.sh
-    ```
-    调用build.sh，将会构建插件和DEMO工程。
+工程目录结构如下
+```
+PLUGIN_NAME
+    - .vscode
+        - c_cpp_properties.json
+        - cmake-kits.json
+        - settings.json
+        - tasks.json
+    - PLUGIN_NAME_plugin.h              // 插件头文件
+    - PLUGIN_NAME_plugin.cpp            // 插件源文件
+    - PLUGIN_NAME_demo.cpp              // 可执行程序，用于测试插件
+    - CMakeLists.txt
+    - build.sh                          // 构建&编译 插件和可执行程序
+    - run.sh                            // 运行可执行程序
+```
 
-* 编写算法管线
-    实现c=a+b功能，在test_plugin.cpp文件中
-    ```c++
-    namespace eagleeye{
-    // 注册算法管线
-    EAGLEEYE_PIPELINE_REGISTER(test, 1.0.0.0, xxxxx);
-    
-    // 初始换算法管线
-    EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(test)
-    // 建立数据源节点
-    Placeholder<ImageSignal<float>>* data_source = 
-                new Placeholder<ImageSignal<float>>();
-    data_source->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
-    data_source->setPlaceholderSource(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
-    
-    // 第一步：建立节点 a,b,c
-    IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >* a = 
-        new IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >(1,1);
-    
-    IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >* b = 
-        new IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >(1,1);
-    
-    IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >* c = 
-        new IncrementOrAddNode< ImageSignal< float >,ImageSignal< float > >(2,1);
-    
-    // 第二步：将节点加入管线
-    test->add(data_source,"data_source", SOURCE_NODE);
-    test->add(a,"a");
-    test->add(b,"b");
-    test->add(c,"c", SINK_NODE);
-    
-    // 第三步：建立节点间的关系（a->c,b->c）
-    // 实现 c=a+b
-    test->bind("data_source",0,"a",0);
-    test->bind("data_source",0,"b",0);
-    test->bind("a",0,"c",0);
-    test->bind("b",0,"c",1);
-    
-    EAGLEEYE_END_PIPELINE_INITIALIZE
-    ```
+####编写第一个管线插件
+实现c=a+b功能，在PLUGIN_NAME_plugin.cpp文件中
+
+```c++
+#include "eagleeye/processnode/Placeholder.h"
+#include "eagleeye/processnode/Add.h"
+#include "eagleeye/framework/pipeline/SignalFactory.h"
+
+namespace eagleeye{
+// 注册算法管线
+EAGLEEYE_PIPELINE_REGISTER(PLUGIN_NAME, 1.0.0.0, xxxxx);
+
+// 初始换算法管线
+EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(PLUGIN_NAME)
+// 第一步：建立占位符节点
+Placeholder<ImageSignal<float>>* placeholder_a = 
+                    new Placeholder<ImageSignal<float>>();
+Placeholder<ImageSignal<float>>* placeholder_b = 
+                    new Placeholder<ImageSignal<float>>();
+
+// 第二步：建立加操作节点
+Add<ImageSignal<float>,ImageSignal<float>>* add = 
+    new Add<ImageSignal<float>,ImageSignal<float>>();
+
+// 第三步：将节点加入管线
+PLUGIN_NAME->add(placeholder_a,"placeholder_a", SOURCE_NODE);
+PLUGIN_NAME->add(placeholder_b,"placeholder_b", SOURCE_NODE);
+PLUGIN_NAME->add(add,"add", SINK_NODE);
+
+// 第四步：建立节点间的关系（a->c,b->c）
+// 实现 c=a+b
+PLUGIN_NAME->bind("placeholder_a",0,"add",0);
+PLUGIN_NAME->bind("placeholder_b",0,"add",1);
+EAGLEEYE_END_PIPELINE_INITIALIZE
+```
+
+####编写第一个测试代码
+在PLUGIN_NAME_demo.cpp文件中
+```c++
+    // 1.step initialize PLUGIN_NAME module
+    const char *config_folder = NULL;   // PLUGIN_NAME module configure folder
+    eagleeye_PLUGIN_NAME_initialize(config_folder);
+
+    // 2.step set input of pipeline
+    float *a_data = (float*)malloc(sizeof(float)*10*10);
+    for(int i=0; i<10*10; ++i){
+        a_data[i] = 1.0f;
+    }
+    int a_data_size[] = {10, 10, 1};
+    eagleeye_PLUGIN_NAME_set_input("placeholder_a/0", (void*)a_data, a_data_size, 3, 6);
+
+    float *b_data = (float*)malloc(sizeof(float)*10*10);
+    for(int i=0; i<10*10; ++i){
+        b_data[i] = 2.0f;
+    }
+    int b_data_size[] = {10, 10, 1};
+    eagleeye_PLUGIN_NAME_set_input("placeholder_b/0", (void*)b_data, b_data_size, 3, 6);
+
+    // 3.step run pipeline
+    eagleeye_PLUGIN_NAME_run();
+
+    // 4.step get output from pipeline
+    void *out_data;
+    int out_data_size[3];
+    int out_data_dims = 3;
+    int out_data_type = 6;
+    eagleeye_PLUGIN_NAME_get_output("add/0", out_data, out_data_size, out_data_dims, out_data_type);
+    float* out_data_float = (float*)out_data;
+    for(int i=0; i<10; ++i){
+        for(int j=0; j<10; ++j){
+            std::cout<<out_data_float[i*10+j]<<'\t';
+        }
+        std::cout<<std::endl;
+    }
+
+    // 5.step release PLUGIN_NAME module
+    eagleeye_PLUGIN_NAME_release();
+```
+
+####编译
+* VSCODE开发环境
+    * 按下SHIFT + COMMAND + P，选择CMAKE: Configure。
+        如果提示Select a kit for ...，则选择Android Clang。然后继续进行CMAKE: Configure。
+    * 按下SHIFT + COMMAND + P，选择CMAKE: Build。
+* 控制台
+    运行 bash ./build.sh
+
+####运行
+运行前，确保手机已经连接，并开启USB调试状态
+* VSCODE开发环境
+    * 按下SHIFT + COMMAND + P，选择Tasks: Run Task。
+    * 在弹出的任务列表中，选择 PLUGIN_NAME run，便可执行。
+* 控制台
+    运行 bash ./run.sh
+
+> 注意：如果需要使用SNPE等神经网络推断引擎，则需要手动将相关库放入手机项目文件夹下。
+> 项目文件夹，由运行脚本自动生成，位于
+> /data/local/tmp/PLUGIN_NAME
+> 所有依赖库和可执行程序均自动放置于此文件夹下。

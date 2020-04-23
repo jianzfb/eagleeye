@@ -9,9 +9,9 @@ from __future__ import unicode_literals
 from jinja2 import Environment, FileSystemLoader
 import sys
 import os
-from prepare import *
-import flags
-import help
+from .prepare import *
+from . import flags
+from . import help
 import zipfile
 
 flags.DEFINE_string('project', None, 'project name')
@@ -35,6 +35,7 @@ flags.DEFINE_string("mean","128,128,128","mean rgb")
 flags.DEFINE_string("var","255,255,255","var rgb")
 flags.DEFINE_string("size", "160,160","standard size")
 flags.DEFINE_string("format", "raw","image format")
+flags.DEFINE_string("host_platform", "MACOS", "host platform")
 
 
 FLAGS = flags.AntFLAGS
@@ -212,10 +213,17 @@ def main():
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode", "tasks.json"), 'w') as fp:
         fp.write(output)
 
+      # VS CODE - cmake-kits.json
+      template = env.get_template('project_VS_cmake-kits_json.template')
+      output = template.render(host_platform=FLAGS.host_platform())
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode", "cmake-kits.json"), 'w') as fp:
+        fp.write(output)
+
       # VS CODE - run.sh
       template = env.get_template('project_run.template')
       output = template.render(project=project_name,
-                                eagleeye=FLAGS.eagleeye())
+                                eagleeye=FLAGS.eagleeye(),
+                                abi=FLAGS.abi())
 
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "run.sh"), 'w') as fp:
         fp.write(output)
