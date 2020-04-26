@@ -101,7 +101,7 @@ protected:
 	 * @param inputs  [description]
 	 * @param outputs [description]
 	 */
-	void _run(std::map<std::string, unsigned char*> inputs, 
+	bool _run(std::map<std::string, unsigned char*> inputs, 
 			  std::map<std::string, unsigned char*>& outputs);
 
 	std::unique_ptr<zdl::DlContainer::IDlContainer> m_container;

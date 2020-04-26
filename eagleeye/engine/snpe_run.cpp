@@ -55,6 +55,7 @@ ModelRun::~ModelRun(){
 
 bool ModelRun::run(std::map<std::string, unsigned char*> inputs, 
 				   std::map<std::string, unsigned char*>& outputs){	
+	bool is_run_ok = false;
 	if(this->isDynamicInputShape()){
 		// for dynamic input, only support slice_num is not fixed
 		int slice_num = this->m_input_shapes[0][0];
@@ -102,7 +103,7 @@ bool ModelRun::run(std::map<std::string, unsigned char*> inputs,
 
 		for(int s_i=0; s_i<slice_num; ++s_i){
 			std::map<std::string, unsigned char*> single_slice_outputs;
-			this->_run(slice_inputs[s_i], single_slice_outputs);
+			is_run_ok = this->_run(slice_inputs[s_i], single_slice_outputs);
 
 			for(int index=0; index<this->m_output_names.size(); ++index){
 				std::string output_name = this->m_output_names[index];
@@ -118,9 +119,9 @@ bool ModelRun::run(std::map<std::string, unsigned char*> inputs,
 		}		
 	}
 	else{
-		this->_run(inputs, outputs);
+		is_run_ok = this->_run(inputs, outputs);
 	}
-	return true;
+	return is_run_ok;
 }
 
 bool ModelRun::initialize(){
@@ -246,7 +247,7 @@ void ModelRun::createInputTensors(){
     }
 }
 
-void ModelRun::_run(std::map<std::string, unsigned char*> inputs, 
+bool ModelRun::_run(std::map<std::string, unsigned char*> inputs, 
 			  		std::map<std::string, unsigned char*>& outputs){
 	// step 1. load input tensor
 	if(inputs.size() > 0){
@@ -269,7 +270,10 @@ void ModelRun::_run(std::map<std::string, unsigned char*> inputs,
 	// step 2. execute model
 	//Execute the network and store the outputs that were specified when creating the network in a TensorMap
 	EAGLEEYE_LOGD("execute snpe model");
-    this->m_snpe->execute(this->m_input_tensormap, this->m_output_tensormap);
+    bool is_run_ok = this->m_snpe->execute(this->m_input_tensormap, this->m_output_tensormap);
+	if(!is_run_ok){
+		return is_run_ok;
+	}
 
     // step 3. fill output
     zdl::DlSystem::StringList output_tensor_names = this->m_output_tensormap.getTensorNames();
@@ -288,6 +292,8 @@ void ModelRun::_run(std::map<std::string, unsigned char*> inputs,
 		EAGLEEYE_LOGD("pair %s and %s",tensor_name, transformed_name.c_str());
         outputs[transformed_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
 	});
+
+	return is_run_ok;
 }
 
 void ModelRun::setWritablePath(std::string writable_path){
