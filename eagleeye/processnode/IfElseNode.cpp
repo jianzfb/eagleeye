@@ -103,4 +103,18 @@ void IfElseNode::exit(){
     this->m_y->exit();
     Superclass::exit();
 }
+
+
+void IfElseNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool){
+    // collect all node monitors in subpipeline
+    this->m_x->getPipelineMonitors(pipeline_monitor_pool);
+    this->m_y->getPipelineMonitors(pipeline_monitor_pool);
+
+	//traverse the whole pipeline
+	std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());
+	for (signal_iter = m_input_signals.begin();signal_iter != signal_iend; ++signal_iter){
+		if ((*signal_iter))
+			(*signal_iter)->getPipelineMonitors(pipeline_monitor_pool);
+	}
+}
 }

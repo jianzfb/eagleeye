@@ -57,6 +57,12 @@ public:
      */
     virtual void exit();
 	
+    /**
+	 *	@brief get monitor pool of the whole pipeline
+	 *	@note traverse the whole pipeline
+	 */
+	virtual void getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool);
+
 private:
     IfElseNode(const IfElseNode&);
     void operator=(const IfElseNode&);
