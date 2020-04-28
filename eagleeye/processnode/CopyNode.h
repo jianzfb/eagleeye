@@ -11,7 +11,7 @@ public:
 
     EAGLEEYE_CLASSIDENTITY(CopyNode);
 
-    CopyNode(bool inplace=false);
+    CopyNode(bool inplace=false, bool is_clear_input=false);
     virtual ~CopyNode();
 
     /**
@@ -33,6 +33,7 @@ private:
     void operator=(const CopyNode&);
 
     bool m_inplace;
+    bool m_is_clear_input;
 };
 }
 #endif

@@ -58,6 +58,7 @@ void StateSignal::copy(AnySignal* sig){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_STATE){
 		StateSignal* state_sig = (StateSignal*)sig;
 		this->setData(state_sig->getData());
+        this->m_ini_state = state_sig->m_ini_state;
 	}
 }
 } // namespace eagleeye

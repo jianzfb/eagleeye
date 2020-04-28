@@ -27,6 +27,7 @@ void StringSignal::copy(AnySignal* sig){
 
 	StringSignal* from_sig = (StringSignal*)(sig);
 	this->setData(from_sig->getData());
+	this->m_ini_str = from_sig->m_ini_str;
 }
 
 void StringSignal::printUnit(){

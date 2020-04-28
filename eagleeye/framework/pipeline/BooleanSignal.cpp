@@ -63,6 +63,7 @@ void BooleanSignal::copy(AnySignal* sig){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_CONTROL){
 		BooleanSignal* b_sig = (BooleanSignal*)sig;
 		this->setData(b_sig->getData());
+		this->m_ini_boolean = b_sig->m_ini_boolean;
 	}
 }
 } // namespace eagleeye
