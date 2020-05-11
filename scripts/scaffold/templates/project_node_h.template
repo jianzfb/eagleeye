@@ -22,10 +22,10 @@ public:
      * 
      */
     {% for port in  inputport -%}
-    typedef ImageSignal</*SIGNAL TYPE*/>        {{port}}_SIGNAL_TYPE;
+    typedef ImageSignal</*SIGNAL TYPE*/>        INPUT_{{port}}_SIGNAL_TYPE;
     {% endfor %}
     {% for port in  outputport -%}
-    typedef ImageSignal</*SIGNAL TYPE*/>        {{port}}_SIGNAL_TYPE;
+    typedef ImageSignal</*SIGNAL TYPE*/>        OUTPUT_{{port}}_SIGNAL_TYPE;
     {% endfor %}
 
     /**
@@ -33,7 +33,7 @@ public:
      * 
      */
     {% for port in  inputport -%}
-    EAGLEEYE_INPUT_PORT_TYPE({{port}}_SIGNAL_TYPE,        {{loop.index0}},      {{port}});
+    EAGLEEYE_INPUT_PORT_TYPE(INPUT_{{port}}_SIGNAL_TYPE,        {{loop.index0}},      {{port}});
     {% endfor %}
     
     /**
@@ -41,7 +41,7 @@ public:
      * 
      */
     {% for port in outputport -%} 
-    EAGLEEYE_OUTPUT_PORT_TYPE({{port}}_SIGNAL_TYPE,      {{loop.index0}},       {{port}});
+    EAGLEEYE_OUTPUT_PORT_TYPE(OUTPUT_{{port}}_SIGNAL_TYPE,      {{loop.index0}},       {{port}});
     {% endfor %}
 
     /**

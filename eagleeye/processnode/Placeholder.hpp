@@ -63,5 +63,9 @@ template<class T>
 void Placeholder<T>::reset(){
     T* output_img_signal = (T*)(this->getOutputPort(OUTPUT_PORT_PLACEHOLDER));
     output_img_signal->makeempty();
+
+    // update reset time
+	m_reset_timestamp.modified();
+	m_reset_time = m_reset_timestamp.getMTime();
 }
 }

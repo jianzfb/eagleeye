@@ -5,6 +5,12 @@
 
 namespace eagleeye{
 bool AnyNode::m_saved_resource = false;
+
+unsigned long AnyNode::m_pipeline_reset_time = 0;
+unsigned long AnyNode::m_pipeline_print_time = 0;
+unsigned long AnyNode::m_pipeline_init_time = 0;
+unsigned long AnyNode::m_pipeline_exit_time = 0;
+
 AnyNode::AnyNode(const char* unit_name)
 		:AnyUnit(unit_name){
 	m_updating_flag = false;
@@ -23,6 +29,25 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_load_config_flag = false;
 	this->m_save_config_flag = false;
 	this->m_findin_flag = false;
+	this->m_print_flag = false;
+
+	// init timestamp
+	this->m_init_timestamp.modified();
+	this->m_pipeline_init_time = this->m_init_timestamp.getMTime();
+	this->m_init_time = 0;
+
+	// reset timestamp
+	this->m_reset_time = 0;
+	this->m_pipeline_reset_time = 0;
+
+	// print timestamp
+	this->m_print_time = 0;
+	this->m_pipeline_print_time = 0;
+
+	// exit timestamp
+	this->m_exit_timestamp.modified();
+	this->m_pipeline_exit_time = this->m_exit_timestamp.getMTime();
+	this->m_exit_time = 0;
 }
 
 AnyNode::~AnyNode()
@@ -239,13 +264,6 @@ void AnyNode::setNumberOfInputSignals(unsigned int inputnum){
 	}
 }
 
-void AnyNode::resetPipeline()
-{
-	//call modified(), forcelly
-	//Next starting off updateUnitInfo, this node would be update 
-	modified();
-}
-
 void AnyNode::passonNodeInfo(){
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	std::vector<AnySignal*>::iterator out_iter,out_iend(m_output_signals.end());
@@ -281,12 +299,25 @@ bool AnyNode::start(){
 	return this->isDataHasBeenUpdate();
 }
 
+void AnyNode::preset(){
+	// 1.step set pipeline reset time
+	m_reset_timestamp.modified();
+	m_pipeline_reset_time = m_reset_timestamp.getMTime();
+
+	// 2.step reset pipeline
+	this->reset();
+}
+
 void AnyNode::reset(){
 	if(this->m_reset_flag){
 		return;
 	}
+	
+	// update reset time
+	m_reset_timestamp.modified();
+	m_reset_time = m_reset_timestamp.getMTime();
 
-	//reset pipeline backward
+	//reset pipeline
 	this->m_reset_flag = true;
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
@@ -294,19 +325,42 @@ void AnyNode::reset(){
 			(*in_iter)->reset();
 		}
 	}
+
 	this->m_reset_flag = false;
-	EAGLEEYE_LOGD("reset %s node", this->getUnitName());
+	// log
+	EAGLEEYE_LOGD("node %s reset", this->getUnitName());
+}
+
+void AnyNode::pprint(){
+	// 1.step set pipeline print time
+	m_print_timestamp.modified();
+	m_pipeline_print_time = m_print_timestamp.getMTime();
+
+	// 2.step reset pipeline
+	this->print();
 }
 
 void AnyNode::print(){
+	if(this->m_print_flag){
+		return;
+	}
+
+	// update print time
+	m_print_timestamp.modified();
+	m_print_time = m_print_timestamp.getMTime();
+
 	//print input signal info
+	this->m_print_flag = true;
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
-		(*in_iter)->printUnit();
+		if(*in_iter != NULL){
+			(*in_iter)->printUnit();
+		}
 	}
 		
 	//print this node info
 	printUnit();
+	this->m_print_flag = false;
 }
 
 void AnyNode::updateUnitInfo()
@@ -627,6 +681,10 @@ void AnyNode::exit(){
 		return;
 	}
 
+	// update exit time
+	m_exit_timestamp.modified();
+	m_exit_time = m_exit_timestamp.getMTime();
+
 	m_exit_flag = true;
 	// process (pre exit)
 	this->preexit();
@@ -641,12 +699,19 @@ void AnyNode::exit(){
 	// process (post exit)
 	this->postexit();
 	m_exit_flag = false;
+
+	// log
+	EAGLEEYE_LOGD("node %s exit", this->getUnitName());
 }
 
 void AnyNode::init(){
 	if(m_init_flag){
 		return;
 	}
+
+	// update init time
+	m_init_timestamp.modified();
+	m_init_time = m_init_timestamp.getMTime();
 
 	m_init_flag = true;
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
@@ -656,6 +721,9 @@ void AnyNode::init(){
 		}
 	}
 	m_init_flag = false;
+
+	// log
+	EAGLEEYE_LOGD("node %s init", this->getUnitName());
 }
 
 void AnyNode::findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll){
@@ -685,6 +753,37 @@ void AnyNode::findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll){
 	}
 
 	m_findin_flag = false;
+}
+
+unsigned long AnyNode::getResetTime(){
+	return m_reset_time;
+}
+unsigned long AnyNode::getPipelineResetTime(){
+	return m_pipeline_reset_time;
+}
+
+unsigned long AnyNode::getPrintTime(){
+	return this->m_print_time;
+}
+
+unsigned long AnyNode::getPipelinePrintTime(){
+	return m_pipeline_print_time;
+}
+
+unsigned long AnyNode::getInitTime(){
+	return this->m_init_time;
+}
+
+unsigned long AnyNode::getPipelineInitTime(){
+	return this->m_pipeline_init_time;
+}
+
+unsigned long AnyNode::getExitTime(){
+	return this->m_exit_time;
+}
+
+unsigned long AnyNode::getPipelineExitTime(){
+	return this->m_pipeline_exit_time;
 }
 }
 

@@ -144,7 +144,7 @@ void AnyPipeline::isReady(int& is_ready){
 void AnyPipeline::reset(){
     std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
     for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
-        iter->second->reset();
+        iter->second->preset();
     }
 }
 

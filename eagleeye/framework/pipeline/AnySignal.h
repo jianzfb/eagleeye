@@ -22,8 +22,11 @@ public:
 		is_end_frame = false;
 		is_start_frame = false;
 		rotation = 0;
+		rows = 0;
+		cols = 0;
 		needed_rows = 0;
 		needed_cols = 0;	
+		allocate_mode = 0;
 		timestamp = 0;
 	}
 	std::string name;		// name
@@ -34,9 +37,12 @@ public:
 	bool is_end_frame;		// end frame flag for video
 	bool is_start_frame; 	// start frame flag for video
 	int rotation;			// rotation  (0,90,180,270)
-	int needed_rows;		// rows
-	int needed_cols;		// cols
-	unsigned int timestamp;
+	int rows;				// current rows 
+	int cols;				// current cols
+	int needed_rows;		// rows(largest)
+	int needed_cols;		// cols(largest)
+	int allocate_mode;		// 0（do nothing）;1（InPlace）;2（largest）;3（same size with input）;
+	unsigned int timestamp;	// timestamp
 };	
 
 class AnyNode;
@@ -298,12 +304,32 @@ public:
 	virtual MetaData& meta(){return this->m_meta;};
 
 	/**
+	 * @brief Set the Meta object
+	 * 
+	 * @param meta 
+	 */
+	virtual void setMeta(MetaData meta){this->m_meta = meta;};
+
+	/**
 	 * @brief find input signal
 	 * 
 	 * @param ptr 
 	 * @param ll 
 	 */
 	void findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll);
+
+	/**
+	 * @brief Set the Needed Mem object
+	 * 
+	 */
+	void setNeededMem(int size);
+
+	/**
+	 * @brief Get the Needed Mem object
+	 * 
+	 * @return void* 
+	 */
+	void* getNeededMem();
 
 protected:
 	std::string m_signal_type;
@@ -316,6 +342,7 @@ protected:
 	AnyNode* m_link_node;
 	MetaData m_meta;
 	bool m_signal_exit;
+	std::shared_ptr<unsigned char> m_mem;
 
 private:
 	AnySignal(const AnySignal&);

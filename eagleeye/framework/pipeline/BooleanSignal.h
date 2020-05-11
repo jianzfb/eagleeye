@@ -34,7 +34,7 @@ public:
 	virtual void copyInfo(AnySignal* sig);
 
 	/**
-	 *	@brief print ContentSignal info
+	 *	@brief print BooleanSignal info
 	 */
 	virtual void printUnit();
 
@@ -86,7 +86,7 @@ public:
 	 * 
 	 * @return int 
 	 */
-	EagleeyeType getSignalValueType(){return EAGLEEYE_BOOL;};
+	virtual EagleeyeType getSignalValueType(){return EAGLEEYE_BOOL;};
 
 	/**
 	 * @brief Get the Derive Type object

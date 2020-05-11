@@ -14,10 +14,14 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_meta.is_end_frame = false;
 	this->m_meta.is_start_frame = false;
 	this->m_meta.rotation = 0;
+	this->m_meta.rows = 0;
+	this->m_meta.cols = 0;
 	this->m_meta.needed_rows = 0;
 	this->m_meta.needed_cols = 0;	
+	this->m_meta.allocate_mode = 0;
+
 	this->m_meta.timestamp = 0;
-	m_sig_category = SIGNAL_CATEGORY_IMAGE;
+	this->m_sig_category = SIGNAL_CATEGORY_IMAGE;
 	this->m_timestamp = 0;
 }
 
@@ -27,17 +31,45 @@ void ImageSignal<T>::copyInfo(AnySignal* sig){
 	BaseImageSignal::copyInfo(sig);
 
 	//receive some info from the upper signal
-	if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
+	if((SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) && 
+				(this->getSignalValueType() == sig->getSignalValueType())){
 		ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
 		if (from_sig){
+			int rows = this->m_meta.rows;
+			int cols = this->m_meta.cols;
+			int needed_rows = this->m_meta.needed_rows;
+			int needed_cols = this->m_meta.needed_cols;
+			int allocate_mode = this->m_meta.allocate_mode;
+
 			this->m_meta = from_sig->meta();
+
+			this->m_meta.needed_rows = needed_rows;
+			this->m_meta.needed_cols = needed_cols;
+			this->m_meta.allocate_mode = allocate_mode;
+
+			if(this->m_meta.allocate_mode == 1){
+				// InPlace
+				this->m_meta.rows = rows;
+				this->m_meta.cols = cols;
+				this->img = from_sig->img;				// share memory with input signal
+			}
+			if(this->m_meta.allocate_mode == 3){
+				// allocate same size memory
+				this->m_meta.rows = rows;
+				this->m_meta.cols = cols;
+
+				if(this->img.rows() != rows || this->img.cols() != cols){
+					this->img = Matrix<T>(rows,cols);	// allocate same size with input signal
+				}
+			}
 		}
 	}
 }
 
 template<class T>
 void ImageSignal<T>::copy(AnySignal* sig){
-	if(SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
+	if((SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) || 
+			(this->getSignalValueType() != sig->getSignalValueType())){
 		return;
 	}
 	ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
@@ -75,8 +107,8 @@ void ImageSignal<T>::makeempty(bool auto_empty)
 	this->m_meta.is_end_frame = false;
 	this->m_meta.is_start_frame = false;
 	this->m_meta.rotation = 0;
-	this->m_meta.needed_rows = 0;
-	this->m_meta.needed_cols = 0;	
+	this->m_meta.rows = 0;
+	this->m_meta.cols = 0;
 	this->m_meta.timestamp = 0;
 	this->m_timestamp = 0;
 	if(auto_empty){
@@ -142,12 +174,16 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
 		// SIGNAL_CATEGORY_IMAGE
 		this->img = data;
+		this->m_meta.rows = this->img.rows();
+		this->m_meta.cols = this->img.cols();
 	}
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
 		this->m_queue.push(data); 
 		MetaData mm;
+		mm.rows = data.rows();
+		mm.cols = data.cols();
 		this->m_meta_queue.push(mm);
 		locker.unlock();
 
@@ -198,7 +234,16 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
 		// SIGNAL_CATEGORY_IMAGE
 		this->img = data;
+		// ignore needed_rows, needed_cols and allocate_mode
+		int needed_rows = this->m_meta.needed_rows;
+		int needed_cols = this->m_meta.needed_cols;
+		int allocate_mode = this->m_meta.allocate_mode;
+
 		this->m_meta = mm;
+
+		this->m_meta.needed_rows = needed_rows;
+		this->m_meta.needed_cols = needed_cols;
+		this->m_meta.allocate_mode = allocate_mode;
 	}
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
@@ -217,9 +262,25 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 
 template<class T>
 void ImageSignal<T>::setSignalContent(void* data, const int* data_size, const int data_dims){
-	Matrix<T> signal_content(data_size[0], data_size[1], data, true);
-	MetaData meta_data;
+	MetaData meta_data = this->meta();
+	Matrix<T> signal_content;
+	if(meta_data.allocate_mode == 1){
+		// InPlace Mode
+		signal_content = Matrix<T>(data_size[0], data_size[1], data, false);
+	}
+	else if(meta_data.allocate_mode == 2){
+		// Largest Mode
+		signal_content = Matrix<T>(data_size[0], data_size[1], this->getNeededMem(), false);
+		memcpy(signal_content.dataptr(), data, sizeof(T)*data_size[0]*data_size[1]);
+	}
+	else{
+		// Copy Mode
+		signal_content = Matrix<T>(data_size[0], data_size[1], data, true);
+	}
+	
 	meta_data.timestamp = this->m_timestamp;
+	meta_data.rows = data_size[0];
+	meta_data.cols = data_size[1];
 	this->m_timestamp += 1;
 	this->setData(signal_content, meta_data);
 }
@@ -233,6 +294,16 @@ void ImageSignal<T>::getSignalContent(void*& data, int* data_size, int& data_dim
 	data_size[1] = this->m_tmp.cols();
 	data_size[2] = TypeTrait<T>::size;
 	data_type = TypeTrait<T>::type;
+}
+
+template<class T>
+void ImageSignal<T>::setMeta(MetaData meta){
+	if(meta.allocate_mode == 3 && meta.needed_rows > 0 && meta.needed_cols > 0){
+		// allocate allowed largest space
+		this->setNeededMem(sizeof(T)*meta.needed_rows*meta.needed_cols);
+	}
+
+	this->m_meta = meta;
 }
 
 /* Tensor Signal */
@@ -318,7 +389,6 @@ void TensorSignal<T>::setSignalContent(void* data, const int* data_size, const i
 	this->setData(signal_content);
 }
 
-
 template<class T>
 void TensorSignal<T>::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
 	Tensor<T> tensor_data = this->getData();
@@ -331,62 +401,4 @@ void TensorSignal<T>::getSignalContent(void*& data, int* data_size, int& data_di
 	data_size[3] = shape[3];
 	data_type = TypeTrait<T>::type;
 }
-
-/* Content Signal */
-template<class T>
-void ContentSignal<T>::copyInfo(AnySignal* sig)
-{
-	//call the base class
-	Superclass::copyInfo(sig);
-}
-
-template<class T>
-void ContentSignal<T>::printUnit()
-{
-	Superclass::printUnit();
-}
-
-template<class T>
-void ContentSignal<T>::makeempty(bool auto_empty)
-{
-	info=T();
-
-	//force time update
-	modified();
-}
-
-template<class T>
-bool ContentSignal<T>::isempty()
-{
-	return false;
-}
-
-template<class T>
-typename ContentSignal<T>::DataType ContentSignal<T>::getData(){
-	return this->info;
-}
-
-template<class T>
-void ContentSignal<T>::setData(ContentSignal<T>::DataType data){
-	this->info = data;
-	modified();
-}
-
-template<class T>
-void ContentSignal<T>::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
-	data = &info;
-	data_size[0] = 1;
-	data_size[1] = 1;
-	data_size[2] = 1;
-	data_dims = 0;		
-	data_type = -1;		// string type
-}
-
-template<class T>
-void ContentSignal<T>::setSignalContent(void* data, const int* data_size, const int data_dims){
-	//
-	this->info = *((T*)data);
-	// ignore data_size, data_dims
-}
-
 }

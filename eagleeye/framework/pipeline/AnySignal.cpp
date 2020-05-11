@@ -120,28 +120,27 @@ void AnySignal::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*
 }
 
 void AnySignal::printUnit(){
-	if (m_link_node){
+	if (m_link_node && m_link_node->getPrintTime() < m_link_node->getPipelinePrintTime()){
 		m_link_node->print();
-       EAGLEEYE_LOGD("signal (%s) -- (%s) \n",getClassIdentity(),getUnitName());
-       EAGLEEYE_LOGD("link node (%s) -- (%s) \n",m_link_node->getClassIdentity(),m_link_node->getUnitName());
+		EAGLEEYE_LOGD("signal: %s (%s) from node: %s (%s)\n",getClassIdentity(),getUnitName(), m_link_node->getUnitName(), m_link_node->getClassIdentity());
 	}
 }
 
 void AnySignal::reset(){
-	if(m_link_node){
+	if(m_link_node && m_link_node->getResetTime() < m_link_node->getPipelineResetTime()){
 		this->m_link_node->reset();
 	}
 }
 
 void AnySignal::exit(){
 	m_signal_exit = true;
-	if(m_link_node){
+	if(m_link_node && this->m_link_node->getExitTime() < this->m_link_node->getPipelineExitTime()){
 		this->m_link_node->exit();
 	}	
 }
 
 void AnySignal::init(){
-	if(m_link_node){
+	if(m_link_node && m_link_node->getInitTime() < m_link_node->getPipelineInitTime()){
 		this->m_link_node->init();
 	}	
 }
@@ -216,5 +215,14 @@ void AnySignal::findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll)
 	if(m_link_node){
 		m_link_node->findIn(ptr, ll);
 	}
+}
+
+void AnySignal::setNeededMem(int size){
+	void* mem = malloc(size);
+	this->m_mem = std::shared_ptr<unsigned char>((unsigned char*)mem, [](unsigned char* arr) { free(arr); });
+}
+
+void* AnySignal::getNeededMem(){
+	return this->m_mem.get();
 }
 }

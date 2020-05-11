@@ -1,2 +1,7 @@
 bin/*
 build/*
+.vscode
+.DS_Store
+**/.DS_Store
+scripts/dist/
+scripts/eagleeye.egg-info/

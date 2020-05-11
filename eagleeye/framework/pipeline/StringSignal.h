@@ -48,7 +48,7 @@ public:
 	}
 
 	/**
-	 *	@brief print ContentSignal info
+	 *	@brief print StringSignal info
 	 */
 	virtual void printUnit();
 
@@ -84,7 +84,7 @@ public:
 	 * 
 	 * @return int 
 	 */
-	EagleeyeType getSignalValueType(){return EAGLEEYE_STRING;};
+	virtual EagleeyeType getSignalValueType(){return EAGLEEYE_STRING;};
 
 	/**
 	 * @brief Get the Derive Type object

@@ -29,20 +29,31 @@ public:
 	EAGLEEYE_CLASSIDENTITY(AnyNode);
 
 	/**
-	 *	@brief start pipeline mechanism
+	 *	@brief start pipeline run
 	 */
 	bool start();
 
 	/**
-	 * @brief reset pipeline
+	 *	@brief reset the pipeline
+	 */
+	void preset();
+
+	/**
+	 * @brief print the pipeline
+	 * 
+	 */
+	void pprint();
+
+	/**
+	 * @brief reset node
 	 * 
 	 */
 	virtual void reset();
 
 	/**
-	 *	@brief print pipeline info
+	 *	@brief print node info
 	 */
-	void print();
+	virtual void print();
 
 	/**
 	 *	@brief some functions about input signals
@@ -103,13 +114,6 @@ public:
 	 * 
 	 */
 	virtual void executeNodeInfoAfter(){};
-
-
-	/**
-	 *	@brief reset the pipeline
-	 *	@note Force the whole pipeline to update
-	 */
-	virtual void resetPipeline();
 
 	/**
 	 *	@brief update unit info, which lead to update pipeline
@@ -262,6 +266,38 @@ public:
 	 */
 	void findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll);
 
+	/**
+	 * @brief Get the Reset Time object
+	 * 
+	 * @return unsigned long 
+	 */
+	unsigned long getResetTime();
+	unsigned long getPipelineResetTime();
+
+	/**
+	 * @brief Get the Print Time object
+	 * 
+	 * @return unsigned long 
+	 */
+	unsigned long getPrintTime();
+	unsigned long getPipelinePrintTime();
+
+	/**
+	 * @brief Get the Init Time object
+	 * 
+	 * @return unsigned long 
+	 */
+	unsigned long getInitTime();
+	unsigned long getPipelineInitTime();
+
+	/**
+	 * @brief Get the Exit Time object
+	 * 
+	 * @return unsigned long 
+	 */
+	unsigned long getExitTime();
+	unsigned long getPipelineExitTime();
+
 protected:
 	/**
 	 *	@brief make one output signal
@@ -309,20 +345,37 @@ protected:
 
 	bool m_finish_run;
 
+	EagleeyeTimeStamp m_reset_timestamp;
+	unsigned long m_reset_time;
+	static unsigned long m_pipeline_reset_time;
+
+	EagleeyeTimeStamp m_print_timestamp;
+	unsigned long m_print_time;
+	static unsigned long m_pipeline_print_time;
+
+	EagleeyeTimeStamp m_init_timestamp;
+	unsigned long m_init_time;
+	static unsigned long m_pipeline_init_time;
+
+	EagleeyeTimeStamp m_exit_timestamp;
+	unsigned long m_exit_time;
+	static unsigned long m_pipeline_exit_time;
+
 private:
 	AnyNode(const AnyNode&);
 	void operator=(const AnyNode&);
 
-	bool m_reset_flag;
-	bool m_exit_flag;
-	bool m_init_flag;
-	bool m_process_flag;
-	bool m_get_monitor_flag;
-	bool m_feadback_flag;
-	bool m_load_config_flag;
-	bool m_save_config_flag;
+	bool m_reset_flag;			// prevent recurrent call (reset)
+	bool m_exit_flag;			// prevent recurrent call (exit)
+	bool m_init_flag;			// prevent recurrent call (init)
+	bool m_process_flag;		// prevent recurrent call (process)
+	bool m_get_monitor_flag;	// ...
+	bool m_feadback_flag;		// ...
+	bool m_load_config_flag;	// ...
+	bool m_save_config_flag;	// ...
+	bool m_print_flag;			// ...
+	bool m_findin_flag;			// ...
 
-	bool m_findin_flag;
 };
 }
 
