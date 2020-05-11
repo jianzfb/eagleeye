@@ -10,14 +10,13 @@
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
 namespace eagleeye{
-
 enum OpenCLMemStatus{
     EAGLEEYE_CL_MEM_READ,
     EAGLEEYE_CL_MEM_WRITE,
     EAGLEEYE_CL_MEM_READ_WRITE,
     EAGLEEYE_CL_MEM_READ_WRITE_PINNED,
 };
-
+    
 class OpenCLObject{
 public:
     OpenCLObject(){};
@@ -344,6 +343,25 @@ void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int i
 //     clSetKernelArg(OpenCLRuntime::getOpenCLEnv()->m_kernel_map[tag+#kernel], index, size, &data);
 // #define EAGLEEYE_OPENCL_KERNEL_SET_ARG_0(kernel, index, size, data) EAGLEEYE_OPENCL_KERNEL_SET_ARG_1(kernel, index, size, data, std::string("_"))
 // #define EAGLEEYE_OPENCL_KERNEL_SET_ARG(...) CONCAT(EAGLEEYE_OPENCL_KERNEL_SET_ARG_, ARG_VARGS(__VA_ARGS__))(__VA_ARGS__)
+}
+#else
+namespace eagleeye{
+enum OpenCLMemStatus{
+    EAGLEEYE_CL_MEM_READ,
+    EAGLEEYE_CL_MEM_WRITE,
+    EAGLEEYE_CL_MEM_READ_WRITE,
+    EAGLEEYE_CL_MEM_READ_WRITE_PINNED,
+};
+class OpenCLMem{
+public:
+    OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size){};
+    virtual ~OpenCLMem(){};
+};
+class OpenCLImage{
+public:
+    OpenCLImage(OpenCLMemStatus mem_status,std::string name, unsigned int rows, unsigned int cols, unsigned int channels, EagleeyeType pixel_type){};
+    virtual ~OpenCLImage(){};
+};
 }
 #endif    
 #endif

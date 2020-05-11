@@ -198,4 +198,14 @@ void SubPipeline::getPipelineMonitors(std::map<std::string,std::vector<AnyMonito
 			(*signal_iter)->getPipelineMonitors(pipeline_monitor_pool);
 	}
 }
+
+void SubPipeline::loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config){
+    this->m_sink_node->loadConfigure(nodes_config);
+    Superclass::loadConfigure(nodes_config);
+}
+
+void SubPipeline::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config){
+    this->m_sink_node->saveConfigure(nodes_config);
+    Superclass::saveConfigure(nodes_config);
+}
 } // namespace eagleeye

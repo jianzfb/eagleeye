@@ -62,6 +62,14 @@ public:
 	 *	@note traverse the whole pipeline
 	 */
 	virtual void getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool);
+ 
+    /**
+	 * @brief load/save pipeline configure
+	 * 
+	 * @param node_config 
+	 */
+	virtual void loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config);
+	virtual void saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config);
 
 private:
     IfElseNode(const IfElseNode&);

@@ -13,7 +13,6 @@
 #include <functional>
 #include <iostream>
 #include "eagleeye/common/EagleeyeMacro.h"
-#include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/MetaOperation.h"
 #include "eagleeye/basic/blob.h"
 #include "eagleeye/common/EagleeyeRuntime.h"

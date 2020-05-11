@@ -82,6 +82,14 @@ public:
      */
     virtual void updateUnitInfo();
 
+    /**
+	 * @brief load/save pipeline configure
+	 * 
+	 * @param node_config 
+	 */
+	virtual void loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config);
+	virtual void saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config);
+
 protected:
     /**
      * @brief run subnode parallel

@@ -14,11 +14,11 @@ public:
     virtual ~EagleeyeRuntime(){
     }
 
-    EagleeyeRuntimeType type(){
+    EagleeyeRuntimeType type() const{
         return this->m_runtime;
     }
 
-    std::string device(){
+    std::string device() const{
         switch (m_runtime){
         case EAGLEEYE_CPU:
             return "CPU";
@@ -33,7 +33,7 @@ public:
         }
     }
 
-    std::string prefix(std::string prefix){
+    std::string prefix(std::string prefix) const{
         char buf[1024] = {0};
         switch (m_runtime){
         case EAGLEEYE_CPU:

@@ -1,12 +1,19 @@
 namespace eagleeye
 {
 template<typename T>
-void empty_deleter(T* x) {
+Matrix<T>::Matrix()
+	:Blob(0){
+	m_rows = 0;
+	m_cols = 0;
+	m_r_range.s = 0;
+	m_r_range.e = 0;
+	m_c_range.s = 0;
+	m_c_range.e = 0;
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols, Aligned aligned)
-{
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols, Aligned aligned, EagleeyeRuntime runtime)
+	:Blob(sizeof(T)*rows*cols, runtime){
 	m_rows = rows;
 	m_cols = cols;
 
@@ -19,15 +26,15 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols, Aligned aligned)
 		return;
 	}
 	
-	void* aligned_mem_ptr;
-	posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
-	this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
-	memset(this->m_ptr.get(), 0, sizeof(T)*rows*cols);
+	// void* aligned_mem_ptr;
+	// posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
+	// this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
+	// memset(this->m_ptr.get(), 0, sizeof(T)*rows*cols);
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned)
-{
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned, EagleeyeRuntime runtime)
+	:Blob(sizeof(T)*rows*cols, runtime){
 	m_rows = rows;
 	m_cols = cols;
 
@@ -40,11 +47,12 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned)
 		return;
 	}
 
-	void* aligned_mem_ptr;
-	posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
-	this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
+	// void* aligned_mem_ptr;
+	// posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
+	// this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
+	// T* data = m_ptr.get();
 
-	T* data = m_ptr.get();
+	T* data = (T*)(this->cpu());
 	int total = rows * cols;
 	for (int i = 0; i < total; ++i){
 		data[i] = val;
@@ -52,8 +60,8 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned)
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag, Aligned aligned)
-{
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag, Aligned aligned, EagleeyeRuntime runtime)
+	:Blob(sizeof(T)*rows*cols, runtime, data, copy_flag){
 	m_rows = rows;
 	m_cols = cols;
 
@@ -62,78 +70,78 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag,
 	m_c_range.s = 0;
 	m_c_range.e = m_cols;
 	
-	if (copy_flag){
-		void* aligned_mem_ptr;
-		posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
-		this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
-		memcpy(m_ptr.get(), data, sizeof(T)*rows*cols);
-	}
-	else{
-		m_ptr = std::shared_ptr<T>((T*)data, empty_deleter<T>);
-	}
+	// if (copy_flag){
+	// 	void* aligned_mem_ptr;
+	// 	posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
+	// 	this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
+	// 	memcpy(m_ptr.get(), data, sizeof(T)*rows*cols);
+	// }
+	// else{
+	// 	m_ptr = std::shared_ptr<T>((T*)data, empty_deleter<T>);
+	// }
 }
 
 template<typename T>
 T& Matrix<T>::at(unsigned int r_index,unsigned int c_index) const
 {
 	unsigned int real_pos = pos(r_index,c_index);
-	return m_ptr.get()[real_pos];
+	return ((T*)(this->cpu()))[real_pos];
 }
 
 template<typename T>
 T& Matrix<T>::at(unsigned int index) const
 {
 	unsigned int real_pos = pos(index);
-	return m_ptr.get()[real_pos];
+	return ((T*)(this->cpu()))[real_pos];
 }
 
 template<typename T>
 T& Matrix<T>::operator() (int r_index,int c_index) const
 {
 	unsigned int real_pos = pos(r_index,c_index);
-	return m_ptr.get()[real_pos];
+	return ((T*)(this->cpu()))[real_pos];
 }
 
 template<typename T>
 T& Matrix<T>::operator ()(int index) const
 {
 	unsigned int real_pos = pos(index);
-	return m_ptr.get()[real_pos];
+	return ((T*)(this->cpu()))[real_pos];
 }
 
 template<typename T>
 T& Matrix<T>::operator [](int index) const
 {
 	unsigned int real_pos = pos(index);
-	return m_ptr.get()[real_pos];
+	return ((T*)(this->cpu()))[real_pos];
 }
 
 template<typename T>
 T* Matrix<T>::row(unsigned int r_index)
-{
+{	
 	unsigned int real_r = pos_r(r_index);
-	return m_ptr.get() + real_r * m_cols + m_c_range.s;
+	return (T*)(this->cpu()) + real_r * m_cols + m_c_range.s;
 }
 
 template<typename T>
 const T* Matrix<T>::row(unsigned int r_index) const
 {
 	unsigned int real_r = pos_r(r_index);
-	return m_ptr.get() + real_r * m_cols + m_c_range.s;
+	return (T*)(this->cpu()) + real_r * m_cols + m_c_range.s;
 }
 
 template<typename T>
 T* Matrix<T>::anyptr(unsigned int index)
-{
+{	
 	unsigned int real_r = pos(index);
-	return m_ptr.get() + real_r;
+	return (T*)(this->cpu()) + real_r;
 }
 
 template<typename T>
 const T* Matrix<T>::anyptr(unsigned int index) const
 {
 	unsigned int real_r = pos(index);
-	return m_ptr.get() + real_r;
+	return (T*)(this->cpu()) + real_r;
 }
 
 template<typename T>
@@ -292,13 +300,13 @@ Matrix<T> Matrix<T>::t()
 template<typename T>
 T* Matrix<T>::dataptr()
 {
-	return m_ptr.get();
+	return (T*)(this->cpu());
 }
 
 template<typename T>
 const T* Matrix<T>::dataptr() const
 {
-	return m_ptr.get();
+	return (T*)(this->cpu());
 }
 
 template<typename T>

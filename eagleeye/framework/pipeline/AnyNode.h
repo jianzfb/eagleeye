@@ -255,8 +255,8 @@ public:
 	 * 
 	 * @param node_config 
 	 */
-	void loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config);
-	void saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config);
+	virtual void loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config);
+	virtual void saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config);
 
 	/**
 	 * @brief find input signal

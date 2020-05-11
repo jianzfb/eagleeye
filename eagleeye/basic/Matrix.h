@@ -5,73 +5,55 @@
 #include <ostream>
 #include <iomanip>
 #include <vector>
-#include "eagleeye/common/EagleeyeMacro.h"
-#include "eagleeye/basic/type.h"
 #include <memory>
 #include <stdlib.h>
 #include <cstdlib>
+#include "eagleeye/common/EagleeyeMacro.h"
+#include "eagleeye/basic/type.h"
+#include "eagleeye/basic/blob.h"
 
 namespace eagleeye
 {
-class Range
-{
-public:
-	template<typename T> friend class Matrix;
-
-	explicit Range(unsigned int start=0,unsigned int end=0)
-		:s(start),e(end){};
-	~Range(){};
-
-	unsigned int s;
-	unsigned int e;
-};
-
-class Aligned{
-public:
-	Aligned(int aligned_bits):m_aligned_bits(aligned_bits){}
-	~Aligned(){};
-
-	int m_aligned_bits;
-};
-
 template<typename T>
-class Matrix
+class Matrix:public Blob
 {
 public:
 	typedef T								ElemType;
 
 public:
 	/**
-	 *	@brief All kinds of useful constructor
+	 *	@brief useful constructor
 	 */
-	Matrix()
-	{
-		m_rows = 0;
-		m_cols = 0;
-		m_r_range.s = 0;
-		m_r_range.e = 0;
-		m_c_range.s = 0;
-		m_c_range.e = 0;
-	};
-	Matrix(unsigned int rows,unsigned int cols, Aligned aligned=Aligned(64));
-	Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned=Aligned(64));
+	Matrix();
+	Matrix(unsigned int rows,unsigned int cols, Aligned aligned=Aligned(64), EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU));
+	Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned=Aligned(64), EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU));
 
 	/**
 	 *	@brief using matrix structure to wrap outside data
 	 *	@note if copy_flag == true, it would copy this outside data; 
 	 */
-	Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag = false, Aligned aligned=Aligned(64));
+	Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag = false, Aligned aligned=Aligned(64), EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU));
 
+	/**
+	 * @brief Destroy the Matrix object
+	 * 
+	 */
 	virtual ~Matrix(){}
-	inline Matrix(const Matrix &m)
-	{
-		m_rows = m.m_rows;
-		m_cols = m.m_cols;
 
-		m_r_range = m.m_r_range;
-		m_c_range = m.m_c_range;
-		m_ptr = m.m_ptr;
-	}
+	// /**
+	//  * @brief Construct a new Matrix object
+	//  * 
+	//  * @param m 
+	//  */
+	// inline Matrix(const Matrix &m)
+	// {
+	// 	m_rows = m.m_rows;
+	// 	m_cols = m.m_cols;
+
+	// 	m_r_range = m.m_r_range;
+	// 	m_c_range = m.m_c_range;
+	// 	m_ptr = m.m_ptr;
+	// }
 
 	/**
 	 *	@brief overload operator =
@@ -91,18 +73,18 @@ public:
 		}
 		return *this;
 	}
-	inline Matrix& operator=(const Matrix& m)
-	{
-		m_ptr = m.m_ptr;
+	// inline Matrix& operator=(const Matrix& m)
+	// {
+	// 	m_ptr = m.m_ptr;
 	
-		m_rows = m.m_rows;
-		m_cols = m.m_cols;
+	// 	m_rows = m.m_rows;
+	// 	m_cols = m.m_cols;
 		
-		m_r_range = m.m_r_range;
-		m_c_range = m.m_c_range;
+	// 	m_r_range = m.m_r_range;
+	// 	m_c_range = m.m_c_range;
 
-		return *this;
-	}
+	// 	return *this;
+	// }
 
 	inline Matrix operator()(Range r_range,Range c_range);
 	inline const Matrix operator()(Range r_range,Range c_range) const;
@@ -547,8 +529,6 @@ private:
 
 	unsigned int m_rows;
 	unsigned int m_cols;
-
-	std::shared_ptr<T> m_ptr;
 };
 
 template<typename T>

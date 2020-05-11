@@ -1,4 +1,5 @@
 #include "eagleeye/basic/blob.h"
+#include "eagleeye/common/EagleeyeOpenCL.h"
 namespace eagleeye{
 Blob::Blob(size_t size, EagleeyeRuntime runtime,void* data, bool copy, std::string group)
     :m_size(size),
@@ -23,6 +24,7 @@ Blob::Blob(size_t size, EagleeyeRuntime runtime,void* data, bool copy, std::stri
     if(runtime.type() == EAGLEEYE_CPU){
         if(data == NULL){
             this->m_cpu_data = std::shared_ptr<unsigned char>(new unsigned char[m_size], [](unsigned char* arr) { delete [] arr; });
+            memset(this->m_cpu_data.get(), 0, m_size);
         }
         else if(copy){
             this->m_cpu_data = std::shared_ptr<unsigned char>(new unsigned char[m_size], [](unsigned char* arr) { delete [] arr; });
@@ -59,7 +61,7 @@ void Blob::update(){
     this->m_is_dsp_ready = false;
 }
 
-void Blob::transfer(EagleeyeRuntime runtime, bool asyn){
+void Blob::transfer(EagleeyeRuntime runtime, bool asyn) const{
     if(runtime.type() == m_runtime.type()){
         return;
     }
@@ -183,7 +185,7 @@ void* Blob::gpu(){
 void* Blob::dsp(){
     return NULL;
 }
-void* Blob::cpu(){
+void* Blob::cpu() const{
     // 0.step do nothing
     if(m_size == 0){
         return NULL;

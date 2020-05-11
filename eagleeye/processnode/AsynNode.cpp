@@ -216,4 +216,20 @@ void AsynNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>
 			(*signal_iter)->getPipelineMonitors(pipeline_monitor_pool);
 	}
 }
+
+void AsynNode::loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config){
+    for(int ti=0; ti<m_run_node.size(); ++ti){
+        m_run_node[ti]->loadConfigure(nodes_config);
+    }
+
+    Superclass::loadConfigure(nodes_config);
+}
+
+void AsynNode::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_config){
+    for(int ti=0; ti<m_run_node.size(); ++ti){
+        m_run_node[ti]->saveConfigure(nodes_config);
+    }
+
+    Superclass::saveConfigure(nodes_config);
+}
 } // namespace eagleeye
