@@ -12,8 +12,8 @@ Matrix<T>::Matrix()
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols, Aligned aligned, EagleeyeRuntime runtime)
-	:Blob(sizeof(T)*rows*cols, runtime){
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols, EagleeyeRuntime runtime, Aligned aligned)
+	:Blob(sizeof(T)*rows*cols, aligned, runtime){
 	m_rows = rows;
 	m_cols = cols;
 
@@ -33,8 +33,24 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols, Aligned aligned, Eagleeye
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned, EagleeyeRuntime runtime)
-	:Blob(sizeof(T)*rows*cols, runtime){
+Matrix<T>::Matrix(std::vector<int64_t> shape, EagleeyeRuntime runtime, Aligned aligned)
+	:Blob(sizeof(T)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;}), aligned, runtime){
+	m_rows = shape[0];
+	m_cols = shape[1];
+
+	m_r_range.s = 0;
+	m_r_range.e = m_rows;
+	m_c_range.s = 0;
+	m_c_range.e = m_cols;
+
+	if(m_rows == 0 || m_cols == 0){
+		return;
+	}
+}
+
+template<typename T>
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, EagleeyeRuntime runtime, Aligned aligned)
+	:Blob(sizeof(T)*rows*cols, aligned, runtime){
 	m_rows = rows;
 	m_cols = cols;
 
@@ -60,8 +76,8 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned, Ea
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag, Aligned aligned, EagleeyeRuntime runtime)
-	:Blob(sizeof(T)*rows*cols, runtime, data, copy_flag){
+Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag, EagleeyeRuntime runtime, Aligned aligned)
+	:Blob(sizeof(T)*rows*cols, aligned, runtime, data, copy_flag){
 	m_rows = rows;
 	m_cols = cols;
 
@@ -160,6 +176,16 @@ Matrix<T> Matrix<T>::clone() const
 template<typename T>
 Matrix<T> Matrix<T>::operator()(Range r_range,Range c_range)
 {
+	if(r_range.s < 0 || r_range.e < 0){
+		r_range.s = 0;
+		r_range.e = this->rows();
+	}
+
+	if(c_range.s < 0 || c_range.e < 0){
+		c_range.s = 0;
+		c_range.e = this->cols();
+	}
+
 	Matrix<T> sub_matrix = (*this);
 	sub_matrix.m_r_range.s += r_range.s;
 	sub_matrix.m_r_range.e = sub_matrix.m_r_range.s + (r_range.e - r_range.s);
@@ -173,6 +199,16 @@ Matrix<T> Matrix<T>::operator()(Range r_range,Range c_range)
 template<typename T>
 const Matrix<T> Matrix<T>::operator ()(Range r_range,Range c_range) const
 {
+	if(r_range.s < 0 || r_range.e < 0){
+		r_range.s = 0;
+		r_range.e = this->rows();
+	}
+
+	if(c_range.s < 0 || c_range.e < 0){
+		c_range.s = 0;
+		c_range.e = this->cols();
+	}
+
 	Matrix<T> sub_matrix = (*this);
 	sub_matrix.m_r_range.s += r_range.s;
 	sub_matrix.m_r_range.e = sub_matrix.m_r_range.s + (r_range.e - r_range.s);

@@ -383,7 +383,6 @@ void TensorSignal<T>::setData(TensorSignal<T>::DataType data){
 template<class T>
 void TensorSignal<T>::setSignalContent(void* data, const int* data_size, const int data_dims){
 	Tensor<T> signal_content(std::vector<int64_t>{data_size[0],data_size[1], data_size[2], data_size[3]}, 
-							 EagleeyeRuntime(EAGLEEYE_CPU),
 							data, 
 							true);
 	this->setData(signal_content);

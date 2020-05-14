@@ -3,7 +3,7 @@
 
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/type.h"
-#include "math.h"
+#include <math.h>
 #include "eagleeye/basic/Matrix.h"
 
 namespace eagleeye

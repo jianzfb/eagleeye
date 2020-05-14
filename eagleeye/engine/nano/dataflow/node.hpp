@@ -28,7 +28,9 @@ public:
   std::string name;
   std::string graphviz_node_property;
 
-  Node(Graph* g, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
+  Node(Graph* g, 
+        int id, 
+        EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
   :g_(g),id_(id),init_(false),fixed_on_runtime_(false) {
     if(fixed.type() != EAGLEEYE_UNKNOWN_RUNTIME){
       runtime_ = fixed;
@@ -36,11 +38,9 @@ public:
     }
     count_ = 0;
   }
-
-  virtual float fire (EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU)) = 0;
   virtual ~Node () noexcept = default;
 
-  bool find_next (Node const & n) {
+  bool findNext (Node const & n) {
     for (Edge * e : next_) {
       assert(e);
       if (e->next() == n) { return true; }
@@ -48,7 +48,7 @@ public:
     return false;
   }
 
-  bool find_prev (Node const & n) {
+  bool findPrev (Node const & n) {
     for (Edge * e : prev_) {
       assert(e);
       if (e->prev() == n) { return true; }
@@ -56,17 +56,12 @@ public:
     return false;
   }
 
-  // bool find_data (Node const & n) {
-  //   for (Node * d : data_) {
-  //     assert(n);
-  //     if (n->data() == d) { return true; }
-  //   }
-  //   return false;
-  // }
-
-  virtual void* data (EagleeyeRuntime d=EAGLEEYE_CPU, int index=0) noexcept = 0;
+  virtual void* data(int index) noexcept = 0;
+  virtual float fire(EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU)) = 0;
   virtual size_t size(int index=0) noexcept = 0;
   virtual void init(EagleeyeRuntime runtime, void* data) noexcept = 0;
+  virtual void transfer(EagleeyeRuntime runtime, bool asyn) noexcept = 0;
+
   int linkIndexOfNode(Node& data_node){
     for(int index=0; index<data_.size(); ++index){
       if(data_[index] == &data_node){

@@ -23,9 +23,9 @@ HEFT::~HEFT(){
     delete[] this->fixed_;
 }
 
-void HEFT::collect_statistic(){
+void HEFT::collectStatistic(){
     // 任务数量
-    tasks_num_ = g_->getNodesNum();
+    tasks_num_ = g_->size();
     // 处理器数量
     processor_num_ = runtime_.size();
 
@@ -71,13 +71,13 @@ void HEFT::collect_statistic(){
         parent_[to_node.getId()].push_back(from_node.getId());
     }
 
-    EAGLEEYE_LOGD("data transfer matrix");
-    for(int i=0; i<tasks_num_; ++i){
-        for(int j=0; j<tasks_num_; ++j){
-            std::cout<<adj_[i*tasks_num_+j]<<"\t";
-        }
-        std::cout<<"\n";
-    }
+    // EAGLEEYE_LOGD("data transfer matrix");
+    // for(int i=0; i<tasks_num_; ++i){
+    //     for(int j=0; j<tasks_num_; ++j){
+    //         std::cout<<adj_[i*tasks_num_+j]<<"\t";
+    //     }
+    //     std::cout<<"\n";
+    // }
 
     // 2.step 分析任务在不同处理器上的运行时间(/us)
     std::unordered_set<Node*> nodes = g_->getNodes();
@@ -85,6 +85,10 @@ void HEFT::collect_statistic(){
     memset(avg_, 0, sizeof(float)*tasks_num_);
     for(int j=0; j<processor_num_; ++j){
         for(niter = nodes.begin(); niter != niend; ++niter){
+            // synchronous transfer data 
+            (*niter)->transfer(runtime_[j], false);
+
+            // run task
             float time = (*niter)->fire(runtime_[j]);
             task_time_[(*niter)->getId()*processor_num_+j] = time;
             avg_[(*niter)->getId()] += time;

@@ -48,7 +48,7 @@ public:
     FixedCNNOp(int input_data_num, int output_data_num, int layer_flag, std::string op_name);
     virtual ~FixedCNNOp();
 
-	    /**
+	/**
      * @brief initialize Op
      * 
      * @param buf 

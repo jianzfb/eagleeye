@@ -24,8 +24,27 @@ class Tensor:public Blob{
 public:
 	typedef T 				ElemType;
 	Tensor();
-	Tensor(std::vector<int64_t> shape, EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU), void* data=NULL, bool copy=false); 
+	Tensor(std::vector<int64_t> shape, 
+			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			Aligned aligned=Aligned(64)); 
+
+	Tensor(std::vector<int64_t> shape, 
+			void* data, 
+			bool copy, 
+			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			Aligned aligned=Aligned(64)); 
+	
+	/**
+	 * @brief Destroy the Tensor object
+	 * 
+	 */
 	virtual ~Tensor();
+
+	/**
+	 * @brief get cpu ptr
+	 * 
+	 * @return T* 
+	 */
 	T* dataptr();
 
 	const std::vector<int64_t>& shape();

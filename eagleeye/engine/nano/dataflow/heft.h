@@ -22,7 +22,7 @@ public:
     HEFT(Graph* g, std::vector<EagleeyeRuntime> runtime);
     virtual ~HEFT();
 
-    virtual void collect_statistic();
+    virtual void collectStatistic();
     virtual void analyze();
     virtual EagleeyeRuntime getRuntime(Node* node);
 

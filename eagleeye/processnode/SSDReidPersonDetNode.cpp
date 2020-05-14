@@ -310,7 +310,7 @@ void SSDReIDPersonDetNode::executeNodeInfo(){
         int roi_level = std::min(5, std::max(2, 4+int(round(roi_level_f))));
 
         int from_level = roi_level - 2;
-        Tensor<float> tensor(this->m_output_shapes[10+from_level], EagleeyeRuntime(EAGLEEYE_CPU), (void*)outputs[this->m_output_names[10+from_level]]);
+        Tensor<float> tensor(this->m_output_shapes[10+from_level], (void*)outputs[this->m_output_names[10+from_level]], false);
         Tensor<float> bbox_tensor(std::vector<int64_t>{1, 4});
         bbox_tensor.at(0, 0) = y1;
         bbox_tensor.at(0, 1) = x1;

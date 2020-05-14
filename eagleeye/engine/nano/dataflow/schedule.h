@@ -2,6 +2,7 @@
 #define _EAGLEEYE_SCHEDULE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/common/EagleeyeRuntime.h"
+#include "eagleeye/common/EagleeyeLog.h"
 #include <vector>
 
 namespace eagleeye{
@@ -31,7 +32,7 @@ public:
      * @brief hardware statistics
      * 
      */
-    virtual void collect_statistic() = 0;
+    virtual void collectStatistic() = 0;
 
 protected:
     Graph* g_;              

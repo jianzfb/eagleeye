@@ -17,7 +17,7 @@ Tensor<float> crop_and_resize(Tensor<float> image,
 	int image_w = shape[2];
 	int image_dim = shape[3];	
 
-	Tensor<float> cropped_images(std::vector<int64_t>{bbox.shape()[0], crop_size[0], crop_size[1], shape[3]}, EagleeyeRuntime(EAGLEEYE_CPU));
+	Tensor<float> cropped_images(std::vector<int64_t>{bbox.shape()[0], crop_size[0], crop_size[1], shape[3]});
 	int image_num = shape[0];
 	for(int b_i=0; b_i<bbox_ind.size(); ++b_i){
 		// bbox

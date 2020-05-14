@@ -5,8 +5,19 @@ Tensor<T>::Tensor()
 }
 
 template<typename T>
-Tensor<T>::Tensor(std::vector<int64_t> shape, EagleeyeRuntime runtime,void* data, bool copy)
-	:Blob(sizeof(T)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;}), runtime, data, copy){
+Tensor<T>::Tensor(std::vector<int64_t> shape, EagleeyeRuntime runtime, Aligned aligned)
+	:Blob(sizeof(T)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;}), aligned, runtime){
+	
+	this->m_shape=shape;
+	this->m_range.clear();
+	for(int i=0; i<this->m_shape.size(); ++i){
+		this->m_range.push_back(Range(0, this->m_shape[i]));
+	}
+}
+
+template<typename T>
+Tensor<T>::Tensor(std::vector<int64_t> shape, void* data, bool copy, EagleeyeRuntime runtime, Aligned aligned)
+	:Blob(sizeof(T)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;}), aligned, runtime, data, copy){
 	
 	this->m_shape=shape;
 	this->m_range.clear();

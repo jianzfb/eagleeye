@@ -225,10 +225,10 @@ void InstancePersonSegMRCNNNode::executeNodeInfo(){
     EAGLEEYE_TIME_START(rpnmodel);
     bool status = this->m_rpn_model->run(rpn_inputs, rpn_outputs);
     EAGLEEYE_TIME_END(rpnmodel);    
-    Tensor<float> p2(std::vector<int64_t>{1,128,128,256},EagleeyeRuntime(EAGLEEYE_CPU), rpn_outputs["output_p2"], false);
-    Tensor<float> p3(std::vector<int64_t>{1,64,64,256},EagleeyeRuntime(EAGLEEYE_CPU), rpn_outputs["output_p3"], false);
-    Tensor<float> p4(std::vector<int64_t>{1,32,32,256},EagleeyeRuntime(EAGLEEYE_CPU), rpn_outputs["output_p4"], false);
-    Tensor<float> p5(std::vector<int64_t>{1,16,16,256},EagleeyeRuntime(EAGLEEYE_CPU), rpn_outputs["output_p5"], false);
+    Tensor<float> p2(std::vector<int64_t>{1,128,128,256},rpn_outputs["output_p2"], false);
+    Tensor<float> p3(std::vector<int64_t>{1,64,64,256}, rpn_outputs["output_p3"], false);
+    Tensor<float> p4(std::vector<int64_t>{1,32,32,256}, rpn_outputs["output_p4"], false);
+    Tensor<float> p5(std::vector<int64_t>{1,16,16,256}, rpn_outputs["output_p5"], false);
 
     Matrix<float> rpn_logits_from_p2(128*128*3,2, rpn_outputs["output_rpn_class_logits2"], false);
     Matrix<float> rpn_logits_from_p3(64*64*3,2, rpn_outputs["output_rpn_class_logits3"], false);
@@ -377,7 +377,6 @@ void InstancePersonSegMRCNNNode::executeNodeInfo(){
 
     // 100,28,28,2
     Tensor<float> mrcnn_masks(std::vector<int64_t>{refined_rois_num,28,28,2},
-                          EagleeyeRuntime(EAGLEEYE_CPU),
                           mask_outputs["output_mrcnn_mask"],
                           false);
 

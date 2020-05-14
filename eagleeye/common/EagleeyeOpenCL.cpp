@@ -35,11 +35,13 @@ OpenCLMem::OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int 
     if(err != CL_SUCCESS){
         EAGLEEYE_LOGE("fail to create buffer %s width code %d",this->m_name.c_str(), err);
     }
+
     m_name = name;
     m_size = size;
     m_mem_status = mem_status;
     m_mapped_ptr = NULL;
 }
+
 OpenCLMem::~OpenCLMem(){
     clReleaseMemObject(m_mem);
 }

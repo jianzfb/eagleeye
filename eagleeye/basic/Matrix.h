@@ -8,6 +8,8 @@
 #include <memory>
 #include <stdlib.h>
 #include <cstdlib>
+#include <numeric>
+#include <functional>
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/type.h"
 #include "eagleeye/basic/blob.h"
@@ -20,40 +22,41 @@ class Matrix:public Blob
 public:
 	typedef T								ElemType;
 
-public:
 	/**
 	 *	@brief useful constructor
 	 */
 	Matrix();
-	Matrix(unsigned int rows,unsigned int cols, Aligned aligned=Aligned(64), EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU));
-	Matrix(unsigned int rows,unsigned int cols,T val, Aligned aligned=Aligned(64), EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU));
+	Matrix(unsigned int rows,
+			unsigned int cols, 
+			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			Aligned aligned=Aligned(64));
+	
+	Matrix(std::vector<int64_t> shape,
+			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			Aligned aligned=Aligned(64));
+
+	Matrix(unsigned int rows,
+			unsigned int cols,
+			T val, 
+			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			Aligned aligned=Aligned(64));
 
 	/**
 	 *	@brief using matrix structure to wrap outside data
 	 *	@note if copy_flag == true, it would copy this outside data; 
 	 */
-	Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag = false, Aligned aligned=Aligned(64), EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU));
+	Matrix(unsigned int rows,
+			unsigned int cols,
+			void* data,
+			bool copy_flag = false, 
+			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			Aligned aligned=Aligned(64));
 
 	/**
 	 * @brief Destroy the Matrix object
 	 * 
 	 */
 	virtual ~Matrix(){}
-
-	// /**
-	//  * @brief Construct a new Matrix object
-	//  * 
-	//  * @param m 
-	//  */
-	// inline Matrix(const Matrix &m)
-	// {
-	// 	m_rows = m.m_rows;
-	// 	m_cols = m.m_cols;
-
-	// 	m_r_range = m.m_r_range;
-	// 	m_c_range = m.m_c_range;
-	// 	m_ptr = m.m_ptr;
-	// }
 
 	/**
 	 *	@brief overload operator =
@@ -73,18 +76,6 @@ public:
 		}
 		return *this;
 	}
-	// inline Matrix& operator=(const Matrix& m)
-	// {
-	// 	m_ptr = m.m_ptr;
-	
-	// 	m_rows = m.m_rows;
-	// 	m_cols = m.m_cols;
-		
-	// 	m_r_range = m.m_r_range;
-	// 	m_c_range = m.m_c_range;
-
-	// 	return *this;
-	// }
 
 	inline Matrix operator()(Range r_range,Range c_range);
 	inline const Matrix operator()(Range r_range,Range c_range) const;

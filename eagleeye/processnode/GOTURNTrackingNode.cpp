@@ -146,7 +146,7 @@ void GOTURNTrackingNode::executeNodeInfo(){
         bool status = this->m_template_model->run(inputs, outputs);
         EAGLEEYE_TIME_END(templatemodel);
 
-        this->m_template_tensor = Tensor<float>(std::vector<int64_t>{1,5,5,256}, EagleeyeRuntime(EAGLEEYE_CPU), outputs["output_node_target_feat"], true);
+        this->m_template_tensor = Tensor<float>(std::vector<int64_t>{1,5,5,256}, outputs["output_node_target_feat"], true);
         
         // std::string template_tensor_path = "./template/template_tensor_"+tos(global_frame_index)+".bin";
         // FILE* template_tensor_fp = fopen(template_tensor_path.c_str(),"wb");
@@ -232,9 +232,9 @@ void GOTURNTrackingNode::executeNodeInfo(){
     bool status = this->m_tracking_model->run(search_inputs, search_outputs);
     EAGLEEYE_TIME_END(searchmodel);
 
-    Tensor<float> cls_output = Tensor<float>(std::vector<int64_t>{1,1,1,2}, EagleeyeRuntime(EAGLEEYE_CPU),search_outputs["output_node_cls"],true);
+    Tensor<float> cls_output = Tensor<float>(std::vector<int64_t>{1,1,1,2}, search_outputs["output_node_cls"],true);
     float* cls_output_ptr = cls_output.dataptr();
-    Tensor<float> reg_output = Tensor<float>(std::vector<int64_t>{1,1,1,4},EagleeyeRuntime(EAGLEEYE_CPU),search_outputs["output_node_reg"],true);
+    Tensor<float> reg_output = Tensor<float>(std::vector<int64_t>{1,1,1,4},search_outputs["output_node_reg"],true);
     float* reg_output_ptr = reg_output.dataptr();
 
     float context_w = context_max_x - context_min_x;

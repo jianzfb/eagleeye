@@ -18,6 +18,8 @@ public:
 		:s(start),e(end){};
 	~Range(){};
 
+    static Range ALL();
+
 	unsigned int s;
 	unsigned int e;
 };
@@ -35,12 +37,19 @@ public:
     /**
      * @brief Construct a new Blob object (support heterogeneous device)
      * 
-     * @param size 
-     * @param runtime 
-     * @param data 
-     * @param copy 
+     * @param size blob size
+     * @param aligned  memory aligned bits
+     * @param runtime  memory device
+     * @param data  data
+     * @param copy  whether copy 
+     * @param group group name
      */
-    Blob(size_t size, EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU), void* data=NULL, bool copy=false, std::string group="default");
+    Blob(size_t size, 
+         Aligned aligned=Aligned(64), 
+         EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU), 
+         void* data=NULL, 
+         bool copy=false, 
+         std::string group="default");
     
     /**
      * @brief Destroy the Blob object
@@ -57,25 +66,26 @@ public:
     void transfer(EagleeyeRuntime runtime, bool asyn=true) const;
     
     /**
-     * @brief put to runtime
+     * @brief transfer data to device and reset
      * 
      * @param runtime 
      */
 
-    void schedule(EagleeyeRuntime runtime);
+    void schedule(EagleeyeRuntime runtime, bool asyn=true);
+
     /**
      * @brief get pointer on GPU
      * 
      * @return void* 
      */
-    void* gpu();
+    void* gpu() const;
 
     /**
      * @brief get pointer on DSP
      * 
      * @return void* 
      */
-    void* dsp();
+    void* dsp() const;
 
     /**
      * @brief get pointer on CPU
@@ -83,12 +93,6 @@ public:
      * @return void* 
      */
     void* cpu() const;
-
-    /**
-     * @brief update state
-     * 
-     */
-    void update();
 
     /**
      * @brief get blob size
@@ -116,14 +120,30 @@ public:
     }
 
 protected:
+    /**
+     * @brief sync memory between device
+     * 
+     */
+    void _sync() const;
+
+    /**
+     * @brief reset state flag 
+     * 
+     */
+    void _reset() const;
+
     std::vector<int64_t> m_shape;
 	std::vector<Range> m_range;
 
 private:
     size_t m_size;
-    EagleeyeRuntime m_runtime;
+    mutable EagleeyeRuntime m_runtime;
     std::string m_group;
-    
+    Aligned m_aligned;
+
+    mutable bool m_waiting_reset_runtime;
+    mutable EagleeyeRuntime m_waiting_runtime;
+
     mutable std::shared_ptr<unsigned char> m_cpu_data;
     mutable std::shared_ptr<OpenCLMem> m_gpu_data;
 

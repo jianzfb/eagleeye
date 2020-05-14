@@ -200,6 +200,8 @@ set(EAGLEEYE_SRC
     eagleeye/port/android/env.cpp
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/runtime/gpu/opencl_runtime.cpp
+    eagleeye/engine/nano/dataflow/schedule.cpp
+    eagleeye/engine/nano/dataflow/heft.cpp
     eagleeye/engine/nano/util/quantization.cpp
     eagleeye/engine/nano/op/FixedCNNOp.cpp
     eagleeye/engine/nano/op/FixedResizedOp.cpp
