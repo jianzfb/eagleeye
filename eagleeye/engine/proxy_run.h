@@ -9,6 +9,8 @@
 #include "eagleeye/engine/tf_run.h"
 #elif EAGLEEYE_SNPE_SUPPORT
 #include "eagleeye/engine/snpe_run.h"
+#elif EAGLEEYE_PADDLE_SUPPORT
+#include "eagleeye/engine/paddle_run.h"
 #else
 namespace eagleeye{
 class ModelRun: public ModelEngine{

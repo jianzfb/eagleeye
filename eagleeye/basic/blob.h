@@ -8,7 +8,7 @@
 #include <memory>
 
 namespace eagleeye{
-class OpenCLMem;    
+class OpenCLObject;
 class Range
 {
 public:
@@ -26,10 +26,16 @@ public:
 
 class Aligned{
 public:
-	Aligned(int aligned_bits):m_aligned_bits(aligned_bits){}
+	Aligned(int aligned_bits=64):m_aligned_bits(aligned_bits){}
 	~Aligned(){};
 
 	int m_aligned_bits;
+};
+
+enum MemoryType{
+    GPU_IMAGE,
+    GPU_BUFFER,
+    CPU_BUFFER
 };
 
 class Blob{
@@ -51,6 +57,13 @@ public:
          bool copy=false, 
          std::string group="default");
     
+    Blob(std::vector<int64_t> shape, 
+         EagleeyeType data_type, 
+         MemoryType memory_type, 
+         std::vector<int64_t> image_shape,
+         Aligned aligned, 
+         std::string group="default");
+
     /**
      * @brief Destroy the Blob object
      * 
@@ -81,13 +94,6 @@ public:
     void* gpu() const;
 
     /**
-     * @brief get pointer on DSP
-     * 
-     * @return void* 
-     */
-    void* dsp() const;
-
-    /**
      * @brief get pointer on CPU
      * 
      * @return void* 
@@ -99,14 +105,28 @@ public:
      * 
      * @return size_t 
      */
-    size_t blobsize();
+    size_t blobsize() const;
+
+    /**
+     * @brief get data type
+     * 
+     * @return EagleeyeType 
+     */
+    EagleeyeType type() const;
+
+    /**
+     * @brief get mem type
+     * 
+     * @return MemoryType 
+     */
+    MemoryType memType() const;
 
     /**
      * @brief Get the Runtime object
      * 
      * @return EagleeyeRuntime 
      */
-    EagleeyeRuntime getRuntime(){
+    EagleeyeRuntime getRuntime() const{
         return this->m_runtime;
     }
 
@@ -115,9 +135,38 @@ public:
      * 
      * @return EagleeyeRuntimeType 
      */
-    EagleeyeRuntimeType getRuntimeType(){
+    EagleeyeRuntimeType getRuntimeType() const{
         return this->m_runtime.type();
     }
+
+    /**
+     * @brief check blob is empty
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool empty() const;
+
+    /**
+     * @brief update data
+     * 
+     * @param data 
+     * @return true 
+     * @return false 
+     */
+    bool update(void* data=NULL);
+
+    /**
+     * @brief Get the Image Shape object (GPU_IMAGE)
+     * 
+     * @return std::vector<int64_t> 
+     */
+    std::vector<int64_t> getImageShape() const;
+
+    /**
+     *  @brief resize gpu image (GPU_IMAGE) 
+     */
+    void resizeImage(std::vector<int64_t> image_shape){};
 
 protected:
     /**
@@ -132,12 +181,32 @@ protected:
      */
     void _reset() const;
 
-    std::vector<int64_t> m_shape;
-	std::vector<Range> m_range;
+    /**
+     * @brief needed size
+     * 
+     * @return size_t 
+     */
+    virtual size_t buffersize() const;
 
-private:
-    size_t m_size;
+    /**
+     * @brief blob shape
+     * 
+     */
+    std::vector<int64_t> m_shape;
+
+    /**
+     * @brief blob range
+     * 
+     */
+	std::vector<Range> m_range;
+    EagleeyeType m_data_type;
+    MemoryType m_memory_type;
+    MemoryType m_gpu_memory_type;
     mutable EagleeyeRuntime m_runtime;
+    std::vector<int64_t> m_image_shape;
+
+protected:
+    size_t m_size;
     std::string m_group;
     Aligned m_aligned;
 
@@ -145,16 +214,11 @@ private:
     mutable EagleeyeRuntime m_waiting_runtime;
 
     mutable std::shared_ptr<unsigned char> m_cpu_data;
-    mutable std::shared_ptr<OpenCLMem> m_gpu_data;
-
-    mutable bool m_is_dsp_waiting_from_cpu;
-    mutable bool m_is_dsp_waiting_from_gpu;
-    mutable bool m_is_dsp_ready;
+    mutable std::shared_ptr<OpenCLObject> m_gpu_data;
+    
     mutable bool m_is_cpu_waiting_from_gpu;
-    mutable bool m_is_cpu_waiting_from_dsp;
     mutable bool m_is_cpu_ready;
     mutable bool m_is_gpu_waiting_from_cpu;
-    mutable bool m_is_gpu_waiting_from_dsp;
     mutable bool m_is_gpu_ready;
     mutable std::shared_ptr<spinlock> m_lock;
 };    

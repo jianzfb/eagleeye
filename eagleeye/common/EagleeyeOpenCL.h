@@ -34,7 +34,7 @@ public:
             EAGLEEYE_LOGD("mem syn fail with err code %d", err);
         }
     };
-    virtual cl_mem* getObject() = 0;
+    virtual cl_mem getObject() = 0;
 };
 
 class OpenCLMem:public OpenCLObject{
@@ -48,8 +48,8 @@ public:
     virtual void* map(cl_command_queue queue, size_t* row_pitch=NULL);
     virtual void unmap(cl_command_queue queue);
 
-    virtual cl_mem* getObject(){
-        return &m_mem;
+    virtual cl_mem getObject(){
+        return m_mem;
     }
     cl_mem m_mem;
     std::string m_name;
@@ -70,8 +70,8 @@ public:
     virtual void* map(cl_command_queue queue, size_t* row_pitch);
     virtual void unmap(cl_command_queue queue);
 
-    virtual cl_mem* getObject(){
-        return &m_image;
+    virtual cl_mem getObject(){
+        return m_image;
     }
     EagleeyeType m_pixel_type;
     int m_channels;
@@ -91,7 +91,7 @@ public:
      * 
      * @param group 
      */
-    OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name);
+    OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name, std::string options=std::string());
     /**
      * @brief Destroy the Open C L Kernel Group object
      * 
@@ -110,9 +110,17 @@ public:
 
     template<typename T>
     void setKernelArg(std::string kernel_name, int index, T value){
+        std::cout<<"in set kernel arg ( "<<kernel_name<<" ) "<<std::endl;
+        std::cout<<"num "<<m_kernels.size()<<std::endl;
+        
+        std::map<std::string, cl_kernel>::iterator iter,iend(m_kernels.end());
+        for(iter=m_kernels.begin(); iter != iend; ++iter){
+            std::cout<<iter->first<<std::endl;
+        }
+        std::cout<<"lala"<<std::endl;
         int err = clSetKernelArg(m_kernels[kernel_name], index, sizeof(T), &value);
         if(err != CL_SUCCESS){
-            EAGLEEYE_LOGE("Failed to set arg %d for kernel %s", index, kernel_name.c_str());
+            EAGLEEYE_LOGE("Failed to set arg %d for kernel %s (error code %d)", index, kernel_name.c_str(),err);
         }
     }
 
@@ -179,6 +187,8 @@ public:
      */
     void unmap(std::string mem_name);
 
+    std::map<std::string, cl_kernel> m_kernels;
+
 protected:
     /**
      * @brief Create a Kernel object
@@ -186,11 +196,10 @@ protected:
      * @param kernel_name 
      * @param program_name 
      */
-    void createKernel(std::string kernel_name, std::string program_name);
+    void createKernel(std::string kernel_name, std::string program_name, std::string options=std::string());
 
 private:
     std::map<std::string, OpenCLObject*> m_mems;
-    std::map<std::string, cl_kernel> m_kernels;
     cl_command_queue m_queue;
     OpenCLRuntime* m_env;
 };
@@ -249,6 +258,9 @@ void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int i
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_10(group, program, a,b,c,d,e,f,g,h,i,j) \
     group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g,#h,#i,#j}, #program);
 #define EAGLEEYE_OPENCL_KERNEL_GROUP(...) CONCAT(EAGLEEYE_OPENCL_KERNEL_GROUP_,VARGS(__VA_ARGS__))(__VA_ARGS__)
+
+#define EAGLEEYE_OPENCL_KERNEL_OPTION_GROUP(group, program, a, options) \
+    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a}, #program, options);
 
 #define EAGLEEYE_OPENCL_CREATE_READ_BUFFER(group, name, size) \ 
     group##_kernels->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_READ);

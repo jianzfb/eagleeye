@@ -108,14 +108,19 @@ public:
    * 
    * @param model_path 
    */
-  void init(const char* model_path){
+  void init(const char* model_path, char* data=NULL){
     EAGLEEYE_LOGD("init DAG with %s", model_path);
     // 1.step load model path
+    char* model_data = data;
+    if(model_path != NULL){
+      // 从模型文件加载
+    }
 
     // 2.step init node
     for(Node* n: nodes_){
       EagleeyeRuntime d = this->schedule_->getRuntime(n);
-      n->init(d, NULL);
+      int offset = n->init(d, model_data);
+      model_data += offset;
     }
   }
 
@@ -148,6 +153,7 @@ public:
 
     int queue_index = 0;
     for(auto & n : entry_nodes_){
+        std::cout<<"push to queue ("<<n->name<<")"<<std::endl;
         queue_[queue_index%numWorker()].push(n);
         queue_index += 1;
     }
@@ -163,8 +169,8 @@ public:
   }
 
   template <class F, class ... Args>
-  deduce_node_type<F, typename F::Type, Args...> & addNode(std::string const & name, 
-                                                F && f, 
+  deduce_node_type<F, Args...>* add(std::string const & name, 
+                                                F f, 
                                                 NodeType node_type=DEFAULT, 
                                                 EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME)) {
     // 1.step check name exist
@@ -173,10 +179,10 @@ public:
     }
 
     // 2.step build node
-    auto * n = makeNode<typename F::Type, F, Args...>(this, std::forward<F>(f), nodes_.size(), fixed);
+    auto * n = makeNode<F, Args...>(this, f, nodes_.size(), fixed);
     n->name = name;
     n->setType(node_type);
-    nodes_.emplace(n);
+    nodes_.push_back(n);
     if (name.size() > 0) { // TODO dupulicate check
       nodes_map_[name] = n;
     }
@@ -188,21 +194,21 @@ public:
     if(node_type == ENTRY){
       entry_nodes_.push_back(n);
     }
-    return *n;
+    return n;
   }
 
-  void connect(Node & from, int index, Node & to) {
-    assert(!from.findNext(to));  
-    assert(!to.findPrev(from));
-    Edge * e = new Edge(from, to);
+  void bind(Node* from, int index, Node* to) {
+    assert(!from->findNext(to));  
+    assert(!to->findPrev(from));
+    Edge * e = new Edge(*from, *to);
 
-    from.next_.push_back(e);
-    to.prev_.push_back(e);
-    edges_.emplace(e);
+    from->next_.push_back(e);
+    to->prev_.push_back(e);
+    edges_.push_back(e);
 
     // assert(!from.find_data(to));  
-    to.data_.push_back(&from);
-    to.index_.push_back(index);
+    to->data_.push_back(from);
+    to->index_.push_back(index);
   }
 
   void print(std::ostream & ost = std::cout, std::string post = "") {
@@ -258,10 +264,10 @@ public:
     return it->second;
   }
 
-  std::unordered_set<Node*> getNodes(){
+  std::vector<Node*> getNodes(){
     return this->nodes_;
   }
-  std::unordered_set<Edge*> getEdges(){
+  std::vector<Edge*> getEdges(){
     return this->edges_;
   }
 
@@ -270,8 +276,8 @@ public:
   }
 
 private:
-  std::unordered_set<Node*> nodes_;
-  std::unordered_set<Edge*> edges_;
+  std::vector<Node*> nodes_;
+  std::vector<Edge*> edges_;
   std::unordered_map<std::string, Node*> nodes_map_;
   std::vector<Node*> entry_nodes_;
 
@@ -292,7 +298,7 @@ private:
         
         if (queue_[index].try_pop(n)) {
           flag = true;
-          fire_(id, *n);
+          this->fire_(id, *n);
           break;
         }
       }
@@ -312,7 +318,7 @@ private:
     n.fire(runtime);
 
     // 3.step finish node
-    finish(&n);
+    this->finish(&n);
 
     // 4.step active succeed nodes
     int i = id;
@@ -325,6 +331,8 @@ private:
 
         // 4.2.step push to queue, prepare to execute
         queue_[i % numWorker()].push(next_node);
+                std::cout<<"push to queue ("<<next_node->name<<")"<<std::endl;
+
         ++i;
       }
     }

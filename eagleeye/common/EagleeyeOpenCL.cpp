@@ -185,9 +185,10 @@ void OpenCLImage::copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool b
     region[0] = m_cols;
     region[1] = m_rows;
     region[2] = 1;
+    std::cout<<"m cols "<<m_cols<<" "<<m_rows<<std::endl;
     int err = clEnqueueWriteImage(queue, m_image, blocking, origin, region, 0, 0, host_ptr, 0, NULL, NULL);
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to write device image %s",this->m_name.c_str());
+        EAGLEEYE_LOGE("fail to write device image %s (error code %d)",this->m_name.c_str(), err);
     }
 }
 
@@ -202,7 +203,7 @@ void OpenCLImage::copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blo
     region[2] = 1;
     int err = clEnqueueReadImage(queue, m_image, blocking, origin, region, 0,0,host_ptr,0,NULL,NULL);
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to read device image %s",this->m_name.c_str());
+        EAGLEEYE_LOGE("fail to read device image %s (error code %d)",this->m_name.c_str(), err);
     }
 }
 
@@ -254,7 +255,7 @@ void OpenCLImage::unmap(cl_command_queue queue){
 //*************************************************************//
 
 //******************     OpenCLKernelGroup   ******************//
-OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name){
+OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name, std::string options){
     m_env = OpenCLRuntime::getOpenCLEnv(); 
     // 1.step build command queue
     int err;
@@ -266,7 +267,7 @@ OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std
     std::vector<std::string>::iterator iter, iend(kernel_groups.end());
     for(iter = kernel_groups.begin(); iter != iend; ++iter){
         if((*iter).length() > 0){
-            this->createKernel(*iter, program_name);
+            this->createKernel(*iter, program_name, options);
         }
     }
 }
@@ -319,14 +320,25 @@ void OpenCLKernelGroup::createDeviceImage(std::string name,
     m_mems[name] = new OpenCLImage(mem_status, name, rows, cols, channels, pixel);
 }
 
-void OpenCLKernelGroup::createKernel(std::string kernel_name, std::string program_name){
-    cl_program program = m_env->compileProgram(program_name);
+void OpenCLKernelGroup::createKernel(std::string kernel_name, std::string program_name, std::string options){
+    cl_program program = m_env->compileProgram(program_name, options);
     int kernel_err;
     cl_kernel kernel = clCreateKernel(program, kernel_name.c_str(), &kernel_err);
     if (!kernel || kernel_err != CL_SUCCESS){
         EAGLEEYE_LOGE("Failed to create %s kernel with err code %d", kernel_name.c_str(), kernel_err);
     }
+    std::cout<<"in create kernel "<<std::endl;
+    std::cout<<"now have "<<std::endl;
+    std::map<std::string, cl_kernel>::iterator iter,iend(m_kernels.end());
+        for(iter=m_kernels.begin(); iter != iend; ++iter){
+            std::cout<<iter->first<<std::endl;
+    }
+    std::cout<<"want to add "<<kernel_name<<std::endl;    
+
+    std::cout<<"in create kernel ( "<<kernel_name<<" )"<<std::endl;
+    std::cout<<"kernel err "<<kernel_err<<std::endl;
     m_kernels[kernel_name] = kernel;
+    std::cout<<"all kernels num "<<m_kernels.size()<<std::endl;
 }
 
 void OpenCLKernelGroup::run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* local_size){

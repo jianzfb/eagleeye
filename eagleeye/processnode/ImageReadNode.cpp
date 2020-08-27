@@ -52,6 +52,7 @@ void ImageReadNode::getImagePath(std::string& image_path){
 
 void ImageReadNode::readPngFile(const char *filename){
 #ifdef EAGLEEYE_PNG
+    EAGLEEYE_LOGD("parse png file %s", filename);
     FILE *fp = fopen(filename, "rb");
 
     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);

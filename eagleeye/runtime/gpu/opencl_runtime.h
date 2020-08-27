@@ -7,6 +7,13 @@
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
 namespace eagleeye{
+
+// Max execution time of OpenCL kernel for tuning to prevent UI stuck.
+const float kMaxKernelExecTime = 1000.0;  // microseconds
+
+// Base GPU cache size used for computing local work group size.
+const int32_t kBaseGPUMemCacheSize = 16384;
+
 enum GPUType {
   QUALCOMM_ADRENO,
   MALI,
@@ -73,7 +80,7 @@ public:
      * @param program_name 
      * @return cl_program 
      */
-    cl_program compileProgram(std::string program_name);
+    cl_program compileProgram(std::string program_name, std::string options);
 
     /**
      * @brief add custom source
@@ -82,6 +89,8 @@ public:
      * @param source 
      */
     void addCustomSource(std::string name, std::string source);
+    
+    void addSourceCode(std::string name, std::string source);
 
     /**
      * @brief Get the Command Queue object
@@ -122,6 +131,7 @@ public:
     cl_uint cu_num;
     size_t device_group_size;
     cl_ulong max_global_mem_size;
+    cl_ulong device_global_mem_cache_size;
     cl_ulong max_constant_buffer_size;
     cl_ulong max_local_mem_size;
 
@@ -146,6 +156,7 @@ private:
     
     size_t m_max_image_height;
     size_t m_max_image_width;
+    
 };
 
 }

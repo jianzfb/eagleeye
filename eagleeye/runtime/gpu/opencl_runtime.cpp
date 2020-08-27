@@ -169,6 +169,10 @@ OpenCLRuntime::~OpenCLRuntime(){
 }
 
 void OpenCLRuntime::addCustomSource(std::string name, std::string source){
+    this->addSourceCode(name, source);
+}
+
+void OpenCLRuntime::addSourceCode(std::string name, std::string source){
     this->m_sources[name] = source;
 }
 
@@ -227,7 +231,10 @@ bool OpenCLRuntime::init(){
     clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_SIZE,sizeof(cl_ulong), &this->max_global_mem_size, NULL);
     this->max_global_mem_size = this->max_global_mem_size/1024/1024;
     EAGLEEYE_LOGD("maxGlobalMemSize: %lu(MB)", this->max_global_mem_size);
- 
+
+    clGetDeviceInfo(device_id, CL_DEVICE_GLOBAL_MEM_CACHE_SIZE,sizeof(cl_ulong), &this->device_global_mem_cache_size, NULL);
+    EAGLEEYE_LOGD("GlobalMemCacheSize: %lu", this->device_global_mem_cache_size);
+
     // get maxConstantBufferSize
     clGetDeviceInfo(device_id, CL_DEVICE_MAX_CONSTANT_BUFFER_SIZE,sizeof(cl_ulong), &this->max_constant_buffer_size, NULL);
     this->max_constant_buffer_size = this->max_constant_buffer_size/1024;
@@ -342,17 +349,19 @@ bool OpenCLRuntime::readBinaryFromFile(const char* KernelBinary, char*& binary, 
     return true;
 }
 
-cl_program OpenCLRuntime::compileProgram(std::string program_name){
+cl_program OpenCLRuntime::compileProgram(std::string program_name, std::string options){
+    std::cout<<"in compile program"<<std::endl;
+    std::cout<<program_name+options<<std::endl;
     // only compile once
-    if(this->m_programs.find(program_name) != this->m_programs.end()){
-        return this->m_programs[program_name];
+    if(this->m_programs.find(program_name+options) != this->m_programs.end()){
+        return this->m_programs[program_name+options];
     }
     
     // 1.step try to load cl binary
     int err;                            // error code returned from api calls
     char* binary_compiled_algorithm_cl = NULL;
     size_t binary_compiled_algorithm_cl_size = 0;
-    std::string algorithm_program_bin = m_writable_path + "//" + program_name + ".cl.bin";
+    std::string algorithm_program_bin = m_writable_path + "//" + program_name+options + ".cl.bin";
     EAGLEEYE_LOGD("try to load algorithm kernel from %s", algorithm_program_bin.c_str());
     bool is_ok = this->readBinaryFromFile(algorithm_program_bin.c_str(),binary_compiled_algorithm_cl, binary_compiled_algorithm_cl_size);
     if(is_ok){
@@ -377,7 +386,7 @@ cl_program OpenCLRuntime::compileProgram(std::string program_name){
 
         EAGLEEYE_LOGD("success to load algorithm program");
 
-        this->m_programs[program_name] = program;
+        this->m_programs[program_name+options] = program;
         return program;
     }
 
@@ -398,7 +407,9 @@ cl_program OpenCLRuntime::compileProgram(std::string program_name){
     }
 
     // Build the program executable
-    err = clBuildProgram(program, 0, NULL, "-cl-mad-enable", NULL, NULL);
+    // std::string options = "-cl-mad-enable -I "+this->m_writable_path;
+    options += " -cl-mad-enable -I "+this->m_writable_path;
+    err = clBuildProgram(program, 0, NULL, options.c_str(), NULL, NULL);
     if (err != CL_SUCCESS){
         size_t len;
         char buffer[2048];
@@ -423,8 +434,8 @@ cl_program OpenCLRuntime::compileProgram(std::string program_name){
     free(binaries);
     free(binarySizes);
     EAGLEEYE_LOGD("finish write complied algorithm program");
-    this->m_programs[program_name] = program;
-    return this->m_programs[program_name];
+    this->m_programs[program_name+options] = program;
+    return this->m_programs[program_name+options];
 }
 
 } // namespace eagleeye

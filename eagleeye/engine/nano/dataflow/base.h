@@ -1,13 +1,15 @@
 #ifndef _EAGLEEYE_BASE_H_
 #define _EAGLEEYE_BASE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
-#include "eagleeye/basic/Tensor.h"
+#include "eagleeye/basic/TensorX.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/engine/nano/dataflow/meta.hpp"
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
+typedef	int64_t 	index_t;
+
 template<typename T, std::size_t IN, std::size_t OUT>
 class BaseOp{
 public:
@@ -38,7 +40,7 @@ public:
      * 
      * @param data 
      */
-    virtual void init(void* data)=0;
+    virtual int init(void* data)=0;
 
     /**
      * @brief run on cpu
@@ -46,7 +48,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual void runOnCpu(std::vector<T> output, std::vector<T> input=std::vector<T>{})=0;
+    virtual bool runOnCpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
 
     /**
      * @brief ru on gpu
@@ -54,7 +56,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual void runOnGpu(std::vector<T> output, std::vector<T> input=std::vector<T>{})=0;
+    virtual bool runOnGpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
 
     /**
      * @brief Get the Output Num object
@@ -94,12 +96,30 @@ public:
         return this->m_input_shape[index];
     }
 
+    /**
+     * @brief Get the Output Tensor object
+     * 
+     * @param index 
+     * @return T& 
+     */
+    virtual T& getOutputTensor(int index){
+        if(index >= this->m_output_num){
+            EAGLEEYE_LOGD("index out of bounds for getOutputTensor of BufferToImageOp");
+            return this->m_output_tensors[this->m_output_num - 1];
+        }
+
+        return this->m_output_tensors[index];
+    }
+
+    virtual bool update(T data, int index){return false;}
+
 protected:
     int m_input_num;
     int m_output_num;
 
     std::vector<std::vector<int64_t>> m_output_shape;
     std::vector<std::vector<int64_t>> m_input_shape;
+    std::vector<T> m_output_tensors;
 };
 }
 }

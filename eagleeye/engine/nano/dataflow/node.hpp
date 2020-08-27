@@ -28,9 +28,7 @@ public:
   std::string name;
   std::string graphviz_node_property;
 
-  Node(Graph* g, 
-        int id, 
-        EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
+  Node(Graph* g, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
   :g_(g),id_(id),init_(false),fixed_on_runtime_(false) {
     if(fixed.type() != EAGLEEYE_UNKNOWN_RUNTIME){
       runtime_ = fixed;
@@ -40,27 +38,28 @@ public:
   }
   virtual ~Node () noexcept = default;
 
-  bool findNext (Node const & n) {
+  bool findNext (Node const* n) {
     for (Edge * e : next_) {
       assert(e);
-      if (e->next() == n) { return true; }
+      if (&(e->next()) == n) { return true; }
     }
     return false;
   }
 
-  bool findPrev (Node const & n) {
+  bool findPrev (Node const* n) {
     for (Edge * e : prev_) {
       assert(e);
-      if (e->prev() == n) { return true; }
+      if (&(e->prev()) == n) { return true; }
     }
     return false;
   }
 
-  virtual void* data(int index) noexcept = 0;
+  virtual void* data(int index) = 0;
   virtual float fire(EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU)) = 0;
   virtual size_t size(int index=0) noexcept = 0;
-  virtual void init(EagleeyeRuntime runtime, void* data) noexcept = 0;
+  virtual int init(EagleeyeRuntime runtime, char* data) noexcept = 0;
   virtual void transfer(EagleeyeRuntime runtime, bool asyn) noexcept = 0;
+  virtual void transfer(int which, EagleeyeRuntime runtime, bool asyn) = 0;
 
   int linkIndexOfNode(Node& data_node){
     for(int index=0; index<data_.size(); ++index){

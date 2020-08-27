@@ -15,7 +15,7 @@
 namespace eagleeye{
 namespace dataflow{
 class Graph;
-template <class F, class T, class ... Args>
+template <class F, class ... Args>
 class NodeImpl : public Node{
 public:
   /**
@@ -26,12 +26,9 @@ public:
    * @param id 
    * @param fixed 
    */
-  NodeImpl(Graph* g, 
-            F && handler, 
-            int id, 
-            EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  : Node(g,id,fixed),
-    handler(std::forward<F>(handler)){
+  NodeImpl(Graph* g, F handler, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
+  : Node(g, id, fixed),
+    m_handler(handler){
   }
 
   /**
@@ -51,15 +48,19 @@ public:
     return time;
   }
 
+  virtual void* data(int index){
+    return &(this->m_output[index]);
+  }
+
   /**
-   * @brief get data
+   * @brief transfer which output to device
    * 
+   * @param which 
    * @param runtime 
-   * @param index 
-   * @return void* 
+   * @param asyn 
    */
-  virtual void* data(int index) noexcept override{
-    return &(value[index]);
+  virtual void transfer(int which, EagleeyeRuntime runtime, bool asyn){
+    this->m_output[which].transfer(runtime, asyn);
   }
   
   /**
@@ -68,9 +69,13 @@ public:
    * @param runtime 
    */
   virtual void transfer(EagleeyeRuntime runtime, bool asyn) noexcept override{
-    for(int i=0; i<data_.size(); ++i){      
-      (*(T*)(data_[i]->data(index_[i]))).transfer(runtime, asyn);
-    }
+    // // current node run on 'runtime'
+    // std::cout<<"in "<<this->name<<" transfer"<<std::endl;
+    // for(int i=0; i<this->data_.size(); ++i){      
+    //   this->data_[i]->transfer(this->index_[i], runtime, asyn);
+
+    //   std::cout<<"make "<<this->data_[i]->name<<" "<<this->index_[i]<<" node transfer to "<<int(runtime.type())<<std::endl;
+    // }
   }
 
   /**
@@ -80,9 +85,7 @@ public:
    * @return size_t 
    */
   size_t size(int index) noexcept override {
-    std::vector<int64_t> shape = handler.getOutputShape(index);
-    size_t count = std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
-    return count * sizeof(typename TypeTrait<T>::Type);
+    return m_handler.getOutputTensor(index).blobsize();
   }
 
   /**
@@ -91,35 +94,39 @@ public:
    * @param runtime 
    * @param data 
    */
-  void init(EagleeyeRuntime runtime, void* data) noexcept override{
+  int init(EagleeyeRuntime runtime, char* data) noexcept override{
     if(!this->init_){
       // 1.step initialize hanlder
-      handler.init(data);
-
-      // 2.step allocate space
-      int output_num = handler.getOutputNum();
-      value.resize(output_num);
-      for(int i=0; i<output_num; ++i){
-        value[i] = T(handler.getOutputShape(i), runtime);
-      }
+      int result = m_handler.init(data);
 
       // 3.step reset flag
       this->init_ = true;
+
+      std::cout<<"finish init ("<<this->name<<")"<<std::endl;
+
+
+      return result;
     }
   }
+
+  void update(typename F::Type data, int index=0){
+    this->m_handler.update(data, index);
+  }
+
+      F m_handler;
 
 private:
   float fireImpl(index_sequence<>, EagleeyeRuntime runtime) {
     long start_time = EagleeyeTime::getCurrentTime();
     switch(runtime.type()){
       case EAGLEEYE_CPU:
-        handler.runOnCpu(value);
+        m_handler.runOnCpu(m_output);
         break;
       case EAGLEEYE_GPU:
-        handler.runOnGpu(value);
+        m_handler.runOnGpu(m_output);
         break;
       default:
-        handler.runOnCpu(value);
+        m_handler.runOnCpu(m_output);
         break;
     }
     long end_time = EagleeyeTime::getCurrentTime();
@@ -130,18 +137,18 @@ private:
   template <std::size_t ... Is>
   float fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime) {
     std::vector<typename F::Type> input = 
-          {*(T*)data_[Is]->data(index_[Is]) ...};
-
+          {*(typename F::Type *)data_[Is]->data(index_[Is]) ...};
+    
     long start_time = EagleeyeTime::getCurrentTime();
     switch(runtime.type()){
       case EAGLEEYE_CPU:
-        handler.runOnCpu(value, input);
+        m_handler.runOnCpu(m_output, input);
         break;
       case EAGLEEYE_GPU:
-        handler.runOnGpu(value, input);
+        m_handler.runOnGpu(m_output, input);
         break;
       default:
-        handler.runOnCpu(value, input);
+        m_handler.runOnCpu(m_output, input);
         break;
     }
     long end_time = EagleeyeTime::getCurrentTime();
@@ -149,25 +156,25 @@ private:
     return float(end_time-start_time);
   }
 
+
 private:
-  F handler;
-  std::vector<T> value;
+  std::vector<typename F::Type> m_output;
 };
 
 namespace impl {
-  template <class F, class T, class ... Args>
+  template <class F, class ... Args>
   struct Deducenode_type {
-    using type = NodeImpl<F, T, Args...>;
+    using type = NodeImpl<F, Args...>;
   };
 };
 
-template <class F, class T, class ... Args>
-using deduce_node_type = typename impl::Deducenode_type<F, T, Args...>::type;
+template <class F, class ... Args>
+using deduce_node_type = typename impl::Deducenode_type<F, Args...>::type;
 
-template <class T, class F, class ... Args>
-deduce_node_type<F, T, Args...> * makeNode(Graph* g, F && f, int id, EagleeyeRuntime fixed) {
-  using node_type = deduce_node_type<F, T, Args...>;
-  return new node_type(g, std::forward<F>(f), id, fixed);
+template <class F, class ... Args>
+deduce_node_type<F, Args...> * makeNode(Graph* g, F f, int id, EagleeyeRuntime fixed) {
+  using node_type = deduce_node_type<F, Args...>;
+  return new node_type(g, f, id, fixed);
 }
 
 }

@@ -1,21 +1,22 @@
 #include "eagleeye/basic/blob.h"
 #include "eagleeye/common/EagleeyeOpenCL.h"
+#include "eagleeye/common/EagleeyeLog.h"
 namespace eagleeye{
 Range Range::ALL(){
     return Range(-1, -1);
 }
 
-Blob::Blob(size_t size, Aligned aligned, EagleeyeRuntime runtime,void* data, bool copy, std::string group)
+Blob::Blob(size_t size, 
+            Aligned aligned, 
+            EagleeyeRuntime runtime,
+            void* data,
+            bool copy, 
+            std::string group)
     :m_size(size),
     m_is_cpu_ready(false),
     m_is_cpu_waiting_from_gpu(false),
-    m_is_cpu_waiting_from_dsp(false),
     m_is_gpu_ready(false),
     m_is_gpu_waiting_from_cpu(false),
-    m_is_gpu_waiting_from_dsp(false),
-    m_is_dsp_ready(false),
-    m_is_dsp_waiting_from_cpu(false),
-    m_is_dsp_waiting_from_gpu(false),
     m_group(group),
     m_aligned(aligned),
     m_waiting_reset_runtime(false),
@@ -31,11 +32,14 @@ Blob::Blob(size_t size, Aligned aligned, EagleeyeRuntime runtime,void* data, boo
         return;
     }
 
+    m_data_type = EAGLEEYE_UNDEFINED;
     // spin lock
     m_lock = std::shared_ptr<spinlock>(new spinlock(), [](spinlock* d) { delete d; });
 
     // apply device memory
     if(runtime.type() == EAGLEEYE_CPU){
+        this->m_memory_type = CPU_BUFFER;
+        this->m_gpu_memory_type = GPU_BUFFER;
         if(data == NULL){
             // allocate memory
             this->m_cpu_data = 
@@ -53,17 +57,19 @@ Blob::Blob(size_t size, Aligned aligned, EagleeyeRuntime runtime,void* data, boo
         else{
             // share cpu memory
             this->m_cpu_data = 
-                    std::shared_ptr<unsigned char>((unsigned char*)data, 
-                    [](unsigned char* arr){});
+                        std::shared_ptr<unsigned char>((unsigned char*)data, 
+                        [](unsigned char* arr){});
         }
     }
     else if(runtime.type() == EAGLEEYE_GPU){
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+        this->m_memory_type = GPU_BUFFER;
+        this->m_gpu_memory_type = GPU_BUFFER;
         if(data == NULL){
-            // allocate GPU memory
+            // use gpu buffer
             this->m_gpu_data = 
-                    std::shared_ptr<OpenCLMem>(new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, "t", size), 
-                                                [](OpenCLMem* arr) { delete arr; });        
+                    std::shared_ptr<OpenCLObject>(new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, "t", size), 
+                                                [](OpenCLObject* arr) { delete arr; });      
         }
         else{
             // allocate and copy GPU memory
@@ -79,7 +85,87 @@ Blob::Blob(size_t size, Aligned aligned, EagleeyeRuntime runtime,void* data, boo
         }
 #endif
     }
-    else if(runtime.type() == EAGLEEYE_QUALCOMM_DSP){
+}
+
+Blob::Blob(std::vector<int64_t> shape, 
+         EagleeyeType data_type, 
+         MemoryType memory_type, 
+         std::vector<int64_t> image_shape,
+         Aligned aligned, 
+         std::string group){
+    if(shape.size() == 0){
+        this->m_size = 0;
+        return;
+    }
+
+    switch (data_type)
+    {
+    case EAGLEEYE_CHAR:
+    case EAGLEEYE_UCHAR:
+        m_size = sizeof(unsigned char)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
+        break;
+    case EAGLEEYE_FLOAT:
+        m_size = sizeof(float)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
+        break;
+    default:
+        EAGLEEYE_LOGE("dont support %d", data_type);
+        return;
+    }
+
+    if(m_size == 0){
+        return;
+    }
+
+    m_is_cpu_ready = false;
+    m_is_cpu_waiting_from_gpu = false;
+    m_is_gpu_ready = false;
+    m_is_gpu_waiting_from_cpu = false;
+    m_group = group;
+    m_aligned = aligned;
+    m_waiting_reset_runtime = false;
+    m_waiting_runtime = EAGLEEYE_UNKNOWN_RUNTIME;
+    m_data_type = data_type;
+    m_memory_type = memory_type;
+    m_image_shape = image_shape;
+    if(memory_type == CPU_BUFFER){
+        m_runtime = EagleeyeRuntime(EAGLEEYE_CPU);
+        m_gpu_memory_type = GPU_BUFFER;
+    }
+    else{
+        m_runtime = EagleeyeRuntime(EAGLEEYE_GPU);
+        m_gpu_memory_type = memory_type;
+    }
+
+    // spin lock
+    this->m_lock = std::shared_ptr<spinlock>(new spinlock(), [](spinlock* d) { delete d; });
+
+    // apply device memory
+    if(this->m_runtime.type() == EAGLEEYE_CPU){
+        // allocate memory
+        size_t mem_size = this->buffersize();
+        this->m_cpu_data = 
+                std::shared_ptr<unsigned char>(new unsigned char[mem_size], 
+                [](unsigned char* arr) { delete [] arr; });
+        memset(this->m_cpu_data.get(), 0, mem_size);
+    }
+    else if(this->m_runtime.type() == EAGLEEYE_GPU){
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+        // allocate GPU memory
+        if(m_memory_type == GPU_BUFFER){
+            // use gpu buffer
+            this->m_gpu_data = 
+                    std::shared_ptr<OpenCLObject>(new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, "t", m_size), 
+                                                [](OpenCLObject* arr) { delete arr; });      
+        }
+        else{
+            // use gpu image
+            if(this->m_image_shape.size() > 0){
+                this->m_gpu_data = std::shared_ptr<OpenCLObject>(
+                    new OpenCLImage(EAGLEEYE_CL_MEM_READ_WRITE, "t", this->m_image_shape[1], this->m_image_shape[0], 4, this->m_data_type),
+                    [](OpenCLObject* arr) { delete arr; });
+            }
+        }
+#endif
     }
 }
 
@@ -94,14 +180,9 @@ void Blob::_reset() const{
     }
 
     this->m_is_cpu_waiting_from_gpu = false;
-    this->m_is_cpu_waiting_from_dsp = false;
     this->m_is_cpu_ready = false;
     this->m_is_gpu_waiting_from_cpu = false;
-    this->m_is_gpu_waiting_from_dsp = false;
     this->m_is_gpu_ready = false;
-    this->m_is_dsp_waiting_from_cpu = false;
-    this->m_is_dsp_waiting_from_gpu = false;
-    this->m_is_dsp_ready = false;
 }
 
 void Blob::_sync() const{
@@ -138,20 +219,18 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn) const{
         this->_sync();
         this->_reset();
     }
-    m_lock->unlock();
 
     // check whether runtime is same
     if(runtime.type() == m_runtime.type()){
+        m_lock->unlock();
         return;
     }
 
-    // lock 
-    m_lock->lock();
     switch (runtime.type())
     {
     case EAGLEEYE_CPU:
         // has done
-        if(m_is_cpu_waiting_from_dsp || m_is_cpu_waiting_from_gpu || m_is_cpu_ready){
+        if(m_is_cpu_waiting_from_gpu || m_is_cpu_ready){
             break;
         }
         // transfer from Source to CPU
@@ -160,8 +239,9 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn) const{
         case EAGLEEYE_GPU:
     #ifdef EAGLEEYE_OPENCL_OPTIMIZATION        
             if(this->m_cpu_data.get() == NULL){
+                const size_t mem_size = this->buffersize();
                 this->m_cpu_data = 
-                        std::shared_ptr<unsigned char>(new unsigned char[m_size], 
+                        std::shared_ptr<unsigned char>(new unsigned char[mem_size], 
                                                         [](unsigned char* arr) { delete [] arr; });
             }      
             if(asyn){
@@ -182,7 +262,7 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn) const{
         break;
     case EAGLEEYE_GPU:
         // has done
-        if(m_is_gpu_waiting_from_dsp || m_is_gpu_waiting_from_cpu || m_is_gpu_ready){
+        if(m_is_gpu_waiting_from_cpu || m_is_gpu_ready){
             break;
         }
 
@@ -212,8 +292,6 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn) const{
         }
     #endif
         break;
-    case EAGLEEYE_QUALCOMM_DSP:
-        break;
     default:
         break;
     }
@@ -222,6 +300,7 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn) const{
 }
 
 void* Blob::gpu() const{
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
     // 0.step do nothing
     if(m_size <= 0){
         return NULL;
@@ -234,18 +313,14 @@ void* Blob::gpu() const{
         this->_sync();
         this->_reset();
     }
-    m_lock->unlock();
 
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
     // 1.step 直接返回
     if(m_runtime.type() == EAGLEEYE_GPU){
-        return (void*)(this->m_gpu_data.get());
+        m_lock->unlock();
+        return (void*)(this->m_gpu_data.get()->getObject());
     }
 
     // 2.step 等待来自cpu同步完毕
-    // lock
-    m_lock->lock();
-
     if(m_is_gpu_waiting_from_cpu){
         // 同步
         this->m_gpu_data.get()->finish(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group));
@@ -254,28 +329,20 @@ void* Blob::gpu() const{
         m_is_gpu_ready = true;
     }
 
-    // 3.step 等待来自dsp同步完毕
-    if(m_is_gpu_waiting_from_dsp){
-        m_is_gpu_waiting_from_dsp = false;
-        m_is_gpu_ready = true;
-    }
-
     // unlock
     m_lock->unlock();
 
     if(m_is_gpu_ready){
-        return (void*)(*(this->m_gpu_data.get()->getObject()));
+        return (void*)(this->m_gpu_data.get()->getObject());
     }
 
     // 4.step 同步调用
-    this->transfer(EagleeyeRuntime(EAGLEEYE_GPU),false);
-    return (void*)(*(this->m_gpu_data.get()->getObject()));
+    this->transfer(EagleeyeRuntime(EAGLEEYE_GPU), false);
+    return (void*)(this->m_gpu_data.get()->getObject());
 #endif
     return NULL;
 }
-void* Blob::dsp() const{
-    return NULL;
-}
+
 void* Blob::cpu() const{
     // 0.step do nothing
     if(m_size <= 0){
@@ -289,17 +356,14 @@ void* Blob::cpu() const{
         this->_sync();
         this->_reset();
     }
-    m_lock->unlock();
 
     // 1.step 直接返回
     if(m_runtime.type() == EAGLEEYE_CPU){
+        m_lock->unlock();
         return (void*)(this->m_cpu_data.get());
     }
 
     // 2.step 等待来自gpu同步完毕
-    // lock
-    m_lock->lock();
-
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
     if(m_is_cpu_waiting_from_gpu){
         // 同步
@@ -309,11 +373,6 @@ void* Blob::cpu() const{
         m_is_cpu_waiting_from_gpu = false;
     }
 #endif
-    // 3.step 等待来自dsp同步完毕
-    if(m_is_cpu_waiting_from_dsp){
-        m_is_cpu_waiting_from_dsp = false;
-        m_is_cpu_ready = true;
-    }
 
     // unlock
     m_lock->unlock();
@@ -323,11 +382,11 @@ void* Blob::cpu() const{
     }
 
     // 4.step 同步调用 
-    this->transfer(EagleeyeRuntime(EAGLEEYE_CPU),false);
+    this->transfer(EagleeyeRuntime(EAGLEEYE_CPU), false);
     return (void*)(this->m_cpu_data.get());
 }
 
-size_t Blob::blobsize(){
+size_t Blob::blobsize() const{
     return this->m_size;
 }
 
@@ -337,25 +396,16 @@ void Blob::schedule(EagleeyeRuntime runtime, bool asyn){
         return;
     }
 
-    // check whether in reset process
-    this->m_lock->lock();
-    if(this->m_waiting_reset_runtime){
-        // wating reset runtime
-        this->_sync();
-        this->_reset();
-    }
-    this->m_lock->unlock();
-
-    // check whether runtime is same
-    if(this->m_runtime.type() == runtime.type()){
-        return;
-    }
-
     // 1.step transfer to runtime
     this->transfer(runtime, asyn);
 
     // 2.step reset main runtime
     this->m_lock->lock();
+    if(m_runtime.type() == runtime.type()){
+        this->m_lock->unlock();
+        return;
+    }
+
     if(asyn){
         this->m_waiting_reset_runtime = true;
         this->m_waiting_runtime = runtime;
@@ -365,4 +415,64 @@ void Blob::schedule(EagleeyeRuntime runtime, bool asyn){
     }
     this->m_lock->unlock();
 }
+
+EagleeyeType Blob::type() const{
+    return this->m_data_type;
+}
+
+MemoryType Blob::memType() const{
+    return this->m_memory_type;
+}
+
+size_t Blob::buffersize() const{
+    if(this->m_memory_type == GPU_IMAGE){
+        if(this->m_data_type == EAGLEEYE_FLOAT){
+            return this->m_image_shape[0] * this->m_image_shape[1] * 4 * sizeof(float);
+        }
+        else if(this->m_data_type == EAGLEEYE_UCHAR){
+            return this->m_image_shape[0] * this->m_image_shape[1] * 4 * sizeof(unsigned char);
+        }
+    }
+
+    return this->blobsize();
+}
+
+bool Blob::empty() const{
+    if(this->m_size == 0){
+        return true;
+    }
+    if(this->m_runtime.type() == EAGLEEYE_CPU && this->m_cpu_data.get() == NULL){
+        return true;
+    }
+    else if(this->m_runtime.type() == EAGLEEYE_GPU && this->m_gpu_data.get() == NULL){
+        return true;
+    }
+
+    return false;
+}
+
+bool Blob::update(void* data){
+    if(data != NULL){
+        // 使用data更新目标设备数据
+        if(this->m_memory_type == CPU_BUFFER){
+            memcpy(m_cpu_data.get(), data,m_size);
+        }
+        else{
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+            std::cout<<"lala here"<<std::endl;
+            this->m_gpu_data->copyToDevice(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), data, CL_TRUE);
+            std::cout<<"www after"<<std::endl;
+#endif
+        }
+    }
+    else{
+        // 更新目标设备数据
+    }
+    return true;
+}
+
+std::vector<int64_t> Blob::getImageShape() const{
+    return this->m_image_shape;
+}
+
 }

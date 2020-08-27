@@ -61,8 +61,8 @@ void HEFT::collectStatistic(){
     fixed_runtime_index_.reserve(tasks_num_);
 
     // 1.step 分析任务之间的数据传输量
-    std::unordered_set<Edge*> edges = g_->getEdges();
-    std::unordered_set<Edge*>::iterator eiter, eiend(edges.end());
+    std::vector<Edge*> edges = g_->getEdges();
+    std::vector<Edge*>::iterator eiter, eiend(edges.end());
     for(eiter = edges.begin(); eiter != eiend; ++eiter){
         Node& from_node = (*eiter)->prev();
         Node& to_node = (*eiter)->next();
@@ -80,8 +80,8 @@ void HEFT::collectStatistic(){
     // }
 
     // 2.step 分析任务在不同处理器上的运行时间(/us)
-    std::unordered_set<Node*> nodes = g_->getNodes();
-    std::unordered_set<Node*>::iterator niter, niend(nodes.end());
+    std::vector<Node*> nodes = g_->getNodes();
+    std::vector<Node*>::iterator niter, niend(nodes.end());
     memset(avg_, 0, sizeof(float)*tasks_num_);
     for(int j=0; j<processor_num_; ++j){
         for(niter = nodes.begin(); niter != niend; ++niter){

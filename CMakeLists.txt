@@ -9,7 +9,7 @@ SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-# add_definitions(-DEAGLEEYE_ANDROID_APP)
+#add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -17,6 +17,7 @@ if(DEFINED ANDROID_ABI)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
+
 else()
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin)
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin)
@@ -70,6 +71,17 @@ elseif(${NN_ENGINE} MATCHES "snpe")
         PROPERTIES IMPORTED_LOCATION 
         ${SNPE_LIB_DIR}/libSNPE.so
     )
+elseif(${NN_ENGINE} MATCHES "paddle")
+    message(STATUS "support paddle engine")
+    add_definitions(-DEAGLEEYE_PADDLE_SUPPORT)
+
+    include_directories(${PADDLE_PATH}/include)
+    add_library(libpaddle_api_light_bundled STATIC IMPORTED)
+    set_target_properties(
+    libpaddle_api_light_bundled
+    PROPERTIES IMPORTED_LOCATION 
+    ${PADDLE_PATH}/lib/libpaddle_api_light_bundled.a
+)
 else()
     message(STATUS "support eagleeye NN engine")    
 endif()
@@ -89,7 +101,7 @@ if(DEFINED OPENCL)
     set_target_properties(
         libOpenCL
         PROPERTIES IMPORTED_LOCATION 
-        ${OPENCL}/lib/libOpenCL.so
+        ${OPENCL}/lib/${ANDROID_ABI}/libOpenCL.so
     )
 endif()
 
@@ -176,6 +188,7 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/StateSignal.cpp
     eagleeye/common/EagleeyeLog.cpp 
     eagleeye/engine/snpe_run.cpp 
+    eagleeye/engine/paddle_run.cpp
     eagleeye/engine/model_engine.cpp 
     eagleeye/common/EagleeyeStr.cpp 
     eagleeye/common/EagleeyeIO.cpp 
@@ -186,6 +199,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeThreadPool.cpp
     eagleeye/basic/MatrixMath.cpp
     eagleeye/basic/blob.cpp
+    eagleeye/basic/TensorX.cpp
     eagleeye/basic/MatrixMathCL.cpp
     eagleeye/algorithm/qr_solver.cpp
     eagleeye/algorithm/llsp.cpp
@@ -200,14 +214,9 @@ set(EAGLEEYE_SRC
     eagleeye/port/android/env.cpp
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/runtime/gpu/opencl_runtime.cpp
+    eagleeye/engine/nano/op/gpu/opencl_util.cpp
     eagleeye/engine/nano/dataflow/schedule.cpp
-    eagleeye/engine/nano/dataflow/heft.cpp
-    eagleeye/engine/nano/util/quantization.cpp
-    eagleeye/engine/nano/op/FixedCNNOp.cpp
-    eagleeye/engine/nano/op/FixedResizedOp.cpp
-    eagleeye/engine/nano/op/FixedReluOp.cpp
-    eagleeye/engine/nano/op/FixedSoftmaxOp.cpp
-    eagleeye/engine/nano/util/conv_pool_2d_util.cpp)
+    eagleeye/engine/nano/dataflow/heft.cpp)
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 
@@ -253,6 +262,11 @@ endif()
 if(${NN_ENGINE} MATCHES "snpe")
     target_link_libraries(eagleeye libSNPE)
 endif()
+
+if(${NN_ENGINE} MATCHES "paddle")
+    TARGET_LINK_LIBRARIES(eagleeye libpaddle_api_light_bundled)
+endif()
+
 
 if(DEFINED OPENCL)
 target_link_libraries(eagleeye libOpenCL)
