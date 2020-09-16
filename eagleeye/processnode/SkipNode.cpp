@@ -77,4 +77,9 @@ void SkipNode::setInputPort(AnySignal* sig,int index){
     }
     this->setOutputPort(sig->make(), index);
 }
+
+void SkipNode::setUnitName(const char* unit_name){ 
+    this->m_unit_name=std::string("skip-") + unit_name;
+    this->m_execute_node->setUnitName(unit_name);
+}
 } // namespace eagleeye

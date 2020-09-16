@@ -1,14 +1,15 @@
 #ifndef _EAGLEEYE_BLOB_H_
 #define _EAGLEEYE_BLOB_H_
 #include "eagleeye/common/EagleeyeMacro.h"
-#include "eagleeye/common/EagleeyeRuntime.h"
 #include "eagleeye/basic/spinlock.hpp"
+#include "eagleeye/common/EagleeyeRuntime.h"
 #include <vector>
 #include <map>
 #include <memory>
 
 namespace eagleeye{
 class OpenCLObject;
+class OpenCLKernelGroup;
 class Range
 {
 public:
@@ -42,6 +43,8 @@ class Blob{
 public:
     /**
      * @brief Construct a new Blob object (support heterogeneous device)
+     * GPU -> CPU (区分GPU_BUFFER,GPU_IMAGE的转换)
+     * CPU -> GPU (仅可以转移到GPU_BUFFER类型)
      * 
      * @param size blob size
      * @param aligned  memory aligned bits
@@ -61,7 +64,9 @@ public:
          EagleeyeType data_type, 
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,
-         Aligned aligned, 
+         std::string buffer_to_image_transform,
+         std::string image_to_buffer_transform,
+         Aligned aligned=Aligned(64), 
          std::string group="default");
 
     /**
@@ -154,7 +159,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool update(void* data=NULL);
+    bool update(void* data=NULL, MemoryType mem_type=CPU_BUFFER);
 
     /**
      * @brief Get the Image Shape object (GPU_IMAGE)
@@ -166,7 +171,7 @@ public:
     /**
      *  @brief resize gpu image (GPU_IMAGE) 
      */
-    void resizeImage(std::vector<int64_t> image_shape){};
+    void resizeImage(std::vector<int64_t> image_shape);
 
 protected:
     /**
@@ -209,18 +214,27 @@ protected:
     size_t m_size;
     std::string m_group;
     Aligned m_aligned;
+    std::string m_buffer_to_image_transform;    // transform type
+    std::string m_image_to_buffer_transform;    // transform type
 
     mutable bool m_waiting_reset_runtime;
     mutable EagleeyeRuntime m_waiting_runtime;
 
     mutable std::shared_ptr<unsigned char> m_cpu_data;
     mutable std::shared_ptr<OpenCLObject> m_gpu_data;
-    
+    mutable std::shared_ptr<OpenCLObject> m_gpu_buffer; // temp
+
     mutable bool m_is_cpu_waiting_from_gpu;
     mutable bool m_is_cpu_ready;
     mutable bool m_is_gpu_waiting_from_cpu;
     mutable bool m_is_gpu_ready;
     mutable std::shared_ptr<spinlock> m_lock;
+
+private:
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+    OpenCLKernelGroup* m_buffer_to_image_kernel;
+    OpenCLKernelGroup* m_image_to_buffer_kernel;
+#endif
 };    
 }
 #endif

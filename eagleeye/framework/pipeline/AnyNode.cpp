@@ -650,7 +650,8 @@ void AnyNode::loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_c
 	// 2.step traverse upper nodes
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
-		(*in_iter)->loadConfigure(nodes_config);
+		if(*in_iter)
+			(*in_iter)->loadConfigure(nodes_config);
 	}
 	m_load_config_flag = false;
 }
@@ -671,7 +672,8 @@ void AnyNode::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes_
 	// 2.step traverse upper nodes
 	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
 	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
-		(*in_iter)->saveConfigure(nodes_config);
+		if(*in_iter)
+			(*in_iter)->saveConfigure(nodes_config);
 	}
 	m_save_config_flag = false;
 }

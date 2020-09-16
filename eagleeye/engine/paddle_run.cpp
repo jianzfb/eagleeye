@@ -68,37 +68,23 @@ bool ModelRun::run(std::map<std::string, unsigned char*> inputs,
 
 bool ModelRun::initialize(){
     // 1. Set MobileConfig
-	std::cout<<"A"<<std::endl;
     EAGLEEYE_LOGD("set paddle model file");
     paddle::lite_api::MobileConfig config;
     config.set_model_from_file(this->m_nb_path);
-	std::cout<<"B"<<std::endl;
 
-	// if(this->m_device == "GPU"){
-	// 	std::cout<<"D"<<std::endl;
-	// 	bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();
-	// 	std::cout<<"E"<<std::endl;
-	// 	if (is_opencl_backend_valid) {
-	// 		std::cout<<"F"<<std::endl;
-	// 		// give opencl nb model dir
-	// 		config.set_opencl_tune(false); // default is false
-	// 		std::cout<<"N"<<std::endl;
-	// 	} else {
-	// 		std::cout<<"G"<<std::endl;
-	// 		EAGLEEYE_LOGE("Unsupport opencl nb model.");
-	// 		exit(1);
-	// 		// you can give backup cpu nb model instead
-	// 		// config.set_model_from_file(cpu_nb_model_dir);
-	// 	}
-	// }
+	if(this->m_device == "GPU"){
+		bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();
+		if (!is_opencl_backend_valid) {
+			EAGLEEYE_LOGE("Unsupport opencl nb model.");
+			return false;
+		}
+	}
 
-	std::cout<<"R"<<std::endl;
     // NOTE: To load model transformed by model_optimize_tool before
     // release/v2.3.0, plese use `set_model_dir` API as listed below.
     // config.set_model_dir(model_dir);
     config.set_power_mode(paddle::lite_api::LITE_POWER_HIGH);
     config.set_threads(this->m_omp_num_threads);
-	std::cout<<"C"<<std::endl;
 
     // 2. Create PaddlePredictor by MobileConfig
     EAGLEEYE_LOGD("create paddle predictor");
@@ -106,7 +92,6 @@ bool ModelRun::initialize(){
     if(!m_predictor.get()){
         return false;
     }
-	std::cout<<"D"<<std::endl;
     // 3.step resize tensor
     EAGLEEYE_LOGD("initialize tensor");
     for(int index = 0; index < this->m_input_names.size(); ++index){
@@ -114,7 +99,6 @@ bool ModelRun::initialize(){
         input_tensor->Resize(this->m_input_shapes[index]);
     }
 
-	std::cout<<"E"<<std::endl;
     return true;
 }
 

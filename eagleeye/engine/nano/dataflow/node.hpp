@@ -15,12 +15,6 @@ namespace eagleeye{
 namespace dataflow {
 
 class Graph;
-enum NodeType{
-    DEFAULT = 0,
-    ENTRY,
-    EXIT
-};
-
 class Node {
 public:
   friend class Graph;
@@ -35,6 +29,7 @@ public:
       fixed_on_runtime_ = true;
     }
     count_ = 0;
+    output_ = false;
   }
   virtual ~Node () noexcept = default;
 
@@ -81,12 +76,6 @@ public:
   Graph* g () noexcept {
     return g_;
   }
-  void setType(NodeType t){
-    node_type_ = t;
-  }
-  NodeType getType(){
-    return node_type_;
-  }
   std::string getName(){
     return name;
   }
@@ -100,20 +89,24 @@ public:
     runtime_ = runtime;
     fixed_on_runtime_ = true;
   }
+
   EagleeyeRuntime getRuntime(){
     return runtime_;
   }
 
+  virtual bool update(void* data, int index=0)=0;
+  virtual bool fetch(void*& data, int index=0, bool block=false)=0;
+
 protected:
   Graph*  g_;
   std::atomic_uint count_;
+  bool output_;
 
   std::vector<Edge *> next_;
   std::vector<Edge *> prev_;
   std::vector<Node *> data_;
   std::vector<int>    index_;
 
-  NodeType node_type_;
   int id_;
   EagleeyeRuntime runtime_;
   bool fixed_on_runtime_;

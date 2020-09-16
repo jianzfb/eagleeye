@@ -200,4 +200,11 @@ void ParallelNode::updateUnitInfo(){
     modified();
     Superclass::updateUnitInfo();
 }
+
+void ParallelNode::setUnitName(const char* unit_name){ 
+    this->m_unit_name=std::string("parallel-") + unit_name;
+    for(int ti=0; ti<m_run_node.size(); ++ti){
+        m_run_node[ti]->setUnitName(unit_name);
+    }
+}
 }

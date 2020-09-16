@@ -19,6 +19,11 @@ public:
     virtual ~AutoNode();
 
     /**
+     * @brief overide setUnitName
+     */
+	virtual void setUnitName(const char* unit_name);
+
+    /**
 	 *	@brief execute Node
      *  @note user must finish this function
 	 */

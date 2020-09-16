@@ -26,6 +26,8 @@ public:
             DataFormat data_format,
             MemoryType memory_type,
             std::vector<int64_t> image_shape=std::vector<int64_t>(),
+            std::string buffer_to_image_transform="",
+            std::string image_to_buffer_transform="",
             Aligned aligned=Aligned(64));
     TensorX();
     virtual ~TensorX();
@@ -35,8 +37,6 @@ public:
 	int64_t dim(int index) const;
     DataFormat format() const;
     std::vector<int64_t> shape() const;
-
-    void resizeImage(std::vector<int64_t> image_shape);
 
 protected:
     DataFormat m_format;

@@ -124,7 +124,8 @@ enum EagleeyeType{
 	EAGLEEYE_RGB	   = 8,
 	EAGLEEYE_RGBA	   = 9,
 	EAGLEEYE_BOOL	   = 10,
-	EAGLEEYE_STRING	   = 11
+	EAGLEEYE_STRING	   = 11,
+	EAGLEEYE_HALF_FLOAT	= 12,
 };
 
 enum EagleeyeError{

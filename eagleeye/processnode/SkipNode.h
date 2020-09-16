@@ -21,6 +21,11 @@ public:
 	EAGLEEYE_CLASSIDENTITY(SkipNode);
 
     /**
+     * @brief overide setUnitName
+     */
+	virtual void setUnitName(const char* unit_name);
+
+    /**
 	 * @brief execute control
 	 * 
 	 */

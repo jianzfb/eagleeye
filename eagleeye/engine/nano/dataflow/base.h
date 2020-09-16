@@ -23,8 +23,6 @@ public:
      */
     BaseOp()
         :m_input_num(IN),m_output_num(OUT){
-            std::cout<<"IN "<<m_input_num<<std::endl;
-            std::cout<<"OUT "<<m_output_num<<std::endl;
             this->m_input_shape.resize(m_input_num);
             this->m_output_shape.resize(m_output_num);
         };
@@ -112,6 +110,25 @@ public:
     }
 
     virtual bool update(T data, int index){return false;}
+
+    /**
+     * @brief use cpu data, update
+     */
+    virtual bool update(void* data, int index){return false;}
+
+    /**
+     * @brief get cpu data, from 
+     */
+    virtual bool fetch(void*& data, int index, bool block){
+        if(!block){
+            this->getOutputTensor(index).transfer(EagleeyeRuntime(EAGLEEYE_CPU));
+            return false;
+        }
+        else{
+            data = this->getOutputTensor(index).cpu();
+            return true;
+        }        
+    }
 
 protected:
     int m_input_num;

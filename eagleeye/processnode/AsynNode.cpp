@@ -232,4 +232,12 @@ void AsynNode::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes
 
     Superclass::saveConfigure(nodes_config);
 }
+
+void AsynNode::setUnitName(const char* unit_name){ 
+    this->m_unit_name=std::string("asyn-") + unit_name;
+    for(int ti=0; ti<m_run_node.size(); ++ti){
+        m_run_node[ti]->setUnitName(unit_name);
+    }
+}
+
 } // namespace eagleeye

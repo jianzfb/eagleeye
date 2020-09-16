@@ -185,7 +185,6 @@ void OpenCLImage::copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool b
     region[0] = m_cols;
     region[1] = m_rows;
     region[2] = 1;
-    std::cout<<"m cols "<<m_cols<<" "<<m_rows<<std::endl;
     int err = clEnqueueWriteImage(queue, m_image, blocking, origin, region, 0, 0, host_ptr, 0, NULL, NULL);
     if(err != CL_SUCCESS){
         EAGLEEYE_LOGE("fail to write device image %s (error code %d)",this->m_name.c_str(), err);
@@ -272,6 +271,28 @@ OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std
     }
 }
 
+OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name, std::set<std::string> build_options){
+    std::string build_options_str;
+    for (auto &option : build_options) {
+        build_options_str += " " + option;
+    }
+
+    m_env = OpenCLRuntime::getOpenCLEnv(); 
+    // 1.step build command queue
+    int err;
+    m_queue = clCreateCommandQueue(m_env->context, m_env->device_id, 0, &err);
+    if (!m_queue){
+        EAGLEEYE_LOGE("Failed to create a command commands");
+    }
+    
+    std::vector<std::string>::iterator iter, iend(kernel_groups.end());
+    for(iter = kernel_groups.begin(); iter != iend; ++iter){
+        if((*iter).length() > 0){
+            this->createKernel(*iter, program_name, build_options_str);
+        }
+    }
+}
+
 OpenCLKernelGroup::~OpenCLKernelGroup(){
     clReleaseCommandQueue(m_queue);
     std::map<std::string, cl_kernel>::iterator iter, iend(m_kernels.end());
@@ -321,35 +342,34 @@ void OpenCLKernelGroup::createDeviceImage(std::string name,
 }
 
 void OpenCLKernelGroup::createKernel(std::string kernel_name, std::string program_name, std::string options){
+    EAGLEEYE_LOGD("create kernel %s from %s (%d in %d)", kernel_name.c_str(), program_name.c_str(), m_kernels.size(), m_kernels.size() + 1);
     cl_program program = m_env->compileProgram(program_name, options);
     int kernel_err;
     cl_kernel kernel = clCreateKernel(program, kernel_name.c_str(), &kernel_err);
     if (!kernel || kernel_err != CL_SUCCESS){
         EAGLEEYE_LOGE("Failed to create %s kernel with err code %d", kernel_name.c_str(), kernel_err);
     }
-    std::cout<<"in create kernel "<<std::endl;
-    std::cout<<"now have "<<std::endl;
-    std::map<std::string, cl_kernel>::iterator iter,iend(m_kernels.end());
-        for(iter=m_kernels.begin(); iter != iend; ++iter){
-            std::cout<<iter->first<<std::endl;
-    }
-    std::cout<<"want to add "<<kernel_name<<std::endl;    
-
-    std::cout<<"in create kernel ( "<<kernel_name<<" )"<<std::endl;
-    std::cout<<"kernel err "<<kernel_err<<std::endl;
     m_kernels[kernel_name] = kernel;
-    std::cout<<"all kernels num "<<m_kernels.size()<<std::endl;
 }
 
-void OpenCLKernelGroup::run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* local_size){
+void OpenCLKernelGroup::run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* local_size, bool block){
     int err = clEnqueueNDRangeKernel(m_queue, m_kernels[kernel_name], work_dims, NULL, global_size, local_size, 0, NULL, NULL);
     if(err != CL_SUCCESS){
         EAGLEEYE_LOGD("Failed to split work group for kernel %s with err code %d", kernel_name.c_str(), err);
     }
+    if(block){
+        err = clFinish(m_queue);
+    }
 
-    err = clFinish(m_queue);
     if(err != CL_SUCCESS){
         EAGLEEYE_LOGD("Failed to run kernel %s with err code %d", kernel_name.c_str(), err);
+    }
+}
+
+void OpenCLKernelGroup::finish(){
+    int err = clFinish(m_queue);
+    if(err != CL_SUCCESS){
+        EAGLEEYE_LOGD("Failed to finish");
     }
 }
 
@@ -450,6 +470,31 @@ const char* oclErrorString(cl_int error)
 	return (index >= 0 && index < errorCount) ? errorString[index] : "Unspecified Error";
 }
 
+std::string DtToCLDt(const EagleeyeType dt) {
+  switch (dt) {
+    case EAGLEEYE_FLOAT:
+      return "float";
+    case EAGLEEYE_HALF_FLOAT:
+      return "half";
+    case EAGLEEYE_UCHAR:
+      return "uchar";
+    default:
+      EAGLEEYE_LOGE("Unsupported data type: %d",int(dt));
+      return "";
+  }
+}
+
+std::string DtToCLCMDDt(const EagleeyeType dt) {
+  switch (dt) {
+    case EAGLEEYE_FLOAT:
+      return "f";
+    case EAGLEEYE_HALF_FLOAT:
+      return "h";
+    default:
+      EAGLEEYE_LOGE("Not supported data type for opencl cmd data type");
+      return "";
+  }
+}
 }
 
 #endif  

@@ -145,4 +145,9 @@ void AutoNode::saveConfigure(std::map<std::string, std::shared_ptr<char>>& nodes
     Superclass::saveConfigure(nodes_config);
 }
 
+void AutoNode::setUnitName(const char* unit_name){ 
+    this->m_unit_name=std::string("auto-") + unit_name;
+    this->m_auto_node->setUnitName(unit_name);
+}
+
 } // namespace eagleeye

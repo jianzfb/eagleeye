@@ -1,6 +1,7 @@
 #include "eagleeye/basic/blob.h"
 #include "eagleeye/common/EagleeyeOpenCL.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/basic/Math.h"
 namespace eagleeye{
 Range Range::ALL(){
     return Range(-1, -1);
@@ -22,6 +23,11 @@ Blob::Blob(size_t size,
     m_waiting_reset_runtime(false),
     m_waiting_runtime(EAGLEEYE_UNKNOWN_RUNTIME){
     m_runtime = runtime;
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+    this->m_buffer_to_image_kernel = NULL;
+    this->m_image_to_buffer_kernel = NULL;
+#endif
+
     if(m_size < 0){
         EAGLEEYE_LOGE("blob size < 0");
         return;
@@ -91,6 +97,8 @@ Blob::Blob(std::vector<int64_t> shape,
          EagleeyeType data_type, 
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,
+         std::string buffer_to_image_transform,
+         std::string image_to_buffer_transform,
          Aligned aligned, 
          std::string group){
     if(shape.size() == 0){
@@ -126,7 +134,15 @@ Blob::Blob(std::vector<int64_t> shape,
     m_waiting_runtime = EAGLEEYE_UNKNOWN_RUNTIME;
     m_data_type = data_type;
     m_memory_type = memory_type;
-    m_image_shape = image_shape;
+    m_image_shape = image_shape;                                // image shape (GPU_IMAGE)
+    m_buffer_to_image_transform = buffer_to_image_transform;    // transfer GPU_BUFFER to GPU_IMAGE
+    m_image_to_buffer_transform = image_to_buffer_transform;    // transfer GPU_IMAGE to GPU_BUFFER
+
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+    m_buffer_to_image_kernel = NULL;
+    m_image_to_buffer_kernel = NULL;
+#endif    
+
     if(memory_type == CPU_BUFFER){
         m_runtime = EagleeyeRuntime(EAGLEEYE_CPU);
         m_gpu_memory_type = GPU_BUFFER;
@@ -154,15 +170,22 @@ Blob::Blob(std::vector<int64_t> shape,
         if(m_memory_type == GPU_BUFFER){
             // use gpu buffer
             this->m_gpu_data = 
-                    std::shared_ptr<OpenCLObject>(new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, "t", m_size), 
-                                                [](OpenCLObject* arr) { delete arr; });      
+                    std::shared_ptr<OpenCLObject>(
+                        new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, 
+                                    "t", 
+                                    m_size), [](OpenCLObject* arr) { delete arr; });      
         }
         else{
             // use gpu image
             if(this->m_image_shape.size() > 0){
-                this->m_gpu_data = std::shared_ptr<OpenCLObject>(
-                    new OpenCLImage(EAGLEEYE_CL_MEM_READ_WRITE, "t", this->m_image_shape[1], this->m_image_shape[0], 4, this->m_data_type),
-                    [](OpenCLObject* arr) { delete arr; });
+                this->m_gpu_data = 
+                    std::shared_ptr<OpenCLObject>(
+                        new OpenCLImage(EAGLEEYE_CL_MEM_READ_WRITE,
+                                        "t", 
+                                        this->m_image_shape[1], 
+                                        this->m_image_shape[0], 
+                                        4, 
+                                        this->m_data_type),[](OpenCLObject* arr) { delete arr; });
             }
         }
 #endif
@@ -170,6 +193,14 @@ Blob::Blob(std::vector<int64_t> shape,
 }
 
 Blob::~Blob(){
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+    if(this->m_buffer_to_image_kernel){
+        delete this->m_buffer_to_image_kernel;
+    }
+    if(this->m_image_to_buffer_kernel){
+        delete this->m_image_to_buffer_kernel;
+    }
+#endif
 }
 
 void Blob::_reset() const{
@@ -451,17 +482,94 @@ bool Blob::empty() const{
     return false;
 }
 
-bool Blob::update(void* data){
+bool Blob::update(void* data, MemoryType mem_type){
+    // support mem_type = CPU_BUFFER
+    // TODO, support other GPU_BUFFER, GPU_IMAGE
+
+    // data - host pointer
     if(data != NULL){
         // 使用data更新目标设备数据
         if(this->m_memory_type == CPU_BUFFER){
-            memcpy(m_cpu_data.get(), data,m_size);
+            memcpy(m_cpu_data.get(), data, m_size);
         }
         else{
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-            std::cout<<"lala here"<<std::endl;
-            this->m_gpu_data->copyToDevice(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), data, CL_TRUE);
-            std::cout<<"www after"<<std::endl;
+            if(this->m_gpu_memory_type == GPU_BUFFER){
+                // GPU BUFFER
+                this->m_gpu_data->copyToDevice(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), data, CL_TRUE);
+            }
+            else{
+                // GPU IMAGE
+                // 0.step compile kernel
+                if(m_buffer_to_image_kernel == NULL){
+                    // compile
+                    if(m_buffer_to_image_transform == "CONV2D_FILTER"){
+                        m_buffer_to_image_kernel = new OpenCLKernelGroup(std::vector<std::string>{"filter_buffer_to_image"}, "buffer_to_image");
+                    }
+                    else if(m_buffer_to_image_transform == "IN_OUT_CHANNEL"){
+                        m_buffer_to_image_kernel = new OpenCLKernelGroup(std::vector<std::string>{"in_out_buffer_to_image"}, "buffer_to_image");
+                    }
+                    else if(m_buffer_to_image_transform == "DW_CONV2D_FILTER"){
+                        m_buffer_to_image_kernel = new OpenCLKernelGroup(std::vector<std::string>{"dw_filter_buffer_to_image"}, "buffer_to_image");
+                    }
+                }
+
+                // 1.step build temp gpu buffer
+                OpenCLMem* temp_gpu_buffer = new OpenCLMem(EAGLEEYE_CL_MEM_READ_WRITE, "t", m_size);
+                temp_gpu_buffer->copyToDevice(OpenCLRuntime::getOpenCLEnv()->getCommandQueue(m_group), data, CL_TRUE);
+                
+                const uint32_t kwg_size = static_cast<uint32_t>(OpenCLRuntime::getOpenCLEnv()->getKernelMaxWorkGroupSize());
+                size_t local_size[2];
+                local_size[0] = 16;
+                local_size[1] = kwg_size/16;
+
+                size_t work_dims = 2;
+                size_t global_size[2];
+                size_t gws[2] = {static_cast<size_t>(this->m_image_shape[0]),static_cast<size_t>(this->m_image_shape[1])};
+                global_size[0] = RoundUp(gws[0], local_size[0]);
+                global_size[1] = RoundUp(gws[1], local_size[1]);
+
+                // 2.step gpu buffer to gpu image
+                if(m_buffer_to_image_transform == "CONV2D_FILTER"){
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 0, (int)(gws[0]));
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 1, (int)(gws[1]));
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 2, temp_gpu_buffer->getObject());
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 3, 0);
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 4, (int)(this->m_shape[0]));
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 5, (int)(this->m_shape[2]));
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 6, (int)(this->m_shape[3]));
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 7, (int)(this->m_shape[1] * this->m_shape[2] * this->m_shape[3]));
+                    m_buffer_to_image_kernel->setKernelArg("filter_buffer_to_image", 8, this->m_gpu_data->getObject());
+                    m_buffer_to_image_kernel->run("filter_buffer_to_image", work_dims, global_size, local_size);
+                }
+                else if(m_buffer_to_image_transform == "IN_OUT_CHANNEL"){
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 0, (int)(gws[0]));
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 1, (int)(gws[1]));
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 2, temp_gpu_buffer->getObject());
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 3, 0);
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 4, (int)(this->m_shape[1]));
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 5, (int)(this->m_shape[2]));
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 6, (int)(this->m_shape[3]));
+                    m_buffer_to_image_kernel->setKernelArg("in_out_buffer_to_image", 7, this->m_gpu_data->getObject());
+                    m_buffer_to_image_kernel->run("in_out_buffer_to_image", work_dims, global_size, local_size);
+                }
+                else if(m_buffer_to_image_transform == "DW_CONV2D_FILTER"){
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 0, (int)(gws[0]));
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 1, (int)(gws[1]));
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 2, temp_gpu_buffer->getObject());
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 3, 0);
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 4, (int)(this->m_shape[0]));
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 5, (int)(this->m_shape[1]));
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 6, (int)(this->m_shape[2]));
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 7, (int)(this->m_shape[3]));
+                    m_buffer_to_image_kernel->setKernelArg("dw_filter_buffer_to_image", 8, this->m_gpu_data->getObject());
+                    m_buffer_to_image_kernel->run("dw_filter_buffer_to_image", work_dims, global_size, local_size);
+                }
+                else{
+                    // do nothing
+                }
+                delete temp_gpu_buffer;
+            }
 #endif
         }
     }
@@ -475,4 +583,14 @@ std::vector<int64_t> Blob::getImageShape() const{
     return this->m_image_shape;
 }
 
+void Blob::resizeImage(std::vector<int64_t> image_shape){
+    assert(this->m_memory_type == GPU_IMAGE);
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION    
+    this->m_gpu_data = std::shared_ptr<OpenCLObject>(
+            new OpenCLImage(EAGLEEYE_CL_MEM_READ_WRITE, "t", image_shape[0], image_shape[1], 4, this->m_data_type),
+            [](OpenCLObject* arr) { delete arr; });
+
+    this->m_image_shape = image_shape;
+#endif
+}
 }

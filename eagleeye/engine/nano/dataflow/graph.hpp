@@ -11,6 +11,7 @@
 #include "eagleeye/engine/nano/dataflow/heft.h"
 #include "eagleeye/engine/nano/dataflow/noschedule.h"
 #include "eagleeye/basic/spinlock.hpp"
+#include "eagleeye/basic/TensorX.h"
 #include <atomic>
 #include <iostream>
 #include <memory>
@@ -137,41 +138,61 @@ public:
    * @brief start worker thread
    * 
    */
-  void run() {
-    // 2.step check
+  void run(std::map<std::string, void*> inputs, std::map<std::string, void*> outputs){
+    // 1.step check
+    exit_node_num_ = outputs.size();
     if(exit_node_num_ == 0){
       EAGLEEYE_LOGD("dont set end node");
       return;
     }
+    
+    // 2.step update input and set output flag
+    std::map<std::string, void*>::iterator in_iter,in_iend(inputs.end());
+    for(in_iter = inputs.begin(); in_iter != in_iend; ++in_iter){
+      if(nodes_map_.find(in_iter->first) != nodes_map_.end()){
+        nodes_map_[in_iter->first]->update(in_iter->second, 0);
+      }
+    }
+    std::map<std::string, void*>::iterator out_iter,out_iend(outputs.end());
+    for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
+      nodes_map_[out_iter->first]->output_ = true;
+    }
 
-    // 1.step reset running flag
+    // 3.step reset running flag
     stop_ = false;
     waiting_stop_count_ = 0;
     for(auto & n: nodes_){
       n->count_ = 0;
     }
 
+    // 4.step push to work queue    
+    queue_ = std::vector<Queue<Node*>>(this->numWorker());
     int queue_index = 0;
     for(auto & n : entry_nodes_){
-        std::cout<<"push to queue ("<<n->name<<")"<<std::endl;
-        queue_[queue_index%numWorker()].push(n);
+        queue_[queue_index%this->numWorker()].push(n);
         queue_index += 1;
     }
 
-    // 2.step start thread
+    // 5.step start thread
     // TODO: using thread pool
     for (auto & worker : worker_) {
       worker.thread = std::thread([&](){work(worker.id);});
     }
 
-    // 3.step waiting finish
+    // 6.step waiting finish
     waitingUntilFinish();
+
+    // 7.step assign output
+    for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
+      void* data = NULL;
+      nodes_map_[out_iter->first]->fetch(data,0,true);
+      out_iter->second = data;
+    }
   }
 
   template <class F, class ... Args>
   deduce_node_type<F, Args...>* add(std::string const & name, 
-                                                F f, 
-                                                NodeType node_type=DEFAULT, 
+                                                F* f, 
                                                 EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME)) {
     // 1.step check name exist
     if(nodes_map_.find(name) != nodes_map_.end()){
@@ -181,19 +202,14 @@ public:
     // 2.step build node
     auto * n = makeNode<F, Args...>(this, f, nodes_.size(), fixed);
     n->name = name;
-    n->setType(node_type);
     nodes_.push_back(n);
     if (name.size() > 0) { // TODO dupulicate check
       nodes_map_[name] = n;
     }
-
-    if(node_type == EXIT){
-      exit_node_num_ += 1;
-    }
-
-    if(node_type == ENTRY){
+    if(f->getInputNum() == 0){
       entry_nodes_.push_back(n);
     }
+
     return n;
   }
 
@@ -280,6 +296,7 @@ private:
   std::vector<Edge*> edges_;
   std::unordered_map<std::string, Node*> nodes_map_;
   std::vector<Node*> entry_nodes_;
+  // std::map<std::string, TensorX> exit_nodes_;
 
   std::vector<Queue<Node*>> queue_;
   std::vector<worker> worker_;
@@ -316,6 +333,7 @@ private:
 
     // 2.step run node op
     n.fire(runtime);
+    EAGLEEYE_LOGD("finish %s on device %d", n.name.c_str(), int(runtime.type()));
 
     // 3.step finish node
     this->finish(&n);
@@ -327,12 +345,13 @@ private:
       if (next->next().prev_.size() == (n + 1)){
         // 4.1.step transfer data asyn
         Node* next_node = &next->next();
-        next_node->transfer(this->schedule_->getRuntime(next_node), true);
+        EagleeyeRuntime target_runtime = this->schedule_->getRuntime(next_node);
+        next_node->transfer(target_runtime, true);
+        EAGLEEYE_LOGD("transfer %s data to device %d", next_node->name.c_str(), int(target_runtime.type()));
 
         // 4.2.step push to queue, prepare to execute
         queue_[i % numWorker()].push(next_node);
-                std::cout<<"push to queue ("<<next_node->name<<")"<<std::endl;
-
+        EAGLEEYE_LOGD("push %s to work queue %d", next_node->name.c_str(), i % numWorker());
         ++i;
       }
     }
@@ -344,8 +363,12 @@ private:
    * @param n 
    */
   void finish(Node* n){
-    if(n->getType() == EXIT){
+    if(n->output_){
       waiting_stop_count_ += 1;
+      void* temp = NULL;
+      // no block
+      n->fetch(temp, 0, false);
+      n->output_ = false;
     }
 
     if(waiting_stop_count_ == exit_node_num_){

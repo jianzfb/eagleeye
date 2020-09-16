@@ -1,15 +1,25 @@
 PROJECT(eagleeye)
 
 cmake_minimum_required(VERSION 3.5)
-set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -pie -Wl,--gc-sections")
 
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
 SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -ldl -llog -lz")
+
+
+add_definitions(-DARM_WITH_OMP)
+add_definitions(-DHPPL_STUB_FUNC)
+add_definitions(-DLITE_WITH_ARM)
+add_definitions(-DLITE_WITH_LIGHT_WEIGHT_FRAMEWORK)
+add_definitions(-DLITE_WITH_LINUX)
+add_definitions(-DPADDLE_DISABLE_PROFILER)
+
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-#add_definitions(-DEAGLEEYE_ANDROID_APP)
+add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -76,11 +86,11 @@ elseif(${NN_ENGINE} MATCHES "paddle")
     add_definitions(-DEAGLEEYE_PADDLE_SUPPORT)
 
     include_directories(${PADDLE_PATH}/include)
-    add_library(libpaddle_api_light_bundled STATIC IMPORTED)
+    add_library(libpaddle_api_light_bundled SHARED IMPORTED)
     set_target_properties(
     libpaddle_api_light_bundled
     PROPERTIES IMPORTED_LOCATION 
-    ${PADDLE_PATH}/lib/libpaddle_api_light_bundled.a
+    ${PADDLE_PATH}/lib/libpaddle_light_api_shared.so
 )
 else()
     message(STATUS "support eagleeye NN engine")    
@@ -138,6 +148,66 @@ endif()
 include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
 
+if(DEFINED LITE)
+message(STATUS "LITE version")
+set(EAGLEEYE_SRC 
+    eagleeye/processnode/SubPipeline.cpp
+    eagleeye/processnode/ParallelNode.cpp
+    eagleeye/processnode/IfElseNode.cpp
+    eagleeye/processnode/SkipNode.cpp
+    eagleeye/processnode/VideoReadNode.cpp
+    eagleeye/processnode/VideoWriteNode.cpp
+    eagleeye/processnode/AsynNode.cpp
+    eagleeye/processnode/NNNode.cpp
+    eagleeye/processnode/SerialReadNode.cpp
+    eagleeye/processnode/SerialWriteNode.cpp
+    eagleeye/processnode/ImageWriteNode.cpp
+    eagleeye/processnode/ImageReadNode.cpp
+    eagleeye/processnode/ReadLineFromFileNode.cpp
+    eagleeye/processnode/SerialStringNode.cpp
+    eagleeye/processnode/DrawNode.cpp
+    eagleeye/processnode/AutoNode.cpp
+    eagleeye/processnode/QueueNode.cpp
+    eagleeye/processnode/DebugNode.cpp
+    eagleeye/processnode/LogicalNode.cpp
+    eagleeye/processnode/State2BooleanNode.cpp
+    eagleeye/processnode/CopyNode.cpp
+    eagleeye/processnode/DelayFetch.cpp
+    eagleeye/common/EagleeyeImageModule.cpp
+    eagleeye/common/EagleeyeVisTool.cpp
+    eagleeye/common/EagleeyeFile.cpp 
+    eagleeye/common/EagleeyeTime.cpp 
+    eagleeye/common/EagleeyeProcessor.cpp
+    eagleeye/common/EagleeyeSerial.cpp
+    eagleeye/common/EagleeyeLog.cpp 
+    eagleeye/framework/EagleeyeTimeStamp.cpp 
+    eagleeye/framework/pipeline/AnyNode.cpp 
+    eagleeye/framework/pipeline/AnySignal.cpp 
+    eagleeye/framework/pipeline/AnyUnit.cpp 
+    eagleeye/framework/pipeline/BooleanSignal.cpp
+    eagleeye/framework/pipeline/StringSignal.cpp
+    eagleeye/framework/pipeline/StateSignal.cpp
+    eagleeye/framework/pipeline/AnyPipeline.cpp 
+    eagleeye/engine/snpe_run.cpp 
+    eagleeye/engine/paddle_run.cpp
+    eagleeye/engine/model_engine.cpp 
+    eagleeye/common/EagleeyeStr.cpp 
+    eagleeye/common/EagleeyeIO.cpp 
+    eagleeye/common/EagleeyeModule.cpp
+    eagleeye/common/EagleeyePy.cpp
+    eagleeye/common/EagleeyeIO.cpp
+    eagleeye/common/EagleeyeThreadPool.cpp
+    eagleeye/common/EagleeyeOpenCL.cpp
+    eagleeye/basic/MatrixMath.cpp
+    eagleeye/basic/blob.cpp
+    eagleeye/basic/TensorX.cpp
+    eagleeye/basic/MatrixMathCL.cpp
+    eagleeye/port/linux_base/env.cpp
+    eagleeye/port/android/env.cpp
+    eagleeye/runtime/cpu/cpu_runtime.cpp
+    eagleeye/runtime/gpu/opencl_runtime.cpp)
+else()
+message(STATUS "FULL version")
 set(EAGLEEYE_SRC 
     eagleeye/processnode/OpticalFlowNode.cpp
     eagleeye/processnode/ConsistenceNode.cpp
@@ -172,6 +242,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/LogicalNode.cpp
     eagleeye/processnode/State2BooleanNode.cpp
     eagleeye/processnode/CopyNode.cpp
+    eagleeye/processnode/DelayFetch.cpp
     eagleeye/common/EagleeyeImageModule.cpp
     eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/nn_run.cpp
@@ -217,6 +288,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/gpu/opencl_util.cpp
     eagleeye/engine/nano/dataflow/schedule.cpp
     eagleeye/engine/nano/dataflow/heft.cpp)
+endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 
@@ -281,3 +353,4 @@ endif()
 if(DEFINED ANDROID_ABI)
 target_link_libraries(eagleeye log)
 endif()
+

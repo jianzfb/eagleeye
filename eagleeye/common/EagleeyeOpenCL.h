@@ -6,6 +6,7 @@
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include <memory>
 #include <map>
+#include <set>
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
@@ -92,6 +93,8 @@ public:
      * @param group 
      */
     OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name, std::string options=std::string());
+    OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name, std::set<std::string> build_options);
+    
     /**
      * @brief Destroy the Open C L Kernel Group object
      * 
@@ -106,18 +109,15 @@ public:
      * @param global_size 
      * @param lobal_size 
      */
-    void run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* lobal_size);
+    void run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* lobal_size, bool block=true);
+
+    /**
+     * @biref finish queue
+     */
+    void finish();
 
     template<typename T>
     void setKernelArg(std::string kernel_name, int index, T value){
-        std::cout<<"in set kernel arg ( "<<kernel_name<<" ) "<<std::endl;
-        std::cout<<"num "<<m_kernels.size()<<std::endl;
-        
-        std::map<std::string, cl_kernel>::iterator iter,iend(m_kernels.end());
-        for(iter=m_kernels.begin(); iter != iend; ++iter){
-            std::cout<<iter->first<<std::endl;
-        }
-        std::cout<<"lala"<<std::endl;
         int err = clSetKernelArg(m_kernels[kernel_name], index, sizeof(T), &value);
         if(err != CL_SUCCESS){
             EAGLEEYE_LOGE("Failed to set arg %d for kernel %s (error code %d)", index, kernel_name.c_str(),err);
@@ -355,6 +355,9 @@ void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int i
 //     clSetKernelArg(OpenCLRuntime::getOpenCLEnv()->m_kernel_map[tag+#kernel], index, size, &data);
 // #define EAGLEEYE_OPENCL_KERNEL_SET_ARG_0(kernel, index, size, data) EAGLEEYE_OPENCL_KERNEL_SET_ARG_1(kernel, index, size, data, std::string("_"))
 // #define EAGLEEYE_OPENCL_KERNEL_SET_ARG(...) CONCAT(EAGLEEYE_OPENCL_KERNEL_SET_ARG_, ARG_VARGS(__VA_ARGS__))(__VA_ARGS__)
+
+std::string DtToCLDt(const EagleeyeType dt);
+std::string DtToCLCMDDt(const EagleeyeType dt);
 }
 #else
 namespace eagleeye{

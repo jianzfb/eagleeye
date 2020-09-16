@@ -6,8 +6,10 @@ TensorX::TensorX(std::vector<int64_t> shape,
             DataFormat data_format,
             MemoryType memory_type,
             std::vector<int64_t> image_shape,
+            std::string buffer_to_image_transform,
+            std::string image_to_buffer_transform,
             Aligned aligned)
-            :Blob(shape, data_type, memory_type, image_shape, aligned){
+            :Blob(shape, data_type, memory_type, image_shape, buffer_to_image_transform, image_to_buffer_transform, aligned){
     assert(data_format == DataFormat::NHWC || data_format == DataFormat::OIHW);
     assert(data_type == EAGLEEYE_FLOAT || data_type == EAGLEEYE_UCHAR);
     this->m_format = data_format;
@@ -18,7 +20,7 @@ TensorX::TensorX(std::vector<int64_t> shape,
 	}
 }   
 TensorX::TensorX()
-    :Blob(std::vector<int64_t>{}, EAGLEEYE_FLOAT, CPU_BUFFER,std::vector<int64_t>{}, Aligned(64)){
+    :Blob(std::vector<int64_t>{}, EAGLEEYE_FLOAT, CPU_BUFFER, std::vector<int64_t>{}, "", ""){
 
 }
 
@@ -52,14 +54,4 @@ std::vector<int64_t> TensorX::shape() const{
     return this->m_shape;
 }
 
-void TensorX::resizeImage(std::vector<int64_t> image_shape){
-    assert(this->m_memory_type == GPU_IMAGE);
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION    
-    this->m_gpu_data = std::shared_ptr<OpenCLObject>(
-            new OpenCLImage(EAGLEEYE_CL_MEM_READ_WRITE, "t", image_shape[0], image_shape[1], 4, this->m_data_type),
-            [](OpenCLObject* arr) { delete arr; });
-
-    this->m_image_shape = image_shape;
-#endif
-}
 }

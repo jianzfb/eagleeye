@@ -10,16 +10,15 @@ namespace dataflow {
 
 template <class T>
 class Queue {
-public:  
+public: 
   using value_type = T;
   using size_type = std::size_t;
   using reference = T &;
   using const_reference = T const &;
-
   using mutex = std::mutex;
 
   Queue(){}
-  ~Queue(){}
+  virtual ~Queue(){}
   
   void push (T const & val) {
     std::lock_guard<mutex> lock(mtx_);
