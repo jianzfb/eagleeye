@@ -80,7 +80,9 @@ bool isdirexist(const char* path){
   }
   DIR *dirptr = opendir(path);
   bool isnotnull = (dirptr != NULL);
-  closedir(dirptr);
+  if(dirptr != NULL){
+	  closedir(dirptr);
+  }
   return isnotnull;
 }
 
@@ -91,5 +93,33 @@ bool isfileexist(const char* path){
 	} else {
 		return false;
 	}
+}
+
+bool traverseFiles(const char* folder){
+	    DIR *dp = NULL;
+        struct dirent *dirp;
+        if ((dp = opendir(folder)) == NULL) {
+			EAGLEEYE_LOGE("couldnt open dir %s", folder);
+            return false;
+        }
+
+        while ((dirp = readdir(dp)) != NULL) {
+            // linux DT_DIR文件夹；DT_REG文件
+            if(dirp->d_type & DT_DIR){
+                // 文件夹
+                std::string dir_name = dirp->d_name;
+				EAGLEEYE_LOGI("(folder) %s", dir_name.c_str());
+            }
+			else if(dirp->d_type & DT_REG){
+				// 文件
+				std::string file_name = dirp->d_name;
+				EAGLEEYE_LOGI("(file) %s", file_name.c_str());
+			}
+        }
+
+        if(dp != NULL){
+            closedir(dp);
+        }
+        return true;
 }
 }

@@ -3,14 +3,40 @@
 
 
 namespace eagleeye{
+/**
+ * @brief copyt file to 
+ */ 
 bool copyfile(const char* src_file,const char* target_file);
+
+/**
+ * @brief remove file
+ */ 
 bool deletefile(const char* file_path);
+
+/**
+ * @brief rename file name
+ */ 
 bool renamefile(const char* old_file_name,const char* new_file_name);
 
+/**
+ * @brief create directory
+ */ 
 bool createdirectory(const char* path);
+
+/**
+ * @brief check whether folder exist
+ */ 
 bool isdirexist(const char* path);
+
+/**
+ * @brief check whether file exist
+ */ 
 bool isfileexist(const char* path);
 
+/**
+ * @brief traverse files in folder
+ */ 
+bool traverseFiles(const char* folder);
 
 }
 

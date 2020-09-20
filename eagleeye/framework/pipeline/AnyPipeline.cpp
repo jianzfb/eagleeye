@@ -6,6 +6,7 @@
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/processnode/CopyNode.h"
 #include "eagleeye/processnode/Placeholder.h"
+#include "eagleeye/common/EagleeyeIni.h"
 #include <string>
 
 
@@ -13,7 +14,7 @@ namespace eagleeye{
 std::map<std::string, std::shared_ptr<AnyPipeline>> AnyPipeline::m_pipeline_map;
 std::map<std::string, std::string> AnyPipeline::m_pipeline_version;
 std::map<std::string, std::string> AnyPipeline::m_pipeline_signature;
-
+std::string AnyPipeline::m_plugin_root;
 AnyPipeline* AnyPipeline::getInstance(const char* pipeline_name){
     if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
         EAGLEEYE_LOGE("couldn't get pipeline %s's instance",pipeline_name);
@@ -37,28 +38,57 @@ void AnyPipeline::getRegistedPipelines(std::vector<std::string>& pipeline_names)
 bool AnyPipeline::registerPipeline(const char* pipeline_name, 
                                     const char* version, 
                                     const char* key){
-    // 1.step check key
-    // min_core_version@signature
-    std::string key_str = key;
-    std::string seperator_str = "@";
-    std::vector<std::string> terms = split(key_str, seperator_str);
-    std::string signature = terms[0];
-    if(terms.size() >= 2){
-        std::string min_core_version = terms[0];
-        signature = terms[1];
-        // 1.1.step check min core version
-        bool is_ok = minimumVersionRequired(min_core_version);
-        if(!is_ok){
-            EAGLEEYE_LOGD("needed min core version is %s, now core version %s", min_core_version.c_str(), getVersion().c_str());
+    // 1.step 加载部署文件，并获得插件基本配置信息
+    std::string deploy_file = AnyPipeline::m_plugin_root+"/"+pipeline_name+"/"+pipeline_name+".ini";
+    bool is_approve = false;
+    std::string ID = "";                        // 从服务端注册获得
+    std::string DEPENDENT_PIPELINE = "";        // 依赖管线和导入端口名字(PIPELINE:FROM-NODE:TO-NODE;PIPELINE:FROM-NODE:TO-NODE)
+    std::string INPUT = "";                     // 插件输入名字（数据源:节点名字;数据源:节点名字;）
+    std::string OUTPUT = "";                    // 插件输出名字（输出目标:节点名字;输出目标:节点名字;）
+
+    if(isfileexist(deploy_file.c_str())){
+        // 1.1.step 获得关键信息
+        EagleeyeINI ini_reader;
+        ini_reader.readINI(deploy_file);
+        
+        // APP层将根据ID，获取插件依赖管线信息，并重写初始化配置文件
+        ID = ini_reader.getValue("BASE", "ID");
+        DEPENDENT_PIPELINE = ini_reader.getValue("BASE", "DEPENDENT_PIPELINE");
+        INPUT = ini_reader.getValue("BASE", "INPUT");
+        OUTPUT = ini_reader.getValue("BASE", "OUTPUT");
+
+        EAGLEEYE_LOGI("pipeline ID %s", ID.c_str());
+        EAGLEEYE_LOGI("pipeline DEPENDENT %s", DEPENDENT_PIPELINE.c_str());
+        EAGLEEYE_LOGI("pipeline INPUT %s", INPUT.c_str());
+        EAGLEEYE_LOGI("pipeline OUTPUT %s", OUTPUT.c_str());
+
+        // 1.2.step 检查授权
+        if(ID != key){
+            EAGLEEYE_LOGE("plugin not approved, check ID and key");
             return false;
         }
+        
+        // 授权插件
+        is_approve = true;
+    }
+    else{
+        // 未授权插件
+        // 未授权插件，无法进行插件使用数据统计以及费用记录（一般用于个人开始使用）
+        is_approve = false;
     }
 
     // 2.step create pipeline 
     m_pipeline_map[std::string(pipeline_name)] = std::shared_ptr<AnyPipeline>(new AnyPipeline(pipeline_name));
     m_pipeline_version[std::string(pipeline_name)] = std::string(version);
-    m_pipeline_signature[std::string(pipeline_name)] = signature;
+    m_pipeline_signature[std::string(pipeline_name)] = key;
 
+    // 设置授权信息
+    m_pipeline_map[std::string(pipeline_name)]->approve(is_approve);
+
+    // 设置插件依赖信息
+    if(!DEPENDENT_PIPELINE.empty()){
+        m_pipeline_map[std::string(pipeline_name)]->setDependentPipelines(DEPENDENT_PIPELINE);
+    }
     return true;
 } 
 
@@ -68,6 +98,24 @@ void AnyPipeline::releasePipeline(const char* pipeline_name){
     }
     m_pipeline_map[std::string(pipeline_name)] = std::shared_ptr<AnyPipeline>();
 } 
+
+void AnyPipeline::approve(bool approve){
+    this->m_is_approved = approve;
+}
+
+void AnyPipeline::setDependentPipelines(std::string info){
+    std::string separator = ";";
+    std::vector<std::string> kkvv = split(info, separator);
+    for(int i=0; i<kkvv.size(); ++i){
+        std::string s = ":";
+        std::vector<std::string> pipeline_from_to = split(kkvv[i], s);
+        std::string pipeline_name = pipeline_from_to[0];
+        std::string from_node = pipeline_from_to[1];
+        std::string to_node = pipeline_from_to[2];
+
+        m_dependent_pipelines[pipeline_name].push_back(std::make_pair(from_node, to_node));
+    }
+}
 
 AnyPipeline::AnyPipeline(const char* pipeline_name){
     this->m_is_initialize = false;
@@ -210,16 +258,35 @@ AnyNode* AnyPipeline::getNode(std::string node_name){
 
 AnyNode* AnyPipeline::branch(std::string pipeline_name, std::string node_name, int port, bool inplace){
     if(m_pipeline_map.find(pipeline_name) == m_pipeline_map.end()){
+        EAGLEEYE_LOGD("not exist pipeline %s", pipeline_name.c_str());
+        return NULL;
+    }
+    if(m_dependent_pipelines.find(pipeline_name) == m_dependent_pipelines.end()){
+        EAGLEEYE_LOGD("not approved to use pipeline %s", pipeline_name.c_str());
+        return NULL;
+    }
+    std::vector<std::pair<std::string, std::string>> allowed_nodes = this->m_dependent_pipelines[pipeline_name];
+    bool is_ok = false;
+    for(int i=0; i<allowed_nodes.size(); ++i){
+        if(allowed_nodes[i].first == node_name+"/"+tos(port)){
+            is_ok = true;
+            break;
+        }
+    }
+    if(is_ok){
+        EAGLEEYE_LOGD("not approved to use node %s from pipeline %s", node_name.c_str(), pipeline_name.c_str());
         return NULL;
     }
 
     std::shared_ptr<AnyPipeline> source_pipeline = m_pipeline_map[pipeline_name];
     AnyNode* source_node = source_pipeline->getNode(node_name);
     if(source_node == NULL){
+        EAGLEEYE_LOGD("couldnt get node %s from pipeline %s", node_name.c_str(), pipeline_name.c_str());
         return NULL;
     }
 
     if(port >= source_node->getNumberOfOutputSignals()){
+        EAGLEEYE_LOGD("exceed source node number");
         return NULL;
     }
 
@@ -616,6 +683,12 @@ void AnyPipeline::initialize(const char* configure_folder){
     EAGLEEYE_LOGD("build pipeline %s structure", this->m_name.c_str());
     m_init_func();
 
+    // 创建管道资源文件夹
+    std::string resource_folder = this->resourceFolder();
+    if(!isdirexist(resource_folder.c_str())){
+        createdirectory(resource_folder.c_str());
+    }
+
     // 分析连接关系
     EAGLEEYE_LOGD("analyze pipeline %s structure", this->m_name.c_str());
     EAGLEEYE_LOGD("%s has %d output nodes", this->m_name.c_str(), this->m_output_nodes.size());
@@ -816,6 +889,18 @@ AnyNode* AnyPipeline::placeholder(SignalCategory category, EagleeyeType type){
     }
 
     return NULL;
+}
+
+std::string AnyPipeline::resourceFolder(){
+    std::string root = "./";
+    if(!this->m_plugin_root.empty()){
+        root = this->m_plugin_root+'/';
+    }
+    return root+this->m_name + "/resource/";
+}
+
+void AnyPipeline::setPluginRoot(const char* root){
+    AnyPipeline::m_plugin_root = root;
 }
 
 }

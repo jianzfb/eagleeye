@@ -48,6 +48,21 @@ public:
     static void releasePipeline(const char* pipeline_name);
 
     /**
+     * @brief set plugin root
+     */ 
+    static void setPluginRoot(const char* root);
+
+    /**
+     * @brief approve pipeline
+     */
+    void approve(bool approve=true);
+
+    /**
+     * @brief set dependent pipelines
+     */ 
+    void setDependentPipelines(std::string info);
+
+    /**
      * @brief Set the Pipeline Name 
      * 
      * @param name 
@@ -268,6 +283,11 @@ public:
      */
     AnyNode* placeholder(SignalCategory category, EagleeyeType type);
 
+    /**
+     * @brief get resource folder
+     */
+    std::string resourceFolder();
+
 protected:
     /**
      * @brief Construct a new Any Pipeline object
@@ -285,16 +305,18 @@ private:
     std::string m_version;
     std::string m_signature;
     std::map<std::string, AnyNode*> m_nodes;
-
     std::vector<std::string> m_replace_nodes;
     std::vector<int> m_replace_ports;
     std::vector<AnyNode*> m_using_placeholders;
-
+    std::map<std::string, std::vector<std::pair<std::string, std::string>>> m_dependent_pipelines; 
+    
     bool m_is_initialize;
+    bool m_is_approved;
     INITIALIZE_PLUGIN_PIPELINE_FUNC m_init_func;
     static std::map<std::string, std::shared_ptr<AnyPipeline>> m_pipeline_map;
     static std::map<std::string, std::string> m_pipeline_version;
     static std::map<std::string, std::string> m_pipeline_signature;    
+    static std::string m_plugin_root;
 };
 }
 #endif

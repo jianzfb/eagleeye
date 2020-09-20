@@ -2,22 +2,43 @@
 #include "eagleeye/common/EagleeyePy.h"
 #include "eagleeye/framework/pipeline/AnyPipeline.h"
 #include "eagleeye/common/EagleeyeStr.h"
+#include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include <dlfcn.h>
 #include <dirent.h>
 
 namespace eagleeye{
-void _getAllFileFromDirectory(std::string path, std::vector<std::string> &files) {
+void _getAllPluginsFromDirectory(std::string path, std::vector<std::string> &files) {
         DIR *dp = NULL;
         struct dirent *dirp;
         if ((dp = opendir(path.c_str())) == NULL) {
-            assert("can't open dir");
+            EAGLEEYE_LOGE("couldnt open plugin dir %s", path.c_str());
+            return;
         }
+
         while ((dirp = readdir(dp)) != NULL) {
-            std::string file_name = dirp->d_name;
-            if(endswith(file_name, ".so")){
-                files.push_back(file_name);
-                // std::cout << dirp->d_name << std::endl;
+            // linux DT_DIR文件夹；DT_REG文件
+            if(dirp->d_type & DT_DIR){
+                // 文件夹
+                std::string dir_name = dirp->d_name;
+                // 检查是否存在同名.so
+                std::string plugin_so_path;
+                if(path.at(path.length() - 1) == '/'){
+                    plugin_so_path = path + dir_name+"/lib"+dir_name+".so";
+                }
+                else{
+                    plugin_so_path = path + "/" + dir_name+"/lib"+dir_name+".so";
+                }
+                bool is_exist = isfileexist(plugin_so_path.c_str());
+                if(!is_exist){
+                    continue;
+                }
+                EAGLEEYE_LOGD("plugin so path %s", plugin_so_path.c_str());
+
+                // 检查是否存在同名.ini
+                // std::string plugin_so_path = path + "/" + dir_name+"/"+dir_name+".ini";
+
+                files.push_back(dir_name+"/lib"+dir_name+".so");
             }
         }
         if(dp != NULL){
@@ -29,10 +50,15 @@ void _getAllFileFromDirectory(std::string path, std::vector<std::string> &files)
 // registed plugins
 std::map<std::string, std::pair<void*,INITIALIZE_PLUGIN_FUNC>> m_registed_plugins;
 bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* plugin_folder){
+    EAGLEEYE_LOGD("init module from %s", plugin_folder);
+    // 设置插件根目录
+    AnyPipeline::setPluginRoot(plugin_folder);
+
     // 加载所有插件，发现注册模块
     EAGLEEYE_LOGD("traverse to find all plugin in %s",plugin_folder);
     std::vector<std::string> plugin_list;
-    _getAllFileFromDirectory(plugin_folder, plugin_list);
+    _getAllPluginsFromDirectory(plugin_folder, plugin_list);
+
     for(int index=0; index<plugin_list.size(); ++index){
         std::string plugin_path = std::string(plugin_folder) + "/" + plugin_list[index];
         // 加载so
@@ -42,6 +68,13 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
             EAGLEEYE_LOGD("dlopen error, message (%s)",dlerror());
             continue;
         }
+
+        // 插件目录结构
+        EAGLEEYE_LOGD("plugin directory map");
+        std::string sperator="/";
+        std::vector<std::string> kv = split(plugin_list[index], sperator);
+        std::string plugin_path_parent = std::string(plugin_folder) + "/" + kv[0];
+        traverseFiles(plugin_path_parent.c_str());
 
         // 加载注册及初始化函数
         EAGLEEYE_LOGD("get register plugin func");

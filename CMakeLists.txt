@@ -180,6 +180,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeProcessor.cpp
     eagleeye/common/EagleeyeSerial.cpp
     eagleeye/common/EagleeyeLog.cpp 
+    eagleeye/common/EagleeyeIni.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
     eagleeye/framework/pipeline/AnyNode.cpp 
     eagleeye/framework/pipeline/AnySignal.cpp 
@@ -250,6 +251,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeTime.cpp 
     eagleeye/common/EagleeyeProcessor.cpp
     eagleeye/common/EagleeyeSerial.cpp
+    eagleeye/common/EagleeyeIni.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
     eagleeye/framework/pipeline/AnyNode.cpp 
     eagleeye/framework/pipeline/AnySignal.cpp 

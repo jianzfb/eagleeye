@@ -1,9 +1,9 @@
-#EAGLEEYE插件框架
+# EAGLEEYE插件框架
 ---
-####简介
+#### 简介
 基于AI算法加持的应用，多人协同和小步迭代式是最常见的开发模式。统一的模块接口定义和模块动态更新是快速推动算法落地的必要前提。EAGLEEYE所提供的数据流管道框架和插件框架为大规模算法落地提供了基础平台。
 
-####插件管理机制
+#### 插件管理机制
 ![](./resource/plugin_framework.png)
 在EAGLEEYE中依靠dlopen/dlsym实现动态加载插件过程。开发者开发的算法插件统一放置于预定义的插件目录，比如
 
@@ -58,7 +58,7 @@
     说明：
     释放插件框架。当全局退出时，进行调用。
 
-####算法插件创建
+#### 算法插件创建
 下面的例子是示例工程中的运动检测算法插件（来自eagleeye/model-sample/movingdet_plugin.cpp）。
 
 编写算法插件，只需依靠在EagleeyeModule.h中定义的宏便可轻松完成：
@@ -116,8 +116,8 @@
     EAGLEEYE_END_PIPELINE_INITIALIZE
     ```
 
-####通用算法插件集成/调用
-#####插件集成关键接口分析
+#### 通用算法插件集成/调用
+##### 插件集成关键接口分析
 * 插件搜索及初始化
     ```c++
     // 第一步：在插件搜索路径中，检索所有插件
@@ -202,7 +202,7 @@
     eagleeye_release_module();
     ```
 
-#####插件集成其余接口分析
+##### 插件集成其余接口分析
 * 插件版本号
     ```c++
     char* pipeline_version = (char*)malloc(1024);
@@ -359,7 +359,7 @@
     ```
 
 
-####快速生成插件代码模板
+#### 快速生成插件代码模板
 使用scripts/main.py快速创建插件模板
 
 ```shell
@@ -387,7 +387,7 @@ movingdet_plugin
 开发者可以直接在自动生成的模板下进行插件开发。调用build.sh后，将会构建插件和对应DEMO工程。
 
 
-####特定算法插件集成/调用
+#### 特定算法插件集成/调用
 在一些特定应用中，不需要支持动态加载插件的能力。此时可以直接使用插件特有接口，实现算法调用。在这种集成方式下，编译出的插件.so文件需要静态链接进工程中。
 
 以上面自动生成的插件模板（movingdet）为例，插件特有接口定义在movingdet_plugin.h中。
@@ -513,3 +513,34 @@ eagleeye_movingdet_reset()
     ```c++
     eagleeye_movingdet_release();
     ```
+
+
+#### 插件发布
+发布包结构
+```
+- 插件名字/
+    - 插件名字.so
+    - 插件名字.ini
+    - resource/
+        - xxx
+        - xxx
+```
+其中，*.ini是插件部署文件；*.pipeline插件相关参数配置文件；resource是资源文件夹，插件所需的所有资源文件均可以放在这里。
+使用zip对发布包进行压缩后发布。
+
+##### 插件部署文件(*.ini)
+被框架层加载，并进行相关验证功能。
+```
+[BASE]
+VERSION=
+ID=
+DEPENDENT_PIPELINE=
+INPUT=
+OUTPUT=
+```
+
+##### 插件资源文件夹(resource/)
+放置插件所需资源文件。在代码中通过如下代码，获得资源文件夹。
+```
+std::string resource_folder = pipeline.resourceFolder();
+```
