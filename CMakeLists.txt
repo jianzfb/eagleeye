@@ -19,7 +19,7 @@ add_definitions(-DPADDLE_DISABLE_PROFILER)
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-add_definitions(-DEAGLEEYE_ANDROID_APP)
+# add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -252,6 +252,9 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeProcessor.cpp
     eagleeye/common/EagleeyeSerial.cpp
     eagleeye/common/EagleeyeIni.cpp
+    eagleeye/common/cJSON.cpp
+    eagleeye/common/cJsonObject.cpp
+    eagleeye/common/EagleeyeFactory.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
     eagleeye/framework/pipeline/AnyNode.cpp 
     eagleeye/framework/pipeline/AnySignal.cpp 

@@ -206,6 +206,7 @@ bool eagleeye_pipeline_release(const char* pipeline_name);
  */
 bool eagleeye_pipeline_version(const char* pipeline_name, char* pipeline_version);
 
+
 /**
  * @brief replace (debug pipeline)
  * 

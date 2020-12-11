@@ -72,13 +72,15 @@ bool ModelRun::initialize(){
     paddle::lite_api::MobileConfig config;
     config.set_model_from_file(this->m_nb_path);
 
-	if(this->m_device == "GPU"){
-		bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();
-		if (!is_opencl_backend_valid) {
-			EAGLEEYE_LOGE("Unsupport opencl nb model.");
-			return false;
-		}
-	}
+	// if(this->m_device == "GPU"){
+	// 	bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();		
+	// 	if (!is_opencl_backend_valid) {
+	// 		EAGLEEYE_LOGE("Unsupport opencl nb model.");
+	// 		return false;
+	// 	}
+		
+	// 	config.set_opencl_tune(true);
+	// }
 
     // NOTE: To load model transformed by model_optimize_tool before
     // release/v2.3.0, plese use `set_model_dir` API as listed below.
