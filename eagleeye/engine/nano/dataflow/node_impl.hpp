@@ -72,7 +72,7 @@ public:
    */
   virtual void transfer(EagleeyeRuntime runtime, bool asyn) noexcept override{
     // current node run on 'runtime'
-    for(int i=0; i<this->data_.size(); ++i){      
+    for(int i = 0; i < this->data_.size(); ++i){      
       this->data_[i]->transfer(this->index_[i], runtime, asyn);
     }
   }
@@ -93,7 +93,7 @@ public:
    * @param runtime 
    * @param data 
    */
-  int init(EagleeyeRuntime runtime, char* data) noexcept override{
+  int init(EagleeyeRuntime runtime, std::map<std::string, std::vector<float>> data) noexcept override{
     if(!this->init_){
       // 1.step initialize hanlder
       int result = m_handler->init(data);
@@ -108,11 +108,13 @@ public:
     this->m_handler->update(data, index);
     return true;
   }
+
   virtual bool update(void* data, int index=0){
     // block
     this->m_handler->update(data, index);
     return true;
   }
+
   virtual bool fetch(void*& data, int index=0, bool block=false){
     // block / no block
     return this->m_handler->fetch(data, index, block);

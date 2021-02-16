@@ -876,8 +876,6 @@ AnyNode* AnyPipeline::placeholder(SignalCategory category, EagleeyeType type){
             return new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
         }
         break;
-    case SIGNAL_CATEGORY_TENSOR:
-        return new Placeholder<TensorSignal<float>>();
     case SIGNAL_CATEGORY_STRING:
         return new Placeholder<StringSignal>();
     case SIGNAL_CATEGORY_CONTROL:

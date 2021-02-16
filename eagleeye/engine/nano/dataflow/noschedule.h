@@ -17,9 +17,11 @@ public:
     virtual void collectStatistic(){
         EAGLEEYE_LOGD("No Collect DAG Run Statistic");
     };
+    
     virtual void analyze(){
         EAGLEEYE_LOGD("No Analyze DAG");
     };
+
     virtual EagleeyeRuntime getRuntime(Node* node){
         if(node->getRuntime().type() != EAGLEEYE_UNKNOWN_RUNTIME){
             return node->getRuntime();

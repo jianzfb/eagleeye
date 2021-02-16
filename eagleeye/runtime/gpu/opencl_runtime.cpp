@@ -1,15 +1,15 @@
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeStr.h"
+#include "eagleeye/codegen/opencl/encrypt_opencl_kernel.h"
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
 #include <CL/cl.h>
-#include "../../../EagleeyeCL_CODE.h"
 
 namespace eagleeye
 {
-const std::string OpenCLErrorToString(cl_int error) {
+const char* OpenCLErrorToString(cl_int error) {
   switch (error) {
     case CL_SUCCESS:
       return "CL_SUCCESS";
@@ -41,94 +41,76 @@ const std::string OpenCLErrorToString(cl_int error) {
       return "CL_MISALIGNED_SUB_BUFFER_OFFSET";
     case CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST:
       return "CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST";
-    // case CL_COMPILE_PROGRAM_FAILURE:
-    //   return "CL_COMPILE_PROGRAM_FAILURE";
-    // case CL_LINKER_NOT_AVAILABLE:
-    //   return "CL_LINKER_NOT_AVAILABLE";
-    // case CL_LINK_PROGRAM_FAILURE:
-    //   return "CL_LINK_PROGRAM_FAILURE";
-    // case CL_DEVICE_PARTITION_FAILED:
-    //   return "CL_DEVICE_PARTITION_FAILED";
-    // case CL_KERNEL_ARG_INFO_NOT_AVAILABLE:
-    //   return "CL_KERNEL_ARG_INFO_NOT_AVAILABLE";
-    // case CL_INVALID_VALUE:
-    //   return "CL_INVALID_VALUE";
-    // case CL_INVALID_DEVICE_TYPE:
-    //   return "CL_INVALID_DEVICE_TYPE";
-    // case CL_INVALID_PLATFORM:
-    //   return "CL_INVALID_PLATFORM";
-    // case CL_INVALID_DEVICE:
-    //   return "CL_INVALID_DEVICE";
-    // case CL_INVALID_CONTEXT:
-    //   return "CL_INVALID_CONTEXT";
-    // case CL_INVALID_QUEUE_PROPERTIES:
-    //   return "CL_INVALID_QUEUE_PROPERTIES";
-    // case CL_INVALID_COMMAND_QUEUE:
-    //   return "CL_INVALID_COMMAND_QUEUE";
-    // case CL_INVALID_HOST_PTR:
-    //   return "CL_INVALID_HOST_PTR";
-    // case CL_INVALID_MEM_OBJECT:
-    //   return "CL_INVALID_MEM_OBJECT";
-    // case CL_INVALID_IMAGE_FORMAT_DESCRIPTOR:
-    //   return "CL_INVALID_IMAGE_FORMAT_DESCRIPTOR";
-    // case CL_INVALID_IMAGE_SIZE:
-    //   return "CL_INVALID_IMAGE_SIZE";
-    // case CL_INVALID_SAMPLER:
-    //   return "CL_INVALID_SAMPLER";
-    // case CL_INVALID_BINARY:
-    //   return "CL_INVALID_BINARY";
-    // case CL_INVALID_BUILD_OPTIONS:
-    //   return "CL_INVALID_BUILD_OPTIONS";
-    // case CL_INVALID_PROGRAM:
-    //   return "CL_INVALID_PROGRAM";
-    // case CL_INVALID_PROGRAM_EXECUTABLE:
-    //   return "CL_INVALID_PROGRAM_EXECUTABLE";
-    // case CL_INVALID_KERNEL_NAME:
-    //   return "CL_INVALID_KERNEL_NAME";
-    // case CL_INVALID_KERNEL_DEFINITION:
-    //   return "CL_INVALID_KERNEL_DEFINITION";
-    // case CL_INVALID_KERNEL:
-    //   return "CL_INVALID_KERNEL";
-    // case CL_INVALID_ARG_INDEX:
-    //   return "CL_INVALID_ARG_INDEX";
-    // case CL_INVALID_ARG_VALUE:
-    //   return "CL_INVALID_ARG_VALUE";
-    // case CL_INVALID_ARG_SIZE:
-    //   return "CL_INVALID_ARG_SIZE";
-    // case CL_INVALID_KERNEL_ARGS:
-    //   return "CL_INVALID_KERNEL_ARGS";
-    // case CL_INVALID_WORK_DIMENSION:
-    //   return "CL_INVALID_WORK_DIMENSION";
-    // case CL_INVALID_WORK_GROUP_SIZE:
-    //   return "CL_INVALID_WORK_GROUP_SIZE";
-    // case CL_INVALID_WORK_ITEM_SIZE:
-    //   return "CL_INVALID_WORK_ITEM_SIZE";
-    // case CL_INVALID_GLOBAL_OFFSET:
-    //   return "CL_INVALID_GLOBAL_OFFSET";
-    // case CL_INVALID_EVENT_WAIT_LIST:
-    //   return "CL_INVALID_EVENT_WAIT_LIST";
-    // case CL_INVALID_EVENT:
-    //   return "CL_INVALID_EVENT";
-    // case CL_INVALID_OPERATION:
-    //   return "CL_INVALID_OPERATION";
-    // case CL_INVALID_GL_OBJECT:
-    //   return "CL_INVALID_GL_OBJECT";
-    // case CL_INVALID_BUFFER_SIZE:
-    //   return "CL_INVALID_BUFFER_SIZE";
-    // case CL_INVALID_MIP_LEVEL:
-    //   return "CL_INVALID_MIP_LEVEL";
-    // case CL_INVALID_GLOBAL_WORK_SIZE:
-    //   return "CL_INVALID_GLOBAL_WORK_SIZE";
-    // case CL_INVALID_PROPERTY:
-    //   return "CL_INVALID_PROPERTY";
-    // case CL_INVALID_IMAGE_DESCRIPTOR:
-    //   return "CL_INVALID_IMAGE_DESCRIPTOR";
-    // case CL_INVALID_COMPILER_OPTIONS:
-    //   return "CL_INVALID_COMPILER_OPTIONS";
-    // case CL_INVALID_LINKER_OPTIONS:
-    //   return "CL_INVALID_LINKER_OPTIONS";
-    // case CL_INVALID_DEVICE_PARTITION_COUNT:
-    //   return "CL_INVALID_DEVICE_PARTITION_COUNT";
+    case CL_INVALID_VALUE:
+      return "CL_INVALID_VALUE";
+    case CL_INVALID_DEVICE_TYPE:
+      return "CL_INVALID_DEVICE_TYPE";
+    case CL_INVALID_PLATFORM:
+      return "CL_INVALID_PLATFORM";
+    case CL_INVALID_DEVICE:
+      return "CL_INVALID_DEVICE";
+    case CL_INVALID_CONTEXT:
+      return "CL_INVALID_CONTEXT";
+    case CL_INVALID_QUEUE_PROPERTIES:
+      return "CL_INVALID_QUEUE_PROPERTIES";
+    case CL_INVALID_COMMAND_QUEUE:
+      return "CL_INVALID_COMMAND_QUEUE";
+    case CL_INVALID_HOST_PTR:
+      return "CL_INVALID_HOST_PTR";
+    case CL_INVALID_MEM_OBJECT:
+      return "CL_INVALID_MEM_OBJECT";
+    case CL_INVALID_IMAGE_FORMAT_DESCRIPTOR:
+      return "CL_INVALID_IMAGE_FORMAT_DESCRIPTOR";
+    case CL_INVALID_IMAGE_SIZE:
+      return "CL_INVALID_IMAGE_SIZE";
+    case CL_INVALID_SAMPLER:
+      return "CL_INVALID_SAMPLER";
+    case CL_INVALID_BINARY:
+      return "CL_INVALID_BINARY";
+    case CL_INVALID_BUILD_OPTIONS:
+      return "CL_INVALID_BUILD_OPTIONS";
+    case CL_INVALID_PROGRAM:
+      return "CL_INVALID_PROGRAM";
+    case CL_INVALID_PROGRAM_EXECUTABLE:
+      return "CL_INVALID_PROGRAM_EXECUTABLE";
+    case CL_INVALID_KERNEL_NAME:
+      return "CL_INVALID_KERNEL_NAME";
+    case CL_INVALID_KERNEL_DEFINITION:
+      return "CL_INVALID_KERNEL_DEFINITION";
+    case CL_INVALID_KERNEL:
+      return "CL_INVALID_KERNEL";
+    case CL_INVALID_ARG_INDEX:
+      return "CL_INVALID_ARG_INDEX";
+    case CL_INVALID_ARG_VALUE:
+      return "CL_INVALID_ARG_VALUE";
+    case CL_INVALID_ARG_SIZE:
+      return "CL_INVALID_ARG_SIZE";
+    case CL_INVALID_KERNEL_ARGS:
+      return "CL_INVALID_KERNEL_ARGS";
+    case CL_INVALID_WORK_DIMENSION:
+      return "CL_INVALID_WORK_DIMENSION";
+    case CL_INVALID_WORK_GROUP_SIZE:
+      return "CL_INVALID_WORK_GROUP_SIZE";
+    case CL_INVALID_WORK_ITEM_SIZE:
+      return "CL_INVALID_WORK_ITEM_SIZE";
+    case CL_INVALID_GLOBAL_OFFSET:
+      return "CL_INVALID_GLOBAL_OFFSET";
+    case CL_INVALID_EVENT_WAIT_LIST:
+      return "CL_INVALID_EVENT_WAIT_LIST";
+    case CL_INVALID_EVENT:
+      return "CL_INVALID_EVENT";
+    case CL_INVALID_OPERATION:
+      return "CL_INVALID_OPERATION";
+    case CL_INVALID_GL_OBJECT:
+      return "CL_INVALID_GL_OBJECT";
+    case CL_INVALID_BUFFER_SIZE:
+      return "CL_INVALID_BUFFER_SIZE";
+    case CL_INVALID_MIP_LEVEL:
+      return "CL_INVALID_MIP_LEVEL";
+    case CL_INVALID_GLOBAL_WORK_SIZE:
+      return "CL_INVALID_GLOBAL_WORK_SIZE";
+    case CL_INVALID_PROPERTY:
+      return "CL_INVALID_PROPERTY";
 #if CL_HPP_TARGET_OPENCL_VERSION >= 200
     case CL_INVALID_PIPE_SIZE:
       return "CL_INVALID_PIPE_SIZE";
@@ -136,9 +118,18 @@ const std::string OpenCLErrorToString(cl_int error) {
       return "CL_INVALID_DEVICE_QUEUE";
 #endif
     default:
-      return makeString("UNKNOWN: ", error);
+      return makeString("UNKNOWN: ", error).c_str();
   }
 }    
+
+EagleeyeError OpenCLCheckError(cl_int error){
+  if(error == CL_SUCCESS){
+    return EAGLEEYE_NO_ERROR;
+  }
+
+  EAGLEEYE_LOGE("opencl runtime error %s at line %i , in file %s", OpenCLErrorToString(error), __LINE__, __FILE__);
+  return EAGLEEYE_RUNTIME_ERROR;
+}
 
 std::shared_ptr<OpenCLRuntime> OpenCLRuntime::m_env;
 std::string OpenCLRuntime::m_writable_path;
@@ -147,7 +138,8 @@ OpenCLRuntime::OpenCLRuntime(){
     if(this->m_writable_path.size() == 0){
         this->m_writable_path = "./";
     }
-    this->m_sources["algorithm"] = OPENCL_ALGORITHM_CL;
+    this->m_order_queue = NULL;
+    this->m_out_of_order_queue = NULL;
     this->init();
 }
 
@@ -162,32 +154,43 @@ OpenCLRuntime::~OpenCLRuntime(){
     }
 
     // 3.step release command queue
-    std::map<std::string, cl_command_queue>::iterator citer, ciend(m_command_queue.end());
-    for(citer=m_command_queue.begin(); citer != ciend; ++citer){
-        clReleaseCommandQueue(citer->second);
+    if(this->m_order_queue){
+      clReleaseCommandQueue(this->m_order_queue);
+    }
+    if(this->m_out_of_order_queue){
+      clReleaseCommandQueue(this->m_out_of_order_queue);
     }
 }
 
-void OpenCLRuntime::addCustomSource(std::string name, std::string source){
-    this->addSourceCode(name, source);
+void OpenCLRuntime::registerProgramSource(std::string name, std::string source){
+  this->m_register_program_source[name] = source;
 }
 
-void OpenCLRuntime::addSourceCode(std::string name, std::string source){
-    this->m_sources[name] = source;
-}
+cl_command_queue OpenCLRuntime::getOrCreateCommandQueue(bool is_order){
+  if(is_order){
+    if(this->m_order_queue == NULL){
+      int err;
+      this->m_order_queue = clCreateCommandQueue(context, device_id, 0, &err);;
+      if (err != CL_SUCCESS){
+          EAGLEEYE_LOGE("Failed to create a command queue with error %s", OpenCLErrorToString(err));
+          return NULL;
+      }
 
-cl_command_queue OpenCLRuntime::getCommandQueue(std::string group){
-    if(m_command_queue.find(group) != m_command_queue.end()){
-        return m_command_queue[group];
+      return this->m_order_queue;
     }
+  }
+  else{
+    if(this->m_out_of_order_queue == NULL){
+      int err;
+      this->m_out_of_order_queue = clCreateCommandQueue(context, device_id, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, &err);;
+      if (err != CL_SUCCESS){
+          EAGLEEYE_LOGE("Failed to create a command queue with error %s", OpenCLErrorToString(err));
+          return NULL;
+      }
 
-    int err;
-    m_command_queue[group] = clCreateCommandQueue(context, device_id, 0, &err);
-    if (err != CL_SUCCESS){
-        EAGLEEYE_LOGE("Failed to create a command queue for group %s with error code %d", group.c_str(), err);
-        return NULL;
+      return this->m_out_of_order_queue;
     }
-    return m_command_queue[group];
+  }
 }
 
 void OpenCLRuntime::setWritablePath(const char* writable_path){
@@ -319,11 +322,12 @@ bool OpenCLRuntime::writeBinaryToFile(const char* fileName, const char* birary, 
 
     return true;
 }
+
 bool OpenCLRuntime::readBinaryFromFile(const char* KernelBinary, char*& binary, size_t& numBytes){
 	FILE* binaryFile;
 	binaryFile = fopen(KernelBinary, "rb");
 	if (!binaryFile){
-        EAGLEEYE_LOGE("couldnt load %s kernel binary",KernelBinary);
+        EAGLEEYE_LOGE("Couldnt load %s kernel binary.", KernelBinary);
 		return false;
 	}
 	fseek(binaryFile, 0L, SEEK_END);
@@ -331,7 +335,6 @@ bool OpenCLRuntime::readBinaryFromFile(const char* KernelBinary, char*& binary, 
 	rewind(binaryFile);
 	binary = NULL;
 	if (size <= 0){
-        EAGLEEYE_LOGE("file size[%d] is err!\n", (int)size);
 		fclose(binaryFile);
 		return false;
 	}
@@ -350,8 +353,6 @@ bool OpenCLRuntime::readBinaryFromFile(const char* KernelBinary, char*& binary, 
 }
 
 cl_program OpenCLRuntime::compileProgram(std::string program_name, std::string options){
-    std::cout<<"in compile program"<<std::endl;
-    std::cout<<program_name+options<<std::endl;
     // only compile once
     if(this->m_programs.find(program_name+options) != this->m_programs.end()){
         return this->m_programs[program_name+options];
@@ -361,15 +362,25 @@ cl_program OpenCLRuntime::compileProgram(std::string program_name, std::string o
     int err;                            // error code returned from api calls
     char* binary_compiled_algorithm_cl = NULL;
     size_t binary_compiled_algorithm_cl_size = 0;
-    std::string algorithm_program_bin = m_writable_path + "//" + program_name+options + ".cl.bin";
-    EAGLEEYE_LOGD("try to load algorithm kernel from %s", algorithm_program_bin.c_str());
-    bool is_ok = this->readBinaryFromFile(algorithm_program_bin.c_str(),binary_compiled_algorithm_cl, binary_compiled_algorithm_cl_size);
+    std::string algorithm_program_bin = m_writable_path + "/" + program_name+options + ".cl.bin";
+    EAGLEEYE_LOGD("Try to load CL kernel from %s", algorithm_program_bin.c_str());
+    bool is_ok = 
+      this->readBinaryFromFile(algorithm_program_bin.c_str(),
+                                binary_compiled_algorithm_cl, 
+                                binary_compiled_algorithm_cl_size);
     if(is_ok){
-        cl_program program = clCreateProgramWithBinary(context, 1, &device_id, &binary_compiled_algorithm_cl_size, (const unsigned char **) & binary_compiled_algorithm_cl, NULL, &err);
+        cl_program program = 
+          clCreateProgramWithBinary(context,
+                                    1,
+                                    &device_id, 
+                                    &binary_compiled_algorithm_cl_size, 
+                                    (const unsigned char **) & binary_compiled_algorithm_cl, 
+                                    NULL, 
+                                    &err);
         free(binary_compiled_algorithm_cl);
 
         if (!program || err != CL_SUCCESS){
-            EAGLEEYE_LOGE("Failed to create compute algorithm program");
+            EAGLEEYE_LOGE("Failed to create CL program with error %s.", OpenCLErrorToString(err));
             return NULL;
         }
 
@@ -378,31 +389,37 @@ cl_program OpenCLRuntime::compileProgram(std::string program_name, std::string o
             size_t len;
             char buffer[2048];
     
-            EAGLEEYE_LOGE("Failed to build program executable!");
+            EAGLEEYE_LOGE("Failed to build CL program executable with error %s.", OpenCLErrorToString(err));
             clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
+            EAGLEEYE_LOGE("--------------------ERROR INFO-------------------------");
             EAGLEEYE_LOGE("%s",buffer);
+            EAGLEEYE_LOGE("-------------------------------------------------------");
             return NULL;
         }
 
-        EAGLEEYE_LOGD("success to load algorithm program");
-
+        EAGLEEYE_LOGD("Success to load CL %s program.", (program_name+options).c_str());
         this->m_programs[program_name+options] = program;
         return program;
     }
 
     // 2.step try compile from source
-    if(this->m_sources.find(program_name) == this->m_sources.end()){
-        EAGLEEYE_LOGD("dont have module %s source code", program_name.c_str());
+    std::string kernel_source;
+    if(this->m_register_program_source.find(program_name) != this->m_register_program_source.end()){
+      kernel_source = this->m_register_program_source[program_name];
+    }
+    else{
+      EagleeyeError status = this->getProgramSourceByName(program_name, &kernel_source);
+      if (status != EAGLEEYE_NO_ERROR || kernel_source.empty()) {
+        EAGLEEYE_LOGE("Dont have CL %s source code", program_name.c_str());
         return NULL;
+      }
     }
 
-    EAGLEEYE_LOGD("try to compile algorithm program from source");
-    const char* source_code = this->m_sources[program_name].c_str();
-    // std::cout<<"source code"<<std::endl;
-    // std::cout<<source_code<<std::endl;
-    cl_program program = clCreateProgramWithSource(context, 1, (const char **) &source_code, NULL, &err);
+    EAGLEEYE_LOGD("Try to compile CL %s program from source", (program_name+options).c_str());
+    const char* ks_str = kernel_source.c_str();
+    cl_program program = clCreateProgramWithSource(context, 1, (const char **) &ks_str, NULL, &err);
     if (!program || err != CL_SUCCESS){
-        EAGLEEYE_LOGE("Failed to create compute program");
+        EAGLEEYE_LOGE("Failed to create compute program with error %s", OpenCLErrorToString(err));
         return NULL;
     }
 
@@ -414,16 +431,16 @@ cl_program OpenCLRuntime::compileProgram(std::string program_name, std::string o
         size_t len;
         char buffer[2048];
 
-        EAGLEEYE_LOGE("Failed to build program executable with error code %d", err);
+        EAGLEEYE_LOGE("Failed to build CL program executable with error %s.", OpenCLErrorToString(err));
         err = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
-        EAGLEEYE_LOGD("clGetProgramBuildInfo return code %d", err);
+        EAGLEEYE_LOGD("clGetProgramBuildInfo err %s", OpenCLErrorToString(err));
         EAGLEEYE_LOGD("clGetProgramBuildInfo build info \"%s\" ",buffer);
         return NULL;
     }
 
     //save complied program
-    EAGLEEYE_LOGD("try to write complied algorithm program");
-    char **binaries = (char **)malloc( sizeof(char *) * 1 ); //只有一个设备
+    EAGLEEYE_LOGD("Try to write complied CL %s program.", (program_name+options).c_str());
+    char **binaries = (char **)malloc( sizeof(char *) * 1 );      //只有一个设备
     size_t *binarySizes = (size_t*)malloc( sizeof(size_t) * 1 );
 
     err = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,sizeof(size_t) * 1, binarySizes, NULL);
@@ -431,12 +448,47 @@ cl_program OpenCLRuntime::compileProgram(std::string program_name, std::string o
     err = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(char *) * 1, binaries, NULL);            
     this->writeBinaryToFile(algorithm_program_bin.c_str(), binaries[0],binarySizes[0]);
 
+    free(binaries[0]);
     free(binaries);
     free(binarySizes);
-    EAGLEEYE_LOGD("finish write complied algorithm program");
+    EAGLEEYE_LOGD("Finish write complied CL %s program.", (program_name+options).c_str());
+
+    // return program
     this->m_programs[program_name+options] = program;
     return this->m_programs[program_name+options];
 }
+
+EagleeyeError OpenCLRuntime::getProgramSourceByName(const std::string &program_name, std::string *source) {
+  std::stringstream source_stream;
+  const auto &kEncryptedProgramMap = codegen::kEncryptedProgramMap;
+  const auto &it_program = kEncryptedProgramMap.find(program_name);
+  if (it_program == kEncryptedProgramMap.end()) {
+    EAGLEEYE_LOGE("Find program %s failed.", program_name.c_str());
+    return EAGLEEYE_RUNTIME_ERROR;
+  }
+
+  const std::vector<std::string> &headers = it_program->second.headers_;
+  for (const std::string &header : headers) {
+    const auto &header_program = kEncryptedProgramMap.find(header);
+    if (header_program == kEncryptedProgramMap.end()) {
+      EAGLEEYE_LOGE("Program header( %s ) is empty.", header.c_str());
+      continue;
+    }
+
+    const auto &header_source = header_program->second.encrypted_code_;
+    source_stream << obfuscateString(
+        std::string(header_source.begin(), header_source.end()));
+  }
+
+  const auto &it_source = it_program->second.encrypted_code_;
+  source_stream << obfuscateString(
+      std::string(it_source.begin(), it_source.end()));
+  *source = source_stream.str();
+
+  return EAGLEEYE_NO_ERROR;
+}
+
+
 
 } // namespace eagleeye
 #else

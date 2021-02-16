@@ -98,14 +98,8 @@ endif()
 
 # support opencl
 if(DEFINED OPENCL)
-    message(STATUS "support OPENCL")
     message(STATUS "OPENCL path "${OPENCL})
     add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
-    file(READ ${eagleeye_SOURCE_DIR}/eagleeye/opencl/algorithm.cl B)
-    string(REPLACE "\n" "" OPENCL_ALGORITHM_CL "${B}")
-    
-    configure_file(${eagleeye_SOURCE_DIR}/eagleeye/common/EagleeyeCL_CODE.h ${eagleeye_SOURCE_DIR}/EagleeyeCL_CODE.h)    
-
     include_directories(${OPENCL}/include)
     add_library(libOpenCL SHARED IMPORTED)
     set_target_properties(
@@ -201,25 +195,19 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeOpenCL.cpp
     eagleeye/basic/MatrixMath.cpp
     eagleeye/basic/blob.cpp
-    eagleeye/basic/TensorX.cpp
-    eagleeye/basic/MatrixMathCL.cpp
+    eagleeye/basic/Tensor.cpp
     eagleeye/port/linux_base/env.cpp
     eagleeye/port/android/env.cpp
     eagleeye/runtime/cpu/cpu_runtime.cpp
-    eagleeye/runtime/gpu/opencl_runtime.cpp)
+    eagleeye/runtime/gpu/opencl_runtime.cpp
+    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc)
 else()
 message(STATUS "FULL version")
 set(EAGLEEYE_SRC 
     eagleeye/processnode/OpticalFlowNode.cpp
     eagleeye/processnode/ConsistenceNode.cpp
-    eagleeye/processnode/movingdetnode.cpp
-    eagleeye/processnode/GOTURNTrackingNode.cpp
-    eagleeye/processnode/SegNode.cpp
     eagleeye/processnode/AdaptorNode.cpp
     eagleeye/processnode/TemplateMatchingNode.cpp
-    eagleeye/processnode/SaliencyDetNode.cpp
-    eagleeye/processnode/ImageTransformNode.cpp
-    eagleeye/processnode/SSDReidPersonDetNode.cpp
     eagleeye/processnode/SubPipeline.cpp
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
@@ -228,7 +216,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
-    eagleeye/processnode/InstancePersonSegMRCNNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
     eagleeye/processnode/SerialWriteNode.cpp
     eagleeye/processnode/ImageWriteNode.cpp
@@ -275,8 +262,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeThreadPool.cpp
     eagleeye/basic/MatrixMath.cpp
     eagleeye/basic/blob.cpp
-    eagleeye/basic/TensorX.cpp
-    eagleeye/basic/MatrixMathCL.cpp
+    eagleeye/basic/Tensor.cpp
     eagleeye/algorithm/qr_solver.cpp
     eagleeye/algorithm/llsp.cpp
     eagleeye/algorithm/nms.cpp
@@ -284,15 +270,14 @@ set(EAGLEEYE_SRC
     eagleeye/algorithm/segment.cpp
     eagleeye/algorithm/filter.cpp
     eagleeye/common/EagleeyeOpenCL.cpp
-    eagleeye/tensorop/imageop.cpp
-    eagleeye/tensorop/tensorop.cpp
     eagleeye/port/linux_base/env.cpp
     eagleeye/port/android/env.cpp
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/runtime/gpu/opencl_runtime.cpp
-    eagleeye/engine/nano/op/gpu/opencl_util.cpp
+    eagleeye/engine/nano/util/opencl_util.cpp
     eagleeye/engine/nano/dataflow/schedule.cpp
-    eagleeye/engine/nano/dataflow/heft.cpp)
+    eagleeye/engine/nano/dataflow/heft.cpp
+    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})

@@ -23,7 +23,7 @@ AnyNode* __build_placeholder(neb::CJsonObject config){
         }
         else if(input_data_type == "GRAY" || input_data_type == "UCHAR"){
             Placeholder<ImageSignal<unsigned char>>* p = 
-                new PlaceholderPlaceholder<ImageSignal<unsigned char>>(bool(queue_mode));
+                new Placeholder<ImageSignal<unsigned char>>(bool(queue_mode));
         }
     }
     else if(input_category == "SIGNAL_RECT" || 
@@ -31,16 +31,16 @@ AnyNode* __build_placeholder(neb::CJsonObject config){
             input_category == "SIGNAL_POINT"){
         if(input_data_type == "INT"){
             Placeholder<ImageSignal<int>>* p = 
-                new PlaceholderPlaceholder<ImageSignal<int>>(bool(queue_mode));
+                new Placeholder<ImageSignal<int>>(bool(queue_mode));
         }
     }
     else if(input_category == "SIGNAL_MASK"){
         Placeholder<ImageSignal<unsigned char>>* p = 
-            new PlaceholderPlaceholder<ImageSignal<unsigned char>>(bool(queue_mode));
+            new Placeholder<ImageSignal<unsigned char>>(bool(queue_mode));
     }
     else if(input_category == "ADVANCED_SIGNAL_DET"){
         Placeholder<ImageSignal<float>>* p = 
-            new PlaceholderPlaceholder<ImageSignal<float>>(bool(queue_mode));
+            new Placeholder<ImageSignal<float>>(bool(queue_mode));
     }
 
     return NULL;
@@ -84,19 +84,21 @@ AnyNode* eagleeye_node_factory(neb::CJsonObject config, std::function<AnyNode*()
     std::string node_type;
     config.Get("type", node_type);    
 
-    // 创建节点
-    if(node_type == "Placeholder"){
-        return __build_placeholder(config);
-    }
-    else if(node_type == "Add"){
-        return __build_add(config);
-    }
-    else if(node_type == "AutoNode"){
-        return __build_auto_node(option_func);
-    }
-    else{
-        return NULL;
-    }
+    // // 创建节点
+    // if(node_type == "Placeholder"){
+    //     return __build_placeholder(config);
+    // }
+    // else if(node_type == "Add"){
+    //     return __build_add(config);
+    // }
+    // else if(node_type == "AutoNode"){
+    //     return __build_auto_node(option_func);
+    // }
+    // else{
+    //     return NULL;
+    // }
+
+    return NULL;
 }    
 
 void __placeholder_info(neb::CJsonObject& placeholder_config){

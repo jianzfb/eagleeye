@@ -8,12 +8,12 @@ namespace eagleeye{
 namespace dataflow {
 
 class Node;
-class worker {
+class Worker {
 public:  
   std::size_t id;
   std::thread thread;
 
-  worker (std::size_t id)
+  Worker (std::size_t id)
   : id(id) {
   }
 };

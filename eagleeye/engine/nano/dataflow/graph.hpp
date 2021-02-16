@@ -10,8 +10,9 @@
 #include "eagleeye/engine/nano/dataflow/schedule.h"
 #include "eagleeye/engine/nano/dataflow/heft.h"
 #include "eagleeye/engine/nano/dataflow/noschedule.h"
+#include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/basic/spinlock.hpp"
-#include "eagleeye/basic/TensorX.h"
+#include "eagleeye/basic/Tensor.h"
 #include <atomic>
 #include <iostream>
 #include <memory>
@@ -37,30 +38,29 @@ public:
    * @param schedule_type 
    */
   Graph(std::vector<EagleeyeRuntime> runtimes, 
-        std::size_t num_worker = 4,
+        std::size_t num_worker = 2,
         ScheduleType schedule_type=NO_SCHEDULE)
-    :queue_(num_worker) {
+    :m_queue(num_worker) {
     // 1.step build worker
     for (std::size_t i = 0; i < num_worker; ++i) {
-      worker_.emplace_back(i);
+      m_worker.emplace_back(i);
     }
 
     // 2.step build resource schedule 
     switch (schedule_type){
       case NO_SCHEDULE:
-        schedule_ = new NoSchedule(this,runtimes);
+        m_schedule = new NoSchedule(this,runtimes);
         break;
       case HEFT_SCHEDULE:
-        schedule_ = new HEFT(this, runtimes);
+        m_schedule = new HEFT(this, runtimes);
         break;
       default:
-        schedule_ = new NoSchedule(this,runtimes);
+        m_schedule = new NoSchedule(this,runtimes);
         break;
     }  
 
     // 3.step others
-    exit_node_num_ = 0;
-    waiting_stop_count_ = 0;
+    m_waiting_stop_count = 0;
   }
 
   /**
@@ -68,14 +68,14 @@ public:
    * 
    */
   virtual ~Graph () {
-    for (Node * n : nodes_) {
+    for (Node * n : m_nodes) {
       delete n;
     }
-    for (Edge * e : edges_) {
+    for (Edge * e : m_edges) {
       delete e;
     }
 
-    delete schedule_;
+    delete m_schedule;
   }
 
   /**
@@ -83,25 +83,25 @@ public:
    * 
    */
   void analyze(){
-    // 1.step analyze compute resource
-    EAGLEEYE_LOGD("Analyze DAG Structure and Resource");
-    this->schedule_->collectStatistic();
-    this->schedule_->analyze();
+    // // 1.step analyze compute resource
+    // EAGLEEYE_LOGD("Analyze DAG Structure and Resource");
+    // this->m_schedule->collectStatistic();
+    // this->m_schedule->analyze();
 
-    // 2.step print log
-    EAGLEEYE_LOGD("DAG Task Execute Schedule");
-    for(Node* n: nodes_){
-      EagleeyeRuntime d = this->schedule_->getRuntime(n);
-      if(d.type() == EAGLEEYE_CPU){
-        EAGLEEYE_LOGD("node %s (%d) on CPU", n->getName().c_str(), n->getId());
-      }
-      else if(d.type() == EAGLEEYE_GPU){
-        EAGLEEYE_LOGD("node %s (%d) on GPU", n->getName().c_str(), n->getId());
-      }
-      else{
-        EAGLEEYE_LOGE("node %s (%d) on UNKNOWN device", n->getName().c_str(), n->getId());
-      }
-    }
+    // // 2.step print log
+    // EAGLEEYE_LOGD("DAG Task Execute Schedule");
+    // for(Node* n: m_nodes){
+    //   EagleeyeRuntime d = this->m_schedule->getRuntime(n);
+    //   if(d.type() == EAGLEEYE_CPU){
+    //     EAGLEEYE_LOGD("node %s (%d) on CPU", n->getName().c_str(), n->getId());
+    //   }
+    //   else if(d.type() == EAGLEEYE_GPU){
+    //     EAGLEEYE_LOGD("node %s (%d) on GPU", n->getName().c_str(), n->getId());
+    //   }
+    //   else{
+    //     EAGLEEYE_LOGE("node %s (%d) on UNKNOWN device", n->getName().c_str(), n->getId());
+    //   }
+    // }
   }
   
   /**
@@ -109,19 +109,18 @@ public:
    * 
    * @param model_path 
    */
-  void init(const char* model_path, char* data=NULL){
-    EAGLEEYE_LOGD("init DAG with %s", model_path);
+  void init(const char* model_path){
     // 1.step load model path
-    char* model_data = data;
     if(model_path != NULL){
-      // 从模型文件加载
+      // 从模型文件加载模型结构
+      // 加载模型DAG，和参数
     }
 
     // 2.step init node
-    for(Node* n: nodes_){
-      EagleeyeRuntime d = this->schedule_->getRuntime(n);
-      int offset = n->init(d, model_data);
-      model_data += offset;
+    for(Node* n: m_nodes){
+      EagleeyeRuntime runtime = this->m_schedule->getRuntime(n);
+      std::map<std::string, std::vector<float>> data;
+      n->init(runtime, data);
     }
   }
 
@@ -131,85 +130,89 @@ public:
    * @return std::size_t 
    */
   std::size_t numWorker () const noexcept {
-    return worker_.size();
+    return m_worker.size();
   }
 
   /**
    * @brief start worker thread
    * 
    */
-  void run(std::map<std::string, void*> inputs, std::map<std::string, void*> outputs){
+  void run(std::map<std::string, void*> inputs, std::map<std::string, void*>& outputs){
     // 1.step check
-    exit_node_num_ = outputs.size();
-    if(exit_node_num_ == 0){
-      EAGLEEYE_LOGD("dont set end node");
+    if(outputs.size() == 0){
+      EAGLEEYE_LOGD("output node empty, skip run");
       return;
     }
     
-    // 2.step update input and set output flag
+    // 2.step update input data
     std::map<std::string, void*>::iterator in_iter,in_iend(inputs.end());
     for(in_iter = inputs.begin(); in_iter != in_iend; ++in_iter){
-      if(nodes_map_.find(in_iter->first) != nodes_map_.end()){
-        nodes_map_[in_iter->first]->update(in_iter->second, 0);
+      if(m_nodes_map.find(in_iter->first) != m_nodes_map.end()){
+        m_nodes_map[in_iter->first]->update(in_iter->second, 0);
+      }
+      else{
+        EAGLEEYE_LOGD("ignore %s node", in_iter->first.c_str());
       }
     }
+
+    // 3.step reset output flag
+    std::map<std::string, bool> output_map;
     std::map<std::string, void*>::iterator out_iter,out_iend(outputs.end());
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
-      nodes_map_[out_iter->first]->output_ = true;
+      m_nodes_map[out_iter->first]->output_ = true;
     }
-
-    // 3.step reset running flag
-    stop_ = false;
-    waiting_stop_count_ = 0;
-    for(auto & n: nodes_){
-      n->count_ = 0;
-    }
+    m_exit_node_num = outputs.size();
 
     // 4.step push to work queue    
-    queue_ = std::vector<Queue<Node*>>(this->numWorker());
+    m_stop = false;
+    m_waiting_stop_count = 0;
+    m_queue = std::vector<Queue<Node*>>(this->numWorker());
     int queue_index = 0;
-    for(auto & n : entry_nodes_){
-        queue_[queue_index%this->numWorker()].push(n);
+    for(auto & n : m_entry_nodes){
+        m_queue[queue_index%this->numWorker()].push(n);
         queue_index += 1;
     }
 
-    // 5.step start thread
+    // 5.step launch thread
     // TODO: using thread pool
-    for (auto & worker : worker_) {
+    for (auto & worker : m_worker) {
       worker.thread = std::thread([&](){work(worker.id);});
     }
 
     // 6.step waiting finish
-    waitingUntilFinish();
-
-    // 7.step assign output
-    for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
-      void* data = NULL;
-      nodes_map_[out_iter->first]->fetch(data,0,true);
-      out_iter->second = data;
-    }
+    waitingUntilFinish(outputs);
   }
 
   template <class F, class ... Args>
-  deduce_node_type<F, Args...>* add(std::string const & name, 
-                                                F* f, 
-                                                EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME)) {
-    // 1.step check name exist
-    if(nodes_map_.find(name) != nodes_map_.end()){
-      EAGLEEYE_LOGE("node %s has been existed", name.c_str());
+  deduce_node_type<F, Args...>* add(std::string name, 
+                                    F* f, 
+                                    EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME)) {
+    // 1.step check duplication of name
+    if(name == ""){
+      name = "node";
+    }
+    if(m_nodes_map.find(name) != m_nodes_map.end()){
+      std::unordered_map<std::string, Node*>::iterator iter, iend(m_nodes_map.end());
+
+      int duplicate_count = 0;
+      for(iter = m_nodes_map.begin(); iter!=iend; ++iter){
+        if(startswith(iter->first, name)){
+          duplicate_count += 1;
+        }
+      }
+
+      name = name + "/" + tos(duplicate_count);
     }
 
     // 2.step build node
-    auto * n = makeNode<F, Args...>(this, f, nodes_.size(), fixed);
+    auto * n = makeNode<F, Args...>(this, f, m_nodes.size(), fixed);
     n->name = name;
-    nodes_.push_back(n);
-    if (name.size() > 0) { // TODO dupulicate check
-      nodes_map_[name] = n;
-    }
-    if(f->getInputNum() == 0){
-      entry_nodes_.push_back(n);
-    }
+    m_nodes.push_back(n);
+    m_nodes_map[name] = n;
 
+    if(f->getInputNum() == 0){
+      m_entry_nodes.push_back(n);
+    }
     return n;
   }
 
@@ -220,102 +223,53 @@ public:
 
     from->next_.push_back(e);
     to->prev_.push_back(e);
-    edges_.push_back(e);
+    m_edges.push_back(e);
 
-    // assert(!from.find_data(to));  
     to->data_.push_back(from);
     to->index_.push_back(index);
   }
 
-  void print(std::ostream & ost = std::cout, std::string post = "") {
-    ost << "@" << std::endl;
-    ost << "digraph { " << std::endl;
-    ost << "  Node [" << std::endl;
-    ost << "    shape = box" << std::endl;
-    ost << "  ];" << std::endl;
-
-    for (Node * n : nodes_) {
-      ost << "  \"";
-      if (n->name.size() > 0) {
-        ost << n->name;
-      } else {
-        ost << n;
-      }
-      ost << "\" [" << std::endl;
-      if (n->label.size() > 0) {
-        ost << "  label = \"" << n->label << "\"" << std::endl;
-      } else {
-        ost << "  label = \"none\"" << std::endl;
-      }
-      ost << "  " << n->graphviz_node_property << std::endl;
-      ost << "   ];" << std::endl;
-    }
-
-    for (Node * n : nodes_) {
-      for (Edge * e : n->next_) {
-        ost << "  \"";
-        if (n->name.size() > 0) {
-          ost << n->name;
-        } else {
-          ost << n;
-        }
-        ost << "\" -> \"";
-        if (e->next().name.size() > 0) {
-          ost << e->next().name;
-        } else {
-          ost << &(e->next());
-        }
-        ost << "\" [" << std::endl;
-        ost << "    color = " << (e->is_locked() ? "red" : "green") << "" << std::endl;
-        ost << "   ];" << std::endl;
-      }
-    }
-    ost << graphviz_post << std::endl;
-    ost << "}" << std::endl;
-  }
-
   Node* findNode(std::string const & name) {
-    auto it = nodes_map_.find(name);
-    if (it == nodes_map_.end()) { return nullptr; }
+    auto it = m_nodes_map.find(name);
+    if (it == m_nodes_map.end()) { return NULL; }
     return it->second;
   }
 
   std::vector<Node*> getNodes(){
-    return this->nodes_;
+    return this->m_nodes;
   }
+
   std::vector<Edge*> getEdges(){
-    return this->edges_;
+    return this->m_edges;
   }
 
   int size(){
-    return this->nodes_.size();
+    return this->m_nodes.size();
   }
 
 private:
-  std::vector<Node*> nodes_;
-  std::vector<Edge*> edges_;
-  std::unordered_map<std::string, Node*> nodes_map_;
-  std::vector<Node*> entry_nodes_;
-  // std::map<std::string, TensorX> exit_nodes_;
+  std::vector<Node*> m_nodes;
+  std::vector<Edge*> m_edges;
+  std::unordered_map<std::string, Node*> m_nodes_map;
+  std::vector<Node*> m_entry_nodes;
+  int m_exit_node_num;
 
-  std::vector<Queue<Node*>> queue_;
-  std::vector<worker> worker_;
-  std::atomic_bool stop_;
-  std::atomic_int waiting_stop_count_;  
-  int exit_node_num_;
-  Schedule* schedule_;
-  std::string graphviz_post;
+  std::vector<Queue<Node*>> m_queue;
+  std::vector<Worker> m_worker;
+  std::atomic_bool m_stop;
+  std::atomic_int m_waiting_stop_count;  
+  Schedule* m_schedule;
 
   void work(std::size_t id) {
-    while (!stop_) {
+    while (!m_stop) {
       Node * n = nullptr;
       bool flag = false;
       for (std::size_t i = 0; i < numWorker(); ++i) {
         std::size_t index = (i + id) % numWorker();
         
-        if (queue_[index].try_pop(n)) {
+        if (m_queue[index].try_pop(n)) {
           flag = true;
-          this->fire_(id, *n);
+          this->__fire(id, n);
           break;
         }
       }
@@ -326,32 +280,36 @@ private:
     }
   }
 
-  void fire_(std::size_t id, Node & n) {
-    n.count_ = 0;
-    // 1.step schedule 
-    EagleeyeRuntime runtime = this->schedule_->getRuntime(&n);
+  void __fire(std::size_t id, Node* node) {
+    // 1.step reset
+    node->count_ = 0;
+    
+    // 2.step schedule 
+    EagleeyeRuntime runtime = this->m_schedule->getRuntime(node);
 
-    // 2.step run node op
-    n.fire(runtime);
-    EAGLEEYE_LOGD("finish %s on device %d", n.name.c_str(), int(runtime.type()));
+    // 3.step execute node
+    node->fire(runtime);
 
-    // 3.step finish node
-    this->finish(&n);
+    // 4.step check whether stop
+    if(this->finish(node)){
+      return;
+    }
 
-    // 4.step active succeed nodes
+    // 5.step active succeed nodes
     int i = id;
-    for (Edge* next : n.next_) {
+    for (Edge* next: node->next_) {
+      // 5.1.step increment 1, for succeed node
       unsigned n = next->next().count_.fetch_add(1);
-      if (next->next().prev_.size() == (n + 1)){
-        // 4.1.step transfer data asyn
-        Node* next_node = &next->next();
-        EagleeyeRuntime target_runtime = this->schedule_->getRuntime(next_node);
-        next_node->transfer(target_runtime, true);
-        EAGLEEYE_LOGD("transfer %s data to device %d", next_node->name.c_str(), int(target_runtime.type()));
 
-        // 4.2.step push to queue, prepare to execute
-        queue_[i % numWorker()].push(next_node);
-        EAGLEEYE_LOGD("push %s to work queue %d", next_node->name.c_str(), i % numWorker());
+      // 5.2.step check, whether all dependents have been finish
+      if (next->next().prev_.size() == (n + 1)){
+        // 5.2.1.step get node target runtime, and launch transfer asyn
+        Node* next_node = &next->next();
+        EagleeyeRuntime target_runtime = this->m_schedule->getRuntime(next_node);
+        next_node->transfer(target_runtime, true);
+
+        // 5.2.2.step push to queue, prepare to execute
+        m_queue[i % numWorker()].push(next_node);
         ++i;
       }
     }
@@ -360,32 +318,43 @@ private:
   /**
    * @brief finish node 
    * 
-   * @param n 
+   * @param node
    */
-  void finish(Node* n){
-    if(n->output_){
-      waiting_stop_count_ += 1;
-      void* temp = NULL;
-      // no block
-      n->fetch(temp, 0, false);
-      n->output_ = false;
+  bool finish(Node* node){
+    if(node->output_){
+      m_waiting_stop_count += 1;
+      node->output_ = false;
     }
 
-    if(waiting_stop_count_ == exit_node_num_){
-      stop_ = true;
+    if(m_waiting_stop_count == m_exit_node_num){
+      m_stop = true;
+      return true;
     }
+
+    return false;
   }
 
   /**
-   * @brief wating finish
-   * 
+   * @brief wating untile finish
    */
-  void waitingUntilFinish() {
-    for (auto & worker : worker_) {
+  void waitingUntilFinish(std::map<std::string, void*>& outputs) {
+    // 1.step waiting thread stop
+    for (auto & worker : m_worker) {
       if (worker.thread.joinable()) {
         worker.thread.join();
       }
     }
+
+    // 2.step output
+    std::map<std::string, void*>::iterator out_iter,out_iend(outputs.end());
+    std::map<std::string, void*> result;
+    for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
+      void* data = NULL;
+      m_nodes_map[out_iter->first]->fetch(data, 0, true);
+      result[out_iter->first] = data;
+    }
+
+    outputs = result;
   }
 };
 }

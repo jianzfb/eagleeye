@@ -11,29 +11,52 @@ template<>
 void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int index, std::string name){
     int err = clSetKernelArg(m_kernels[kernel_name], index, sizeof(cl_mem), m_mems[name]->getObject());
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("Failed to set arg %d for kernel %s", index, kernel_name.c_str());
+        EAGLEEYE_LOGE("Failed to set arg %d for kernel %s with error %s", index, kernel_name.c_str(), OpenCLErrorToString(err));
     }
 }
 
 //******************        OpenCLMem        ******************//
-OpenCLMem::OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size){
+OpenCLMem::OpenCLMem(OpenCLMemStatus mem_status, 
+                    std::string name, 
+                    unsigned int size, 
+                    void* host_ptr){
     int err;
     switch(mem_status){
         case EAGLEEYE_CL_MEM_READ:
-            m_mem = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context,  CL_MEM_READ_ONLY, size, NULL, &err);
+            m_mem = 
+                clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context,  
+                                CL_MEM_READ_ONLY, 
+                                size, 
+                                NULL, 
+                                &err);
             break;
         case EAGLEEYE_CL_MEM_WRITE:
-            m_mem = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context,  CL_MEM_WRITE_ONLY, size, NULL, &err);
+            m_mem = 
+                clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context,  
+                                CL_MEM_WRITE_ONLY, 
+                                size, 
+                                NULL, 
+                                &err);
             break;
         case EAGLEEYE_CL_MEM_READ_WRITE_PINNED:
-            m_mem = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, size, NULL, &err);
+            m_mem = 
+                clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, 
+                                CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 
+                                size, 
+                                host_ptr, 
+                                &err);
             break;
         default:
-            m_mem = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context,  CL_MEM_READ_WRITE, size, NULL, &err);
+            m_mem = 
+                clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context,  
+                                CL_MEM_READ_WRITE, 
+                                size, 
+                                NULL, 
+                                &err);
             break;
     }
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to create buffer %s width code %d",this->m_name.c_str(), err);
+        EAGLEEYE_LOGE("fail to create buffer with %s", OpenCLErrorToString(err));
     }
 
     m_name = name;
@@ -46,30 +69,37 @@ OpenCLMem::~OpenCLMem(){
     clReleaseMemObject(m_mem);
 }
 
-void OpenCLMem::copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking){
-    int err = clEnqueueWriteBuffer(queue, m_mem, blocking, 0, m_size, host_ptr, 0, NULL, NULL);
+void OpenCLMem::copyToDevice(void* host_ptr, cl_bool blocking){
+    int err = 
+        clEnqueueWriteBuffer(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                            m_mem, blocking, 0, m_size, host_ptr, 0, NULL, &this->m_event);
 
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to write device buffer %s",this->m_name.c_str());
+        EAGLEEYE_LOGE("fail to write device buffer with error %s", OpenCLErrorToString(err));
     }
 }
 
-void OpenCLMem::copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking){
-    int err = clEnqueueReadBuffer(queue, m_mem, blocking, 0, m_size, host_ptr, 0, NULL, NULL ); 
+void OpenCLMem::copyToHost(void* host_ptr, cl_bool blocking){
+    int err = 
+        clEnqueueReadBuffer(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                            m_mem, blocking, 0, m_size, host_ptr, 0, NULL, &this->m_event ); 
  
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to read device buffer %s",this->m_name.c_str());
+        EAGLEEYE_LOGE("fail to read device buffer with error %s", OpenCLErrorToString(err));
     }
 }
 
-void OpenCLMem::copyToDeviceFromDevice(cl_command_queue queue, void* ptr, cl_bool blocking){
-    int err = clEnqueueCopyBuffer(queue, (cl_mem)ptr, m_mem, 0, 0, m_size, 0, NULL, NULL);  
+void OpenCLMem::copyToDeviceFromDevice(void* ptr, cl_bool blocking){
+    int err = 
+        clEnqueueCopyBuffer(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false),
+                         (cl_mem)ptr, m_mem, 0, 0, m_size, 0, NULL, &this->m_event);  
+
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to copy device buffer %s",this->m_name.c_str());
+        EAGLEEYE_LOGE("fail to copy device buffer with error %s", OpenCLErrorToString(err));
     }
 }
 
-void* OpenCLMem::map(cl_command_queue queue, size_t* row_pitch){
+void* OpenCLMem::map(cl_bool blocking){
     if(this->m_mem_status != EAGLEEYE_CL_MEM_READ_WRITE_PINNED){
         return NULL;
     }
@@ -80,9 +110,20 @@ void* OpenCLMem::map(cl_command_queue queue, size_t* row_pitch){
 
     cl_map_flags map_f = CL_MAP_WRITE|CL_MAP_READ;
     int err;
-    void* data = clEnqueueMapBuffer(queue, m_mem, CL_TRUE, map_f, 0, this->m_size, 0, NULL, NULL, &err);
+    void* data = 
+        clEnqueueMapBuffer(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false),
+            m_mem, 
+            blocking, 
+            map_f, 
+            0, 
+            this->m_size, 
+            0, 
+            NULL, 
+            &this->m_event, 
+            &err);
+
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGD("fail to map device ptr (error code %d)", err);
+        EAGLEEYE_LOGD("fail to map device ptr with error %s",OpenCLErrorToString(err));
         return NULL;
     }
 
@@ -90,7 +131,7 @@ void* OpenCLMem::map(cl_command_queue queue, size_t* row_pitch){
     return data;
 }
 
-void OpenCLMem::unmap(cl_command_queue queue){
+void OpenCLMem::unmap(){
     if(this->m_mem_status != EAGLEEYE_CL_MEM_READ_WRITE_PINNED){
         return;
     }
@@ -98,13 +139,19 @@ void OpenCLMem::unmap(cl_command_queue queue){
         return;
     }
 
-    int err = clEnqueueUnmapMemObject(queue, m_mem, (void*)m_mapped_ptr, 0, NULL, NULL);
+    int err = 
+        clEnqueueUnmapMemObject(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+            m_mem, 
+            (void*)m_mapped_ptr, 
+            0, 
+            NULL, 
+            &this->m_event);
+
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGD("fail to unmap device ptr");
+        EAGLEEYE_LOGD("fail to unmap device ptr with error %s", OpenCLErrorToString(err));
     }
     m_mapped_ptr = NULL;
 }
-
 //*************************************************************//
 
 //******************        OpenCLIMAGE        ******************//
@@ -113,7 +160,8 @@ OpenCLImage::OpenCLImage(OpenCLMemStatus mem_status,
                         unsigned int rows,
                         unsigned int cols, 
                         unsigned int channels, 
-                        EagleeyeType pixel_type){
+                        EagleeyeType pixel_type,
+                        void* host_ptr){
     this->m_name = name;
     // channels
     switch (channels)
@@ -152,20 +200,52 @@ OpenCLImage::OpenCLImage(OpenCLMemStatus mem_status,
     switch (mem_status)
     {
     case EAGLEEYE_CL_MEM_READ:
-        m_image=clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,CL_MEM_READ_ONLY,&m_image_format,cols,rows,0,NULL,&err);
+        m_image = 
+            clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,
+                            CL_MEM_READ_ONLY,
+                            &m_image_format,
+                            cols,
+                            rows,
+                            0,
+                            NULL,
+                            &err);
         break;
     case EAGLEEYE_CL_MEM_WRITE:
-        m_image=clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,CL_MEM_WRITE_ONLY,&m_image_format,cols,rows,0,NULL,&err);
+        m_image = 
+            clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,
+                            CL_MEM_WRITE_ONLY,
+                            &m_image_format,
+                            cols,
+                            rows,
+                            0,
+                            NULL,
+                            &err);
         break;
     case EAGLEEYE_CL_MEM_READ_WRITE_PINNED:
-        m_image=clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,CL_MEM_READ_WRITE|CL_MEM_ALLOC_HOST_PTR,&m_image_format,cols,rows,0,NULL,&err);
+        m_image = 
+            clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,
+                            CL_MEM_READ_WRITE|CL_MEM_COPY_HOST_PTR,
+                            &m_image_format,
+                            cols,
+                            rows,
+                            0,
+                            host_ptr,
+                            &err);
         break;
     default:
-        m_image=clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,CL_MEM_READ_WRITE,&m_image_format,cols,rows,0,NULL,&err);
+        m_image = 
+            clCreateImage2D(OpenCLRuntime::getOpenCLEnv()->context,
+                            CL_MEM_READ_WRITE,
+                            &m_image_format,
+                            cols,
+                            rows,
+                            0,
+                            NULL,
+                            &err);
         break;
     } 
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to create image2D %s with code %d",this->m_name.c_str(), err);
+        EAGLEEYE_LOGE("fail to create image with error %s", OpenCLErrorToString(err));
     }
 
     m_mem_status = mem_status;
@@ -176,7 +256,7 @@ OpenCLImage::~OpenCLImage(){
     clReleaseMemObject(m_image);
 }
 
-void OpenCLImage::copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking){
+void OpenCLImage::copyToDevice(void* host_ptr, cl_bool blocking){
     size_t origin[3];
     origin[0] = 0;
     origin[1] = 0;
@@ -185,13 +265,25 @@ void OpenCLImage::copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool b
     region[0] = m_cols;
     region[1] = m_rows;
     region[2] = 1;
-    int err = clEnqueueWriteImage(queue, m_image, blocking, origin, region, 0, 0, host_ptr, 0, NULL, NULL);
+    int err = 
+        clEnqueueWriteImage(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                            m_image, 
+                            blocking,
+                            origin, 
+                            region, 
+                            0, 
+                            0, 
+                            host_ptr, 
+                            0, 
+                            NULL, 
+                            &this->m_event);
+
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to write device image %s (error code %d)",this->m_name.c_str(), err);
+        EAGLEEYE_LOGE("fail to write device image with error %s", OpenCLErrorToString(err));
     }
 }
 
-void OpenCLImage::copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking){
+void OpenCLImage::copyToHost(void* host_ptr, cl_bool blocking){
     size_t origin[3];
     origin[0] = 0;
     origin[1] = 0;
@@ -200,17 +292,29 @@ void OpenCLImage::copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blo
     region[0] = m_cols;
     region[1] = m_rows;
     region[2] = 1;
-    int err = clEnqueueReadImage(queue, m_image, blocking, origin, region, 0,0,host_ptr,0,NULL,NULL);
+    int err = 
+        clEnqueueReadImage(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                            m_image, 
+                            blocking, 
+                            origin, 
+                            region, 
+                            0,
+                            0,
+                            host_ptr,
+                            0,
+                            NULL,
+                            &this->m_event);
+
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("fail to read device image %s (error code %d)",this->m_name.c_str(), err);
+        EAGLEEYE_LOGE("fail to read device image with error %s", OpenCLErrorToString(err));
     }
 }
 
-void OpenCLImage::copyToDeviceFromDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking){
+void OpenCLImage::copyToDeviceFromDevice(void* host_ptr, cl_bool blocking){
     EAGLEEYE_LOGE("dont support");
 }
 
-void* OpenCLImage::map(cl_command_queue queue, size_t* row_pitch){
+void* OpenCLImage::map(cl_bool blocking){
     if(this->m_mem_status != EAGLEEYE_CL_MEM_READ_WRITE_PINNED){
         return NULL;
     }
@@ -229,15 +333,30 @@ void* OpenCLImage::map(cl_command_queue queue, size_t* row_pitch){
     region[2] = 1;
     cl_map_flags map_f = CL_MAP_WRITE|CL_MAP_READ;
     int err;
-    void* data = clEnqueueMapImage(queue, m_image, CL_TRUE, map_f, origin, region, row_pitch,0,0,NULL,NULL,&err);
+    size_t image_row_pitch;
+    void* data = 
+        clEnqueueMapImage(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                            m_image, 
+                            blocking, 
+                            map_f, 
+                            origin, 
+                            region, 
+                            &image_row_pitch,
+                            0,
+                            0,
+                            NULL,
+                            &m_event,
+                            &err);
+
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGD("fail to map device ptr (error code %d)",err);
+        EAGLEEYE_LOGD("fail to map device ptr with error %s", OpenCLErrorToString(err));
         return NULL;
     }
     m_mapped_ptr = data;
     return data;
 }
-void OpenCLImage::unmap(cl_command_queue queue){
+
+void OpenCLImage::unmap(){
     if(this->m_mem_status != EAGLEEYE_CL_MEM_READ_WRITE_PINNED){
         return;
     }
@@ -245,9 +364,16 @@ void OpenCLImage::unmap(cl_command_queue queue){
         return;
     }
 
-    int err = clEnqueueUnmapMemObject(queue, m_image, (void*)m_mapped_ptr, 0, NULL, NULL);
+    int err = 
+        clEnqueueUnmapMemObject(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                                m_image,
+                                (void*)m_mapped_ptr, 
+                                0, 
+                                NULL, 
+                                &this->m_event);
+
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGD("fail to unmap device ptr");
+        EAGLEEYE_LOGD("fail to unmap device ptr with error %s", OpenCLErrorToString(err));
     }
     m_mapped_ptr = NULL;
 }
@@ -255,14 +381,11 @@ void OpenCLImage::unmap(cl_command_queue queue){
 
 //******************     OpenCLKernelGroup   ******************//
 OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std::string program_name, std::string options){
+    // get opencl env
     m_env = OpenCLRuntime::getOpenCLEnv(); 
-    // 1.step build command queue
-    int err;
-    m_queue = clCreateCommandQueue(m_env->context, m_env->device_id, 0, &err);
-    if (!m_queue){
-        EAGLEEYE_LOGE("Failed to create a command commands");
-    }
     
+    // create opencl kernel
+    int err;    
     std::vector<std::string>::iterator iter, iend(kernel_groups.end());
     for(iter = kernel_groups.begin(); iter != iend; ++iter){
         if((*iter).length() > 0){
@@ -277,14 +400,8 @@ OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std
         build_options_str += " " + option;
     }
 
-    m_env = OpenCLRuntime::getOpenCLEnv(); 
-    // 1.step build command queue
-    int err;
-    m_queue = clCreateCommandQueue(m_env->context, m_env->device_id, 0, &err);
-    if (!m_queue){
-        EAGLEEYE_LOGE("Failed to create a command commands");
-    }
-    
+    // 1.step create opencl kernel
+    m_env = OpenCLRuntime::getOpenCLEnv();     
     std::vector<std::string>::iterator iter, iend(kernel_groups.end());
     for(iter = kernel_groups.begin(); iter != iend; ++iter){
         if((*iter).length() > 0){
@@ -294,7 +411,6 @@ OpenCLKernelGroup::OpenCLKernelGroup(std::vector<std::string> kernel_groups, std
 }
 
 OpenCLKernelGroup::~OpenCLKernelGroup(){
-    clReleaseCommandQueue(m_queue);
     std::map<std::string, cl_kernel>::iterator iter, iend(m_kernels.end());
     for(iter=m_kernels.begin(); iter != iend; ++iter){
         clReleaseKernel(iter->second);
@@ -342,43 +458,89 @@ void OpenCLKernelGroup::createDeviceImage(std::string name,
 }
 
 void OpenCLKernelGroup::createKernel(std::string kernel_name, std::string program_name, std::string options){
-    EAGLEEYE_LOGD("create kernel %s from %s (%d in %d)", kernel_name.c_str(), program_name.c_str(), m_kernels.size(), m_kernels.size() + 1);
+    // log 
+    EAGLEEYE_LOGD("Create kernel %s from %s (%d in %d).", kernel_name.c_str(), program_name.c_str(), m_kernels.size(), m_kernels.size() + 1);
     cl_program program = m_env->compileProgram(program_name, options);
+
     int kernel_err;
     cl_kernel kernel = clCreateKernel(program, kernel_name.c_str(), &kernel_err);
     if (!kernel || kernel_err != CL_SUCCESS){
-        EAGLEEYE_LOGE("Failed to create %s kernel with err code %d", kernel_name.c_str(), kernel_err);
+        EAGLEEYE_LOGE("Failed to create %s kernel with err code %d.", kernel_name.c_str(), OpenCLErrorToString(kernel_err));
     }
     m_kernels[kernel_name] = kernel;
 }
 
-void OpenCLKernelGroup::run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* local_size, bool block){
-    int err = clEnqueueNDRangeKernel(m_queue, m_kernels[kernel_name], work_dims, NULL, global_size, local_size, 0, NULL, NULL);
-    if(err != CL_SUCCESS){
-        EAGLEEYE_LOGD("Failed to split work group for kernel %s with err code %d", kernel_name.c_str(), err);
-    }
-    if(block){
-        err = clFinish(m_queue);
-    }
+int OpenCLKernelGroup::run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* local_size, bool block){
+    cl_event event;
+    int err = 
+        clEnqueueNDRangeKernel(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                                m_kernels[kernel_name], 
+                                work_dims, 
+                                NULL, 
+                                global_size, 
+                                local_size, 
+                                0,
+                                NULL, 
+                                &event);
 
     if(err != CL_SUCCESS){
-        EAGLEEYE_LOGD("Failed to run kernel %s with err code %d", kernel_name.c_str(), err);
+        EAGLEEYE_LOGD("Failed to launch kernel %s with err %s", kernel_name.c_str(), OpenCLErrorToString(err));
+        return -1;
     }
+
+    if(block){
+        err = 
+            clEnqueueWaitForEvents(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 1, &event);
+
+        if(err != CL_SUCCESS){
+            EAGLEEYE_LOGD("Failed to launch kernel %s with err %s", kernel_name.c_str(), OpenCLErrorToString(err));
+            return -1;
+        }
+    }
+    else{
+        // 加入等待事件
+        this->m_events[kernel_name] = event;
+    }
+    return 0;
 }
 
-void OpenCLKernelGroup::finish(){
-    int err = clFinish(m_queue);
-    if(err != CL_SUCCESS){
-        EAGLEEYE_LOGD("Failed to finish");
+int OpenCLKernelGroup::finish(){
+    int event_waiting_num = m_events.size();
+    cl_event* event_waiting_list = NULL;
+
+    if(event_waiting_num > 0){
+        cl_event* event_waiting_list = new cl_event[event_waiting_num];
+        std::map<std::string, cl_event>::iterator iter,iend(m_events.end());
+        int event_i = 0;
+        for(iter = m_events.begin(); iter != iend; ++iter){
+            event_waiting_list[event_i] = iter->second;
+            event_i += 1;
+        }
     }
+
+    int err = 
+            clEnqueueWaitForEvents(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
+                                    event_waiting_num, 
+                                    event_waiting_list);
+    
+    if(event_waiting_list != NULL){
+        delete []event_waiting_list;
+    }
+
+    if(err != CL_SUCCESS){
+        EAGLEEYE_LOGD("fail waiting finish with err %s", OpenCLErrorToString(err));
+        return -1;
+    }
+
+    return 0;
 }
 
 void OpenCLKernelGroup::copyToHost(std::string mem_name, void* host_ptr){
-    this->m_mems[mem_name]->copyToHost(this->m_queue, host_ptr);
+    this->m_mems[mem_name]->copyToHost(host_ptr);
 }
 
 void OpenCLKernelGroup::copyToDevice(std::string mem_name, void* host_ptr){
-    this->m_mems[mem_name]->copyToDevice(this->m_queue, host_ptr);
+    this->m_mems[mem_name]->copyToDevice(host_ptr);
 }
 
 void OpenCLKernelGroup::swap(std::string left_name, std::string right_name){
@@ -387,89 +549,14 @@ void OpenCLKernelGroup::swap(std::string left_name, std::string right_name){
     this->m_mems[right_name] = temp;
 }
 
-void* OpenCLKernelGroup::map(std::string mem_name, size_t* row_pitch){
-    return this->m_mems[mem_name]->map(this->m_queue, row_pitch);
+void* OpenCLKernelGroup::map(std::string mem_name, cl_bool blocking){
+    return this->m_mems[mem_name]->map(blocking);
 }
 void OpenCLKernelGroup::unmap(std::string mem_name){
-    this->m_mems[mem_name]->unmap(this->m_queue);
+    this->m_mems[mem_name]->unmap();
 }
 
 //*************************************************************//
-
-const char* oclErrorString(cl_int error)
-{
-	static const char* errorString[] = {
-		"CL_SUCCESS",
-		"CL_DEVICE_NOT_FOUND",
-		"CL_DEVICE_NOT_AVAILABLE",
-		"CL_COMPILER_NOT_AVAILABLE",
-		"CL_MEM_OBJECT_ALLOCATION_FAILURE",
-		"CL_OUT_OF_RESOURCES",
-		"CL_OUT_OF_HOST_MEMORY",
-		"CL_PROFILING_INFO_NOT_AVAILABLE",
-		"CL_MEM_COPY_OVERLAP",
-		"CL_IMAGE_FORMAT_MISMATCH",
-		"CL_IMAGE_FORMAT_NOT_SUPPORTED",
-		"CL_BUILD_PROGRAM_FAILURE",
-		"CL_MAP_FAILURE",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"",
-		"CL_INVALID_VALUE",
-		"CL_INVALID_DEVICE_TYPE",
-		"CL_INVALID_PLATFORM",
-		"CL_INVALID_DEVICE",
-		"CL_INVALID_CONTEXT",
-		"CL_INVALID_QUEUE_PROPERTIES",
-		"CL_INVALID_COMMAND_QUEUE",
-		"CL_INVALID_HOST_PTR",
-		"CL_INVALID_MEM_OBJECT",
-		"CL_INVALID_IMAGE_FORMAT_DESCRIPTOR",
-		"CL_INVALID_IMAGE_SIZE",
-		"CL_INVALID_SAMPLER",
-		"CL_INVALID_BINARY",
-		"CL_INVALID_BUILD_OPTIONS",
-		"CL_INVALID_PROGRAM",
-		"CL_INVALID_PROGRAM_EXECUTABLE",
-		"CL_INVALID_KERNEL_NAME",
-		"CL_INVALID_KERNEL_DEFINITION",
-		"CL_INVALID_KERNEL",
-		"CL_INVALID_ARG_INDEX",
-		"CL_INVALID_ARG_VALUE",
-		"CL_INVALID_ARG_SIZE",
-		"CL_INVALID_KERNEL_ARGS",
-		"CL_INVALID_WORK_DIMENSION",
-		"CL_INVALID_WORK_GROUP_SIZE",
-		"CL_INVALID_WORK_ITEM_SIZE",
-		"CL_INVALID_GLOBAL_OFFSET",
-		"CL_INVALID_EVENT_WAIT_LIST",
-		"CL_INVALID_EVENT",
-		"CL_INVALID_OPERATION",
-		"CL_INVALID_GL_OBJECT",
-		"CL_INVALID_BUFFER_SIZE",
-		"CL_INVALID_MIP_LEVEL",
-		"CL_INVALID_GLOBAL_WORK_SIZE",
-	};
-
-	const int errorCount = sizeof(errorString) / sizeof(errorString[0]);
-	const int index = -error;
-	return (index >= 0 && index < errorCount) ? errorString[index] : "Unspecified Error";
-}
-
 std::string DtToCLDt(const EagleeyeType dt) {
   switch (dt) {
     case EAGLEEYE_FLOAT:

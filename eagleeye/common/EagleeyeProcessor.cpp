@@ -66,11 +66,15 @@ double Processor::test_OCL_DeviceToHostTransfer(unsigned int memSize, GPU_Access
     {
         // Create a host buffer
         cmPinnedData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, memSize, NULL, &ciErrNum);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
 
         // Get a mapped pointer
         h_data = (unsigned char*)clEnqueueMapBuffer(cqCommandQueue, cmPinnedData, CL_TRUE, CL_MAP_WRITE, 0, memSize, 0, NULL, NULL, &ciErrNum);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
 
         //initialize 
         for(unsigned int i = 0; i < memSize/sizeof(unsigned char); i++)
@@ -80,7 +84,9 @@ double Processor::test_OCL_DeviceToHostTransfer(unsigned int memSize, GPU_Access
 
         // unmap and make data in the host buffer valid
         ciErrNum = clEnqueueUnmapMemObject(cqCommandQueue, cmPinnedData, (void*)h_data, 0, NULL, NULL);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
     }
     else 
     {
@@ -96,7 +102,9 @@ double Processor::test_OCL_DeviceToHostTransfer(unsigned int memSize, GPU_Access
 
     // allocate device memory 
     cmDevData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE, memSize, NULL, &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+        return -1.0;
+    }
 
     // initialize device memory 
     if(memMode == PINNED)
@@ -105,14 +113,17 @@ double Processor::test_OCL_DeviceToHostTransfer(unsigned int memSize, GPU_Access
         h_data = (unsigned char*)clEnqueueMapBuffer(cqCommandQueue, cmPinnedData, CL_TRUE, CL_MAP_WRITE, 0, memSize, 0, NULL, NULL, &ciErrNum);	        
 
         ciErrNum = clEnqueueWriteBuffer(cqCommandQueue, cmDevData, CL_FALSE, 0, memSize, h_data, 0, NULL, NULL);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
     }
     else
     {
         ciErrNum = clEnqueueWriteBuffer(cqCommandQueue, cmDevData, CL_FALSE, 0, memSize, h_data, 0, NULL, NULL);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
     }
-    oclCheckError(ciErrNum, CL_SUCCESS);
 
     // Sync queue to host, start timer 0, and copy data from GPU to Host
     ciErrNum = clFinish(cqCommandQueue);
@@ -124,22 +135,31 @@ double Processor::test_OCL_DeviceToHostTransfer(unsigned int memSize, GPU_Access
         for(unsigned int i = 0; i < MEMCOPY_ITERATIONS; i++)
         {
             ciErrNum = clEnqueueReadBuffer(cqCommandQueue, cmDevData, CL_FALSE, 0, memSize, h_data, 0, NULL, NULL);
-            oclCheckError(ciErrNum, CL_SUCCESS);
+            if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+                return -1.0;
+            }
         }
         ciErrNum = clFinish(cqCommandQueue);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
     } 
     else 
     {
         // MAPPED: mapped pointers to device buffer for conventional pointer access
         void* dm_idata = clEnqueueMapBuffer(cqCommandQueue, cmDevData, CL_TRUE, CL_MAP_WRITE, 0, memSize, 0, NULL, NULL, &ciErrNum);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
+
         for(unsigned int i = 0; i < MEMCOPY_ITERATIONS; i++)
         {
             memcpy(h_data, dm_idata, memSize);
         }
         ciErrNum = clEnqueueUnmapMemObject(cqCommandQueue, cmDevData, dm_idata, 0, NULL, NULL);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
     }
     
     //get the the elapsed time in seconds
@@ -183,11 +203,15 @@ double Processor::test_OCL_HostToDeviceTransfer(unsigned int memSize, GPU_Access
     { 
         // Create a host buffer
         cmPinnedData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR, memSize, NULL, &ciErrNum);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
 
         // Get a mapped pointer
         h_data = (unsigned char*)clEnqueueMapBuffer(cqCommandQueue, cmPinnedData, CL_TRUE, CL_MAP_WRITE, 0, memSize, 0, NULL, NULL, &ciErrNum);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
 
         //initialize 
         for(unsigned int i = 0; i < memSize/sizeof(unsigned char); i++)
@@ -197,7 +221,10 @@ double Processor::test_OCL_HostToDeviceTransfer(unsigned int memSize, GPU_Access
 	
         // unmap and make data in the host buffer valid
         ciErrNum = clEnqueueUnmapMemObject(cqCommandQueue, cmPinnedData, (void*)h_data, 0, NULL, NULL);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
+
 		h_data = NULL;  // buffer is unmapped
     }
     else 
@@ -214,7 +241,9 @@ double Processor::test_OCL_HostToDeviceTransfer(unsigned int memSize, GPU_Access
 
     // allocate device memory 
     cmDevData = clCreateBuffer(OpenCLRuntime::getOpenCLEnv()->context, CL_MEM_READ_WRITE, memSize, NULL, &ciErrNum);
-    oclCheckError(ciErrNum, CL_SUCCESS);
+    if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+        return -1.0;
+    }
 
     // Sync queue to host, start timer 0, and copy data from Host to GPU
     clFinish(cqCommandQueue);
@@ -226,34 +255,48 @@ double Processor::test_OCL_HostToDeviceTransfer(unsigned int memSize, GPU_Access
         {
             // Get a mapped pointer
             h_data = (unsigned char*)clEnqueueMapBuffer(cqCommandQueue, cmPinnedData, CL_TRUE, CL_MAP_READ, 0, memSize, 0, NULL, NULL, &ciErrNum);
-            oclCheckError(ciErrNum, CL_SUCCESS);
+            if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+                return -1.0;
+            }
 	    }
 
         // DIRECT:  API access to device buffer 
         for(unsigned int i = 0; i < MEMCOPY_ITERATIONS; i++)
         {
-                ciErrNum = clEnqueueWriteBuffer(cqCommandQueue, cmDevData, CL_FALSE, 0, memSize, h_data, 0, NULL, NULL);
-                oclCheckError(ciErrNum, CL_SUCCESS);
+            ciErrNum = clEnqueueWriteBuffer(cqCommandQueue, cmDevData, CL_FALSE, 0, memSize, h_data, 0, NULL, NULL);
+            if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+                return -1.0;
+            }
         }
         ciErrNum = clFinish(cqCommandQueue);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
+
     } 
     else 
     {
         // MAPPED: mapped pointers to device buffer and conventional pointer access
         void* dm_idata = clEnqueueMapBuffer(cqCommandQueue, cmDevData, CL_TRUE, CL_MAP_WRITE, 0, memSize, 0, NULL, NULL, &ciErrNum);
-		oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
+
 		if(memMode == PINNED ) 
 		{
 			h_data = (unsigned char*)clEnqueueMapBuffer(cqCommandQueue, cmPinnedData, CL_TRUE, CL_MAP_READ, 0, memSize, 0, NULL, NULL, &ciErrNum); 
-            oclCheckError(ciErrNum, CL_SUCCESS); 
+            if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+                return -1.0;
+            }
         } 
         for(unsigned int i = 0; i < MEMCOPY_ITERATIONS; i++)
         {
             memcpy(dm_idata, h_data, memSize);
         }
         ciErrNum = clEnqueueUnmapMemObject(cqCommandQueue, cmDevData, dm_idata, 0, NULL, NULL);
-        oclCheckError(ciErrNum, CL_SUCCESS);
+        if(OpenCLCheckError(ciErrNum) != EAGLEEYE_NO_ERROR){
+            return -1.0;
+        }
     }
     
     //get the the elapsed time in seconds

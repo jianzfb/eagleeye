@@ -20,35 +20,49 @@ enum OpenCLMemStatus{
     
 class OpenCLObject{
 public:
-    OpenCLObject(){};
+    OpenCLObject(): m_event(NULL){};
     virtual ~OpenCLObject(){};
 
-    virtual void copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
-    virtual void copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
-    virtual void copyToDeviceFromDevice(cl_command_queue queue, void* ptr, cl_bool blocking=CL_TRUE) = 0;
-    virtual void* map(cl_command_queue queue, size_t* row_pitch){return NULL;}
-    virtual void unmap(cl_command_queue queue){};
+    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
+    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
+    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE) = 0;
+    virtual void* map(cl_bool blocking){return NULL;}
+    virtual void unmap(){};
 
-    void finish(cl_command_queue queue){
-        int err = clFinish(queue);
+    void finish(){
+        cl_int err = 
+            clEnqueueWaitForEvents(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false),
+                                    1,
+                                    &this->m_event);
         if(err != CL_SUCCESS){
-            EAGLEEYE_LOGD("mem syn fail with err code %d", err);
+            EAGLEEYE_LOGD("mem syn fail with err %s", OpenCLErrorToString(err));
         }
-    };
+    }
+
+    // 返回opencl对象
     virtual cl_mem getObject() = 0;
+
+    // 返回opencl对象类型
+    virtual int type(){return -1;}
+
+    cl_event m_event;
 };
 
 class OpenCLMem:public OpenCLObject{
 public:
-    OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size);
+    OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size, void* host_ptr=NULL);
     virtual ~OpenCLMem();
 
-    virtual void copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDeviceFromDevice(cl_command_queue queue, void* ptr, cl_bool blocking=CL_TRUE);
-    virtual void* map(cl_command_queue queue, size_t* row_pitch=NULL);
-    virtual void unmap(cl_command_queue queue);
+    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE);
+    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE);
+    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE);
+    virtual void* map(cl_bool blocking);
+    virtual void unmap();
 
+    // 返回opencl对象类型
+    virtual int type(){return 0;}
+
+    // 返回opencl对象
     virtual cl_mem getObject(){
         return m_mem;
     }
@@ -62,18 +76,29 @@ public:
 
 class OpenCLImage:public OpenCLObject{
 public:
-    OpenCLImage(OpenCLMemStatus mem_status,std::string name, unsigned int rows, unsigned int cols, unsigned int channels, EagleeyeType pixel_type);
+    OpenCLImage(OpenCLMemStatus mem_status,
+                std::string name, 
+                unsigned int rows,
+                unsigned int cols, 
+                unsigned int channels, 
+                EagleeyeType pixel_type,
+                void* host_ptr=NULL);
     virtual ~OpenCLImage();
 
-    virtual void copyToHost(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDevice(cl_command_queue queue, void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDeviceFromDevice(cl_command_queue queue, void* ptr, cl_bool blocking=CL_TRUE);
-    virtual void* map(cl_command_queue queue, size_t* row_pitch);
-    virtual void unmap(cl_command_queue queue);
+    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE);
+    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE);
+    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE);
+    virtual void* map(cl_bool blocking);
+    virtual void unmap();
 
+    // 返回opencl对象类型
+    virtual int type(){return 1;}
+
+    // 返回opencl对象
     virtual cl_mem getObject(){
         return m_image;
     }
+
     EagleeyeType m_pixel_type;
     int m_channels;
     cl_image_format m_image_format;
@@ -109,18 +134,18 @@ public:
      * @param global_size 
      * @param lobal_size 
      */
-    void run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* lobal_size, bool block=true);
+    int run(std::string kernel_name, size_t work_dims, size_t* global_size, size_t* lobal_size, bool block=true);
 
     /**
      * @biref finish queue
      */
-    void finish();
+    int finish();
 
     template<typename T>
     void setKernelArg(std::string kernel_name, int index, T value){
         int err = clSetKernelArg(m_kernels[kernel_name], index, sizeof(T), &value);
         if(err != CL_SUCCESS){
-            EAGLEEYE_LOGE("Failed to set arg %d for kernel %s (error code %d)", index, kernel_name.c_str(),err);
+            EAGLEEYE_LOGE("Failed to set arg %d for kernel %s with error %s", index, kernel_name.c_str(), OpenCLErrorToString(err));
         }
     }
 
@@ -178,7 +203,7 @@ public:
      * @param row_pitch 
      * @return void* 
      */
-    void* map(std::string mem_name, size_t* row_pitch=NULL);
+    void* map(std::string mem_name, cl_bool blocking);
 
     /**
      * @brief unmap
@@ -200,8 +225,8 @@ protected:
 
 private:
     std::map<std::string, OpenCLObject*> m_mems;
-    cl_command_queue m_queue;
     OpenCLRuntime* m_env;
+    std::map<std::string, cl_event> m_events;
 };
 
 template<>
@@ -216,8 +241,8 @@ void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int i
         group##_kernels = NULL;                     \
     }
 
-#define EAGLEEYE_OPENCL_ADD_CUSTOME_CODE(program, code)    \
-    OpenCLRuntime::getOpenCLEnv()->addCustomSource(#program, code);
+#define EAGLEEYE_OPENCL_REGISTER_SOURCE_CODE(program, code)    \
+    OpenCLRuntime::getOpenCLEnv()->registerProgramSource(#program, code);
 
 
 // #define EAGLEEYE_OPENCL_KERNEL_GROUP(group, program, K1) \

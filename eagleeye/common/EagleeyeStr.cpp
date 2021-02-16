@@ -53,4 +53,21 @@ bool ispath(std::string str){
 
     return false;
 }
+
+std::string obfuscateString(const std::string &src,
+                            const std::string &lookup_table) {
+  std::string dest;
+  dest.resize(src.size());
+  for (size_t i = 0; i < src.size(); i++) {
+    dest[i] = src[i] ^ lookup_table[i % lookup_table.size()];
+  }
+  return dest;
+}
+
+// ObfuscateString(ObfuscateString(str)) ==> str
+std::string obfuscateString(const std::string &src) {
+  // Keep consistent with obfuscation in python tools
+  return obfuscateString(src, "EAGLEEYE-Compute-Engine");
+}
+
 }

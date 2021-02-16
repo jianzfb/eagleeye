@@ -1,10 +1,12 @@
 #ifndef _EAGLEEYE_BASE_H_
 #define _EAGLEEYE_BASE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
-#include "eagleeye/basic/TensorX.h"
+#include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/engine/nano/dataflow/meta.hpp"
 #include <vector>
+#include <map>
+#include <string>
 
 namespace eagleeye{
 namespace dataflow{
@@ -38,7 +40,7 @@ public:
      * 
      * @param data 
      */
-    virtual int init(void* data)=0;
+    virtual int init(std::map<std::string, std::vector<float>> params)=0;
 
     /**
      * @brief run on cpu
@@ -46,7 +48,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual bool runOnCpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnCpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
 
     /**
      * @brief ru on gpu
@@ -54,7 +56,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual bool runOnGpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnGpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
 
     /**
      * @brief Get the Output Num object
@@ -109,24 +111,24 @@ public:
         return this->m_output_tensors[index];
     }
 
-    virtual bool update(T data, int index){return false;}
+    virtual int update(T data, int index){return -1;}
 
     /**
      * @brief use cpu data, update
      */
-    virtual bool update(void* data, int index){return false;}
+    virtual int update(void* data, int index){return -1;}
 
     /**
      * @brief get cpu data, from 
      */
-    virtual bool fetch(void*& data, int index, bool block){
+    virtual int fetch(void*& data, int index, bool block){
         if(!block){
             this->getOutputTensor(index).transfer(EagleeyeRuntime(EAGLEEYE_CPU));
-            return false;
+            return -1;
         }
         else{
             data = this->getOutputTensor(index).cpu();
-            return true;
+            return 0;
         }        
     }
 

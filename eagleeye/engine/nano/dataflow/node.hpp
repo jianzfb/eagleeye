@@ -20,7 +20,6 @@ public:
   friend class Graph;
   std::string label;
   std::string name;
-  std::string graphviz_node_property;
 
   Node(Graph* g, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
   :g_(g),id_(id),init_(false),fixed_on_runtime_(false) {
@@ -33,6 +32,9 @@ public:
   }
   virtual ~Node () noexcept = default;
 
+  /**
+   * @brief get succeed nodes
+   */ 
   bool findNext (Node const* n) {
     for (Edge * e : next_) {
       assert(e);
@@ -41,6 +43,9 @@ public:
     return false;
   }
 
+  /**
+   * @brief get pre nodes
+   */ 
   bool findPrev (Node const* n) {
     for (Edge * e : prev_) {
       assert(e);
@@ -49,10 +54,29 @@ public:
     return false;
   }
 
+  /**
+   * @brief get data ptr
+   */ 
   virtual void* data(int index) = 0;
+
+  /**
+   * @brief run on runtime 
+   */ 
   virtual float fire(EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU)) = 0;
+
+  /**
+   * @brief get buffer size of node output
+   */ 
   virtual size_t size(int index=0) noexcept = 0;
-  virtual int init(EagleeyeRuntime runtime, char* data) noexcept = 0;
+  
+  /**
+   * @brief initialize node
+   */ 
+  virtual int init(EagleeyeRuntime runtime, std::map<std::string, std::vector<float>> data) noexcept = 0;
+
+  /**
+   * @brief transfer target runtime
+   */ 
   virtual void transfer(EagleeyeRuntime runtime, bool asyn) noexcept = 0;
   virtual void transfer(int which, EagleeyeRuntime runtime, bool asyn) = 0;
 
@@ -76,25 +100,41 @@ public:
   Graph* g () noexcept {
     return g_;
   }
-  std::string getName(){
-    return name;
-  }
+
   int getId(){
     return id_;
   }
+
+  /**
+   * @brief check is fixed runtime
+   */ 
   bool isFixedOnRuntime(){
     return fixed_on_runtime_;
   }
+
+  /**
+   * @brief set fixed runtime
+   */ 
   bool setFixedOnRuntime(EagleeyeRuntime runtime){
     runtime_ = runtime;
     fixed_on_runtime_ = true;
   }
 
+  /**
+   * @brief get node scheduled runtime
+   */ 
   EagleeyeRuntime getRuntime(){
     return runtime_;
   }
 
+  /*
+   * @brief update node data
+   */
   virtual bool update(void* data, int index=0)=0;
+
+  /**
+   * @brief get node data
+   */ 
   virtual bool fetch(void*& data, int index=0, bool block=false)=0;
 
 protected:

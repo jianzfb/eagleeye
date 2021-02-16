@@ -32,9 +32,6 @@ void DebugNode::setPortCategoryType(int port_index, SignalCategory port_category
             this->setOutputPort(new ImageSignal<Array<unsigned char, 3>>(), port_index);
         }
         break;
-    case SIGNAL_CATEGORY_TENSOR:
-        this->setOutputPort(new TensorSignal<float>(), port_index);
-        break;
     case SIGNAL_CATEGORY_STRING:
         this->setOutputPort(new StringSignal(), port_index);
         break;

@@ -57,17 +57,13 @@ public:
          Aligned aligned=Aligned(64), 
          EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU), 
          void* data=NULL, 
-         bool copy=false, 
-         std::string group="default");
+         bool copy=false);
     
     Blob(std::vector<int64_t> shape, 
          EagleeyeType data_type, 
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,
-         std::string buffer_to_image_transform,
-         std::string image_to_buffer_transform,
-         Aligned aligned=Aligned(64), 
-         std::string group="default");
+         Aligned aligned=Aligned(64));
 
     /**
      * @brief Destroy the Blob object
@@ -81,7 +77,7 @@ public:
      * @param runtime 
      * @param asyn 
      */
-    void transfer(EagleeyeRuntime runtime, bool asyn=true) const;
+    void transfer(EagleeyeRuntime runtime, bool asyn=true, std::vector<int64_t> image_shape=std::vector<int64_t>{}) const;
     
     /**
      * @brief transfer data to device and reset
@@ -89,14 +85,14 @@ public:
      * @param runtime 
      */
 
-    void schedule(EagleeyeRuntime runtime, bool asyn=true);
+    void schedule(EagleeyeRuntime runtime, bool asyn=true, std::vector<int64_t> image_shape=std::vector<int64_t>{});
 
     /**
      * @brief get pointer on GPU
      * 
      * @return void* 
      */
-    void* gpu() const;
+    void* gpu(std::vector<int64_t> image_shape=std::vector<int64_t>{}) const;
 
     /**
      * @brief get pointer on CPU
@@ -159,7 +155,9 @@ public:
      * @return true 
      * @return false 
      */
-    bool update(void* data=NULL, MemoryType mem_type=CPU_BUFFER);
+    bool update(void* data=NULL, 
+                MemoryType mem_type=CPU_BUFFER,
+                std::string option="");
 
     /**
      * @brief Get the Image Shape object (GPU_IMAGE)
@@ -167,11 +165,6 @@ public:
      * @return std::vector<int64_t> 
      */
     std::vector<int64_t> getImageShape() const;
-
-    /**
-     *  @brief resize gpu image (GPU_IMAGE) 
-     */
-    void resizeImage(std::vector<int64_t> image_shape);
 
 protected:
     /**
@@ -187,7 +180,7 @@ protected:
     void _reset() const;
 
     /**
-     * @brief needed size
+     * @brief buffer size
      * 
      * @return size_t 
      */
@@ -204,25 +197,37 @@ protected:
      * 
      */
 	std::vector<Range> m_range;
-    EagleeyeType m_data_type;
-    MemoryType m_memory_type;
-    MemoryType m_gpu_memory_type;
-    mutable EagleeyeRuntime m_runtime;
-    std::vector<int64_t> m_image_shape;
 
+    /**
+     * @brief data type
+     */ 
+    EagleeyeType m_data_type;
+
+    /**
+     * @brief memory type
+     */ 
+    mutable MemoryType m_memory_type;
+
+    /**
+     * @brief runtime 
+     */ 
+    mutable EagleeyeRuntime m_runtime;
+
+    /**
+     * @brief image shape (for GPU_IMAGE)
+     */ 
+    std::vector<int64_t> m_image_shape;
+    
+    
 protected:
     size_t m_size;
-    std::string m_group;
     Aligned m_aligned;
-    std::string m_buffer_to_image_transform;    // transform type
-    std::string m_image_to_buffer_transform;    // transform type
 
     mutable bool m_waiting_reset_runtime;
     mutable EagleeyeRuntime m_waiting_runtime;
 
     mutable std::shared_ptr<unsigned char> m_cpu_data;
     mutable std::shared_ptr<OpenCLObject> m_gpu_data;
-    mutable std::shared_ptr<OpenCLObject> m_gpu_buffer; // temp
 
     mutable bool m_is_cpu_waiting_from_gpu;
     mutable bool m_is_cpu_ready;
@@ -233,7 +238,6 @@ protected:
 private:
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
     OpenCLKernelGroup* m_buffer_to_image_kernel;
-    OpenCLKernelGroup* m_image_to_buffer_kernel;
 #endif
 };    
 }

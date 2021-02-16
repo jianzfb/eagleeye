@@ -30,43 +30,16 @@ enum OpenCLVersion {
   CL_VER_2_1,
 };
 
-const std::string OpenCLErrorToString(cl_int error);
+/**
+ * @brief get opencl error string 
+ */ 
+const char* OpenCLErrorToString(cl_int error);
 
-// Helper function to get OpenCL error string from constant
-const char* oclErrorString(cl_int error);
+/**
+ * @brief check opencl error
+ */ 
+EagleeyeError OpenCLCheckError(cl_int error);
 
-// companion inline function for error checking and exit on error WITH Cleanup Callback (if supplied)
-// *********************************************************************
-inline void __oclCheckErrorEX(cl_int iSample, cl_int iReference, void (*pCleanup)(int), const char* cFile, const int iLine)
-{
-    // An error condition is defined by the sample/test value not equal to the reference
-    if (iReference != iSample)
-    {
-        // If the sample/test value isn't equal to the ref, it's an error by defnition, so override 0 sample/test value
-        iSample = (iSample == 0) ? -9999 : iSample; 
-
-        // Log the error info
-        EAGLEEYE_LOGD("\n !!! Error # %i (%s) at line %i , in file %s !!!\n\n", iSample, oclErrorString(iSample), iLine, cFile);
-        // Cleanup and exit, or just exit if no cleanup function pointer provided.  Use iSample (error code in this case) as process exit code.
-        if (pCleanup != NULL)
-        {
-            pCleanup(iSample);
-        }
-        else 
-        {
-            exit(iSample);
-        }
-    }
-}
-// Error and Exit Handling Macros... 
-// *********************************************************************
-// Full error handling macro with Cleanup() callback (if supplied)... 
-// (Companion Inline Function lower on page)
-#define oclCheckErrorEX(a, b, c) __oclCheckErrorEX(a, b, c, __FILE__ , __LINE__) 
-
-// Short version without Cleanup() callback pointer
-// Both Input (a) and Reference (b) are specified as args
-#define oclCheckError(a, b) oclCheckErrorEX(a, b, 0) 
 
 class OpenCLRuntime{
 public:
@@ -83,22 +56,15 @@ public:
     cl_program compileProgram(std::string program_name, std::string options);
 
     /**
-     * @brief add custom source
-     * 
-     * @param name 
-     * @param source 
-     */
-    void addCustomSource(std::string name, std::string source);
-    
-    void addSourceCode(std::string name, std::string source);
+     * @brief register program source
+     */ 
+    void registerProgramSource(std::string name, std::string source);
 
     /**
-     * @brief Get the Command Queue object
-     * 
-     * @param group 
+     * @brief get command queue
      */
-    cl_command_queue getCommandQueue(std::string group);
-
+    cl_command_queue getOrCreateCommandQueue(bool is_order);
+    
     /**
      * @brief get GPU TYPE
      * 
@@ -120,13 +86,13 @@ public:
      */
     std::vector<size_t> getMaxImage2DSize(){return {m_max_image_width, m_max_image_height};};
 
+    /**
+     * @brief get kernel max work group size
+     */ 
     size_t getKernelMaxWorkGroupSize(){return device_group_size;};
 
     cl_device_id device_id;             // compute device id 
     cl_context context;                 // compute context
-    // cl_program math_program;
-    // cl_program algorithm_program;
-    // cl_program square_program;
     cl_platform_id platform_id;
     cl_uint cu_num;
     size_t device_group_size;
@@ -135,14 +101,29 @@ public:
     cl_ulong max_constant_buffer_size;
     cl_ulong max_local_mem_size;
 
+    std::map<std::string, std::string> m_register_program_source;
     std::map<std::string, cl_program> m_programs;
-    std::map<std::string, std::string> m_sources;
-    std::map<std::string, cl_command_queue> m_command_queue;
 
 private:
     OpenCLRuntime();
+    /**
+     * @brief write kernel to binary file
+     */ 
     bool writeBinaryToFile(const char* fileName, const char* birary, size_t numBytes); 
+
+    /**
+     * @brief read kernel from binary 
+     */ 
     bool readBinaryFromFile(const char* fileName, char*& binary, size_t& numBytes);
+
+    /**
+     * @brief get kernel source code
+     */ 
+    EagleeyeError getProgramSourceByName(const std::string &program_name, std::string *source);
+
+    /**
+     * @brief 
+     */ 
     bool init();
     
     GPUType ParseGPUType(std::string device_name);
@@ -156,7 +137,9 @@ private:
     
     size_t m_max_image_height;
     size_t m_max_image_width;
-    
+
+    cl_command_queue m_order_queue;
+    cl_command_queue m_out_of_order_queue;
 };
 
 }

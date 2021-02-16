@@ -1,4 +1,4 @@
-#include "eagleeye/engine/nano/op/gpu/opencl_util.h"
+#include "eagleeye/engine/nano/util/opencl_util.h"
 #include "eagleeye/basic/Math.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include <vector>
