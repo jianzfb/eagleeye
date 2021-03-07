@@ -42,23 +42,33 @@ enum MemoryType{
 class Blob{
 public:
     /**
+     * @brief empty constrcture
+     */ 
+    Blob();
+    
+    /**
      * @brief Construct a new Blob object (support heterogeneous device)
-     * GPU -> CPU (区分GPU_BUFFER,GPU_IMAGE的转换)
-     * CPU -> GPU (仅可以转移到GPU_BUFFER类型)
      * 
      * @param size blob size
      * @param aligned  memory aligned bits
      * @param runtime  memory device
      * @param data  data
      * @param copy  whether copy 
-     * @param group group name
      */
     Blob(size_t size, 
-         Aligned aligned=Aligned(64), 
+         Aligned aligned, 
          EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU), 
          void* data=NULL, 
          bool copy=false);
     
+    /**
+     * @brief create blob by TEXTURE2D
+     */ 
+    Blob(unsigned int texture_id);
+
+    /**
+     * @brief create blob for tensor
+     */ 
     Blob(std::vector<int64_t> shape, 
          EagleeyeType data_type, 
          MemoryType memory_type, 

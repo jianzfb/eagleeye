@@ -4,7 +4,7 @@
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
-
+#include "eagleeye/render/RenderContext.h"
 #include <memory>
 #include <map>
 
@@ -127,12 +127,37 @@ public:
      */
     void loadConfigure(std::string config_file);
     void saveConfigure(std::string config_file);
-
+    
     /**
      * @brief analyze pieline structure
      * 
      */
     void initialize(const char* configure_folder);
+
+    /**
+     * @brief create render context
+     */ 
+    static void onRenderSurfaceCreate();
+
+    /**
+     * @brief surface change (render)
+     */ 
+    static void onRenderSurfaceChange(int width, int height);
+
+    /*
+    * @brief mouse event
+    */
+    static void onRenderSurfaceMouse(int mouse_x, int mouse_y, int mouse_flag);
+
+    /**
+     * @brief surface w (render)
+     */ 
+    static int getRenderSurfaceW();
+
+    /**
+     * @brief surface h (render)
+     */ 
+    static int getRenderSurfaceH();
 
     /**
      * @brief Set the Ini Func object
@@ -185,9 +210,10 @@ public:
      * @param data 
      * @param data_size 
      * @param data_dims 
+     * @param data_rotation
      * @param data_type
      */
-    void setInput(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type);
+    void setInput(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type);
     
     /**
      * @brief Get the Node Output object
@@ -287,7 +313,7 @@ public:
      * @brief get resource folder
      */
     std::string resourceFolder();
-
+    
 protected:
     /**
      * @brief Construct a new Any Pipeline object
@@ -317,6 +343,8 @@ private:
     static std::map<std::string, std::string> m_pipeline_version;
     static std::map<std::string, std::string> m_pipeline_signature;    
     static std::string m_plugin_root;
+
+    static std::shared_ptr<RenderContext> m_render_context;
 };
 }
 #endif

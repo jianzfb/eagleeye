@@ -19,10 +19,8 @@
 #include <string>
 #include <vector>
 
-// #include "mace/port/android/logger.h"
 #include "eagleeye/port/env.h"
 #include "eagleeye/port/linux_base/env.h"
-// #include "mace/port/posix/file_system.h"
 
 namespace eagleeye {
 namespace port {

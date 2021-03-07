@@ -225,7 +225,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void setSignalContent(void* data, const int* data_size, const int data_dims){};
+	virtual void setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation, bool is_texture=false){};
 
 	/**
 	 * @brief Get the Signal Content object

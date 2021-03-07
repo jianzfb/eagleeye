@@ -6,6 +6,10 @@
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
 #include <CL/cl.h>
+#include <CL/cl_gl.h>
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+#include <EGL/eglplatform.h>
 
 namespace eagleeye
 {
@@ -265,12 +269,66 @@ bool OpenCLRuntime::init(){
     this->m_opencl_version = ParseDeviceVersion(version_string);
 
     // Create a compute context 
-    context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err);
-    if(err != CL_SUCCESS){
-        EAGLEEYE_LOGE("Failed to create a compute context!");
-        return false;
-    }
+    // 检查OpenCL和OpenGL的互操作特性
+    char extension_string[1024];
+    clGetDeviceInfo(device_id, CL_DEVICE_EXTENSIONS, sizeof(extension_string), &extension_string, NULL);
+    EAGLEEYE_LOGD("OPENCL extension %s.", extension_string);
 
+//     EGLDisplay current_display = eglGetCurrentDisplay();
+//     if(current_display != EGL_NO_DISPLAY){
+// // #ifdef _APPLE_
+// //     CGLContextObj cgl_context = CGLGetCurrentContext();
+// //     CGLShareGroupObj sharegroup = CGLGetShareGroup(cgl_context);
+// //     gcl_gl_set_sharegroup(sharegroup);
+// // #endif
+
+//       cl_context_properties properties [] ={
+//     // #ifdef WIN32
+//     //       CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+//     //       CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+//     // #endif
+
+//     // #ifdef _linux_
+//     // #pragma  message("linux")
+//     //       CL_GL_CONTEXT_KHR,
+//     //       (cl_context_properties)glXGetCurrentContext(),
+//     //       CL_GLX_DISPLAY_KHR,
+//     //       (cl_context_properties)glXGetCurrentDisplay(),
+//     // #endif
+
+//     #ifdef __ANDROID__
+//     #pragma  message("android")
+//           CL_GL_CONTEXT_KHR,
+//           (cl_context_properties)eglGetCurrentContext(),
+//           CL_EGL_DISPLAY_KHR,
+//           (cl_context_properties)eglGetCurrentDisplay(),
+//           CL_CONTEXT_PLATFORM,
+//           (cl_context_properties)platform_id,
+//           0
+
+//     #endif
+
+//     // #ifdef _APPLE_
+//     //       CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+//     //       (cl_context_properties)sharegroup,
+//     // #endif
+//         };
+
+//         EAGLEEYE_LOGD("Create CL_GL Context.");
+//         context = clCreateContext(properties, 1, &device_id, NULL, NULL, &err);
+//         if(err != CL_SUCCESS){
+//             EAGLEEYE_LOGE("Failed to create a compute context error %s.", OpenCLErrorToString(err));
+//             return false;
+//         }
+//     }
+//     else{
+        EAGLEEYE_LOGD("Create CL Context.");
+        context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err);
+        if(err != CL_SUCCESS){
+            EAGLEEYE_LOGE("Failed to create a compute context error %s.", OpenCLErrorToString(err));
+            return false;
+        }
+    // }
     return true;
 }
 

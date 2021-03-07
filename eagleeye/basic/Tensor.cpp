@@ -17,6 +17,7 @@ Tensor::Tensor(std::vector<int64_t> shape,
 		this->m_range.push_back(Range(0, this->m_shape[i]));
 	}
 }   
+
 Tensor::Tensor()
     :Blob(std::vector<int64_t>{}, EAGLEEYE_FLOAT, CPU_BUFFER, std::vector<int64_t>{}){
 
@@ -49,7 +50,7 @@ DataFormat Tensor::format() const{
 }
 
 std::vector<int64_t> Tensor::shape() const{
-    return this->m_shape;
+    return std::move(this->m_shape);
 }
 
 }

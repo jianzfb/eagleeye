@@ -10,6 +10,7 @@
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
+#include <CL/cl.h>
 namespace eagleeye{
 enum OpenCLMemStatus{
     EAGLEEYE_CL_MEM_READ,
@@ -83,6 +84,7 @@ public:
                 unsigned int channels, 
                 EagleeyeType pixel_type,
                 void* host_ptr=NULL);
+    OpenCLImage(std::string name, unsigned int texture_id);
     virtual ~OpenCLImage();
 
     virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE);

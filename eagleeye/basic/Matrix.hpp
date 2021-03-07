@@ -2,7 +2,7 @@ namespace eagleeye
 {
 template<typename T>
 Matrix<T>::Matrix()
-	:Blob(0){
+	:Blob(0, Aligned(64)){
 	m_rows = 0;
 	m_cols = 0;
 	m_r_range.s = 0;
@@ -25,11 +25,6 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols, EagleeyeRuntime runtime, 
 	if(rows == 0 || cols == 0){
 		return;
 	}
-	
-	// void* aligned_mem_ptr;
-	// posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
-	// this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
-	// memset(this->m_ptr.get(), 0, sizeof(T)*rows*cols);
 }
 
 template<typename T>
@@ -63,11 +58,6 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, EagleeyeRuntime run
 		return;
 	}
 
-	// void* aligned_mem_ptr;
-	// posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
-	// this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
-	// T* data = m_ptr.get();
-
 	T* data = (T*)(this->cpu());
 	int total = rows * cols;
 	for (int i = 0; i < total; ++i){
@@ -85,16 +75,30 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag,
 	m_r_range.e = m_rows;
 	m_c_range.s = 0;
 	m_c_range.e = m_cols;
-	
-	// if (copy_flag){
-	// 	void* aligned_mem_ptr;
-	// 	posix_memalign(&aligned_mem_ptr, aligned.m_aligned_bits, sizeof(T)*rows*cols);
-	// 	this->m_ptr = std::shared_ptr<T>((T*)aligned_mem_ptr, [](T* arr) { free(arr); });
-	// 	memcpy(m_ptr.get(), data, sizeof(T)*rows*cols);
-	// }
-	// else{
-	// 	m_ptr = std::shared_ptr<T>((T*)data, empty_deleter<T>);
-	// }
+}
+
+template<typename T>
+Matrix<T>::Matrix(unsigned int texture_id)
+	:Blob(texture_id){
+	if(TypeTrait<T>::type != this->m_data_type){
+		this->m_rows = 0;
+		this->m_cols = 0;
+		m_r_range.s = 0;
+		m_r_range.e = m_rows;
+		m_c_range.s = 0;
+		m_c_range.e = m_cols;
+
+		EAGLEEYE_LOGE("Fail to create matrix by TEXTURE2D.");
+		return;
+	}
+
+	this->m_rows = this->m_shape[0];
+	this->m_cols = this->m_shape[1];
+
+	m_r_range.s = 0;
+	m_r_range.e = m_rows;
+	m_c_range.s = 0;
+	m_c_range.e = m_cols;
 }
 
 template<typename T>
@@ -293,20 +297,6 @@ template<typename T>
 unsigned int Matrix<T>::size() const
 {
 	return (m_r_range.e - m_r_range.s) * (m_c_range.e - m_c_range.s);
-}
-
-template<typename T>
-bool Matrix<T>::isin(unsigned int r_index,unsigned int c_index)
-{
-	if (r_index < 0 || r_index >= m_r_range.e)
-	{
-		return false;
-	}
-	if (c_index < 0 || c_index >= m_c_range.e)
-	{
-		return false;
-	}
-	return true;
 }
 
 template<typename T>

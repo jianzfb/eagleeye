@@ -2,11 +2,11 @@
 #define _SIGNALFACTORY_H_
 
 #include "eagleeye/common/EagleeyeMacro.h"
-
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/framework/pipeline/BooleanSignal.h"
 #include "eagleeye/framework/pipeline/StringSignal.h"
 #include "eagleeye/framework/pipeline/StateSignal.h"
+#include "eagleeye/framework/pipeline/YUVSignal.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/type.h"
@@ -155,7 +155,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void setSignalContent(void* data, const int* data_size, const int data_dims);
+	virtual void setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation, bool is_texture=false);
 
 	/**
 	 * @brief Get the Signal Content object

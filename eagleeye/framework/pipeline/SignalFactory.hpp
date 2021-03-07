@@ -261,7 +261,20 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 }
 
 template<class T>
-void ImageSignal<T>::setSignalContent(void* data, const int* data_size, const int data_dims){
+void ImageSignal<T>::setSignalContent(void* data, const int* data_size, const int data_dims, int rotation, bool is_texture){
+	if(is_texture){
+		unsigned int texture_id = *((unsigned int*)(data));
+		EAGLEEYE_LOGD("TEXTURE ID %d", texture_id);
+		this->img = Matrix<T>(texture_id);
+		MetaData meta_data = this->meta();
+		meta_data.rows = this->img.rows();
+		meta_data.cols = this->img.cols();
+		meta_data.timestamp = 0;
+		this->m_timestamp = 0;
+		this->m_meta = meta_data;
+		return;
+	}
+
 	MetaData meta_data = this->meta();
 	Matrix<T> signal_content;
 	if(meta_data.allocate_mode == 1){

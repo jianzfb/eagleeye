@@ -1,0 +1,4 @@
+#ifndef _EAGLEEYE_YUVRESIZENODE_H_
+#define _EAGLEEYE_YUVRESIZENODE_H_
+
+#endif

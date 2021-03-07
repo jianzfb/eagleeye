@@ -58,24 +58,24 @@ protected:
 	 */
 	template<class T>
 	void switchPixelChannels(Matrix<T>& img){};
-	void switchPixelChannels(Matrix<ERGB>& img)
+	void switchPixelChannels(Matrix<RGB>& img)
 	{
 		switch(m_channels_order)
 		{
 		case CHANELS_SWITCH_R_AND_B:
 			{
-				img = img.transform(SwitchOperations<ERGB,ERGB,0,2>());
+				img = img.transform(SwitchOperations<RGB,RGB,0,2>());
 				return;
 			}
 		}
 	}
-	void switchPixelChannels(Matrix<ERGBA>& img)
+	void switchPixelChannels(Matrix<RGBA>& img)
 	{
 		switch(m_channels_order)
 		{
 		case CHANELS_SWITCH_R_AND_B:
 			{
-				img = img.transform(SwitchOperations<ERGBA,ERGBA,0,2>());
+				img = img.transform(SwitchOperations<RGBA,RGBA,0,2>());
 				return;
 			}
 		}

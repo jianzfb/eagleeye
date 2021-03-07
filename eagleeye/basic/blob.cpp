@@ -7,6 +7,10 @@ Range Range::ALL(){
     return Range(-1, -1);
 }
 
+Blob::Blob(){
+    this->m_size = 0;
+}
+
 Blob::Blob(size_t size, 
             Aligned aligned, 
             EagleeyeRuntime runtime,
@@ -81,6 +85,48 @@ Blob::Blob(size_t size,
     }
 }
 
+Blob::Blob(unsigned int texture_id)
+    :m_is_cpu_ready(false),
+    m_is_cpu_waiting_from_gpu(false),
+    m_is_gpu_ready(false),
+    m_is_gpu_waiting_from_cpu(false),
+    m_waiting_reset_runtime(false),
+    m_waiting_runtime(EAGLEEYE_UNKNOWN_RUNTIME){
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION    
+    OpenCLImage* cl_img =  new OpenCLImage("t",texture_id);
+    if(cl_img->m_rows == 0 || cl_img->m_cols == 0){
+        return;
+    }
+
+    // only support channel_order = RGBA
+    if(cl_img->m_image_format.image_channel_order == CL_RGBA && cl_img->m_image_format.image_channel_data_type == CL_UNSIGNED_INT8){
+        m_size = 4*cl_img->m_rows*cl_img->m_cols;
+        m_data_type = EAGLEEYE_RGBA;
+    }
+    else if(cl_img->m_image_format.image_channel_order == CL_RGBA && cl_img->m_image_format.image_channel_data_type == CL_FLOAT){
+        m_size = sizeof(float)*4*cl_img->m_rows*cl_img->m_cols;
+        m_data_type = EAGLEEYE_FLOAT4;
+    }
+    else{
+        m_data_type = EAGLEEYE_UNDEFINED;
+        m_size = 0;
+        m_image_shape = std::vector<int64_t>{0,0};
+        m_shape = std::vector<int64_t>{0,0};
+        return;
+    }
+
+    this->m_gpu_data = 
+        std::shared_ptr<OpenCLObject>(cl_img,[](OpenCLObject* arr) { delete arr; });
+
+    m_lock = std::shared_ptr<spinlock>(new spinlock(), [](spinlock* d) { delete d; });
+    this->m_memory_type = GPU_IMAGE;
+    this->m_runtime = EagleeyeRuntime(EAGLEEYE_GPU);
+
+    m_image_shape = std::vector<int64_t>{cl_img->m_cols, cl_img->m_rows};
+    m_shape = std::vector<int64_t>{cl_img->m_rows, cl_img->m_cols};
+#endif
+}
+
 Blob::Blob(std::vector<int64_t> shape, 
             EagleeyeType data_type, 
             MemoryType memory_type, 
@@ -153,22 +199,24 @@ Blob::Blob(std::vector<int64_t> shape,
         }
         else{
             // use gpu image
-            if(this->m_image_shape.size() > 0){
-                unsigned int size = std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
-                unsigned int image_h = this->m_image_shape[1];
-                unsigned int image_w = this->m_image_shape[0];
-                unsigned int channels = size / (image_h * image_w);
-                assert(channels * image_h * image_w == size);
-
-                this->m_gpu_data = 
-                    std::shared_ptr<OpenCLObject>(
-                        new OpenCLImage(EAGLEEYE_CL_MEM_READ_WRITE,
-                                        "t", 
-                                        image_h, 
-                                        image_w, 
-                                        channels, 
-                                        this->m_data_type),[](OpenCLObject* arr) { delete arr; });
+            if(this->m_image_shape.size() == 0){
+                EAGLEEYE_LOGE("must set image shape");
+                return;
             }
+            unsigned int size = std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
+            unsigned int image_h = this->m_image_shape[1];
+            unsigned int image_w = this->m_image_shape[0];
+            unsigned int channels = size / (image_h * image_w);
+            assert(channels * image_h * image_w == size);
+
+            this->m_gpu_data = 
+                std::shared_ptr<OpenCLObject>(
+                    new OpenCLImage(EAGLEEYE_CL_MEM_READ_WRITE,
+                                    "t", 
+                                    image_h, 
+                                    image_w, 
+                                    channels, 
+                                    this->m_data_type),[](OpenCLObject* arr) { delete arr; });
         }
 #endif
     }

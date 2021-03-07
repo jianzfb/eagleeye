@@ -194,21 +194,21 @@ public:
 };
 
 template<>
-class TypeTrait<ERGB>
+class TypeTrait<RGB>
 {
 public:
 	typedef unsigned char			Type;
 	static const int size			= 3;
 
-	static inline ERGB minval()
+	static inline RGB minval()
 	{
-		ERGB data;
+		RGB data;
 		data[0] = 0; data[1] = 0; data[2] = 0; data[3] = 0;
 		return data;
 	}
-	static inline ERGB maxval()
+	static inline RGB maxval()
 	{
-		ERGB data;
+		RGB data;
 		data[0] = 255; data[1] = 255; data[2] = 255; data[3] = 255;
 		return data;
 	}
@@ -217,27 +217,51 @@ public:
 };
 
 template<>
-class TypeTrait<ERGBA>
+class TypeTrait<RGBA>
 {
 public:
 	typedef unsigned char			Type;
 	static const int size			= 4;
 
-	static inline ERGBA minval()
+	static inline RGBA minval()
 	{
-		ERGBA data;
+		RGBA data;
 		data[0] = 0; data[1] = 0; data[2] = 0; data[3] = 0;
 		return data;
 	}
-	static inline ERGBA maxval()
+	static inline RGBA maxval()
 	{
-		ERGBA data;
+		RGBA data;
 		data[0] = 255; data[1] = 255; data[2] = 255; data[3] = 255;
 		return data;
 	}
 
 	static const EagleeyeType type = EAGLEEYE_RGBA;
 };
+
+template<>
+class TypeTrait<Array<float,4>>
+{
+public:
+	typedef float			        Type;
+	static const int size			= 4;
+
+	static inline Array<float,4> minval()
+	{
+		Array<float,4> data;
+		data[0] = 0; data[1] = 0; data[2] = 0; data[3] = 0;
+		return data;
+	}
+	static inline Array<float,4> maxval()
+	{
+		Array<float,4> data;
+		data[0] = 1.0f; data[1] = 1.0f; data[2] = 1.0f; data[3] = 1.0f;
+		return data;
+	}
+
+	static const EagleeyeType type = EAGLEEYE_FLOAT4;
+};
+
 
 template<typename T>
 class OperateTrait

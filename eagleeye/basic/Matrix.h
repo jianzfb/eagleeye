@@ -13,6 +13,7 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/type.h"
 #include "eagleeye/basic/blob.h"
+#include "eagleeye/basic/Tensor.h"
 
 namespace eagleeye
 {
@@ -23,18 +24,28 @@ public:
 	typedef T								ElemType;
 
 	/**
-	 *	@brief useful constructor
+	 *	@brief null constructor
 	 */
 	Matrix();
+
+	/**
+	 * @brief create matrix with (rows, cols)
+	 */ 
 	Matrix(unsigned int rows,
 			unsigned int cols, 
 			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
 			Aligned aligned=Aligned(64));
 	
+	/**
+	 * @brief create matrix with shape
+	 */ 
 	Matrix(std::vector<int64_t> shape,
 			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
 			Aligned aligned=Aligned(64));
 
+	/**
+	 * @brief fill matrix with val
+	 */ 
 	Matrix(unsigned int rows,
 			unsigned int cols,
 			T val, 
@@ -51,6 +62,12 @@ public:
 			bool copy_flag = false, 
 			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
 			Aligned aligned=Aligned(64));
+
+	/**
+	 * @brief create matrix by texture_id placed in GPU
+	 * @note ignore T
+	 */ 
+	Matrix(unsigned int texture_id);
 
 	/**
 	 * @brief Destroy the Matrix object
@@ -79,11 +96,6 @@ public:
 
 	inline Matrix operator()(Range r_range,Range c_range);
 	inline const Matrix operator()(Range r_range,Range c_range) const;
-
-	/**
-	 *	@brief judge whether one specific pos is in the range of matrix
-	 */
-	inline bool isin(unsigned int r_index,unsigned int c_index);
 
 	/**
 	 *	@brief check whether this matrix is empty
@@ -202,14 +214,20 @@ public:
 
 		return target_mat;
 	}
-//    template<>
-//    inline Matrix<T> transform() const
-//    {
-//        return (*this);
-//    }
 
+	/**
+	 * @brief 行列式（只支持2x2 或 3x3）
+	 */ 
 	T determinant();
+
+	/**
+	 * @brief 矩阵逆
+	 */ 
 	Matrix<T> inv();
+
+	/**
+	 * 
+	 */ 
 	Matrix<T> cofactor();
 
 	/**

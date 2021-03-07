@@ -4,6 +4,7 @@
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include <dlfcn.h>
 #include <dirent.h>
 
@@ -50,62 +51,62 @@ void _getAllPluginsFromDirectory(std::string path, std::vector<std::string> &fil
 // registed plugins
 std::map<std::string, std::pair<void*,INITIALIZE_PLUGIN_FUNC>> m_registed_plugins;
 bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* plugin_folder){
-    EAGLEEYE_LOGD("init module from %s", plugin_folder);
+    EAGLEEYE_LOGD("Init module from %s.", plugin_folder);
     // 设置插件根目录
     AnyPipeline::setPluginRoot(plugin_folder);
 
     // 加载所有插件，发现注册模块
-    EAGLEEYE_LOGD("traverse to find all plugin in %s",plugin_folder);
+    EAGLEEYE_LOGD("Traverse to find all plugin in %s.",plugin_folder);
     std::vector<std::string> plugin_list;
     _getAllPluginsFromDirectory(plugin_folder, plugin_list);
 
     for(int index=0; index<plugin_list.size(); ++index){
         std::string plugin_path = std::string(plugin_folder) + "/" + plugin_list[index];
         // 加载so
-        EAGLEEYE_LOGD("load plugin %s from path %s", plugin_list[index].c_str(), plugin_path.c_str());
+        EAGLEEYE_LOGD("Load plugin %s from path %s.", plugin_list[index].c_str(), plugin_path.c_str());
         void* handle = dlopen(plugin_path.c_str(), RTLD_LAZY);
         if(!handle){        
-            EAGLEEYE_LOGD("dlopen error, message (%s)",dlerror());
+            EAGLEEYE_LOGD("Dlopen error, message (%s).",dlerror());
             continue;
         }
 
         // 插件目录结构
-        EAGLEEYE_LOGD("plugin directory map");
+        EAGLEEYE_LOGD("Plugin directory map.");
         std::string sperator="/";
         std::vector<std::string> kv = split(plugin_list[index], sperator);
         std::string plugin_path_parent = std::string(plugin_folder) + "/" + kv[0];
         traverseFiles(plugin_path_parent.c_str());
 
         // 加载注册及初始化函数
-        EAGLEEYE_LOGD("get register plugin func");
+        EAGLEEYE_LOGD("Get register plugin func.");
         REGISTER_PLUGIN_FUNC plugin_register_func = NULL; 
         INITIALIZE_PLUGIN_FUNC plugin_initialize_func = NULL;
         plugin_register_func = (REGISTER_PLUGIN_FUNC)dlsym(handle, "eagleeye_register_plugin_pipeline");
         if(!plugin_register_func){
-            EAGLEEYE_LOGD("dlsym error, message (%s)",dlerror());
+            EAGLEEYE_LOGD("Dlsym error, message (%s).",dlerror());
             dlclose(handle);
             continue;
         }        
 
-        EAGLEEYE_LOGD("finish get register plugin func");
+        EAGLEEYE_LOGD("Finish get register plugin func.");
         const char* plugin_name = plugin_register_func();
         if(plugin_name == NULL){
-            EAGLEEYE_LOGD("plugin %s fail to register");
+            EAGLEEYE_LOGD("Plugin %s fail to register.");
             continue;
         }
 
-        EAGLEEYE_LOGD("get initialize plugin func");
+        EAGLEEYE_LOGD("Get initialize plugin func.");
         plugin_initialize_func = (INITIALIZE_PLUGIN_FUNC)dlsym(handle, "eagleeye_pipeline_initialize");
         if(!plugin_initialize_func){
-            EAGLEEYE_LOGD("dlsym error, message (%s)",dlerror());
+            EAGLEEYE_LOGD("Dlsym error, message (%s)",dlerror());
             dlclose(handle);
             continue;
         }        
 
-        EAGLEEYE_LOGD("finish initialize plugin func");
+        EAGLEEYE_LOGD("Finish initialize plugin func.");
         AnyPipeline* pipeline = AnyPipeline::getInstance(plugin_name);
         if(pipeline == NULL){
-            EAGLEEYE_LOGD("couldnt get pipeline instance");
+            EAGLEEYE_LOGD("Couldnt get pipeline instance.");
         }
         pipeline->setInitFunc(plugin_initialize_func);
 
@@ -116,11 +117,14 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
     // 获得所有注册的pipeline
     AnyPipeline::getRegistedPipelines(pipeline_names);
     if(pipeline_names.size() == 0){
-        EAGLEEYE_LOGD("found 0 pipeline plugin");
+        EAGLEEYE_LOGD("Found 0 pipeline plugin.");
         return false;
     }
     
-    EAGLEEYE_LOGD("found %d pipeline plugin", pipeline_names.size());
+    EAGLEEYE_LOGD("Found %d pipeline plugins.", pipeline_names.size());
+
+    // 初始化上下文
+    OpenCLRuntime::getOpenCLEnv();
     return true;
 }
 
@@ -259,8 +263,11 @@ bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  void* data, 
                                  const int* data_size, 
                                  const int data_dims,
+                                 const int data_rotation,
                                  const int data_type){
-    AnyPipeline::getInstance(pipeline_name)->setInput(node_name, data, data_size, data_dims, data_type);
+
+    AnyPipeline::getInstance(pipeline_name)->setInput(node_name, data, data_size, data_dims, data_rotation, data_type);
+    EAGLEEYE_LOGD("finish setInput in Module");
     return true;
 }
 
@@ -325,6 +332,23 @@ bool eagleeye_pipeline_debug_restore_at(const char* pipeline_name, const char* n
     AnyPipeline::getInstance(pipeline_name)->restoreAt(node_name, port);
     return true;
 }
+
+bool eagleeye_on_surface_create(){
+    AnyPipeline::onRenderSurfaceCreate();
+    return true;
+}
+
+bool eagleeye_on_surface_change(int width, int height){
+    EAGLEEYE_LOGD("in width %d height %d", width, height);
+    AnyPipeline::onRenderSurfaceChange(width, height);
+    return true;
+}
+
+bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag){
+    AnyPipeline::onRenderSurfaceMouse(mouse_x, mouse_y, mouse_flag);
+    return true;
+}
+
 
 #ifdef EAGLEEYE_PYTHON_MODULE
 // initialize pipeline

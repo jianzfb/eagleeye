@@ -19,7 +19,6 @@
 
 #include "eagleeye/port/env.h"
 #include "eagleeye/runtime/cpu/cpu_runtime.h"
-// #include "mace/port/posix/file_system.h"
 
 namespace eagleeye {
 namespace port {

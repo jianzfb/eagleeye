@@ -105,7 +105,7 @@ void StringSignal::setData(StringSignal::DataType data){
     modified();
 }
 
-void StringSignal::setSignalContent(void* data, const int* data_size, const int data_dims){
+void StringSignal::setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation, bool is_texture){
 	std::string str = *((std::string*)data);
 	this->setData(str);
 }

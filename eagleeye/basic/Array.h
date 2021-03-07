@@ -406,10 +406,9 @@ std::istream& operator>>(std::istream& in,Array<T,D>& ob)
 /**
  *	@brief some useful type
  */
-typedef Array<float,32>					HOG32Vec;
-typedef Array<unsigned char,3>			ERGB;
+typedef Array<unsigned char,3>			RGB;
 typedef Array<unsigned char,3>			ArrayU3;
-typedef Array<unsigned char,4>			ERGBA;
+typedef Array<unsigned char,4>			RGBA;
 typedef Array<unsigned char,4>			ArrayU4;
 }
 

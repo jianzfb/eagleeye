@@ -4,9 +4,9 @@
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #include <CL/opencl.h>
+#include <GLES3/gl3.h>
+
 namespace eagleeye{
-
-
 template<>
 void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int index, std::string name){
     int err = clSetKernelArg(m_kernels[kernel_name], index, sizeof(cl_mem), m_mems[name]->getObject());
@@ -250,6 +250,36 @@ OpenCLImage::OpenCLImage(OpenCLMemStatus mem_status,
 
     m_mem_status = mem_status;
     this->m_mapped_ptr = NULL;
+}
+
+OpenCLImage::OpenCLImage(std::string name, unsigned int texture_id){
+    this->m_name = name;
+    int err;
+    m_image = 
+        clCreateFromGLTexture2D(OpenCLRuntime::getOpenCLEnv()->context,
+                                CL_MEM_READ_ONLY,
+                                GL_TEXTURE_2D,
+                                0,
+                                texture_id,
+                                &err);
+    if(err != CL_SUCCESS){
+        EAGLEEYE_LOGE("Fail to create image from GL Texture2D with error %s.", OpenCLErrorToString(err));
+        this->m_cols = 0;
+        this->m_rows = 0;
+        return;
+    }
+
+    size_t width;
+    clGetImageInfo(m_image, CL_IMAGE_WIDTH, sizeof(size_t), &width, NULL);
+    size_t height;
+    clGetImageInfo(m_image, CL_IMAGE_HEIGHT, sizeof(size_t), &height, NULL);
+
+    this->m_rows = height;
+    this->m_cols = width;
+    EAGLEEYE_LOGD("Image texture2d width %d height %d", this->m_cols, this->m_rows);
+    this->m_mem_status = EAGLEEYE_CL_MEM_READ;
+    this->m_mapped_ptr = NULL;
+    clGetImageInfo(m_image, CL_IMAGE_FORMAT, sizeof(cl_image_format), &this->m_image_format, NULL);
 }
 
 OpenCLImage::~OpenCLImage(){

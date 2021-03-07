@@ -112,31 +112,36 @@ if (x != NULL)\
 #endif
 
 enum EagleeyeType{
-	EAGLEEYE_UNDEFINED =-1,
-	EAGLEEYE_CHAR 	   = 0,
-	EAGLEEYE_UCHAR	   = 1,
-	EAGLEEYE_SHORT	   = 2,
-	EAGLEEYE_USHORT	   = 3,
-	EAGLEEYE_INT	   = 4,
-	EAGLEEYE_UINT	   = 5,
-	EAGLEEYE_FLOAT	   = 6,
-	EAGLEEYE_DOUBLE	   = 7,
-	EAGLEEYE_RGB	   = 8,
-	EAGLEEYE_RGBA	   = 9,
-	EAGLEEYE_BOOL	   = 10,
-	EAGLEEYE_STRING	   = 11,
-	EAGLEEYE_HALF_FLOAT	= 12,
+	EAGLEEYE_UNDEFINED 				=-1,
+	EAGLEEYE_CHAR 	   				= 0,
+	EAGLEEYE_UCHAR	   				= 1,
+	EAGLEEYE_SHORT	   				= 2,
+	EAGLEEYE_USHORT	   				= 3,
+	EAGLEEYE_INT	   				= 4,
+	EAGLEEYE_UINT	   				= 5,
+	EAGLEEYE_FLOAT	   				= 6,
+	EAGLEEYE_DOUBLE	   				= 7,
+	EAGLEEYE_RGB	   				= 8,
+	EAGLEEYE_RGBA	   				= 9,
+	EAGLEEYE_BOOL	   				= 10,
+	EAGLEEYE_STRING	   				= 11,
+	EAGLEEYE_HALF_FLOAT				= 12,
+	EAGLEEYE_FLOAT4					= 13,
+	EAGLEEYE_TEXTURE_UINT4_RGBA		= 14,
+	EAGLEEYE_YUV_I420				= 15,
+	EAGLEEYE_YUV_NV21				= 16,
+	EAGLEEYE_YUV_NV12				= 17
 };
 
 enum EagleeyeError{
-	EAGLEEYE_ARG_ERROR			=-1,// parameter error
-	EAGLEEYE_FILE_ERROR			=-2,// file io error
-	EAGLEEYE_MEM_ERROR			=-3,// memory operation error
-	EAGLEEYE_TABLE_ERROR		=-4,// table error
-	EAGLEEYE_RUNTIME_ERROR		=-5,// runtime
-	EAGLEEYE_OUT_OF_RESOURCES	=-6,
-	EAGLEEYE_UNKNOWN_ERROR		=-7,// unknown error
-	EAGLEEYE_NO_ERROR			=0	//  no error
+	EAGLEEYE_ARG_ERROR				=-1,	// parameter error
+	EAGLEEYE_FILE_ERROR				=-2,	// file io error
+	EAGLEEYE_MEM_ERROR				=-3,	// memory operation error
+	EAGLEEYE_TABLE_ERROR			=-4,	// table error
+	EAGLEEYE_RUNTIME_ERROR			=-5,	// runtime
+	EAGLEEYE_OUT_OF_RESOURCES		=-6,
+	EAGLEEYE_UNKNOWN_ERROR			=-7,	// unknown error
+	EAGLEEYE_NO_ERROR				=0		//  no error
 };
 
 enum InterpMethod
@@ -147,37 +152,34 @@ enum InterpMethod
 	NEAREST_NEIGHBOR_INTERPOLATION
 };
 
-//#pragma warning( disable: 4251 )
-//#pragma warning( disable: 4996 )
-
 enum SignalCategory{
-	EAGLEEYE_UNDEFINED_CATEGORY = -1,
-	SIGNAL_CATEGORY_IMAGE 		= 0,
-	SIGNAL_CATEGORY_TENSOR 		= 1,
-	SIGNAL_CATEGORY_STRING 		= 2,
-	SIGNAL_CATEGORY_CONTROL 	= 3,
-	SIGNAL_CATEGORY_STATE		= 4,
-	SIGNAL_CATEGORY_IMAGE_QUEUE = 16,
-	SIGNAL_CATEGORY_TENSOR_QUEUE = 17,
-	SIGNAL_CATEGORY_STRING_QUEUE = 18,
+	EAGLEEYE_UNDEFINED_CATEGORY 	= -1,
+	SIGNAL_CATEGORY_IMAGE 			= 0,
+	SIGNAL_CATEGORY_TENSOR 			= 1,
+	SIGNAL_CATEGORY_STRING 			= 2,
+	SIGNAL_CATEGORY_CONTROL 		= 3,
+	SIGNAL_CATEGORY_STATE			= 4,
+	SIGNAL_CATEGORY_IMAGE_QUEUE 	= 16,
+	SIGNAL_CATEGORY_TENSOR_QUEUE 	= 17,
+	SIGNAL_CATEGORY_STRING_QUEUE 	= 18,
 };
 
 enum SignalType{
-	EAGLEEYE_UNDEFINED_SIGNAL = -1,
-	EAGLEEYE_SIGNAL_IMAGE 	= 0,				//Matrix<unsigned char> or Matrix<Array<unsigned char,3>> or Matrix<Array<unsigned char,4>>
-	EAGLEEYE_SIGNAL_RECT 	= 1,				//Matrix<int>	xywh
-	EAGLEEYE_SIGNAL_LINE	= 2,
-	EAGLEEYE_SIGNAL_POINT	= 3,
-	EAGLEEYE_SIGNAL_STRING 	= 4,
-	EAGLEEYE_SIGNAL_MASK	= 5,
-	EAGLEEYE_SIGNAL_FILE	= 6,
-	EAGLEEYE_SIGNAL_TEXT	= 7,
-	EAGLEEYE_SIGNAL_MODEL	= 8,
+	EAGLEEYE_UNDEFINED_SIGNAL 		= -1,
+	EAGLEEYE_SIGNAL_IMAGE 			= 0,				//Matrix<unsigned char> or Matrix<Array<unsigned char,3>> or Matrix<Array<unsigned char,4>>
+	EAGLEEYE_SIGNAL_RECT 			= 1,				//Matrix<int>	xywh
+	EAGLEEYE_SIGNAL_LINE			= 2,
+	EAGLEEYE_SIGNAL_POINT			= 3,
+	EAGLEEYE_SIGNAL_STRING 			= 4,
+	EAGLEEYE_SIGNAL_MASK			= 5,
+	EAGLEEYE_SIGNAL_FILE			= 6,
+	EAGLEEYE_SIGNAL_TEXT			= 7,
+	EAGLEEYE_SIGNAL_MODEL			= 8,
 	EAGLEEYE_ADVANCED_SIGNAL_DET	= 9,		//Matrix<float> x,y,w,h,label,s
 };
 
 enum SignalTarget{
-	EAGLEEYE_UNDEFINED_TARGET			= -1,
+	EAGLEEYE_UNDEFINED_TARGET		= -1,
 	EAGLEEYE_CAPTURE_STILL_IMAGE 	= 0,
 	EAGLEEYE_PHOTO_GALLERY_IMAGE	= 1,
 	EAGLEEYE_CAPTURE_PREVIEW_IMAGE 	= 2,
@@ -190,11 +192,11 @@ enum SignalTarget{
 };
 
 enum EagleeyeRuntimeType{
-	EAGLEEYE_UNKNOWN_RUNTIME = -1,
-	EAGLEEYE_CPU = 0,
-	EAGLEEYE_GPU = 1,
-	EAGLEEYE_QUALCOMM_DSP = 2,
-	EAGLEEYE_QUALCOMM_NPU = 3
+	EAGLEEYE_UNKNOWN_RUNTIME 		= -1,
+	EAGLEEYE_CPU 					= 0,
+	EAGLEEYE_GPU 					= 1,
+	EAGLEEYE_QUALCOMM_DSP 			= 2,
+	EAGLEEYE_QUALCOMM_NPU 			= 3
 };
 
 enum class DataFormat {
@@ -204,17 +206,17 @@ enum class DataFormat {
 };
 
 enum GPUPerfHint {
-  PERF_DEFAULT = 0,
-  PERF_LOW = 1,
-  PERF_NORMAL = 2,
-  PERF_HIGH = 3
+  PERF_DEFAULT 						= 0,
+  PERF_LOW 							= 1,
+  PERF_NORMAL 						= 2,
+  PERF_HIGH 						= 3
 };
 
 enum GPUPriorityHint {
-  PRIORITY_DEFAULT = 0,
-  PRIORITY_LOW = 1,
-  PRIORITY_NORMAL = 2,
-  PRIORITY_HIGH = 3
+  PRIORITY_DEFAULT 					= 0,
+  PRIORITY_LOW 						= 1,
+  PRIORITY_NORMAL 					= 2,
+  PRIORITY_HIGH 					= 3
 };
 
 // AFFINITY_NONE: initiate 'num_threads_hint' threads with no affinity
@@ -234,11 +236,11 @@ enum GPUPriorityHint {
 // If 'num_threads_hint' is -1 or greater than number of available cores,
 // 'num_threads_hint' will be reset to number of available cores.
 enum CPUAffinityPolicy {
-  AFFINITY_NONE = 0,
-  AFFINITY_BIG_ONLY = 1,
-  AFFINITY_LITTLE_ONLY = 2,
-  AFFINITY_HIGH_PERFORMANCE = 3,
-  AFFINITY_POWER_SAVE = 4,
+  AFFINITY_NONE 					= 0,
+  AFFINITY_BIG_ONLY 				= 1,
+  AFFINITY_LITTLE_ONLY 				= 2,
+  AFFINITY_HIGH_PERFORMANCE 		= 3,
+  AFFINITY_POWER_SAVE 				= 4,
 };
 }
 

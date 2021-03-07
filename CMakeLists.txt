@@ -8,7 +8,6 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -ldl -llog -lz")
 
-
 add_definitions(-DARM_WITH_OMP)
 add_definitions(-DHPPL_STUB_FUNC)
 add_definitions(-DLITE_WITH_ARM)
@@ -19,7 +18,7 @@ add_definitions(-DPADDLE_DISABLE_PROFILER)
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-# add_definitions(-DEAGLEEYE_ANDROID_APP)
+add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -109,6 +108,7 @@ if(DEFINED OPENCL)
     )
 endif()
 
+
 if(DEFINED PYTHON)
 # #   support python interface
 # add_definitions(-DSUPPORT_BOOST_PYTHON)
@@ -142,6 +142,8 @@ endif()
 include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
 
+
+ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
 if(DEFINED LITE)
 message(STATUS "LITE version")
 set(EAGLEEYE_SRC 
@@ -277,7 +279,19 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/util/opencl_util.cpp
     eagleeye/engine/nano/dataflow/schedule.cpp
     eagleeye/engine/nano/dataflow/heft.cpp
-    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc)
+    eagleeye/engine/nano/op/placeholder.cpp
+    eagleeye/render/ImageShow.cpp
+    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc
+    eagleeye/render/GLUtils.cpp
+    eagleeye/render/RenderContext.cpp
+    eagleeye/render/RenderNode.cpp
+    eagleeye/render/ImageContainer.cpp
+    eagleeye/render/RenderBase.cpp
+    eagleeye/framework/pipeline/YUVSignal.cpp
+    eagleeye/render/YUVShow.cpp
+    eagleeye/common/EagleeyeYUV.cpp
+    eagleeye/framework/pipeline/YUVSignal.cpp
+    eagleeye/processnode/YUVConvertNode.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
@@ -332,14 +346,27 @@ endif()
 
 if(DEFINED OPENCL)
 target_link_libraries(eagleeye libOpenCL)
+target_link_libraries(eagleeye EGL)
 endif()
+
+find_path(GLES3_INCLUDE_DIR GLES3/gl3.h
+    HINTS ${ANDROID_NDK})              #找到opengl头文件路径
+find_library(GLES3_LIBRARY libGLESv3.so
+    HINTS ${GLES3_INCLUDE_DIR}/../lib) #找到opengl库文件路径
+include_directories(${GLES3_INCLUDE_DIR})
+target_link_libraries(eagleeye ${GLES3_LIBRARY})
+
+add_library(libyuv SHARED IMPORTED)
+set_target_properties(libyuv PROPERTIES IMPORTED_LOCATION
+                        ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${ANDROID_ABI}/libyuv.so)
+include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
+target_link_libraries(eagleeye libyuv)
 
 # set(OpenCV_DIR ../sdk/native/jni)
 # # set(OpenCV_DIR "/Users/jian/Downloads/opencv-master")
 # find_package(OpenCV REQUIRED)
 # message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
 # include_directories(${OpenCV_INCLUDE_DIRS})
-
 if(DEFINED ANDROID_ABI)
 target_link_libraries(eagleeye log)
 endif()

@@ -89,13 +89,16 @@ bool ModelRun::initialize(){
     config.set_threads(this->m_omp_num_threads);
 
     // 2. Create PaddlePredictor by MobileConfig
-    EAGLEEYE_LOGD("create paddle predictor");
+    EAGLEEYE_LOGD("Create paddle predictor.");
     m_predictor = paddle::lite_api::CreatePaddlePredictor<paddle::lite_api::MobileConfig>(config);
     if(!m_predictor.get()){
         return false;
     }
+	std::string version = m_predictor->GetVersion();
+	EAGLEEYE_LOGD("PaddleLite version %s.", version.c_str());
+
     // 3.step resize tensor
-    EAGLEEYE_LOGD("initialize tensor");
+    EAGLEEYE_LOGD("Initialize Input tensor.");
     for(int index = 0; index < this->m_input_names.size(); ++index){
         std::unique_ptr<paddle::lite_api::Tensor> input_tensor(std::move(m_predictor->GetInput(index)));
         input_tensor->Resize(this->m_input_shapes[index]);

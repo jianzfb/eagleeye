@@ -15,6 +15,8 @@ std::map<std::string, std::shared_ptr<AnyPipeline>> AnyPipeline::m_pipeline_map;
 std::map<std::string, std::string> AnyPipeline::m_pipeline_version;
 std::map<std::string, std::string> AnyPipeline::m_pipeline_signature;
 std::string AnyPipeline::m_plugin_root;
+std::shared_ptr<RenderContext> AnyPipeline::m_render_context;
+
 AnyPipeline* AnyPipeline::getInstance(const char* pipeline_name){
     if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
         EAGLEEYE_LOGE("couldn't get pipeline %s's instance",pipeline_name);
@@ -494,9 +496,10 @@ void AnyPipeline::setInput(const char* node_name,
                            void* data, 
                            const int* data_size, 
                            const int data_dims,
+                           const int data_rotation,
                            const int data_type){
     if(node_name == NULL || strcmp(node_name, "") == 0){
-        EAGLEEYE_LOGE("node name is empty");
+        EAGLEEYE_LOGE("Node name is empty.");
         return;
     }
 
@@ -514,14 +517,19 @@ void AnyPipeline::setInput(const char* node_name,
         }
 
         if(finding_index != -1){
-            EAGLEEYE_LOGD("set custom placeholder %s", node_name);
-            m_using_placeholders[finding_index]->getOutputPort(0)->setSignalContent(data, data_size, data_dims);
+            EAGLEEYE_LOGD("Set custom placeholder %s.", node_name);
+
+            bool is_texture = false;
+            if(data_type == EAGLEEYE_TEXTURE_UINT4_RGBA){
+                is_texture = true;
+            }
+            m_using_placeholders[finding_index]->getOutputPort(0)->setSignalContent(data, data_size, data_dims, data_rotation, is_texture);
             m_using_placeholders[finding_index]->modified();
             return;
-        }
+        }   
     }
 
-    EAGLEEYE_LOGD("set pipeline input %s", node_name);
+    EAGLEEYE_LOGD("Set pipeline input %s.", node_name);
     std::string input_key = std::string(node_name);    
     int port = 0;
     if(input_key.find("/") != std::string::npos){
@@ -531,22 +539,43 @@ void AnyPipeline::setInput(const char* node_name,
     }
 
     if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
-        EAGLEEYE_LOGE("%s is not input node", node_name);
+        EAGLEEYE_LOGE("Node %s is not input node.", node_name);
         return;
     }
     
     if(data_size[0] == 0 || data_size[1] == 0 || data_size[2] == 0){
-        EAGLEEYE_LOGE("data size abnormal %d %d %d", data_size[0], data_size[1], data_size[2]);
+        EAGLEEYE_LOGE("Data size abnormal %d %d %d.", data_size[0], data_size[1], data_size[2]);
         return;
     }
 
-    if(data_type != this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()){
-        EAGLEEYE_LOGE("data type %d not equal to input %d", data_type, int(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()));
-        return;
+    bool is_texture = false;
+    if(data_type == EAGLEEYE_TEXTURE_UINT4_RGBA){
+        is_texture = true;
     }
 
-    this->m_input_nodes[input_key]->getOutputPort(port)->setSignalContent(data, data_size, data_dims);
+    if(!is_texture){
+        if(data_type != this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()){
+            EAGLEEYE_LOGE("Data type %d not equal to predefined input data type %d.", 
+                            data_type, 
+                            int(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()));
+            return;
+        }
+    }
+    else{
+        if(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType() != EAGLEEYE_RGBA && 
+            this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType() != EAGLEEYE_FLOAT4){
+            
+            EAGLEEYE_LOGE("Texture data not support predefined input data type %d.", 
+                        int(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()));
+            return;
+        }
+    }
+
+    EAGLEEYE_LOGD("set signal content");
+    this->m_input_nodes[input_key]->getOutputPort(port)->setSignalContent(data, data_size, data_dims, data_rotation, is_texture);
     this->m_input_nodes[input_key]->modified();
+
+    EAGLEEYE_LOGD("finish set signal content");
 }
 
 void AnyPipeline::getOutput(const char* node_name, 
@@ -901,4 +930,39 @@ void AnyPipeline::setPluginRoot(const char* root){
     AnyPipeline::m_plugin_root = root;
 }
 
+void AnyPipeline::onRenderSurfaceCreate(){
+    if(!AnyPipeline::m_render_context.get()){
+        AnyPipeline::m_render_context = 
+                std::shared_ptr<RenderContext>(new RenderContext(), 
+                                [](RenderContext* ptr){delete ptr;});
+    }
+}
+
+void AnyPipeline::onRenderSurfaceChange(int width, int height){
+    if(AnyPipeline::m_render_context.get()){
+        AnyPipeline::m_render_context->onChanged(width, height);
+    }
+}
+
+void AnyPipeline::onRenderSurfaceMouse(int mouse_x, int mouse_y, int mouse_flag){
+    if(AnyPipeline::m_render_context.get()){
+        AnyPipeline::m_render_context->onMouse(mouse_x, mouse_y, mouse_flag);
+    }
+}
+
+int AnyPipeline::getRenderSurfaceW(){
+    if(AnyPipeline::m_render_context.get()){
+        return AnyPipeline::m_render_context->getScreenW();
+    }
+    
+    return 0;
+}
+
+int AnyPipeline::getRenderSurfaceH(){
+    if(AnyPipeline::m_render_context.get()){
+        return AnyPipeline::m_render_context->getScreenH();
+    }
+    
+    return 0;
+}
 }

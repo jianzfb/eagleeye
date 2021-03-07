@@ -86,6 +86,7 @@ bool eagleeye_pipeline_get_param(const char* pipeline_name,
  * @param data 
  * @param data_size 
  * @param data_dims 
+ * @param data_rotation
  * @param data_type
  */
 bool eagleeye_pipeline_set_input(const char* pipeline_name,
@@ -93,6 +94,7 @@ bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  void* data, 
                                  const int* data_size, 
                                  const int data_dims,
+                                 const int data_rotation,
                                  const int data_type);
 
 /**
@@ -229,6 +231,23 @@ bool eagleeye_pipeline_debug_replace_at(const char* pipeline_name, const char* n
  */
 bool eagleeye_pipeline_debug_restore_at(const char* pipeline_name, const char* node_name, int port);
 
+/**
+ * @brief surface create
+ */ 
+bool eagleeye_on_surface_create();
+
+/**
+ * @brief surface size change
+ */ 
+bool eagleeye_on_surface_change(int width, int height);
+
+/**
+ * @brief surface mouse event
+ * @param mouse_x mouse pos x
+ * @param mouse_y mouse pos y
+ * @param mouse_flag 0: MOUSE_DOWN, 1: MOUSE_UP, 2: MOUSE_MOVE
+ */ 
+bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag);
 
 // 注册插件函数类型
 typedef const char* (*REGISTER_PLUGIN_FUNC)();
@@ -293,8 +312,8 @@ extern "C" { \
     bool eagleeye_##pipeline##_get_param(const char* node_name, const char* param_name, void* value){ \
         return eagleeye_pipeline_get_param(#pipeline, node_name, param_name, value); \
     } \
-    bool eagleeye_##pipeline##_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type){ \
-        return eagleeye_pipeline_set_input(#pipeline, node_name, data, data_size, data_dims, data_type); \
+    bool eagleeye_##pipeline##_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type){ \
+        return eagleeye_pipeline_set_input(#pipeline, node_name, data, data_size, data_dims, data_rotation, data_type); \
     } \
     bool eagleeye_##pipeline##_get_output(const char* node_name, void*& data, int* data_size, int& data_dims,int& data_type){ \
         return eagleeye_pipeline_get_output(#pipeline, node_name, data, data_size, data_dims, data_type); \

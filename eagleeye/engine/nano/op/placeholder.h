@@ -1,36 +1,38 @@
-#ifndef _EAGLEEYE_PLACEHOLDER_H_
-#define _EAGLEEYE_PLACEHOLDER_H_
-#include "eagleeye/common/EagleeyeMacro.h"
+#ifndef _EAGLEEYE_PLACEHOLDER_
+#define _EAGLEEYE_PLACEHOLDER_
+#include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
-#include "eagleeye/common/EagleeyeRuntime.h"
-#include "eagleeye/engine/nano/op/FixedCNNOp.h"
+#include "eagleeye/engine/nano/util/opencl_util.h"
+#include<vector>
+#include "eagleeye/common/EagleeyeOpenCL.h"
 
 namespace eagleeye{
-namespace nano{    
-class Placeholder:public FixedCNNOp{
+namespace dataflow{
+/**
+ * @brief placeholder op
+ * 
+ */
+class Placeholder:public BaseOp<Tensor, 0, 1>{
 public:
-    Placeholder(std::string op_name);
+    Placeholder(std::string name);
     virtual ~Placeholder();
 
-    void run_on_cpu(std::vector<Tensor<FixedType>>& output);
-    void run_on_gpu(std::vector<Tensor<FixedType>>& output);
-    void run_on_dsp(std::vector<Tensor<FixedType>>& output);
-
-    virtual bool init(char *buf, int in_size);
-    virtual int setShape(std::vector<int64_t> shape);
-
-    /**
-     * @brief Set the Input data for placeholder
-     * 
-     * @param data 
-     */
-    virtual void setInput(std::vector<Tensor<float>>& data);
+    virtual int init(std::map<std::string, std::vector<float>> params);
+    virtual int runOnCpu(std::vector<Tensor>& output, std::vector<Tensor> input=std::vector<Tensor>{});
+    virtual int runOnGpu(std::vector<Tensor>& output, std::vector<Tensor> input=std::vector<Tensor>{});
+    virtual int update(void* data, int index=0);
 
 private:
-    float m_min_val;
-    float m_max_val;
+    int64_t m_b;
+    int64_t m_h;
+    int64_t m_w;
+    int64_t m_c;
+    MemoryType m_memory_type;
+    DataFormat m_data_format;
+    EagleeyeType m_data_type;
 
+    std::string m_name;
 };
-}
+}    
 }
 #endif
