@@ -101,52 +101,38 @@ void YUVSignal::setSignalContent(void* data, const int* data_size, const int dat
     // ignore is_texture
     int height = data_size[0];  // rows
     int width = data_size[1];   // cols
-    EAGLEEYE_LOGD("in set signal content width %d height %d rotation %d", width, height, data_rotation);
-
     Blob blob(sizeof(unsigned char)*(height*width + (height/2)*(width/2) + (height/2)*(width/2)), 
                     Aligned(64), 
                     EagleeyeRuntime(EAGLEEYE_CPU));
     
     unsigned char* blob_ptr = (unsigned char*)blob.cpu();
     unsigned char* data_ptr = (unsigned char*)data;
-
-    EAGLEEYE_LOGD("start rotation");
     MetaData meta_data = this->meta();
     // 旋转
     if(data_rotation == 0){
-        EAGLEEYE_LOGD("1");
         memcpy(blob_ptr, data_ptr, sizeof(unsigned char)*(int)(height*width*1.5));
 
         meta_data.rows = height;
         meta_data.cols = width;
-        EAGLEEYE_LOGD("after 1");
     } 
     else if(data_rotation == 90){
-        EAGLEEYE_LOGD("2");
         eagleeye_I420_rotate_90(data_ptr, width, height, blob_ptr);
         meta_data.rows = width;
         meta_data.cols = height;
-        EAGLEEYE_LOGD("after 2");
     }
     else if(data_rotation == 180){
-        EAGLEEYE_LOGD("3");
         eagleeye_I420_rotate_180(data_ptr, width, height, blob_ptr);
         meta_data.rows = height;
         meta_data.cols = width;
-        EAGLEEYE_LOGD("after 3");
     }
     else if(data_rotation == 270){
-        EAGLEEYE_LOGD("4");
         eagleeye_I420_rotate_270(data_ptr, width, height, blob_ptr);
 
         meta_data.rows = width;
         meta_data.cols = height;
-        EAGLEEYE_LOGD("after 4");
     }
 
-    EAGLEEYE_LOGD("set data");
     this->setData(blob, meta_data);
-    EAGLEEYE_LOGD("after data");
 }
 
 void YUVSignal::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
@@ -164,8 +150,6 @@ void YUVSignal::setMeta(MetaData meta){
 
 void YUVSignal::printUnit(){
     Superclass::printUnit();
-
-    EAGLEEYE_LOGD("yuv signal width %d height %d", this->m_meta.cols, this->m_meta.rows);
 }
 
 int YUVSignal::getWidth(){
@@ -177,7 +161,7 @@ int YUVSignal::getHeight(){
 
 void YUVSignal::setSignalValueType(EagleeyeType yuv_format){
     if(yuv_format != EAGLEEYE_YUV_I420 && yuv_format != EAGLEEYE_YUV_NV21 && yuv_format != EAGLEEYE_YUV_NV12){
-        EAGLEEYE_LOGE("dont support yuv format %d", (int)(yuv_format));
+        EAGLEEYE_LOGE("Dont support yuv format %d", (int)(yuv_format));
         return;
     }
 

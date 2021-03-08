@@ -169,8 +169,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/State2BooleanNode.cpp
     eagleeye/processnode/CopyNode.cpp
     eagleeye/processnode/DelayFetch.cpp
-    eagleeye/common/EagleeyeImageModule.cpp
-    eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/common/EagleeyeFile.cpp 
     eagleeye/common/EagleeyeTime.cpp 
     eagleeye/common/EagleeyeProcessor.cpp
@@ -233,8 +231,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/State2BooleanNode.cpp
     eagleeye/processnode/CopyNode.cpp
     eagleeye/processnode/DelayFetch.cpp
-    eagleeye/common/EagleeyeImageModule.cpp
-    eagleeye/common/EagleeyeVisTool.cpp
     eagleeye/engine/nn_run.cpp
     eagleeye/common/EagleeyeFile.cpp 
     eagleeye/common/EagleeyeTime.cpp 
@@ -291,7 +287,8 @@ set(EAGLEEYE_SRC
     eagleeye/render/YUVShow.cpp
     eagleeye/common/EagleeyeYUV.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
-    eagleeye/processnode/YUVConvertNode.cpp)
+    eagleeye/processnode/YUVConvertNode.cpp
+    eagleeye/processnode/YUVResizeNode.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
