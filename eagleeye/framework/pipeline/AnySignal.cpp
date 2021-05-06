@@ -4,6 +4,40 @@
 
 namespace eagleeye
 {
+const char* SignalTypeName[]={
+	"IMAGE",
+	"RECT",
+	"LINE",
+	"POINT",
+	"STRING",
+	"MASK",
+	"FILE",
+	"TEXT",
+	"MODEL",
+	"LANDMARK",
+	"STATE",
+	"SWITCH",
+	"IMAGE_RGB",
+	"IMAGE_RGBA",
+	"IMAGE_BGR",
+	"IMAGE_BGRA",
+	"IMAGE_GRAY",
+	"TEXTURE",
+	"DET"
+};
+
+const char* SignalTargetName[]={
+	"CAPTURE_STILL_IMAGE",
+	"PHOTO_GALLERY_IMAGE",
+	"CAPTURE_PREVIEW_IMAGE",
+	"CAPTURE_CLICK",
+	"CAPTURE_LINE",
+	"CAPTURE_RECT",
+	"CAPTURE_POINT",
+	"CAPTURE_MASK",
+	"CAPTURE_VIDEO_IMAGE"
+};
+
 AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char* signal_target)
 :AnyUnit(unit_name)
 {
@@ -14,27 +48,10 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 	m_signal_type = signal_type;
 	m_signal_target = signal_target;
 	this->m_prepared_ok = false;
+	this->m_data_update = false;
 	this->m_out_degree = 0;
 
-	// set support signal type and target
-	mSupportSignalType[EAGLEEYE_SIGNAL_IMAGE] = "IMAGE";
-	mSupportSignalType[EAGLEEYE_SIGNAL_RECT] = "RECT";
-	mSupportSignalType[EAGLEEYE_SIGNAL_LINE] = "LINE";
-	mSupportSignalType[EAGLEEYE_SIGNAL_POINT] = "POINT";
-	mSupportSignalType[EAGLEEYE_SIGNAL_STRING] = "STRING";
-	mSupportSignalType[EAGLEEYE_SIGNAL_MASK] = "MASK";
-	mSupportSignalType[EAGLEEYE_ADVANCED_SIGNAL_DET] = "DET";
 	this->m_signal_type = "UNDEFINED";
-
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_STILL_IMAGE] = "CAPTURE_STILL_IMAGE";
-	mSupportSignalTarget[EAGLEEYE_PHOTO_GALLERY_IMAGE] = "PHOTO_GALLERY_IMAGE";
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_PREVIEW_IMAGE] = "CAPTURE_PREVIEW_IMAGE";
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_CLICK] = "CAPTURE_CLICK";
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_LINE] = "CAPTURE_LINE";
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_RECT] = "CAPTURE_RECT";
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_POINT] = "CAPTURE_POINT";
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_MASK] = "CAPTURE_MASK";
-	mSupportSignalTarget[EAGLEEYE_CAPTURE_VIDEO_IMAGE] = "CAPTURE_VIDEO_IMAGE";
 	this->m_signal_target = "UNDEFINED";
 
 	m_signal_type_value = EAGLEEYE_UNDEFINED_SIGNAL;
@@ -94,6 +111,8 @@ void AnySignal::updateUnitInfo(){
 	else{
 		this->m_prepared_ok = true;
 	}
+
+	this->m_data_update = false;
 }
 
 void AnySignal::processUnitInfo()
@@ -107,9 +126,14 @@ void AnySignal::processUnitInfo()
 	}
 }
 
+bool AnySignal::isHasBeenUpdate(){
+	return this->m_data_update;
+}
+
 void AnySignal::signalHasBeenUpdate()
 {
 	modified();
+	this->m_data_update = true;
 }
 
 void AnySignal::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool)
@@ -145,48 +169,30 @@ void AnySignal::init(){
 	}	
 }
 
-void AnySignal::setSignalType(const char* type){
-	this->m_signal_type = type;
-	
-	std::map<SignalType,std::string>::iterator iter, iend(this->mSupportSignalType.end());
-	for(iter = this->mSupportSignalType.begin(); iter != iend; ++iter){
-		if(iter->second == std::string(type)){
-			this->m_signal_type_value = iter->first;
-		}
-	}
-}
-
 void AnySignal::setSignalType(SignalType type){
-	if(this->mSupportSignalType.find(type) == this->mSupportSignalType.end()){
-		EAGLEEYE_LOGE("dont support type %d",(int)type);
-		return;
+	if(type == EAGLEEYE_UNDEFINED_SIGNAL){
+		this->m_signal_type = "UNDEFINED";
+		EAGLEEYE_LOGE("undefined signal type");
 	}
-	this->m_signal_type = this->mSupportSignalType[type];
-	this->m_signal_type_value = type;
+	else{
+		this->m_signal_type = SignalTypeName[(int)(type)];
+	}
+
+	m_signal_type_value = type;
 }
 
-const char* AnySignal::getSignalType(){
+const char* AnySignal::getSignalTypeName(){
 	return this->m_signal_type.c_str();
 }
 
-void AnySignal::setSignalTarget(const char* target){
-	this->m_signal_target = target;
-
-	std::map<SignalTarget,std::string>::iterator iter, iend(this->mSupportSignalTarget.end());
-	for(iter = this->mSupportSignalTarget.begin(); iter != iend; ++iter){
-		if(iter->second == std::string(target)){
-			this->m_signal_target_value = iter->first;
-		}
-	}
-}
-
 void AnySignal::setSignalTarget(SignalTarget target){
-	if(this->mSupportSignalTarget.find(target) == this->mSupportSignalTarget.end()){
-		EAGLEEYE_LOGE("dont support target %d",(int)target);
-		return;
+	if(target == EAGLEEYE_UNDEFINED_TARGET){
+		this->m_signal_target = "UNDEFINED";
+		EAGLEEYE_LOGE("undefined signal target");
 	}
-	this->m_signal_target = this->mSupportSignalTarget[target];
-	this->m_signal_target_value = target;
+	else{
+		this->m_signal_target = SignalTargetName[(int)(target)];
+	}
 }
 
 const char* AnySignal::getSignalTarget(){

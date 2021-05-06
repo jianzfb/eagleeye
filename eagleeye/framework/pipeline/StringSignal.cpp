@@ -1,5 +1,8 @@
 #include "eagleeye/framework/pipeline/StringSignal.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/common/EagleeyeLog.h"
+
+
 namespace eagleeye
 {
 StringSignal::StringSignal(std::string ini_str){
@@ -105,7 +108,8 @@ void StringSignal::setData(StringSignal::DataType data){
     modified();
 }
 
-void StringSignal::setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation, bool is_texture){
+void StringSignal::setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation){
+	EAGLEEYE_LOGD("set signal string content");
 	std::string str = *((std::string*)data);
 	this->setData(str);
 }

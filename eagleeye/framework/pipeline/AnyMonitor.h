@@ -114,8 +114,8 @@ public:
 #define EAGLEEYE_MONITOR_VAR(VarT,set_fun,get_fun,name,min_v,max_v) \
 	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,name,min_v,max_v));
 
-#define EAGLEEYE_MONITOR_STRING(VarT,set_fun,get_fun,name,description) \
-	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,name,"","",description));
+#define EAGLEEYE_MONITOR_VAR_EXT(VarT,set_fun,get_fun,name,min_v,max_v,description) \
+	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,name,min_v,max_v,description));
 
 }
 

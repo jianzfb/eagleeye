@@ -41,6 +41,16 @@ public:
     static bool registerPipeline(const char* pipeline_name, const char* version, const char* key);
 
     /**
+     * @brief register signal in background
+     */ 
+    static bool registerSignal(const char* pipeline_name, const char* node);
+
+    /**
+     * @brief check signal matching
+     */ 
+    static bool checkSignalMatching(const char* pipeline_name, const char* node, const char* register_node);
+
+    /**
      * @brief release pipelin resource
      * 
      * @param pipeline_name 
@@ -170,7 +180,12 @@ public:
      * 
      * @param node_name 
      */
-    bool start(const char* node_name=NULL);
+    bool start(const char* node_name=NULL, const char* ignore_prefix=NULL);
+
+    /**
+     * @brief refresh all render node
+     */ 
+    void refresh();
 
     /**
      * @brief whether pipeline is ready to run
@@ -215,6 +230,16 @@ public:
      */
     void setInput(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type);
     
+    /**
+     * @brief Set the Pipeline Input (from register node)
+     */ 
+    void setInput(const char* node_name, std::string from_register_node);
+
+    /**
+     * @brief Set the Pipeline Input
+     */ 
+    void setInput(const char* node_name, std::string from_pipeline_name, std::string from_node_name);
+
     /**
      * @brief Get the Node Output object
      * 

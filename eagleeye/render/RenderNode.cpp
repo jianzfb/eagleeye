@@ -10,6 +10,8 @@ RenderNode::RenderNode(){
     this->m_canvas_y = 0;
     this->m_canvas_w = 0;
     this->m_canvas_h = 0;
+
+    this->setNodeCategory(RENDER);
 }   
 
 RenderNode::~RenderNode(){

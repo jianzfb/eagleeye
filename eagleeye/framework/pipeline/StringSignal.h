@@ -100,7 +100,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation=-1, bool is_texture=false);
+	virtual void setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation=-1);
 
 	/**
 	 * @brief Get the Signal Content object

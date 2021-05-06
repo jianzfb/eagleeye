@@ -161,7 +161,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageReadNode.cpp
     eagleeye/processnode/ReadLineFromFileNode.cpp
     eagleeye/processnode/SerialStringNode.cpp
-    eagleeye/processnode/DrawNode.cpp
     eagleeye/processnode/AutoNode.cpp
     eagleeye/processnode/QueueNode.cpp
     eagleeye/processnode/DebugNode.cpp
@@ -223,7 +222,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/HistogramEqualizationNode.cpp
     eagleeye/processnode/ReadLineFromFileNode.cpp
     eagleeye/processnode/SerialStringNode.cpp
-    eagleeye/processnode/DrawNode.cpp
     eagleeye/processnode/AutoNode.cpp
     eagleeye/processnode/QueueNode.cpp
     eagleeye/processnode/DebugNode.cpp
@@ -288,7 +286,11 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeYUV.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/processnode/YUVConvertNode.cpp
-    eagleeye/processnode/YUVResizeNode.cpp)
+    eagleeye/processnode/YUVResizeNode.cpp
+    eagleeye/processnode/OrNode.cpp
+    eagleeye/processnode/IsUpdateNode.cpp
+    eagleeye/processnode/DottingNode.cpp
+    eagleeye/framework/pipeline/AnyRegister.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})

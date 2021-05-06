@@ -10,6 +10,13 @@
 
 namespace eagleeye
 {
+enum NodeCategory{
+	PLACEHOLDER,
+	COMPUTING,
+	RENDER
+};
+
+class AnyPipeline;
 class EAGLEEYE_API AnyNode:public AnyUnit
 {
 public:
@@ -298,6 +305,15 @@ public:
 	unsigned long getExitTime();
 	unsigned long getPipelineExitTime();
 
+	/**
+	 * @brief set/get pipeline
+	 */ 
+	AnyPipeline* getPipeline(){return this->m_pipeline;};
+	void setPipeline(AnyPipeline* pipeline){this->m_pipeline = pipeline;};
+
+	NodeCategory getNodeCategory(){return this->m_node_category;};
+	void setNodeCategory(NodeCategory node_category){this->m_node_category = node_category;};
+
 protected:
 	/**
 	 *	@brief make one output signal
@@ -361,6 +377,8 @@ protected:
 	unsigned long m_exit_time;
 	static unsigned long m_pipeline_exit_time;
 
+	NodeCategory m_node_category;
+
 private:
 	AnyNode(const AnyNode&);
 	void operator=(const AnyNode&);
@@ -376,6 +394,7 @@ private:
 	bool m_print_flag;			// ...
 	bool m_findin_flag;			// ...
 
+	AnyPipeline* m_pipeline;
 };
 }
 

@@ -4,6 +4,7 @@
 #include "eagleeye/common/EagleeyeVersion.h"
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/AnyRegister.h"
 #include "eagleeye/processnode/CopyNode.h"
 #include "eagleeye/processnode/Placeholder.h"
 #include "eagleeye/common/EagleeyeIni.h"
@@ -94,6 +95,71 @@ bool AnyPipeline::registerPipeline(const char* pipeline_name,
     return true;
 } 
 
+bool AnyPipeline::registerSignal(const char* pipeline_name, const char* node_name){
+    if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
+        EAGLEEYE_LOGE("Pipeline name %s dont exist.", pipeline_name);
+        return false;
+    }
+
+    AnyNode* node = m_pipeline_map[std::string(pipeline_name)]->get(node_name);
+    if(node == NULL){
+        EAGLEEYE_LOGE("Node %s dont exist in pipeline %s.", node_name, pipeline_name);
+        return false;
+    }
+
+    std::string signal_name = formatString("%s/%s", pipeline_name, node_name);
+    std::string input_key = std::string(node_name);    
+    int port = 0;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+    if(port >= node->getNumberOfOutputSignals()){
+        EAGLEEYE_LOGE("Port %d not in Node %s output in pipeline %s.", port, node_name, pipeline_name);
+        return false;
+    }
+
+    bool state = AnyRegister::get()->registerSignal(signal_name,  node->getOutputPort(port));
+    return state;
+}
+
+bool AnyPipeline::checkSignalMatching(const char* pipeline_name, const char* node_name, const char* register_node_name){
+    if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
+        EAGLEEYE_LOGE("Pipeline name %s dont exist.", pipeline_name);
+        return false;
+    }
+
+    AnyNode* node = m_pipeline_map[std::string(pipeline_name)]->get(node_name);
+    if(node == NULL){
+        EAGLEEYE_LOGE("Node %s dont exist in pipeline %s.", node_name, pipeline_name);
+        return false;
+    }
+
+    std::string input_key = std::string(node_name);    
+    int port = 0;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+    if(port >= node->getNumberOfOutputSignals()){
+        EAGLEEYE_LOGE("Port %d not in Node %s output in pipeline %s.", port, node_name, pipeline_name);
+        return false;
+    }
+
+    AnySignal* register_sig = AnyRegister::get()->signal(register_node_name);
+    if(register_sig == NULL){
+        return false;
+    }
+
+    if(register_sig->getSignalType() != node->getOutputPort(port)->getSignalType()){
+        return false;
+    }
+
+    return true;
+}
+
 void AnyPipeline::releasePipeline(const char* pipeline_name){
     if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
         return;
@@ -157,12 +223,30 @@ const char* AnyPipeline::getPipelineVersion(){
     return AnyPipeline::m_pipeline_version[m_name].c_str();
 }
 
-bool AnyPipeline::start(const char* node_name){
+void AnyPipeline::refresh(){
+    std::map<std::string, AnyNode*>::iterator iter, iend(this->m_nodes.end());
+    for(iter = this->m_nodes.begin(); iter != iend; ++iter){
+        if(iter->second->getNodeCategory() == RENDER){
+            iter->second->modified();
+        }
+    }
+}
+
+bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
+    EAGLEEYE_LOGD("%s pipeline start", this->m_name.c_str());
+
     bool is_finish = true;
     if(node_name == NULL){
         // run whole pipeline
         std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
         for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
+            if(ignore_prefix != NULL && (ignore_prefix[0] != '\0')){
+                if(startswith(iter->first, ignore_prefix)){
+                    EAGLEEYE_LOGD("Ignore %s.", iter->first.c_str());
+                    continue;
+                }
+            }
+
             iter->second->start();
             is_finish = is_finish & iter->second->isDataHasBeenUpdate();
         }
@@ -214,6 +298,8 @@ bool AnyPipeline::add(AnyNode* node, const char* node_name, PipelineNodeType nod
 
     // set node name
     node->setUnitName(node_name);
+    // set pipeline
+    node->setPipeline(this);
     this->m_nodes[std::string(node_name)] = node;
 
     // 
@@ -518,12 +604,7 @@ void AnyPipeline::setInput(const char* node_name,
 
         if(finding_index != -1){
             EAGLEEYE_LOGD("Set custom placeholder %s.", node_name);
-
-            bool is_texture = false;
-            if(data_type == EAGLEEYE_TEXTURE_UINT4_RGBA){
-                is_texture = true;
-            }
-            m_using_placeholders[finding_index]->getOutputPort(0)->setSignalContent(data, data_size, data_dims, data_rotation, is_texture);
+            m_using_placeholders[finding_index]->getOutputPort(0)->setSignalContent(data, data_size, data_dims, data_rotation);
             m_using_placeholders[finding_index]->modified();
             return;
         }   
@@ -548,35 +629,78 @@ void AnyPipeline::setInput(const char* node_name,
         return;
     }
 
-    bool is_texture = false;
-    if(data_type == EAGLEEYE_TEXTURE_UINT4_RGBA){
-        is_texture = true;
-    }
-
-    if(!is_texture){
-        if(data_type != this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()){
-            EAGLEEYE_LOGE("Data type %d not equal to predefined input data type %d.", 
-                            data_type, 
-                            int(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()));
-            return;
-        }
-    }
-    else{
-        if(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType() != EAGLEEYE_RGBA && 
-            this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType() != EAGLEEYE_FLOAT4){
-            
-            EAGLEEYE_LOGE("Texture data not support predefined input data type %d.", 
-                        int(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalValueType()));
-            return;
-        }
-    }
-
-    EAGLEEYE_LOGD("set signal content");
-    this->m_input_nodes[input_key]->getOutputPort(port)->setSignalContent(data, data_size, data_dims, data_rotation, is_texture);
+    this->m_input_nodes[input_key]->getOutputPort(port)->setSignalContent(data, data_size, data_dims, data_rotation);
     this->m_input_nodes[input_key]->modified();
-
     EAGLEEYE_LOGD("finish set signal content");
 }
+
+void AnyPipeline::setInput(const char* node_name, std::string from_pipeline_name, std::string from_node_name){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("Node name is empty.");
+        return;
+    }
+
+    EAGLEEYE_LOGD("Set pipeline input %s.", node_name);
+    std::string input_key = std::string(node_name);    
+    int port = 0;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+
+    if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
+        EAGLEEYE_LOGE("Node %s is not input node.", node_name);
+        return;
+    }
+
+    std::string sig_name = formatString("%s/%s", from_pipeline_name.c_str(), from_node_name.c_str());
+    AnySignal* sig = AnyRegister::get()->signal(sig_name);
+    if(sig == NULL){
+        return;
+    }
+
+    this->m_input_nodes[input_key]->getOutputPort(port)->copy(sig);
+    this->m_input_nodes[input_key]->modified();
+    EAGLEEYE_LOGD("Finish set input %s", node_name);
+}
+
+
+
+void AnyPipeline::setInput(const char* node_name, std::string from_register_node){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("Node name is empty.");
+        return;
+    }
+
+    EAGLEEYE_LOGD("Set pipeline input %s.", node_name);
+    std::string input_key = std::string(node_name);    
+    int port = 0;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+
+    if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
+        EAGLEEYE_LOGE("Node %s is not input node.", node_name);
+        return;
+    }
+
+    AnySignal* register_sig = AnyRegister::get()->signal(from_register_node);
+    if(register_sig == NULL){
+        EAGLEEYE_LOGE("Register node not exist.");
+        return;
+    }
+    
+    if(this->m_input_nodes[input_key]->getOutputPort(port)->getSignalType() != register_sig->getSignalType()){
+        EAGLEEYE_LOGE("Signal type (%s,%s) not consistent.", node_name, from_register_node.c_str());
+        return;
+    }
+
+    this->m_input_nodes[input_key]->getOutputPort(port)->copy(register_sig);
+}
+
 
 void AnyPipeline::getOutput(const char* node_name, 
                             void*& data, 
@@ -634,7 +758,7 @@ void AnyPipeline::getPipelineInputs(std::vector<std::string>& input_nodes,
     std::map<std::string, AnyNode*>::iterator iter,iend(this->m_input_nodes.end());
     for(iter = this->m_input_nodes.begin(); iter != iend; ++iter){
         input_nodes.push_back(iter->first);
-        input_types.push_back(iter->second->getOutputPort(0)->getSignalType());
+        input_types.push_back(iter->second->getOutputPort(0)->getSignalTypeName());
         input_sources.push_back(iter->second->getOutputPort(0)->getSignalTarget());
     }
 }
@@ -650,11 +774,11 @@ void AnyPipeline::getPipelineOutputs(std::vector<std::string>& output_nodes,
         std::string signal_target = "";
         for(int index = 0; index<iter->second->getNumberOfOutputSignals(); ++index){
             if(index != iter->second->getNumberOfOutputSignals() - 1){
-                signal_type += std::string(iter->second->getOutputPort(index)->getSignalType()) + "/";
+                signal_type += std::string(iter->second->getOutputPort(index)->getSignalTypeName()) + "/";
                 signal_target += std::string(iter->second->getOutputPort(index)->getSignalTarget()) + "/";
             }
             else{
-                signal_type += std::string(iter->second->getOutputPort(index)->getSignalType());
+                signal_type += std::string(iter->second->getOutputPort(index)->getSignalTypeName());
                 signal_target += std::string(iter->second->getOutputPort(index)->getSignalTarget());
             }
         }
@@ -689,20 +813,24 @@ void AnyPipeline::getPipelineMonitors(std::vector<std::string>& monitor_names,
 }
 
 void AnyPipeline::initialize(const char* configure_folder){
+    EAGLEEYE_LOGD("in initialize");
     if(this->m_is_initialize){
-        EAGLEEYE_LOGD("pipeline %s has been initialized");
+        EAGLEEYE_LOGD("pipeline %s has been initialized", m_name.c_str());
         return;
     }
+    EAGLEEYE_LOGD("#### -1 ");
     // 设置基本信息
     if(AnyPipeline::m_pipeline_version.find(this->m_name) == AnyPipeline::m_pipeline_version.end()){
         EAGLEEYE_LOGD("pipeline %s version not be register", this->m_name.c_str());
         return;
     }    
+    EAGLEEYE_LOGD("#### -2 ");
     this->m_version = AnyPipeline::m_pipeline_version[this->m_name];
     if(AnyPipeline::m_pipeline_signature.find(this->m_name) == AnyPipeline::m_pipeline_signature.end()){
         EAGLEEYE_LOGD("pipeline %s signature not be register", this->m_name.c_str());
         return;
     }
+    EAGLEEYE_LOGD("#### -3 ");
     this->m_signature = AnyPipeline::m_pipeline_signature[this->m_name];
     EAGLEEYE_LOGD("pipeline %s basic information", this->m_name.c_str());
     EAGLEEYE_LOGD("version      %s", this->m_version.c_str());
@@ -774,6 +902,8 @@ void AnyPipeline::initialize(const char* configure_folder){
             EAGLEEYE_LOGD("config file not exist in %s", configure_folder);
         }
     }
+
+    this->m_is_initialize = true;
 }
 
 void AnyPipeline::addFeadbackRule(const char* trigger_node, int trigger_node_state, const char* response_node, const char* response_action){
@@ -921,9 +1051,14 @@ AnyNode* AnyPipeline::placeholder(SignalCategory category, EagleeyeType type){
 std::string AnyPipeline::resourceFolder(){
     std::string root = "./";
     if(!this->m_plugin_root.empty()){
-        root = this->m_plugin_root+'/';
+        if(endswith(this->m_plugin_root, "/") || endswith(this->m_plugin_root, "\\")){
+            root = this->m_plugin_root;
+        }
+        else{
+            root = this->m_plugin_root+'/';
+        }
     }
-    return root+this->m_name + "/resource/";
+    return root + this->m_name + "/resource/";
 }
 
 void AnyPipeline::setPluginRoot(const char* root){

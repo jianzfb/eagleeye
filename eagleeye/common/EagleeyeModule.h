@@ -56,6 +56,21 @@ bool eagleeye_release_module();
 bool eagleeye_register_pipeline(const char* pipeline, const char* version, const char* key);
 
 /**
+ * @brief reigster signal to background
+ * @param pipeline pipeline name
+ * @param node node/port
+ */ 
+bool eagleeye_register_signal(const char* pipeline, const char* node);
+
+/**
+ * @brief check whether node matching
+ * @param pipeline pipeline name
+ * @param node node/port
+ * @param cache_node node/port register
+ */ 
+bool eagleeye_check_signal_matching(const char* pipeline, const char* node, const char* register_node);
+
+/**
  * @brief set pipeline parameter
  * 
  * @param node_name 
@@ -96,6 +111,24 @@ bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const int data_dims,
                                  const int data_rotation,
                                  const int data_type);
+
+/**
+ * @brief set pipeline input (path or node name)
+ * @param pipeline_name 
+ * @param node_name
+ * @param register_node_name 
+ */ 
+bool eagleeye_pipeline_set_input(const char* pipeline_name,
+                                 const char* node_name, 
+                                 const char* register_node_name);
+
+/**
+ * @brief link pipelines
+ */ 
+bool eagleeye_pipeline_link(const char* target_pipeline_name,
+                            const char* target_node_name,
+                            const char* from_pipeline_name,
+                            const char* from_node_name);
 
 /**
  * @brief get pipeline node output
@@ -176,10 +209,15 @@ bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
 bool eagleeye_pipeline_isready(const char* pipeline_name, int& is_ready);
 
 /**
- * @brief run pipeline
+ * @brief pipeline run
  * 
  */
-bool eagleeye_pipeline_run(const char* pipeline_name);
+bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix=NULL);
+
+/**
+ * @brief pipeline render
+ */ 
+bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_prefix=NULL);
 
 /**
  * @brief reset pipeline

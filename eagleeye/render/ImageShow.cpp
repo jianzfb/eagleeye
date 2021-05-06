@@ -1,10 +1,10 @@
 #include "eagleeye/render/ImageShow.h"
+#include "eagleeye/render/GLUtils.h"
 #include "glm/mat4x4.hpp"
 #include "glm/ext.hpp"
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
 #include <fstream> 
-#include "eagleeye/render/GLUtils.h"
 
 
 namespace eagleeye{
@@ -22,9 +22,9 @@ ImageShow::~ImageShow(){
 }
 
 void ImageShow::executeNodeInfo(){
-    // 渲染过程
     // 获得输入信号
-    ImageSignal<Array<unsigned char, 3>>* input_img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getInputPort(0));
+	ImageSignal<Array<unsigned char, 3>>* input_img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getInputPort(0));
+	// TODO: 根据输入信号的格式，自动设置渲染方式（GRAY,RGB,BGR,RGBA,BGRA,ARGB)
 
     // 获得输入信号的图像
     Matrix<Array<unsigned char, 3>> img = input_img_sig->getData();
@@ -32,6 +32,11 @@ void ImageShow::executeNodeInfo(){
         img = img.clone();
     }
 
+	// 设置输出信号的图像
+	ImageSignal<Array<unsigned char, 3>>* output_img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getOutputPort(0));
+	output_img_sig->setData(img);
+
+	// 渲染过程
     unsigned char* img_ptr = (unsigned char*)img.dataptr();
     int img_height = img.rows();
     int img_width = img.cols();
@@ -53,6 +58,7 @@ void ImageShow::executeNodeInfo(){
 		canvas_h = this->getScreenH();
 	}
 	EAGLEEYE_LOGD("Canvas x %d y %d width %d height %d.", canvas_x, canvas_y, canvas_w, canvas_h);
+	EAGLEEYE_LOGD("Screen width %d height %d", screen_w, screen_h);
 
 	// 计算图片显示位置
 	bool is_ok = false;

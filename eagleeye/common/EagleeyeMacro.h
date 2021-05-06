@@ -154,28 +154,37 @@ enum InterpMethod
 
 enum SignalCategory{
 	EAGLEEYE_UNDEFINED_CATEGORY 	= -1,
-	SIGNAL_CATEGORY_IMAGE 			= 0,
-	SIGNAL_CATEGORY_TENSOR 			= 1,
-	SIGNAL_CATEGORY_STRING 			= 2,
-	SIGNAL_CATEGORY_CONTROL 		= 3,
-	SIGNAL_CATEGORY_STATE			= 4,
-	SIGNAL_CATEGORY_IMAGE_QUEUE 	= 16,
-	SIGNAL_CATEGORY_TENSOR_QUEUE 	= 17,
-	SIGNAL_CATEGORY_STRING_QUEUE 	= 18,
+	SIGNAL_CATEGORY_IMAGE 			= 0,				// 图像信号
+	SIGNAL_CATEGORY_TENSOR 			= 1,				// TENSOR信号
+	SIGNAL_CATEGORY_STRING 			= 2,				// 字符串信号
+	SIGNAL_CATEGORY_CONTROL 		= 3,				// 控制信号
+	SIGNAL_CATEGORY_STATE			= 4,				// 状态信号
+	SIGNAL_CATEGORY_IMAGE_QUEUE 	= 5,				// 图像队列信号
+	SIGNAL_CATEGORY_TENSOR_QUEUE 	= 6,				// TENSOR队列信号
+	SIGNAL_CATEGORY_STRING_QUEUE 	= 7,				// 字符串队列信号
 };
 
 enum SignalType{
 	EAGLEEYE_UNDEFINED_SIGNAL 		= -1,
-	EAGLEEYE_SIGNAL_IMAGE 			= 0,				//Matrix<unsigned char> or Matrix<Array<unsigned char,3>> or Matrix<Array<unsigned char,4>>
-	EAGLEEYE_SIGNAL_RECT 			= 1,				//Matrix<int>	xywh
-	EAGLEEYE_SIGNAL_LINE			= 2,
-	EAGLEEYE_SIGNAL_POINT			= 3,
-	EAGLEEYE_SIGNAL_STRING 			= 4,
-	EAGLEEYE_SIGNAL_MASK			= 5,
-	EAGLEEYE_SIGNAL_FILE			= 6,
-	EAGLEEYE_SIGNAL_TEXT			= 7,
-	EAGLEEYE_SIGNAL_MODEL			= 8,
-	EAGLEEYE_ADVANCED_SIGNAL_DET	= 9,		//Matrix<float> x,y,w,h,label,s
+	EAGLEEYE_SIGNAL_IMAGE 			= 0,				// Matrix<unsigned char> or Matrix<Array<unsigned char,3>> or Matrix<Array<unsigned char,4>>
+	EAGLEEYE_SIGNAL_RECT 			= 1,				// Matrix<float>	xywh
+	EAGLEEYE_SIGNAL_LINE			= 2,				// Matrix<float>    x1y1x2y2 
+	EAGLEEYE_SIGNAL_POINT			= 3,				// Matrix<float> 	x1y1
+	EAGLEEYE_SIGNAL_STRING 			= 4,				// std::string
+	EAGLEEYE_SIGNAL_MASK			= 5,				// Matrix<unsigned char>
+	EAGLEEYE_SIGNAL_FILE			= 6,				// std::string path
+	EAGLEEYE_SIGNAL_TEXT			= 7,				// std::string
+	EAGLEEYE_SIGNAL_MODEL			= 8,				// std::string path
+	EAGLEEYE_SIGNAL_LANDMARK		= 9,				// Matrix<float>	x1y1s
+	EAGLEEYE_SIGNAL_STATE			= 10,				// int
+	EAGLEEYE_SIGNAL_SWITCH			= 11,				// boolean
+	EAGLEEYE_SIGNAL_RGB_IMAGE 		= 12, 				// RGB image
+	EAGLEEYE_SIGNAL_RGBA_IMAGE 		= 13, 				// RGBA image
+	EAGLEEYE_SIGNAL_BGR_IMAGE 		= 14, 				// BGR image
+	EAGLEEYE_SIGNAL_BGRA_IMAGE 		= 15, 				// RGBA image
+	EAGLEEYE_SIGNAL_GRAY_IMAGE 		= 16, 				// GRAY image
+	EAGLEEYE_SIGNAL_TEXTURE			= 17,				// TEXTURE
+	EAGLEEYE_ADVANCED_SIGNAL_DET	= 18,				// Matrix<float> 	x,y,w,h,label,s
 };
 
 enum SignalTarget{

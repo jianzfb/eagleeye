@@ -56,7 +56,7 @@ public:
 	virtual void reset();
 
 	/**
-	 * @brief set source type
+	 * @brief set source type.
 	 * 
 	 * @param type 
 	 */

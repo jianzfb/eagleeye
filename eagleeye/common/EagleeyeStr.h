@@ -5,6 +5,8 @@
 #include <sstream>
 #include <vector>
 #include <set>
+#include <stdio.h>
+#include <stdarg.h>
 
 namespace eagleeye{
 template<typename T>	
@@ -136,10 +138,43 @@ inline std::string toUpper(const std::string &src) {
   return dest;
 }
 
-
 std::string obfuscateString(const std::string &src,
                             const std::string &lookup_table);
 std::string obfuscateString(const std::string &src);                           
 
+
+inline std::string formatString(const char* format, va_list args) {
+  size_t oldlen = 1024;
+  char buffer[oldlen]; // 默认栈上的缓冲区
+  va_list argscopy;
+  va_copy(argscopy, args);
+  size_t newlen = vsnprintf(&buffer[0], oldlen, format, args) + 1;
+  newlen++; // 算上终止符'\0'
+  if (newlen > oldlen) { // 默认缓冲区不够大，从堆上分配
+    std::vector<char> newbuffer(newlen);
+    vsnprintf(newbuffer.data(), newlen, format, argscopy);
+    return newbuffer.data();
+  }
+
+  return buffer;
+}
+ 
+inline std::string formatString(const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  auto s = formatString(format, args);
+  va_end(args);
+  return s;
+}
+
+/**
+ * @brief get time stamp string
+ */ 
+std::string timeStamp();
+
+/**
+ * @brief path.join()
+ */ 
+std::string pathJoin(std::vector<std::string> terms);
 }
 #endif

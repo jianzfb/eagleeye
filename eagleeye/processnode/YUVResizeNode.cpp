@@ -27,11 +27,13 @@ void YUVResizeNode::executeNodeInfo(){
     YUVSignal* input_sig = (YUVSignal*)(this->getInputPort(0));
 
     // 输入yuv数据
-    Blob input_blob = input_sig->getData();
+    MetaData input_meta;
+    Blob input_blob = input_sig->getData(input_meta);
     unsigned char* input_ptr = (unsigned char*)(input_blob.cpu());
     int height = input_sig->getHeight();
     int width = input_sig->getWidth();
 
+    EAGLEEYE_LOGD("resize input width %d height %d -> (out width %d height %d)", width, height, m_resize_w, m_resize_h);
     // 输出yuv数据
     Blob output_blob(sizeof(unsigned char)*(m_resize_h*m_resize_w + (m_resize_h/2)*(m_resize_w/2) + (m_resize_h/2)*(m_resize_w/2)),
             Aligned(64), 
@@ -61,6 +63,9 @@ void YUVResizeNode::executeNodeInfo(){
     }
 
     YUVSignal* output_sig = (YUVSignal*)(this->getOutputPort(0));
-    output_sig->setData(output_blob);
+    MetaData output_meta = input_meta;
+    output_meta.rows = this->m_resize_h;
+    output_meta.cols = this->m_resize_w;
+    output_sig->setData(output_blob, output_meta);
 }
 } // namespace eagleeye

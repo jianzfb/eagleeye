@@ -2,6 +2,7 @@
 #include "eagleeye/framework/pipeline/YUVSignal.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/common/EagleeyeYUV.h"
+#include "eagleeye/common/EagleeyeLog.h"
 
 namespace eagleeye
 {

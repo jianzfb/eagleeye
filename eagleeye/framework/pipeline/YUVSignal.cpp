@@ -47,7 +47,7 @@ Blob YUVSignal::getData(){
 
 void YUVSignal::setData(Blob data){
     this->m_blob = data;
-
+    
     modified();
 }
 
@@ -97,7 +97,7 @@ bool YUVSignal::isempty(){
     return this->m_blob.empty();
 }
 
-void YUVSignal::setSignalContent(void* data, const int* data_size, const int data_dims, const int data_rotation, bool is_texture){
+void YUVSignal::setSignalContent(void* data, const int* data_size, const int data_dims, const int data_rotation){
     // ignore is_texture
     int height = data_size[0];  // rows
     int width = data_size[1];   // cols

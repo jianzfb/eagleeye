@@ -1,4 +1,6 @@
 #include "eagleeye/common/EagleeyeStr.h"
+#include <stdio.h>
+#include <time.h>
 
 namespace eagleeye{
 std::vector<std::string> split(const std::string& src, const std::string& separator){
@@ -25,6 +27,10 @@ std::vector<std::string> split(const std::string& src, const std::string& separa
 }
 
 bool startswith(std::string str, std::string prefix){
+    if(prefix == ""){
+        return true;
+    }
+
     if(str.substr(0,prefix.size()) == prefix){
         return true;
     }
@@ -34,6 +40,10 @@ bool startswith(std::string str, std::string prefix){
 }
 
 bool endswith(std::string str, std::string suffix){
+    if(suffix == ""){
+        return true;
+    }
+    
     if(str.size() < suffix.size()){
         return false;
     }
@@ -70,4 +80,45 @@ std::string obfuscateString(const std::string &src) {
   return obfuscateString(src, "EAGLEEYE-Compute-Engine");
 }
 
+std::string timeStamp(){
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+    std::string strtime;
+    if(ltm->tm_hour<=12){
+        strtime = 
+            formatString("%d-%d-%d AM %d.%d.%d", 
+                1900+ltm->tm_year, ltm->tm_mon, ltm->tm_mday,ltm->tm_hour,ltm->tm_min,ltm->tm_sec);
+    }
+    else{
+        strtime = 
+            formatString("%d-%d-%d PM %d.%d.%d", 
+                1900+ltm->tm_year, ltm->tm_mon, ltm->tm_mday,ltm->tm_hour-12,ltm->tm_min,ltm->tm_sec);
+
+    }
+
+    return strtime;
+}
+
+std::string pathJoin(std::vector<std::string> terms){
+    std::string path="";
+    if(terms.size() == 0){
+        return path;
+    }
+    path = terms[0];
+    char end_c = path.at(path.size() - 1);
+    if(end_c == '/' || end_c == '\\'){
+        path = path.substr(0, path.size() - 1);
+    }
+
+    for(int index=1; index<terms.size(); ++index){
+        path = path + "/" + terms[index];
+
+        char end_c = path.at(path.size() - 1);
+        if(end_c == '/' || end_c == '\\'){
+            path = path.substr(0, path.size() - 1);
+        }
+    }
+
+    return path;
+}
 }

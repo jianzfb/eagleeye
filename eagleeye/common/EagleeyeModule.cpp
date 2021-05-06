@@ -177,8 +177,12 @@ bool eagleeye_custom_add_pipeline(REGISTER_PLUGIN_FUNC register_func, INITIALIZE
 bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* config_folder){
     // initialize
     EAGLEEYE_LOGD("enter eagleeye_pipeline_initialize");
+    EAGLEEYE_LOGD("1");
     AnyPipeline::getInstance(pipeline_name)->setInitFunc(m_registed_plugins[std::string(pipeline_name)].second);
+    EAGLEEYE_LOGD("2");
     AnyPipeline::getInstance(pipeline_name)->setPipelineName(pipeline_name);
+    EAGLEEYE_LOGD("3");
+    EAGLEEYE_LOGD("%s", pipeline_name);
     AnyPipeline::getInstance(pipeline_name)->initialize(config_folder);
     EAGLEEYE_LOGD("finish eagleeye_pipeline_initialize");
 
@@ -211,8 +215,17 @@ bool eagleeye_pipeline_version(const char* pipeline_name, char* pipeline_version
 }
 
 bool eagleeye_register_pipeline(const char* pipeline, const char* version, const char* key){
-    EAGLEEYE_LOGD("register %s", pipeline);
+    EAGLEEYE_LOGD("Register %s pipeline.", pipeline);
     return AnyPipeline::registerPipeline(pipeline, version, key);
+}
+
+bool eagleeye_register_signal(const char* pipeline, const char* node){
+    EAGLEEYE_LOGD("Register %s/%s signal.", pipeline, node);
+    return AnyPipeline::registerSignal(pipeline, node);
+}
+
+bool eagleeye_check_signal_matching(const char* pipeline, const char* node, const char* register_node){
+    return AnyPipeline::checkSignalMatching(pipeline, node, register_node);
 }
 
 bool eagleeye_pipeline_get_monitor_config(const char* pipeline_name,
@@ -265,9 +278,29 @@ bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const int data_dims,
                                  const int data_rotation,
                                  const int data_type){
-
+    EAGLEEYE_LOGD("Set pipeline %s node %s input.", pipeline_name, node_name);
     AnyPipeline::getInstance(pipeline_name)->setInput(node_name, data, data_size, data_dims, data_rotation, data_type);
-    EAGLEEYE_LOGD("finish setInput in Module");
+    return true;
+}
+
+bool eagleeye_pipeline_set_input(const char* pipeline_name,
+                                 const char* node_name, 
+                                 const char* register_node_name){
+    EAGLEEYE_LOGD("Set pipeline %s node %s input.", pipeline_name, node_name);
+    AnyPipeline::getInstance(pipeline_name)->setInput(node_name, register_node_name);
+    return true;
+}
+
+bool eagleeye_pipeline_link(const char* target_pipeline_name,
+                            const char* target_node_name,
+                            const char* from_pipeline_name,
+                            const char* from_node_name){
+    EAGLEEYE_LOGD("Link pipeline %s node %s to target pipeline %s node %s.",
+                     from_pipeline_name, 
+                     from_node_name, 
+                     target_pipeline_name, 
+                     target_node_name);
+    AnyPipeline::getInstance(target_pipeline_name)->setInput(target_node_name, from_pipeline_name, from_node_name);
     return true;
 }
 
@@ -293,7 +326,7 @@ bool eagleeye_pipeline_get_output(const char* pipeline_name,
     return true;
 }
 
-bool eagleeye_pipeline_run(const char* pipeline_name){
+bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix){
     std::string s_pipeline_name = pipeline_name;
     if(s_pipeline_name.find("/") != std::string::npos){
         std::vector<std::string> kterms = split(s_pipeline_name, "/");
@@ -304,9 +337,18 @@ bool eagleeye_pipeline_run(const char* pipeline_name){
         return r;
     }
 
-    bool result = AnyPipeline::getInstance(pipeline_name)->start();
+    bool result = AnyPipeline::getInstance(pipeline_name)->start(NULL, ignore_prefix);
     return result;
 }
+
+bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_prefix){
+    // 强制渲染节点更新
+    AnyPipeline::getInstance(pipeline_name)->refresh();
+
+    // 运行
+    bool result = eagleeye_pipeline_run(pipeline_name, ignore_prefix);
+    return result;
+} 
 
 bool eagleeye_pipeline_isready(const char* pipeline_name, int& is_ready){
     AnyPipeline::getInstance(pipeline_name)->isReady(is_ready);

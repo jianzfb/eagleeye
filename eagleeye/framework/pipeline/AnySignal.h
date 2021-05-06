@@ -144,6 +144,11 @@ public:
 	void signalHasBeenUpdate();
 
 	/**
+	 * @brief check signal content whether has been update
+	 */ 
+	bool isHasBeenUpdate();
+
+	/**
 	 *	@brief get monitor pool of the whole pipeline
 	 *	@note traverse the whole pipeline
 	 */
@@ -165,13 +170,6 @@ public:
 	/**
 	 * @brief Set the Signal Type object
 	 * 
-	 * @param type
-	 */
-	void setSignalType(const char* type);
-
-	/**
-	 * @brief Set the Signal Type object
-	 * 
 	 * @param type 
 	 */
 	void setSignalType(SignalType type);
@@ -181,21 +179,14 @@ public:
 	 * 
 	 * @return const char* 
 	 */
-	const char* getSignalType();
+	const char* getSignalTypeName();
 	
 	/**
 	 * @brief Get the Signal Type Value object
 	 * 
 	 * @return SignalType 
 	 */
-	SignalType getSignalType2(){return this->m_signal_type_value;};
-
-	/**
-	 * @brief Set the Signal Target object
-	 * 
-	 * @param target 
-	 */
-	void setSignalTarget(const char* target);
+	SignalType getSignalType(){return this->m_signal_type_value;};
 
 	/**
 	 * @brief Set the Signal Target object
@@ -225,7 +216,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation, bool is_texture=false){};
+	virtual void setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation){};
 
 	/**
 	 * @brief Get the Signal Content object
@@ -339,6 +330,7 @@ protected:
 	SignalTarget m_signal_target_value;
 
 	bool m_prepared_ok;
+	bool m_data_update;
 	AnyNode* m_link_node;
 	MetaData m_meta;
 	bool m_signal_exit;
@@ -351,9 +343,6 @@ private:
 	unsigned long m_pipeline_time;
 	int m_link_index;
 	int m_out_degree;
-
-	std::map<SignalType,std::string> mSupportSignalType;
-	std::map<SignalTarget,std::string> mSupportSignalTarget;
 };
 }
 
