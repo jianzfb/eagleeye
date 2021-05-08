@@ -261,41 +261,37 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 }
 
 template<class T>
-void ImageSignal<T>::setSignalContent(void* data, const int* data_size, const int data_dims, int rotation){
+void ImageSignal<T>::setData(void* data, MetaData meta){
+	// const int* data_size, const int data_dims, int rotation
 	if(this->getSignalType() == EAGLEEYE_SIGNAL_TEXTURE){
 		unsigned int texture_id = *((unsigned int*)(data));
 		EAGLEEYE_LOGD("TEXTURE ID %d", texture_id);
 		this->img = Matrix<T>(texture_id);
-		MetaData meta_data = this->meta();
-		meta_data.rows = this->img.rows();
-		meta_data.cols = this->img.cols();
-		meta_data.timestamp = 0;
 		this->m_timestamp = 0;
-		this->m_meta = meta_data;
+		this->m_meta = meta;
 		return;
 	}
 
-	MetaData meta_data = this->meta();
+	// MetaData meta_data = this->meta();
+
 	Matrix<T> signal_content;
-	if(meta_data.allocate_mode == 1){
+	if(meta.allocate_mode == 1){
 		// InPlace Mode
-		signal_content = Matrix<T>(data_size[0], data_size[1], data, false);
+		signal_content = Matrix<T>(meta.rows, meta.cols, data, false);
 	}
-	else if(meta_data.allocate_mode == 2){
+	else if(meta.allocate_mode == 2){
 		// Largest Mode
-		signal_content = Matrix<T>(data_size[0], data_size[1], this->getNeededMem(), false);
-		memcpy(signal_content.dataptr(), data, sizeof(T)*data_size[0]*data_size[1]);
+		signal_content = Matrix<T>(meta.rows, meta.cols, this->getNeededMem(), false);
+		memcpy(signal_content.dataptr(), data, sizeof(T)*meta.rows*meta.cols);
 	}
 	else{
 		// Copy Mode
-		signal_content = Matrix<T>(data_size[0], data_size[1], data, true);
+		signal_content = Matrix<T>(meta.rows, meta.cols, data, true);
 	}
 	
-	meta_data.timestamp = this->m_timestamp;
-	meta_data.rows = data_size[0];
-	meta_data.cols = data_size[1];
+	meta.timestamp = this->m_timestamp;
 	this->m_timestamp += 1;
-	this->setData(signal_content, meta_data);
+	this->setData(signal_content, meta);
 }
 
 template<class T>

@@ -176,15 +176,11 @@ bool eagleeye_custom_add_pipeline(REGISTER_PLUGIN_FUNC register_func, INITIALIZE
 
 bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* config_folder){
     // initialize
-    EAGLEEYE_LOGD("enter eagleeye_pipeline_initialize");
-    EAGLEEYE_LOGD("1");
+    EAGLEEYE_LOGD("enter %s eagleeye_pipeline_initialize", pipeline_name);
     AnyPipeline::getInstance(pipeline_name)->setInitFunc(m_registed_plugins[std::string(pipeline_name)].second);
-    EAGLEEYE_LOGD("2");
     AnyPipeline::getInstance(pipeline_name)->setPipelineName(pipeline_name);
-    EAGLEEYE_LOGD("3");
-    EAGLEEYE_LOGD("%s", pipeline_name);
     AnyPipeline::getInstance(pipeline_name)->initialize(config_folder);
-    EAGLEEYE_LOGD("finish eagleeye_pipeline_initialize");
+    EAGLEEYE_LOGD("finish %s eagleeye_pipeline_initialize", pipeline_name);
 
     return true;
 }
@@ -285,6 +281,28 @@ bool eagleeye_pipeline_set_input(const char* pipeline_name,
 
 bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const char* node_name, 
+                                 void* data, 
+                                 EagleeyeMeta meta){
+    EAGLEEYE_LOGD("Set pipeline %s node %s input.", pipeline_name, node_name);
+    MetaData inner_meta;
+    inner_meta.fps = meta.fps;
+    inner_meta.nb_frames= meta.nb_frames;
+    inner_meta.frame = meta.frame;
+    inner_meta.is_end_frame = meta.is_end_frame;
+    inner_meta.is_start_frame = meta.is_start_frame;
+    inner_meta.rotation = meta.rotation;
+    inner_meta.rows = meta.rows;
+    inner_meta.cols = meta.cols;
+    inner_meta.needed_rows = meta.needed_rows;
+    inner_meta.needed_cols = meta.needed_cols;
+    inner_meta.allocate_mode = meta.allocate_mode;
+    inner_meta.timestamp = meta.timestamp;
+    AnyPipeline::getInstance(pipeline_name)->setInput(node_name, data, inner_meta);
+    return true;
+}
+
+bool eagleeye_pipeline_set_input(const char* pipeline_name,
+                                 const char* node_name, 
                                  const char* register_node_name){
     EAGLEEYE_LOGD("Set pipeline %s node %s input.", pipeline_name, node_name);
     AnyPipeline::getInstance(pipeline_name)->setInput(node_name, register_node_name);
@@ -339,6 +357,21 @@ bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix)
 
     bool result = AnyPipeline::getInstance(pipeline_name)->start(NULL, ignore_prefix);
     return result;
+}
+
+bool eagleeye_pipeline_wait(const char* pipeline_name, const char* ignore_prefix){
+    std::string s_pipeline_name = pipeline_name;
+    if(s_pipeline_name.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(s_pipeline_name, "/");
+        std::string pn = kterms[0];
+        std::string nn = kterms[1];
+        
+        AnyPipeline::getInstance(pn.c_str())->wait(nn.c_str());
+        return true;
+    }
+
+    AnyPipeline::getInstance(pipeline_name)->wait(NULL, ignore_prefix);
+    return true;
 }
 
 bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_prefix){

@@ -3,6 +3,21 @@
 #include <string>
 #include <vector>
 namespace eagleeye{
+struct EagleeyeMeta{
+	double fps;				// frame rate for video
+	int nb_frames;			// frame number for video
+	int frame;				// frame index for video
+	bool is_end_frame;		// end frame flag for video
+	bool is_start_frame; 	// start frame flag for video
+	int rotation;			// rotation  (0,90,180,270)
+	int rows;				// current rows 
+	int cols;				// current cols
+	int needed_rows;		// rows(largest)
+	int needed_cols;		// cols(largest)
+	int allocate_mode;		// 0（do nothing）;1（InPlace）;2（largest）;3（same size with input）;
+	unsigned int timestamp;	// timestamp
+};
+
 /**
  * @brief pipeline initialize
  * 
@@ -97,6 +112,7 @@ bool eagleeye_pipeline_get_param(const char* pipeline_name,
 /**
  * @brief set pipeline input
  * 
+ * @param pipeline_name
  * @param node_name 
  * @param data 
  * @param data_size 
@@ -111,6 +127,19 @@ bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const int data_dims,
                                  const int data_rotation,
                                  const int data_type);
+
+/**
+ * @brief set pipeline input with meta
+ * 
+ * @param pipeline_name
+ * @param node_name 
+ * @param data 
+ * @param meta
+ */
+bool eagleeye_pipeline_set_input(const char* pipeline_name,
+                                 const char* node_name, 
+                                 void* data, 
+                                 EagleeyeMeta meta);
 
 /**
  * @brief set pipeline input (path or node name)
@@ -213,6 +242,12 @@ bool eagleeye_pipeline_isready(const char* pipeline_name, int& is_ready);
  * 
  */
 bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix=NULL);
+
+/**
+ * @brief pipeline wait
+ * 
+ */
+bool eagleeye_pipeline_wait(const char* pipeline_name, const char* ignore_prefix=NULL);
 
 /**
  * @brief pipeline render
@@ -338,6 +373,9 @@ extern "C" { \
     bool eagleeye_##pipeline##_run(){ \
         return eagleeye_pipeline_run(#pipeline); \
     } \
+    bool eagleeye_##pipeline##_wait(){ \
+        return eagleeye_pipeline_wait(#pipeline); \
+    } \
     bool eagleeye_##pipeline##_version(char* pipeline_version){ \
         return eagleeye_pipeline_version(#pipeline, pipeline_version); \
     } \
@@ -353,9 +391,12 @@ extern "C" { \
     bool eagleeye_##pipeline##_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type){ \
         return eagleeye_pipeline_set_input(#pipeline, node_name, data, data_size, data_dims, data_rotation, data_type); \
     } \
+    bool eagleeye_##pipeline##_set_input2(const char* node_name, void* data, EagleeyeMeta meta){ \
+        return eagleeye_pipeline_set_input(#pipeline, node_name, data, meta); \
+    } \
     bool eagleeye_##pipeline##_get_output(const char* node_name, void*& data, int* data_size, int& data_dims,int& data_type){ \
         return eagleeye_pipeline_get_output(#pipeline, node_name, data, data_size, data_dims, data_type); \
-    }\
+    } \
     bool eagleeye_##pipeline##_load_config(const char* config_file){ \
         return eagleeye_pipeline_load_config(#pipeline, config_file); \
     } \

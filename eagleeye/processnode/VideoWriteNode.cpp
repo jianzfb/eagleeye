@@ -50,7 +50,6 @@ VideoWriteNode::VideoWriteNode(){
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
     EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
     EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
-    EAGLEEYE_MONITOR_VAR(bool, setFinish, getFinish, "isfinish","","");
     this->m_prefix = "video_";
     this->m_folder = "./";
 }   
@@ -65,6 +64,10 @@ void VideoWriteNode::executeNodeInfo(){
                     (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
     MetaData image_meta_data;
     Matrix<Array<unsigned char, 3>> image = input_img_signal->getData(image_meta_data);
+    if(!image.isContinuous()){
+        image = image.clone();
+    }
+
     if(this->m_file_path.empty()){
         if(this->m_folder != "./"){
             if(!isdirexist(this->m_folder.c_str())){
@@ -73,25 +76,25 @@ void VideoWriteNode::executeNodeInfo(){
         }
 
         this->setFilePath(this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp()+".mp4");
-        EAGLEEYE_LOGD("video path %s", this->m_file_path.c_str());
+        EAGLEEYE_LOGD("Video path %s.", this->m_file_path.c_str());
     }
 
     if(!this->m_is_init){
-        EAGLEEYE_LOGD("initial new video write");
+        EAGLEEYE_LOGD("Start to write video.");
         //新建一个输出的AVFormatContext并分配内存
         m_output_cxt = avformat_alloc_context();
         AVOutputFormat* fmt = av_guess_format(NULL, this->m_file_path.c_str(), NULL);
         m_output_cxt->oformat = fmt;
         //创建和初始化一个和该URL相关的AVIOContext
         if(avio_open(&m_output_cxt->pb,this->m_file_path.c_str(),AVIO_FLAG_READ_WRITE) < 0){
-            EAGLEEYE_LOGD("couldnt open write file");
+            EAGLEEYE_LOGD("Couldnt open write file.");
             avformat_free_context(m_output_cxt);
             return;
         }
         //构建新的Stream
         stream = avformat_new_stream(m_output_cxt, NULL);
         if(stream == NULL){
-            EAGLEEYE_LOGD("couldnt build new stream");
+            EAGLEEYE_LOGD("Couldnt build new stream.");
             return;
         }
         stream->time_base.num = 1;
@@ -125,11 +128,11 @@ void VideoWriteNode::executeNodeInfo(){
 
         AVCodec* codec = avcodec_find_encoder(m_codec_cxt->codec_id);
         if(!codec){
-            EAGLEEYE_LOGD("couldnt find encoder");
+            EAGLEEYE_LOGD("Couldnt find encoder.");
             return;
         }
         if(avcodec_open2(m_codec_cxt,codec,NULL) < 0){
-            EAGLEEYE_LOGD("couldnt open encoder");
+            EAGLEEYE_LOGD("Couldnt open encoder.");
             return;
         }
         avcodec_parameters_from_context(stream->codecpar, m_codec_cxt);
@@ -141,12 +144,6 @@ void VideoWriteNode::executeNodeInfo(){
         packet = av_packet_alloc();
         av_new_packet(packet, m_codec_cxt->width * m_codec_cxt->height * 3);        
         frame = av_frame_alloc();
-        // std::cout<<m_codec_cxt->width<<" "<<m_codec_cxt->height<<std::endl;
-        // std::cout<<linesizes[0]<<" "<<linesizes[1]<<" "<<linesizes[2]<<" "<<linesizes[3]<<std::endl;
-        // av_image_alloc(pointers, linesizes, m_codec_cxt->width, m_codec_cxt->height, AV_PIX_FMT_YUV420P, 32);
-        // std::cout<<frame->data<<std::endl;
-        // std::cout<<frame->linesize<<std::endl;
-        
         av_image_alloc(frame->data, frame->linesize, m_codec_cxt->width, m_codec_cxt->height,AV_PIX_FMT_YUV420P,32);
         m_is_init = true;
         m_is_finish = false;
@@ -176,7 +173,7 @@ void VideoWriteNode::executeNodeInfo(){
     int got_picture = 0;
     int ret = avcodec_encode_video2(m_codec_cxt, packet, frame, &got_picture);
     if(ret < 0){
-        EAGLEEYE_LOGD("fail to encoder");
+        EAGLEEYE_LOGD("Fail to encoder.");
         return;
     }
     if(got_picture == 1){
@@ -194,16 +191,16 @@ void VideoWriteNode::executeNodeInfo(){
         // 当前是视频流的最后一帧
         this->m_file_path = "";
         this->m_is_finish = true;
+        this->m_is_init = false;
         this->finish();
 
-        EAGLEEYE_LOGD("this is the end frame");
+        EAGLEEYE_LOGD("Success to finish write video.");
     }
 }
 
 void VideoWriteNode::setFilePath(std::string file_path){
     if(!this->m_is_finish){
-        EAGLEEYE_LOGD("force finish in setfilepath");
-        assert(1==0);
+        EAGLEEYE_LOGD("Force unfinish video stop.");
         this->finish();        
     }
 
@@ -256,10 +253,6 @@ void VideoWriteNode::finish(){
     m_output_cxt = NULL;
     m_codec_cxt = NULL;
     this->m_is_finish = true;
-
-    static int ss = 0;
-    EAGLEEYE_LOGD("ss is %d", ss);
-    ss += 1;
 }
 
 int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_index)
@@ -294,13 +287,6 @@ int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_
             break;
     }
     return ret;
-}
-
-void VideoWriteNode::setFinish(bool is_finish){
-    // do nothing
-}
-void VideoWriteNode::getFinish(bool& is_finish){
-    is_finish = this->m_is_finish;
 }
 } // namespace  eagleeye
 

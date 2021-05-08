@@ -41,6 +41,11 @@ public:
 	bool start();
 
 	/**
+	 * 	@brief waiting pipeline run
+	 */ 
+	virtual void wait();
+
+	/**
 	 *	@brief reset the pipeline
 	 */
 	void preset();
@@ -360,7 +365,6 @@ protected:
 	std::vector<int> m_response_actions;
 
 	bool m_finish_run;
-
 	EagleeyeTimeStamp m_reset_timestamp;
 	unsigned long m_reset_time;
 	static unsigned long m_pipeline_reset_time;
@@ -387,6 +391,8 @@ private:
 	bool m_exit_flag;			// prevent recurrent call (exit)
 	bool m_init_flag;			// prevent recurrent call (init)
 	bool m_process_flag;		// prevent recurrent call (process)
+	bool m_wait_flag;			// prevent recurrent call (wait)
+
 	bool m_get_monitor_flag;	// ...
 	bool m_feadback_flag;		// ...
 	bool m_load_config_flag;	// ...

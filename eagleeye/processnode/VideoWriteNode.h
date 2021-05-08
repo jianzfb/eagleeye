@@ -66,14 +66,6 @@ public:
     virtual void setFolder(std::string folder);
     virtual void getFolder(std::string& folder);
 
-    /**
-     * @brief Set/Get the Finish object
-     * 
-     * @param is_finish 
-     */
-    void setFinish(bool is_finish);
-    void getFinish(bool& is_finish);
-
 private:
     VideoWriteNode(const VideoWriteNode&);
     void operator=(const VideoWriteNode&);

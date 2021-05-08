@@ -51,6 +51,7 @@ AnyNode::AnyNode(const char* unit_name)
 
 	this->m_pipeline = NULL;
 	this->m_node_category = COMPUTING;
+	this->m_wait_flag = false;
 }
 
 AnyNode::~AnyNode()
@@ -75,19 +76,13 @@ void AnyNode::addInputPort(AnySignal* sig)
 
 void AnyNode::setInputPort(AnySignal* sig,int index)
 {
-	std::cout<<"m 1"<<std::endl;
 	if(m_input_signals[index] != NULL){
 		m_input_signals[index]->decrementOutDegree();
 	}
-	std::cout<<"m 2"<<std::endl;
 	m_input_signals[index] = sig;
-	std::cout<<"m 3"<<std::endl;
 
 	// increment input signal out degree
-	std::cout<<sig<<std::endl;
 	sig->incrementOutDegree();
-
-	std::cout<<"m 4"<<std::endl;
 	modified();
 }
 
@@ -290,19 +285,16 @@ void AnyNode::passonNodeInfo(){
 bool AnyNode::start(){
 	//update some necessary info, such as basic format or struct of AnySignal(without content),
 	//re-assign update time
-	EAGLEEYE_LOGD("A");
 	std::vector<AnySignal*>::iterator out_iter,out_iend(m_output_signals.end());
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		(*out_iter)->updateUnitInfo();
 	}
 
-	EAGLEEYE_LOGD("B");
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		//complement some concrete task, such as generating some data and so on.
 		(*out_iter)->processUnitInfo();
 	}
 
-	EAGLEEYE_LOGD("C");
 	// feadback
 	std::map<std::string, int> node_state_map;
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
@@ -310,6 +302,23 @@ bool AnyNode::start(){
 	}
 
 	return this->isDataHasBeenUpdate();
+}
+
+void AnyNode::wait(){
+	if(this->m_wait_flag){
+		return;
+	}
+	
+	//reset pipeline
+	this->m_wait_flag = true;
+	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
+	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
+		if(*in_iter != NULL){
+			(*in_iter)->wait();
+		}
+	}
+
+	this->m_wait_flag = false;
 }
 
 void AnyNode::preset(){
@@ -471,7 +480,6 @@ void AnyNode::processUnitInfo()
 		m_process_flag = false;
 	}
 
-	std::cout<<"in processUnitInfo "<<this->getUnitName()<<std::endl;
 	if (isNeedProcessed()){
 		//execute task
 		//now we can use all info of m_input_signals

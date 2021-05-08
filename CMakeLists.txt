@@ -18,7 +18,7 @@ add_definitions(-DPADDLE_DISABLE_PROFILER)
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-add_definitions(-DEAGLEEYE_ANDROID_APP)
+# add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -290,7 +290,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/OrNode.cpp
     eagleeye/processnode/IsUpdateNode.cpp
     eagleeye/processnode/DottingNode.cpp
-    eagleeye/framework/pipeline/AnyRegister.cpp)
+    eagleeye/framework/pipeline/AnyRegister.cpp
+    eagleeye/processnode/ThreadNode.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})

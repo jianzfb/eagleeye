@@ -120,6 +120,11 @@ public:
 	virtual void printUnit();
 
 	/**
+	 * @brief wait node
+	 */ 
+	virtual void wait();
+
+	/**
 	 * @brief reset node backward
 	 * 
 	 */
@@ -216,7 +221,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation){};
+	virtual void setData(void* data, MetaData meta){};
 
 	/**
 	 * @brief Get the Signal Content object

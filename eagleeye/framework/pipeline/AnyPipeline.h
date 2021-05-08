@@ -9,11 +9,6 @@
 #include <map>
 
 namespace eagleeye{
-enum PipelineNodeType{
-    SOURCE_NODE,
-    SINK_NODE,
-    OTHER_NODE
-};
 
 typedef void (*INITIALIZE_PLUGIN_PIPELINE_FUNC)();
 
@@ -109,7 +104,7 @@ public:
      * @return true 
      * @return false 
      */
-    bool add(AnyNode* node, const char* node_name, PipelineNodeType nodetype=OTHER_NODE);
+    bool add(AnyNode* node, const char* node_name);
 
     /**
      * @brief link node a to node b
@@ -183,6 +178,13 @@ public:
     bool start(const char* node_name=NULL, const char* ignore_prefix=NULL);
 
     /**
+     * @brief run pipline
+     * 
+     * @param node_name 
+     */
+    void wait(const char* node_name=NULL, const char* ignore_prefix=NULL);
+
+    /**
      * @brief refresh all render node
      */ 
     void refresh();
@@ -230,6 +232,15 @@ public:
      */
     void setInput(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type);
     
+    /**
+     * @brief Set the Pipeline Input
+     * 
+     * @param node_name
+     * @param data
+     * @param meta
+     */ 
+    void setInput(const char* node_name, void* data, MetaData meta);
+
     /**
      * @brief Set the Pipeline Input (from register node)
      */ 

@@ -8,6 +8,12 @@
 #include <map>
 
 namespace eagleeye{
+enum SubPipelineNode{
+    SOURCE_NODE = 0,
+    SINK_NODE   = 1,
+    OTHER_NODE  = 2
+};
+
 class SubPipeline:public AnyNode{
 public:
     typedef SubPipeline                     Self;
@@ -34,7 +40,7 @@ public:
      * @param node 
      * @param nodetype 
      */
-    void add(AnyNode* node, std::string name, PipelineNodeType nodetype=OTHER_NODE, int dontcare=-1);
+    void add(AnyNode* node, std::string name, SubPipelineNode nodetype=OTHER_NODE, int dontcare=-1);
 
     /**
      * @brief connect two nodes

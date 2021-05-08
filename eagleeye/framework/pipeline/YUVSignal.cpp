@@ -97,35 +97,37 @@ bool YUVSignal::isempty(){
     return this->m_blob.empty();
 }
 
-void YUVSignal::setSignalContent(void* data, const int* data_size, const int data_dims, const int data_rotation){
+void YUVSignal::setData(void* data, MetaData meta){
+    // const int* data_size, const int data_dims, const int data_rotation
+
     // ignore is_texture
-    int height = data_size[0];  // rows
-    int width = data_size[1];   // cols
+    int height = meta.rows;  // rows
+    int width = meta.cols;   // cols
     Blob blob(sizeof(unsigned char)*(height*width + (height/2)*(width/2) + (height/2)*(width/2)), 
                     Aligned(64), 
                     EagleeyeRuntime(EAGLEEYE_CPU));
     
     unsigned char* blob_ptr = (unsigned char*)blob.cpu();
     unsigned char* data_ptr = (unsigned char*)data;
-    MetaData meta_data = this->meta();
+    MetaData meta_data = meta;
     // 旋转
-    if(data_rotation == 0){
+    if(meta.rotation == 0){
         memcpy(blob_ptr, data_ptr, sizeof(unsigned char)*(int)(height*width*1.5));
 
         meta_data.rows = height;
         meta_data.cols = width;
     } 
-    else if(data_rotation == 90){
+    else if(meta.rotation == 90){
         eagleeye_I420_rotate_90(data_ptr, width, height, blob_ptr);
         meta_data.rows = width;
         meta_data.cols = height;
     }
-    else if(data_rotation == 180){
+    else if(meta.rotation == 180){
         eagleeye_I420_rotate_180(data_ptr, width, height, blob_ptr);
         meta_data.rows = height;
         meta_data.cols = width;
     }
-    else if(data_rotation == 270){
+    else if(meta.rotation == 270){
         eagleeye_I420_rotate_270(data_ptr, width, height, blob_ptr);
 
         meta_data.rows = width;

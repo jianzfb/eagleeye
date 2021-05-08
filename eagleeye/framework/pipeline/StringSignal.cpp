@@ -108,8 +108,8 @@ void StringSignal::setData(StringSignal::DataType data){
     modified();
 }
 
-void StringSignal::setSignalContent(void* data, const int* data_size, const int data_dims, const int rotation){
-	EAGLEEYE_LOGD("set signal string content");
+void StringSignal::setData(void* data, MetaData meta){
+	EAGLEEYE_LOGD("Set signal string content");
 	std::string str = *((std::string*)data);
 	this->setData(str);
 }
