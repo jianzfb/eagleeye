@@ -18,10 +18,8 @@ void YUVSignal::copyInfo(AnySignal* sig){
         return;
     }
 
-    if((SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) && 
-            (this->getSignalValueType() == sig->getSignalValueType())){
-        YUVSignal* from_sig = (YUVSignal*)(sig);
-        this->m_meta = from_sig->meta();
+    if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
+        this->m_meta = sig->meta();
     }
 }
 

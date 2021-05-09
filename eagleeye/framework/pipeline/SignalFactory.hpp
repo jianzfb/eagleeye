@@ -27,42 +27,14 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 
 template<class T>
 void ImageSignal<T>::copyInfo(AnySignal* sig){
+	if(sig == NULL){
+        return;
+    }
+
 	//call the base class
 	BaseImageSignal::copyInfo(sig);
-
-	//receive some info from the upper signal
-	if((SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) && 
-				(this->getSignalValueType() == sig->getSignalValueType())){
-		ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
-		if (from_sig){
-			int rows = this->m_meta.rows;
-			int cols = this->m_meta.cols;
-			int needed_rows = this->m_meta.needed_rows;
-			int needed_cols = this->m_meta.needed_cols;
-			int allocate_mode = this->m_meta.allocate_mode;
-
-			this->m_meta = from_sig->meta();
-
-			this->m_meta.needed_rows = needed_rows;
-			this->m_meta.needed_cols = needed_cols;
-			this->m_meta.allocate_mode = allocate_mode;
-
-			if(this->m_meta.allocate_mode == 1){
-				// InPlace
-				this->m_meta.rows = rows;
-				this->m_meta.cols = cols;
-				this->img = from_sig->img;				// share memory with input signal
-			}
-			if(this->m_meta.allocate_mode == 3){
-				// allocate same size memory
-				this->m_meta.rows = rows;
-				this->m_meta.cols = cols;
-
-				if(this->img.rows() != rows || this->img.cols() != cols){
-					this->img = Matrix<T>(rows,cols);	// allocate same size with input signal
-				}
-			}
-		}
+	if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
+		this->m_meta = sig->meta();
 	}
 }
 

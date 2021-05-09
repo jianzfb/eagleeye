@@ -50,8 +50,9 @@ VideoWriteNode::VideoWriteNode(){
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
     EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
     EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
+
     this->m_prefix = "video_";
-    this->m_folder = "./";
+    this->m_folder = "/sdcard/";
 }   
 VideoWriteNode::~VideoWriteNode(){
     if(!this->m_is_finish){
@@ -66,6 +67,12 @@ void VideoWriteNode::executeNodeInfo(){
     Matrix<Array<unsigned char, 3>> image = input_img_signal->getData(image_meta_data);
     if(!image.isContinuous()){
         image = image.clone();
+    }
+
+    if(!m_is_init && !image_meta_data.is_start_frame){
+        // 对于非首帧，不可以启动初始化
+        // 首帧和尾帧，必须设置
+        return;
     }
 
     if(this->m_file_path.empty()){
@@ -288,6 +295,7 @@ int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_
     }
     return ret;
 }
+
 } // namespace  eagleeye
 
 #endif

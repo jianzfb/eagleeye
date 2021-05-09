@@ -277,7 +277,6 @@ void AnyNode::passonNodeInfo(){
 		for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 			(*out_iter)->copyInfo(*in_iter);
 		}
-
 		break;
 	}
 }

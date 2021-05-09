@@ -18,7 +18,7 @@ add_definitions(-DPADDLE_DISABLE_PROFILER)
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-# add_definitions(-DEAGLEEYE_ANDROID_APP)
+add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -325,7 +325,7 @@ if(DEFINED FFMPEG AND DEFINED X264)
                             ${FFMPEG}/lib/libavformat.so
                             ${FFMPEG}/lib/libavfilter.so
                             ${FFMPEG}/lib/libpostproc.so
-                            ${X264}/lib/libx264.so)
+                            ${X264}/lib/libx264.163.so)
 endif()
 
 find_package(pnglib)

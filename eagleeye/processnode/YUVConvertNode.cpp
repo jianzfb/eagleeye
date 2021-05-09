@@ -23,7 +23,8 @@ YUVConvertNode::~YUVConvertNode(){
 
 void YUVConvertNode::executeNodeInfo(){
     YUVSignal* input_sig = (YUVSignal*)(this->getInputPort(0));
-    Blob yuv_data = input_sig->getData();
+    MetaData input_meta;
+    Blob yuv_data = input_sig->getData(input_meta);
     int width = input_sig->getWidth();
     int height = input_sig->getHeight();
 
@@ -33,18 +34,17 @@ void YUVConvertNode::executeNodeInfo(){
         if(m_convert_type == YUV2RGB){
             Matrix<Array<unsigned char, 3>> data = eagleeye_I420_to_RGB(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
-            output_sig->setData(data);
+            output_sig->setData(data, input_meta);
         }
         else{
             Matrix<Array<unsigned char, 3>> data = eagleeye_I420_to_BGR(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
-            output_sig->setData(data);
+            output_sig->setData(data, input_meta);
         }
     }
     else{
         EAGLEEYE_LOGD("Dont support YUV %d convert.", (int)input_sig->getSignalValueType());
     }
-
 }
 
 } // namespace eagleeye

@@ -152,8 +152,6 @@ private:
     Blob m_blob;
     int m_width;
     int m_height;
-
-    MetaData m_meta;
     int m_release_count;
 	EagleeyeType m_yuv_format;
 };
