@@ -87,6 +87,8 @@ bool IfElseNode::selfcheck(){
 
 void IfElseNode::init(){
     Superclass::init();
+
+    // 分别x,y初始化    
     this->m_x->init();
     this->m_y->init();
 }

@@ -858,28 +858,36 @@ void AnyPipeline::getPipelineMonitors(std::vector<std::string>& monitor_names,
     }
 }
 
-void AnyPipeline::initialize(const char* configure_folder){
+void AnyPipeline::initialize(const char* configure_folder){    
     if(this->m_is_initialize){
-        EAGLEEYE_LOGD("pipeline %s has been initialized", m_name.c_str());
+        EAGLEEYE_LOGD("Pipeline %s has been initialized.", m_name.c_str());
+
+        // 初始化管道所有节点
+        EAGLEEYE_LOGD("Initialize all node(render) in pipeline %s.", this->m_name.c_str());
+        std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
+        for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
+            output_iter->second->init();
+        }
         return;
     }
+
     // 设置基本信息
     if(AnyPipeline::m_pipeline_version.find(this->m_name) == AnyPipeline::m_pipeline_version.end()){
-        EAGLEEYE_LOGD("pipeline %s version not be register", this->m_name.c_str());
+        EAGLEEYE_LOGD("Pipeline %s version not be register.", this->m_name.c_str());
         return;
     }    
     this->m_version = AnyPipeline::m_pipeline_version[this->m_name];
     if(AnyPipeline::m_pipeline_signature.find(this->m_name) == AnyPipeline::m_pipeline_signature.end()){
-        EAGLEEYE_LOGD("pipeline %s signature not be register", this->m_name.c_str());
+        EAGLEEYE_LOGD("Pipeline %s signature not be register.", this->m_name.c_str());
         return;
     }
     this->m_signature = AnyPipeline::m_pipeline_signature[this->m_name];
-    EAGLEEYE_LOGD("pipeline %s basic information", this->m_name.c_str());
-    EAGLEEYE_LOGD("version      %s", this->m_version.c_str());
-    EAGLEEYE_LOGD("signature    %s", this->m_signature.c_str());
+    EAGLEEYE_LOGD("Pipeline %s basic information.", this->m_name.c_str());
+    EAGLEEYE_LOGD("Version      %s.", this->m_version.c_str());
+    EAGLEEYE_LOGD("Signature    %s.", this->m_signature.c_str());
 
     // 初始化管道结构
-    EAGLEEYE_LOGD("build pipeline %s structure", this->m_name.c_str());
+    EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());
     m_init_func();
 
     // 创建管道资源文件夹
@@ -889,13 +897,13 @@ void AnyPipeline::initialize(const char* configure_folder){
     }
 
     // 分析连接关系
-    EAGLEEYE_LOGD("analyze pipeline %s structure", this->m_name.c_str());
+    EAGLEEYE_LOGD("Analyze pipeline %s structure.", this->m_name.c_str());
     std::map<std::string, AnyNode*>::iterator node_iter, node_iend(this->m_nodes.end());
     for(node_iter=this->m_nodes.begin(); node_iter != node_iend; ++node_iter){
         if(node_iter->second->getNumberOfInputSignals() == 0){
             // input node
             this->m_input_nodes[std::string(node_iter->first)] = node_iter->second;
-            EAGLEEYE_LOGD("input node %s", node_iter->first.c_str());
+            EAGLEEYE_LOGD("Input node %s.", node_iter->first.c_str());
         }
 
         bool is_output_node = true;
@@ -909,22 +917,22 @@ void AnyPipeline::initialize(const char* configure_folder){
         if(is_output_node){
             // output node
             this->m_output_nodes[std::string(node_iter->first)] = node_iter->second;
-            EAGLEEYE_LOGD("output node %s", node_iter->first.c_str());
+            EAGLEEYE_LOGD("Output node %s.", node_iter->first.c_str());
         }
     }
 
-    EAGLEEYE_LOGD("%s has %d output nodes", this->m_name.c_str(), this->m_output_nodes.size());
+    EAGLEEYE_LOGD("Pipeline %s has %d output nodes.", this->m_name.c_str(), this->m_output_nodes.size());
     std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
-        EAGLEEYE_LOGD("output node name %s", output_iter->first.c_str());
+        EAGLEEYE_LOGD("Output node name %s.", output_iter->first.c_str());
     }
     if(m_output_nodes.size() == 0){
-        EAGLEEYE_LOGE("dont have output node in pipeline");
+        EAGLEEYE_LOGE("Dont have output node in pipeline.");
         return;
     }
 
     // 初始化管道所有节点
-    EAGLEEYE_LOGD("initialize all node in pipeline %s", this->m_name.c_str());
+    EAGLEEYE_LOGD("Initialize all node in pipeline %s.", this->m_name.c_str());
     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
         output_iter->second->init();
     }
@@ -949,21 +957,21 @@ void AnyPipeline::initialize(const char* configure_folder){
         }
     }
 
-    EAGLEEYE_LOGD("%s has %d input nodes", this->m_name.c_str(), this->m_input_nodes.size());
+    EAGLEEYE_LOGD("Pipeline %s has %d input nodes.", this->m_name.c_str(), this->m_input_nodes.size());
     std::map<std::string,AnyNode*>::iterator input_iter, input_iend(this->m_input_nodes.end());
     for(input_iter=this->m_input_nodes.begin(); input_iter!=input_iend; ++input_iter){
-        EAGLEEYE_LOGD("input node name %s", input_iter->first.c_str());
+        EAGLEEYE_LOGD("Input node name %s.", input_iter->first.c_str());
     }
 
     if(configure_folder != NULL){
-        EAGLEEYE_LOGD("try load config file %s", this->m_name.c_str());
+        EAGLEEYE_LOGD("Try load config file %s.", this->m_name.c_str());
         std::string configure_file_path = std::string(configure_folder) + this->m_name + ".pipeline";
         if(isfileexist(configure_file_path.c_str())){
             this->loadConfigure(configure_file_path);
-            EAGLEEYE_LOGD("finish config file loading");
+            EAGLEEYE_LOGD("Finish config file loading.");
         }
         else{
-            EAGLEEYE_LOGD("config file not exist in %s", configure_folder);
+            EAGLEEYE_LOGD("Config file not exist in %s.", configure_folder);
         }
     }
 

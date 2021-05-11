@@ -61,6 +61,8 @@ void DebugNode::reset(){
 
 void DebugNode::init(){
     Superclass::init();
+
+    //
     this->m_init_times += 1;
     this->m_execute_times = 0; 
 }

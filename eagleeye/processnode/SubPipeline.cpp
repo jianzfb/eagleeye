@@ -175,9 +175,10 @@ void SubPipeline::reset(){
 }
 
 void SubPipeline::init(){
-    this->m_sink_node->init();
-
     Superclass::init();
+
+    // 初始化子管线
+    this->m_sink_node->init();
 }
 
 void SubPipeline::exit(){

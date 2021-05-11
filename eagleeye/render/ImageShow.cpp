@@ -105,6 +105,7 @@ void ImageShow::executeNodeInfo(){
 
 	// 重新绑定定点坐标
 	glBindBuffer(GL_ARRAY_BUFFER, m_VboIds[0]);
+
 	glBufferData(GL_ARRAY_BUFFER, sizeof(update_vertices_coords), update_vertices_coords, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 	
@@ -113,7 +114,7 @@ void ImageShow::executeNodeInfo(){
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (const void *)0);
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
-	glUseProgram(m_Program);
+	glUseProgram(m_Program);	
 	glBindVertexArray(m_VAO);
 
 	// 重新绑定纹理数据

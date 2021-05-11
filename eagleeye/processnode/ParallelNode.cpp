@@ -44,6 +44,8 @@ void ParallelNode::init(){
         for(int i=0; i<m_run_node.size(); ++i){
             m_run_threads.push_back(std::thread(std::bind(&ParallelNode::run,this, i)));
         }
+
+        this->m_is_ini = true;
     }
 }
 

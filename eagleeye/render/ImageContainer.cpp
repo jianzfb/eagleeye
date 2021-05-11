@@ -94,17 +94,18 @@ void ImageContainer::init(){
 
     //创建 imageshow
     int num = this->getNumberOfInputSignals();
-    for(int i=0; i<num; ++i){
-        this->m_imageshow_list.push_back(
-            std::shared_ptr<ImageShow>(new ImageShow(), [](ImageShow* x){delete x;})
-        );
+    if(this->m_imageshow_list.size() == 0){
+        for(int i=0; i<num; ++i){
+            this->m_imageshow_list.push_back(
+                std::shared_ptr<ImageShow>(new ImageShow(), [](ImageShow* x){delete x;})
+            );
+        }
     }
+
     // 初始化
     for(int i=0; i<num; ++i){
         this->m_imageshow_list[i]->init();
     }
-
-    // 
     if(this->m_split_h < 1 || this->m_split_w < 1){
         this->m_split_h = 1;
         this->m_split_w = 1;

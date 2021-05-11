@@ -35,11 +35,13 @@ void YUVConvertNode::executeNodeInfo(){
             Matrix<Array<unsigned char, 3>> data = eagleeye_I420_to_RGB(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
+            output_sig->setSignalType(EAGLEEYE_SIGNAL_RGB_IMAGE);
         }
         else{
             Matrix<Array<unsigned char, 3>> data = eagleeye_I420_to_BGR(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
+            output_sig->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);
         }
     }
     else{
