@@ -22,6 +22,11 @@ public:
     static AnyPipeline* getInstance(const char* pipeline_name);
 
     /**
+     * @brief Check pipeline exist
+     */ 
+    static bool isExist(const char* pipeline_name);
+
+    /**
      * @brief Get the Registed Pipeline Names object
      * 
      * @param pipeline_names 
@@ -56,6 +61,11 @@ public:
      * @brief set plugin root
      */ 
     static void setPluginRoot(const char* root);
+
+    /**
+     * @brief get plugin root
+     */ 
+    static std::string getPluginRoot(){return AnyPipeline::m_plugin_root;};
 
     /**
      * @brief approve pipeline
@@ -117,6 +127,11 @@ public:
     void bind(const char* node_a, int port_a, const char* node_b, int port_b);
 
     /**
+     * @brief add dependent node manually (only useful for output nodes)
+     */
+    void dependent(const char* node, const char* dependent_node);
+
+    /**
      * @brief add feadback action
      * 
      * @param trigger_node 
@@ -137,7 +152,12 @@ public:
      * @brief analyze pieline structure
      * 
      */
-    void initialize(const char* configure_folder);
+    void initialize(const char* configure_folder, std::function<bool()> init_func=nullptr, bool ignore=false);
+
+    /**
+     * @brief check is initialize
+     */ 
+    bool isInitialized();
 
     /**
      * @brief create render context
@@ -372,6 +392,9 @@ private:
     std::vector<AnyNode*> m_using_placeholders;
     std::map<std::string, std::vector<std::pair<std::string, std::string>>> m_dependent_pipelines; 
     
+    std::map<std::string, std::vector<std::string>> m_dependent_nodes;
+    std::vector<std::string> m_order_nodes;
+
     bool m_is_initialize;
     bool m_is_approved;
     INITIALIZE_PLUGIN_PIPELINE_FUNC m_init_func;

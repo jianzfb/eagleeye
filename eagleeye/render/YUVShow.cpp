@@ -19,7 +19,6 @@ YUVShow::YUVShow(){
 }
 
 YUVShow::~YUVShow(){
-    this->destroy();
 }
 
 void YUVShow::executeNodeInfo(){
@@ -198,6 +197,6 @@ void YUVShow::init(){
         "    gl_FragColor = vec4(r, g, b, 1.0);\n"
         "}";
 
-    this->Superclass::create(vShaderStr, fShaderStr);
+    this->Superclass::create("yuvshow", vShaderStr, fShaderStr);
 }
 } // namespace eagleeye

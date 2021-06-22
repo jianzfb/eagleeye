@@ -3,19 +3,14 @@
 #include <string>
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/common/CJsonObject.hpp"
-
+#include "eagleeye/framework/pipeline/AnyPipeline.h"
 
 namespace eagleeye
 {
 /**
- * @brief create node handler from factory
- */     
-AnyNode* eagleeye_node_factory(neb::CJsonObject config, std::function<AnyNode*()> option_func=std::function<AnyNode*()>());  
-
-/**
- * @brief get all nodes config
+ * @brief build pipeline
  */ 
-void eagleeye_get_nodes_config(neb::CJsonObject& config);
+AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char* config_folder);
 } // namespace eagleeye
 
 

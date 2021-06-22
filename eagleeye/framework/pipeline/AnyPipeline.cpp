@@ -8,6 +8,7 @@
 #include "eagleeye/processnode/CopyNode.h"
 #include "eagleeye/processnode/Placeholder.h"
 #include "eagleeye/common/EagleeyeIni.h"
+#include "eagleeye/common/EagleeyeGraph.h"
 #include <string>
 
 
@@ -31,6 +32,14 @@ AnyPipeline* AnyPipeline::getInstance(const char* pipeline_name){
     return  AnyPipeline::m_pipeline_map[std::string(pipeline_name)].get();
 }
 
+bool AnyPipeline::isExist(const char* pipeline_name){
+    if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
+        return false;
+    }
+
+    return true;
+}
+
 void AnyPipeline::getRegistedPipelines(std::vector<std::string>& pipeline_names){
     std::map<std::string, std::shared_ptr<AnyPipeline>>::iterator iter, iend(AnyPipeline::m_pipeline_map.end());
     for(iter = AnyPipeline::m_pipeline_map.begin(); iter != iend; ++iter){
@@ -41,7 +50,10 @@ void AnyPipeline::getRegistedPipelines(std::vector<std::string>& pipeline_names)
 bool AnyPipeline::registerPipeline(const char* pipeline_name, 
                                     const char* version, 
                                     const char* key){
+    // TODO: 加入认证环节
+    // 基于管线名称+version,和key进行验证
     // 1.step 加载部署文件，并获得插件基本配置信息
+    // 基于key获得，管线名称，版本，有效期
     std::string deploy_file = AnyPipeline::m_plugin_root+"/"+pipeline_name+"/"+pipeline_name+".ini";
     bool is_approve = false;
     std::string ID = "";                        // 从服务端注册获得
@@ -238,17 +250,17 @@ bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
     bool is_finish = true;
     if(node_name == NULL){
         // run whole pipeline
-        std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
-        for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
+        for(int i=0; i<this->m_order_nodes.size(); ++i){
+            std::string order_name = m_order_nodes[i];
             if(ignore_prefix != NULL && (ignore_prefix[0] != '\0')){
-                if(startswith(iter->first, ignore_prefix)){
-                    EAGLEEYE_LOGD("Ignore %s.", iter->first.c_str());
+                if(startswith(order_name, ignore_prefix)){
+                    EAGLEEYE_LOGD("Ignore %s.", order_name.c_str());
                     continue;
                 }
             }
 
-            iter->second->start();
-            is_finish = is_finish & iter->second->isDataHasBeenUpdate();
+            m_output_nodes[order_name]->start();
+            is_finish = is_finish & m_output_nodes[order_name]->isDataHasBeenUpdate();  
         }
     }
     else{
@@ -350,6 +362,29 @@ void AnyPipeline::bind(const char* node_a,
         node_b_ptr->setNumberOfInputSignals(port_b+1);
     }
     node_b_ptr->setInputPort(node_a_ptr->getOutputPort(port_a), port_b);
+}
+
+void AnyPipeline::dependent(const char* node, const char* dependent_node){
+    // 手动添加依赖关系
+    // 用于编排无绝对依赖关系的计算节点。（一般用于输出节点的计算顺序）
+    std::string node_name = node;
+    std::string dependent_node_name = dependent_node;
+
+    if(this->m_dependent_nodes.find(node_name) != this->m_dependent_nodes.end()){
+        this->m_dependent_nodes[node_name] = std::vector<std::string>();
+    }
+
+    bool is_finding = false;
+    for(int i=0; i<this->m_dependent_nodes[node_name].size(); ++i){
+        if(this->m_dependent_nodes[node_name][i] == dependent_node_name){
+            is_finding = true;
+            break;
+        }
+    }
+
+    if(!is_finding){
+        this->m_dependent_nodes[node_name].push_back(dependent_node_name);
+    }
 }
 
 AnyNode* AnyPipeline::getNode(std::string node_name){
@@ -858,7 +893,7 @@ void AnyPipeline::getPipelineMonitors(std::vector<std::string>& monitor_names,
     }
 }
 
-void AnyPipeline::initialize(const char* configure_folder){    
+void AnyPipeline::initialize(const char* configure_folder, std::function<bool()> init_func, bool ignore){    
     if(this->m_is_initialize){
         EAGLEEYE_LOGD("Pipeline %s has been initialized.", m_name.c_str());
 
@@ -871,24 +906,31 @@ void AnyPipeline::initialize(const char* configure_folder){
         return;
     }
 
-    // 设置基本信息
-    if(AnyPipeline::m_pipeline_version.find(this->m_name) == AnyPipeline::m_pipeline_version.end()){
-        EAGLEEYE_LOGD("Pipeline %s version not be register.", this->m_name.c_str());
-        return;
-    }    
-    this->m_version = AnyPipeline::m_pipeline_version[this->m_name];
-    if(AnyPipeline::m_pipeline_signature.find(this->m_name) == AnyPipeline::m_pipeline_signature.end()){
-        EAGLEEYE_LOGD("Pipeline %s signature not be register.", this->m_name.c_str());
-        return;
+    if(!ignore){
+        // 设置基本信息
+        if(AnyPipeline::m_pipeline_version.find(this->m_name) == AnyPipeline::m_pipeline_version.end()){
+            EAGLEEYE_LOGD("Pipeline %s version not be register.", this->m_name.c_str());
+            return;
+        }    
+        this->m_version = AnyPipeline::m_pipeline_version[this->m_name];
+        if(AnyPipeline::m_pipeline_signature.find(this->m_name) == AnyPipeline::m_pipeline_signature.end()){
+            EAGLEEYE_LOGD("Pipeline %s signature not be register.", this->m_name.c_str());
+            return;
+        }
+        this->m_signature = AnyPipeline::m_pipeline_signature[this->m_name];
+        EAGLEEYE_LOGD("Pipeline %s basic information.", this->m_name.c_str());
+        EAGLEEYE_LOGD("Version      %s.", this->m_version.c_str());
+        EAGLEEYE_LOGD("Signature    %s.", this->m_signature.c_str());
     }
-    this->m_signature = AnyPipeline::m_pipeline_signature[this->m_name];
-    EAGLEEYE_LOGD("Pipeline %s basic information.", this->m_name.c_str());
-    EAGLEEYE_LOGD("Version      %s.", this->m_version.c_str());
-    EAGLEEYE_LOGD("Signature    %s.", this->m_signature.c_str());
 
-    // 初始化管道结构
-    EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());
-    m_init_func();
+    if(init_func == nullptr){
+        // 初始化管道结构
+        EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());
+        m_init_func();
+    }
+    else{
+        init_func();
+    }
 
     // 创建管道资源文件夹
     std::string resource_folder = this->resourceFolder();
@@ -921,8 +963,44 @@ void AnyPipeline::initialize(const char* configure_folder){
         }
     }
 
-    EAGLEEYE_LOGD("Pipeline %s has %d output nodes.", this->m_name.c_str(), this->m_output_nodes.size());
+    // 根据手动依赖关系，对输出节点重新排序
+    // m_dependent_nodes,排序后保存在m_order_nodes
     std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
+    if(m_dependent_nodes.size() > 0){
+        // 排序
+        std::vector<std::string> result = eagleeye_topology_sort(m_dependent_nodes);
+
+        this->m_order_nodes.clear();
+        for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
+            bool is_finding=false;
+            for(int i=0; i<result.size(); ++i){
+                if(output_iter->first == result[i]){
+                    is_finding = true;
+                    break;
+                }
+            }
+
+            if(!is_finding){
+                this->m_order_nodes.push_back(output_iter->first);
+            }
+        }
+
+        for(int i=0; i<result.size(); ++i){
+            this->m_order_nodes.push_back(result[i]);
+        }
+
+        for(int i=0; i<this->m_order_nodes.size(); ++i){
+            EAGLEEYE_LOGE("order name %s", this->m_order_nodes[i].c_str());
+        }
+    }
+    else{
+        this->m_order_nodes.clear();
+        for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
+            this->m_order_nodes.push_back(output_iter->first);
+        }
+    }
+
+    EAGLEEYE_LOGD("Pipeline %s has %d output nodes.", this->m_name.c_str(), this->m_output_nodes.size());
     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
         EAGLEEYE_LOGD("Output node name %s.", output_iter->first.c_str());
     }

@@ -15,7 +15,7 @@ public:
     /**
      * @brief init render context
      */ 
-    void create(const char *pVertexShaderSource, const char *pFragShaderSource);
+    void create(const char* program_name, const char *pVertexShaderSource, const char *pFragShaderSource);
 
     /**
      * @brief init
@@ -43,19 +43,8 @@ public:
     virtual void destroy();
 
 protected:
-    /**
-     * @brief create shader program
-     */ 
-    void createProgram(const char *pVertexShaderSource, const char *pFragShaderSource);
-
-protected:
     GLuint m_Program;
-    GLuint m_VertexShader;
-	GLuint m_FragmentShader;
-
     GLuint m_VAO;
-
-
 }; 
 } // namespace eagleeye
 

@@ -5,6 +5,7 @@
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
+#include "eagleeye/common/EagleeyeFactory.h"
 #include <dlfcn.h>
 #include <dirent.h>
 
@@ -61,6 +62,12 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
     _getAllPluginsFromDirectory(plugin_folder, plugin_list);
 
     for(int index=0; index<plugin_list.size(); ++index){
+        // 过滤已经发现的插件
+        if(m_registed_plugins.find(plugin_list[index]) != m_registed_plugins.end()){
+            EAGLEEYE_LOGD("Plugin %s has existed.", plugin_list[index].c_str());
+            continue;
+        }
+
         std::string plugin_path = std::string(plugin_folder) + "/" + plugin_list[index];
         // 加载so
         EAGLEEYE_LOGD("Load plugin %s from path %s.", plugin_list[index].c_str(), plugin_path.c_str());
@@ -129,18 +136,18 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
 }
 
 bool eagleeye_release_module(){
-    EAGLEEYE_LOGD("enter release plugin handler");
+    EAGLEEYE_LOGD("Enter release plugin handler.");
     std::map<std::string, std::pair<void*,INITIALIZE_PLUGIN_FUNC>>::iterator iter,iend(m_registed_plugins.end());
 
     for(iter=m_registed_plugins.begin(); iter != iend; ++iter){
-        EAGLEEYE_LOGD("release so %s", iter->first.c_str());
+        EAGLEEYE_LOGD("Release so %s.", iter->first.c_str());
         if(iter->second.first != NULL){
              dlclose(iter->second.first);
         }
     }
     
     m_registed_plugins.clear();
-    EAGLEEYE_LOGD("finish release plugin handler");
+    EAGLEEYE_LOGD("Finish release plugin handler.");
     return true;
 }
 
@@ -166,7 +173,7 @@ bool eagleeye_release_module(){
 bool eagleeye_custom_add_pipeline(REGISTER_PLUGIN_FUNC register_func, INITIALIZE_PLUGIN_FUNC init_func){
     const char* pipeline_name = register_func();
     if(pipeline_name == NULL){
-        EAGLEEYE_LOGE("resiger fail");
+        EAGLEEYE_LOGE("Resiger fail.");
         return false;
     }
 
@@ -175,32 +182,43 @@ bool eagleeye_custom_add_pipeline(REGISTER_PLUGIN_FUNC register_func, INITIALIZE
 }
 
 bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* config_folder){
-    // initialize
-    EAGLEEYE_LOGD("enter %s eagleeye_pipeline_initialize", pipeline_name);
+    if(!AnyPipeline::isExist(pipeline_name)){
+        // 1.step 从文件中加载
+        std::string pipeline_file = AnyPipeline::getPluginRoot()+"/"+pipeline_name+"/"+pipeline_name+".json";
+        if(isfileexist(pipeline_file.c_str())){
+            AnyPipeline* pipeline = eagleeye_build_pipeline_from_json(pipeline_name, config_folder);
+            if(pipeline != NULL){
+                return true;
+            }
+        }
+
+        EAGLEEYE_LOGD("Pipeline %s dont exist", pipeline_name);
+        return false;
+    }
+
+    // 2.step 从插件库中加载
     AnyPipeline::getInstance(pipeline_name)->setInitFunc(m_registed_plugins[std::string(pipeline_name)].second);
     AnyPipeline::getInstance(pipeline_name)->setPipelineName(pipeline_name);
     AnyPipeline::getInstance(pipeline_name)->initialize(config_folder);
-    EAGLEEYE_LOGD("finish %s eagleeye_pipeline_initialize", pipeline_name);
-
     return true;
 }
 
 bool eagleeye_pipeline_load_config(const char* pipeline_name, const char* config_file){
-    EAGLEEYE_LOGD("load pipeline %s from configure file %s", pipeline_name, config_file);
+    EAGLEEYE_LOGD("Load pipeline %s from configure file %s.", pipeline_name, config_file);
     AnyPipeline::getInstance(pipeline_name)->loadConfigure(config_file);
     return true;
 }
 
 bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config_file){
-    EAGLEEYE_LOGD("save pipeline %s to configure file %s", pipeline_name, config_file);
+    EAGLEEYE_LOGD("Save pipeline %s to configure file %s.", pipeline_name, config_file);
     AnyPipeline::getInstance(pipeline_name)->saveConfigure(config_file);
     return true;
 }
 
 bool eagleeye_pipeline_release(const char* pipeline_name){
-    EAGLEEYE_LOGD("enter eagleeye_pipeline_release %s", pipeline_name);
+    EAGLEEYE_LOGD("Enter eagleeye_pipeline_release %s.", pipeline_name);
     AnyPipeline::releasePipeline(pipeline_name);
-    EAGLEEYE_LOGD("finish eagleeye_pipeline_release %s", pipeline_name);
+    EAGLEEYE_LOGD("Finish eagleeye_pipeline_release %s.", pipeline_name);
     return true;
 }
 

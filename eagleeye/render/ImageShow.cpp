@@ -10,15 +10,18 @@
 namespace eagleeye{
 ImageShow::ImageShow(){
     // 设置输出端口（拥有1个输出端口）
-    this->setNumberOfOutputSignals(1);
+    this->setNumberOfOutputSignals(2);
     this->setOutputPort(new ImageSignal<Array<unsigned char, 3>>, 0);
+
+	this->setOutputPort(new ImageSignal<float>(), 1);
+	this->getOutputPort(1)->setSignalType(EAGLEEYE_SIGNAL_RECT);
 
     // 设置输入端口
     this->setNumberOfInputSignals(1);
 }   
 
 ImageShow::~ImageShow(){
-	this->destroy();
+
 }
 
 void ImageShow::executeNodeInfo(){
@@ -32,7 +35,7 @@ void ImageShow::executeNodeInfo(){
         img = img.clone();
     }
 
-	// 设置输出信号的图像
+	// 输出信号1：渲染图像
 	ImageSignal<Array<unsigned char, 3>>* output_img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getOutputPort(0));
 	output_img_sig->setData(img);
 
@@ -77,6 +80,15 @@ void ImageShow::executeNodeInfo(){
 	float img_x1 = (canvas_w - scaled_img_width)/2.0f + scaled_img_width + canvas_x;
 	float img_y1 = (canvas_h - scaled_img_height)/2.0f + scaled_img_height + canvas_y;
 	EAGLEEYE_LOGD("Image position x0 %f y0 %f x1 %f y1 %f.", img_x0, img_y0, img_x1, img_y1);
+
+	// 输出信号2：渲染区域
+	ImageSignal<float>* render_region_sig = (ImageSignal<float>*)(this->getOutputPort(1));
+	Matrix<float> render_region(1,4);	// x,y,w,h
+	render_region.at(0,0) = img_x0;
+	render_region.at(0,1) = img_y0;
+	render_region.at(0,2) = img_x1-img_x0;
+	render_region.at(0,3) = img_y1-img_y0;
+	render_region_sig->setData(render_region);
 
 	// 图像中心对齐canvas中心
 	GLfloat update_vertices_coords[] = {
@@ -209,7 +221,7 @@ void ImageShow::init(){
             "    outColor = texture(u_texture, v_texCoord);\n"
             "}";
 
-	this->create(vShaderStr, fShaderStr);
+	this->create("imageshow", vShaderStr, fShaderStr);
 }
 
 void ImageShow::destroy(){

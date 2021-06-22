@@ -108,7 +108,6 @@ if(DEFINED OPENCL)
     )
 endif()
 
-
 if(DEFINED PYTHON)
 # #   support python interface
 # add_definitions(-DSUPPORT_BOOST_PYTHON)
@@ -238,6 +237,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/cJSON.cpp
     eagleeye/common/cJsonObject.cpp
     eagleeye/common/EagleeyeFactory.cpp
+    eagleeye/common/EagleeyeNodeManager.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
     eagleeye/framework/pipeline/AnyNode.cpp 
     eagleeye/framework/pipeline/AnySignal.cpp 
@@ -281,10 +281,15 @@ set(EAGLEEYE_SRC
     eagleeye/render/RenderNode.cpp
     eagleeye/render/ImageContainer.cpp
     eagleeye/render/RenderBase.cpp
+    eagleeye/render/ShapeNode.cpp
+    eagleeye/ui/ScrollView.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/render/YUVShow.cpp
     eagleeye/common/EagleeyeYUV.cpp
+    eagleeye/common/EagleeyeShader.cpp
+    eagleeye/common/EagleeyeGraph.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
+    eagleeye/framework/pipeline/EmptySignal.cpp
     eagleeye/processnode/YUVConvertNode.cpp
     eagleeye/processnode/YUVResizeNode.cpp
     eagleeye/processnode/OrNode.cpp

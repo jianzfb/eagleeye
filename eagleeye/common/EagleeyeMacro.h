@@ -183,8 +183,11 @@ enum SignalType{
 	EAGLEEYE_SIGNAL_BGR_IMAGE 		= 14, 				// BGR image
 	EAGLEEYE_SIGNAL_BGRA_IMAGE 		= 15, 				// RGBA image
 	EAGLEEYE_SIGNAL_GRAY_IMAGE 		= 16, 				// GRAY image
-	EAGLEEYE_SIGNAL_TEXTURE			= 17,				// TEXTURE
-	EAGLEEYE_ADVANCED_SIGNAL_DET	= 18,				// Matrix<float> 	x,y,w,h,label,s
+	EAGLEEYE_SIGNAL_YUV_IMAGE		= 17,				// YUV
+	EAGLEEYE_SIGNAL_TEXTURE			= 18,				// TEXTURE
+	EAGLEEYE_SIGNAL_DET 			= 19,				// Matrix<float> x,y,w,h,label,s
+	EAGLEEYE_SIGNAL_TRACKING		= 20,				// Matrix<float> x,y,w,h,id,s
+	EAGLEEYE_SIGNAL_POS_2D			= 21,
 };
 
 enum SignalTarget{
