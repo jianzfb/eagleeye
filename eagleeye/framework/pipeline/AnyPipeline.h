@@ -61,7 +61,7 @@ public:
      * @brief set plugin root
      */ 
     static void setPluginRoot(const char* root);
-
+    
     /**
      * @brief get plugin root
      */ 

@@ -176,7 +176,9 @@ void AnyPipeline::releasePipeline(const char* pipeline_name){
     if(m_pipeline_map.find(std::string(pipeline_name)) == m_pipeline_map.end()){
         return;
     }
-    m_pipeline_map[std::string(pipeline_name)] = std::shared_ptr<AnyPipeline>();
+
+    // 清除管线注册
+    m_pipeline_map.erase(m_pipeline_map.find(std::string(pipeline_name)));
 } 
 
 void AnyPipeline::approve(bool approve){
@@ -971,6 +973,7 @@ void AnyPipeline::initialize(const char* configure_folder, std::function<bool()>
         std::vector<std::string> result = eagleeye_topology_sort(m_dependent_nodes);
 
         this->m_order_nodes.clear();
+        // 记录未构建依赖关系的节点
         for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
             bool is_finding=false;
             for(int i=0; i<result.size(); ++i){
@@ -985,12 +988,11 @@ void AnyPipeline::initialize(const char* configure_folder, std::function<bool()>
             }
         }
 
+        // 加入排序后的节点
         for(int i=0; i<result.size(); ++i){
-            this->m_order_nodes.push_back(result[i]);
-        }
-
-        for(int i=0; i<this->m_order_nodes.size(); ++i){
-            EAGLEEYE_LOGE("order name %s", this->m_order_nodes[i].c_str());
+            if(this->m_output_nodes.find(result[i]) != this->m_output_nodes.end()){
+                this->m_order_nodes.push_back(result[i]);
+            }
         }
     }
     else{

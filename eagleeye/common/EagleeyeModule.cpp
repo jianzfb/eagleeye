@@ -216,8 +216,23 @@ bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config
 }
 
 bool eagleeye_pipeline_release(const char* pipeline_name){
-    EAGLEEYE_LOGD("Enter eagleeye_pipeline_release %s.", pipeline_name);
+    EAGLEEYE_LOGD("Enter eagleeye_pipeline_release %s.", pipeline_name);    
+    if(m_registed_plugins.find(std::string(pipeline_name)) == m_registed_plugins.end()){
+        EAGLEEYE_LOGD("Pipeline %s dont existed.", pipeline_name);
+        return false;
+    }
+
+    // 注销管线
     AnyPipeline::releasePipeline(pipeline_name);
+
+    // 关闭动态库
+    if(m_registed_plugins[std::string(pipeline_name)].first != NULL){
+        // 关闭动态库
+        dlclose(m_registed_plugins[std::string(pipeline_name)].first);
+        // 删除动态库记录
+        m_registed_plugins.erase(m_registed_plugins.find(std::string(pipeline_name)));
+    }
+
     EAGLEEYE_LOGD("Finish eagleeye_pipeline_release %s.", pipeline_name);
     return true;
 }
@@ -363,6 +378,10 @@ bool eagleeye_pipeline_get_output(const char* pipeline_name,
 }
 
 bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix){
+    if(AnyPipeline::getInstance(pipeline_name) == NULL){
+        return false;
+    }
+
     std::string s_pipeline_name = pipeline_name;
     if(s_pipeline_name.find("/") != std::string::npos){
         std::vector<std::string> kterms = split(s_pipeline_name, "/");
@@ -378,6 +397,10 @@ bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix)
 }
 
 bool eagleeye_pipeline_wait(const char* pipeline_name, const char* ignore_prefix){
+    if(AnyPipeline::getInstance(pipeline_name) == NULL){
+        return false;
+    }
+
     std::string s_pipeline_name = pipeline_name;
     if(s_pipeline_name.find("/") != std::string::npos){
         std::vector<std::string> kterms = split(s_pipeline_name, "/");
@@ -393,6 +416,10 @@ bool eagleeye_pipeline_wait(const char* pipeline_name, const char* ignore_prefix
 }
 
 bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_prefix){
+    if(AnyPipeline::getInstance(pipeline_name) == NULL){
+        return false;
+    }
+
     // 强制渲染节点更新
     AnyPipeline::getInstance(pipeline_name)->refresh();
 
@@ -402,15 +429,19 @@ bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_pref
 } 
 
 bool eagleeye_pipeline_isready(const char* pipeline_name, int& is_ready){
+    if(AnyPipeline::getInstance(pipeline_name) == NULL){
+        return false;
+    }
     AnyPipeline::getInstance(pipeline_name)->isReady(is_ready);
     return true;
 }
 
 bool eagleeye_pipeline_reset(const char* pipeline_name){
-    EAGLEEYE_LOGD("enter pipeline %s reset", pipeline_name);
-    AnyPipeline::getInstance(pipeline_name)->reset();
-    EAGLEEYE_LOGD("finish pipeline %s reset", pipeline_name);
+    if(AnyPipeline::getInstance(pipeline_name) == NULL){
+        return false;
+    }
 
+    AnyPipeline::getInstance(pipeline_name)->reset();
     return true;
 }
 
