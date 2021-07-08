@@ -10,7 +10,7 @@ namespace eagleeye
 /**
  * @brief build pipeline
  */ 
-AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char* config_folder);
+AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char* resource_folder);
 } // namespace eagleeye
 
 

@@ -9,6 +9,7 @@
 #include "eagleeye/processnode/Placeholder.h"
 #include "eagleeye/common/EagleeyeIni.h"
 #include "eagleeye/common/EagleeyeGraph.h"
+#include "eagleeye/common/EagleeyeShader.h"
 #include <string>
 
 
@@ -200,7 +201,6 @@ void AnyPipeline::setDependentPipelines(std::string info){
 }
 
 AnyPipeline::AnyPipeline(const char* pipeline_name){
-    this->m_is_initialize = false;
     this->m_init_func = NULL;
 }   
 
@@ -261,8 +261,8 @@ bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
                 }
             }
 
-            m_output_nodes[order_name]->start();
-            is_finish = is_finish & m_output_nodes[order_name]->isDataHasBeenUpdate();  
+            is_finish = is_finish & m_output_nodes[order_name]->start();
+            // is_finish = is_finish & m_output_nodes[order_name]->isDataHasBeenUpdate();  
         }
     }
     else{
@@ -271,8 +271,8 @@ bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
             return false;
         }
 
-        this->m_nodes[std::string(node_name)]->start();
-        is_finish = is_finish & this->m_nodes[std::string(node_name)]->isDataHasBeenUpdate();
+        is_finish = is_finish & this->m_nodes[std::string(node_name)]->start();
+        // is_finish = is_finish & this->m_nodes[std::string(node_name)]->isDataHasBeenUpdate();
     }
 
     return is_finish;
@@ -895,18 +895,9 @@ void AnyPipeline::getPipelineMonitors(std::vector<std::string>& monitor_names,
     }
 }
 
-void AnyPipeline::initialize(const char* configure_folder, std::function<bool()> init_func, bool ignore){    
-    if(this->m_is_initialize){
-        EAGLEEYE_LOGD("Pipeline %s has been initialized.", m_name.c_str());
-
-        // 初始化管道所有节点
-        EAGLEEYE_LOGD("Initialize all node(render) in pipeline %s.", this->m_name.c_str());
-        std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
-        for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
-            output_iter->second->init();
-        }
-        return;
-    }
+void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> init_func, bool ignore){    
+    // 清空shader
+    ShaderManager::getInstance()->clear();
 
     if(!ignore){
         // 设置基本信息
@@ -932,12 +923,15 @@ void AnyPipeline::initialize(const char* configure_folder, std::function<bool()>
     }
     else{
         init_func();
-    }
+    }    
 
     // 创建管道资源文件夹
-    std::string resource_folder = this->resourceFolder();
-    if(!isdirexist(resource_folder.c_str())){
-        createdirectory(resource_folder.c_str());
+    if(resource_folder != NULL){
+        this->setResoruceFolder(resource_folder);
+    }
+    std::string resource_folder_s = this->resourceFolder();
+    if(!isdirexist(resource_folder_s.c_str())){
+        createdirectory(resource_folder_s.c_str());
     }
 
     // 分析连接关系
@@ -1043,24 +1037,16 @@ void AnyPipeline::initialize(const char* configure_folder, std::function<bool()>
         EAGLEEYE_LOGD("Input node name %s.", input_iter->first.c_str());
     }
 
-    if(configure_folder != NULL){
-        EAGLEEYE_LOGD("Try load config file %s.", this->m_name.c_str());
-        std::string configure_file_path = std::string(configure_folder) + this->m_name + ".pipeline";
-        if(isfileexist(configure_file_path.c_str())){
-            this->loadConfigure(configure_file_path);
-            EAGLEEYE_LOGD("Finish config file loading.");
-        }
-        else{
-            EAGLEEYE_LOGD("Config file not exist in %s.", configure_folder);
-        }
+    std::string configure_file_path = resource_folder + this->m_name + ".pipeline";
+    if(isfileexist(configure_file_path.c_str())){
+        this->loadConfigure(configure_file_path);
+        EAGLEEYE_LOGD("Finish config file loading.");
     }
-
-    this->m_is_initialize = true;
 }
 
-void AnyPipeline::addFeadbackRule(const char* trigger_node, int trigger_node_state, const char* response_node, const char* response_action){
-    this->get(response_node)->addFeadbackRule(trigger_node, trigger_node_state, response_action);
-}
+// void AnyPipeline::addFeadbackRule(const char* trigger_node, int trigger_node_state, const char* response_node, const char* response_action){
+//     this->get(response_node)->addFeadbackRule(trigger_node, trigger_node_state, response_action);
+// }
 
 void AnyPipeline::setInitFunc(INITIALIZE_PLUGIN_PIPELINE_FUNC func){
     m_init_func = func;
@@ -1078,7 +1064,7 @@ void AnyPipeline::replaceAt(std::string node_name, int port){
     }
 
     SignalCategory category = this->m_nodes[node_name]->getOutputPort(port)->getSignalCategory();
-    EagleeyeType type = this->m_nodes[node_name]->getOutputPort(port)->getSignalValueType();
+    EagleeyeType type = this->m_nodes[node_name]->getOutputPort(port)->getValueType();
     AnyNode* n = this->placeholder(category, type);
     n->setUnitName(this->m_nodes[node_name]->getUnitName());
 
@@ -1201,6 +1187,10 @@ AnyNode* AnyPipeline::placeholder(SignalCategory category, EagleeyeType type){
 }
 
 std::string AnyPipeline::resourceFolder(){
+    if(!this->m_resource_folder.empty()){
+        return this->m_resource_folder;
+    }
+
     std::string root = "./";
     if(!this->m_plugin_root.empty()){
         if(endswith(this->m_plugin_root, "/") || endswith(this->m_plugin_root, "\\")){
@@ -1211,6 +1201,14 @@ std::string AnyPipeline::resourceFolder(){
         }
     }
     return root + this->m_name + "/resource/";
+}
+
+void AnyPipeline::setResoruceFolder(std::string folder){    
+    this->m_resource_folder = folder;
+
+    if(!isdirexist(this->m_resource_folder.c_str())){
+        createdirectory(this->m_resource_folder.c_str());
+    }
 }
 
 void AnyPipeline::setPluginRoot(const char* root){
@@ -1225,9 +1223,9 @@ void AnyPipeline::onRenderSurfaceCreate(){
     }
 }
 
-void AnyPipeline::onRenderSurfaceChange(int width, int height){
+void AnyPipeline::onRenderSurfaceChange(int width, int height, int rotate, bool mirror){
     if(AnyPipeline::m_render_context.get()){
-        AnyPipeline::m_render_context->onChanged(width, height);
+        AnyPipeline::m_render_context->onChanged(width, height, rotate, mirror);
     }
 }
 
@@ -1251,5 +1249,9 @@ int AnyPipeline::getRenderSurfaceH(){
     }
     
     return 0;
+}
+
+RenderContext* AnyPipeline::getRenderContext(){
+    return AnyPipeline::m_render_context.get();
 }
 }

@@ -11,13 +11,10 @@ namespace eagleeye{
  * @param dets 
  * @param thresh 
  * @param prob_thresh 
- * @param final_boxes 
- * @return std::vector<unsigned int> 
  */
-std::vector<unsigned int> wnms(Matrix<float> dets,
+Matrix<float> wnms(Matrix<float> dets,
 							   float thresh, 
-							   float prob_thresh, 
-							   std::vector<std::vector<float>>& final_boxes);  
+							   float prob_thresh);  
 
 /**
  * @brief non maximum suppresion

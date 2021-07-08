@@ -60,7 +60,7 @@ public:
 	 * 
 	 * @param type 
 	 */
-	void setPlaceholderType(SignalType type);
+	void setPlaceholderSignalType(SignalType type);
 
 	/**
 	 * @brief set source target

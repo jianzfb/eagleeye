@@ -1,5 +1,4 @@
 #include "eagleeye/engine/nn_run.h"
-#include "eagleeye/engine/proxy_run.h"
 namespace eagleeye
 {
 NNRun::NNRun(std::string model_name, 
@@ -11,20 +10,22 @@ NNRun::NNRun(std::string model_name,
             int omp_num_threads, 
             int cpu_affinity_policy, 
             std::string writable_path){
-    this->m_engine = new ModelRun(model_name, 
-                                    device,
-                                    input_names,
-                                    input_shapes,
-                                    output_names,
-                                    output_shapes,
-                                    omp_num_threads,
-                                    cpu_affinity_policy,
-                                    writable_path);
+    // this->m_engine = new ModelRun(model_name, 
+    //                                 device,
+    //                                 input_names,
+    //                                 input_shapes,
+    //                                 output_names,
+    //                                 output_shapes,
+    //                                 omp_num_threads,
+    //                                 cpu_affinity_policy,
+    //                                 writable_path);
+    this->m_engine = NULL;
 }
 
 NNRun::~NNRun(){
-    delete m_engine;
-
+    if(this->m_engine){
+        delete m_engine;
+    }
 }
 
 bool NNRun::run(std::map<std::string, unsigned char*> inputs, 

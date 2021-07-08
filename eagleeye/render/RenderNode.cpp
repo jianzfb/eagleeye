@@ -53,4 +53,8 @@ void RenderNode::setCanvas(int x, int y, int w, int h){
     this->m_canvas_w = w;
     this->m_canvas_h = h;
 }
+
+RenderContext* RenderNode::getRenderContext(){
+    return AnyPipeline::getRenderContext();
+}
 } // namespace eagleeye

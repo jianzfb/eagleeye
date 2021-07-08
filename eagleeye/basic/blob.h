@@ -15,14 +15,14 @@ class Range
 public:
 	template<typename T> friend class Matrix;
 
-	explicit Range(unsigned int start=0,unsigned int end=0)
+	explicit Range(int start=0, int end=0)
 		:s(start),e(end){};
 	~Range(){};
 
     static Range ALL();
 
-	unsigned int s;
-	unsigned int e;
+	int s;
+	int e;
 };
 
 class Aligned{

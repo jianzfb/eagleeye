@@ -28,6 +28,7 @@ public:
 		needed_cols = 0;	
 		allocate_mode = 0;
 		timestamp = 0;
+		mirror = false;
 	}
 	std::string name;		// name
 	std::string info;		// info
@@ -43,6 +44,7 @@ public:
 	int needed_cols;		// cols(largest)
 	int allocate_mode;		// 0（do nothing）;1（InPlace）;2（largest）;3（same size with input）;
 	unsigned int timestamp;	// timestamp
+	bool mirror;			// mirror(mirror, rotation)
 };	
 
 class AnyNode;
@@ -257,12 +259,20 @@ public:
 
 	int getOutDegree(){return this->m_out_degree;}
 
+	// /**
+	//  * @brief feadback
+	//  * 
+	//  * @param node_state_map 
+	//  */
+	// void feadback(std::map<std::string, int>& node_state_map);
+
 	/**
-	 * @brief feadback
+	 * @brief call after start
 	 * 
-	 * @param node_state_map 
+	 * @return true 
+	 * @return false 
 	 */
-	void feadback(std::map<std::string, int>& node_state_map);
+	virtual bool finish();
 
 	/**
 	 * @brief Get the Derive Type object
@@ -282,7 +292,7 @@ public:
 	 * 
 	 * @return int 
 	 */
-	virtual EagleeyeType getSignalValueType(){return EAGLEEYE_UNDEFINED;}
+	virtual EagleeyeType getValueType(){return EAGLEEYE_UNDEFINED;}
 
 	/**
 	 * @brief load/save pipeline configure

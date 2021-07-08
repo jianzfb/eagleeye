@@ -9,19 +9,23 @@
 namespace eagleeye
 {
 enum YUVConvertType{
-    YUV2RGB = 0,
-    YUV2BGR = 1
+    I420ToRGB = 0,
+    I420ToBGR = 1,
+    NV21ToRGB = 2,
+    NV21ToBGR = 3,
+    NV12ToRGB = 4,
+    NV12ToBGR = 5
 };
 
 
 class YUVConvertNode: public AnyNode{
 public:
-    typedef YUVConvertNode                     Self;
-    typedef AnyNode                         Superclass;
+    typedef YUVConvertNode                      Self;
+    typedef AnyNode                             Superclass;
 
     EAGLEEYE_CLASSIDENTITY(YUVConvertNode);
 
-    YUVConvertNode(YUVConvertType convert_type=YUV2RGB);
+    YUVConvertNode(YUVConvertType convert_type=I420ToRGB);
     virtual ~YUVConvertNode();
 
     /**
@@ -30,12 +34,15 @@ public:
 	 */
 	virtual void executeNodeInfo();
 
+    void setConvertType(int convert_type);
+    void getConvertType(int& convert_type);
 
 private:
     YUVConvertNode(const YUVConvertNode&);
     void operator=(const YUVConvertNode&);
 
     YUVConvertType m_convert_type;
+    int m_t;
 };
 } // namespace eagleeye
 

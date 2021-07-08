@@ -171,7 +171,7 @@ public:
 	 * 
 	 * @return int 
 	 */
-	virtual EagleeyeType getSignalValueType(){return TypeTrait<T>::type;};
+	virtual EagleeyeType getValueType(){return TypeTrait<T>::type;};
 
 	/**
 	 * @brief Get the Derive Type object

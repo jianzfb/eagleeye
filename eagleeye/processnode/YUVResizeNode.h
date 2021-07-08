@@ -14,7 +14,7 @@ class YUVResizeNode: public AnyNode{
     EAGLEEYE_CLASSIDENTITY(YUVResizeNode);
 
 public:
-    YUVResizeNode(int resize_w, int resize_h);
+    YUVResizeNode(int resize_w=360, int resize_h=640);
     virtual ~YUVResizeNode();
 
     /**
@@ -23,7 +23,12 @@ public:
 	 */
 	virtual void executeNodeInfo();
 
-    
+    void setResizeW(int w);
+    void getResizeW(int& w);
+
+    void setResizeH(int h);
+    void getResizeH(int& h);
+
 private:
     YUVResizeNode(const YUVResizeNode&);
     void operator=(const YUVResizeNode&); 

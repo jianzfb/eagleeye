@@ -144,14 +144,6 @@ enum EagleeyeError{
 	EAGLEEYE_NO_ERROR				=0		//  no error
 };
 
-enum InterpMethod
-{
-	LINEAR_INTERPOLATION,
-	BILINEAR_INTERPOLATION,
-	SPLINE_INTERPOLATION,
-	NEAREST_NEIGHBOR_INTERPOLATION
-};
-
 enum SignalCategory{
 	EAGLEEYE_UNDEFINED_CATEGORY 	= -1,
 	SIGNAL_CATEGORY_IMAGE 			= 0,				// 图像信号
@@ -162,6 +154,8 @@ enum SignalCategory{
 	SIGNAL_CATEGORY_IMAGE_QUEUE 	= 5,				// 图像队列信号
 	SIGNAL_CATEGORY_TENSOR_QUEUE 	= 6,				// TENSOR队列信号
 	SIGNAL_CATEGORY_STRING_QUEUE 	= 7,				// 字符串队列信号
+	SIGNAL_CATEGORY_DEFAULT			= 8,
+	SIGNAL_CATEGORY_DEFAULT_QUEUE	= 9,
 };
 
 enum SignalType{
@@ -175,7 +169,7 @@ enum SignalType{
 	EAGLEEYE_SIGNAL_FILE			= 6,				// std::string path
 	EAGLEEYE_SIGNAL_TEXT			= 7,				// std::string
 	EAGLEEYE_SIGNAL_MODEL			= 8,				// std::string path
-	EAGLEEYE_SIGNAL_LANDMARK		= 9,				// Matrix<float>	x1y1s
+	EAGLEEYE_SIGNAL_LANDMARK		= 9,				// Matrix<float>	x,y,z,x,y,z
 	EAGLEEYE_SIGNAL_STATE			= 10,				// int
 	EAGLEEYE_SIGNAL_SWITCH			= 11,				// boolean
 	EAGLEEYE_SIGNAL_RGB_IMAGE 		= 12, 				// RGB image
@@ -186,8 +180,11 @@ enum SignalType{
 	EAGLEEYE_SIGNAL_YUV_IMAGE		= 17,				// YUV
 	EAGLEEYE_SIGNAL_TEXTURE			= 18,				// TEXTURE
 	EAGLEEYE_SIGNAL_DET 			= 19,				// Matrix<float> x,y,w,h,label,s
-	EAGLEEYE_SIGNAL_TRACKING		= 20,				// Matrix<float> x,y,w,h,id,s
-	EAGLEEYE_SIGNAL_POS_2D			= 21,
+	EAGLEEYE_SIGNAL_DET_EXT			= 20,				// Matrix<float> xc,yc,scale,theta,label,s
+	EAGLEEYE_SIGNAL_TRACKING		= 21,				// Matrix<float> x,y,w,h,id,s
+	EAGLEEYE_SIGNAL_CLS				= 22,				// Matrix<int>
+	EAGLEEYE_SIGNAL_DATA			= 23,				// Matrix<float> data
+	EAGLEEYE_SIGNAL_POS_2D			= 24,
 };
 
 enum SignalTarget{

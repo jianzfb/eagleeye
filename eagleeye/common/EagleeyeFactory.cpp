@@ -1,55 +1,63 @@
 #include "eagleeye/common/EagleeyeFactory.h"
 #include "eagleeye/processnode/Placeholder.h"
-#include "eagleeye/processnode/Add.h"
 #include "eagleeye/processnode/AutoNode.h"
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
 #include "eagleeye/common/EagleeyeNodeManager.h"
+#include "eagleeye/processnode/YUVResizeNode.h"
+#include "eagleeye/processnode/YUVConvertNode.h"
+#include "eagleeye/render/ImageShow.h"
 
 namespace eagleeye
 {
 AnyNode* __build_node(std::string node_class, std::string node_name){
-    // CAMERA/IMAGE，CAMERA, GALLERY/IMAGE, GALLERY/VIDEO
-    if(node_class == "CAMERA/IMAGE" || node_class == "CAMERA" || node_class == "GALLERY/IMAGE" || node_class == "GALLERY/VIDEO"){
+    // CAMERA.IMAGE，CAMERA, GALLERY.IMAGE, GALLERY.VIDEO
+    if(node_class == "CAMERA.IMAGE" || node_class == "CAMERA" || node_class == "GALLERY.IMAGE" || node_class == "GALLERY.VIDEO"){
         // 使用placeholder
-        if(node_class == "CAMERA/IMAGE"){
+        if(node_class == "CAMERA.IMAGE"){
             Placeholder<YUVSignal>* placeholder = 
                 new Placeholder<YUVSignal>();
-            placeholder->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+            placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_YUV_IMAGE);
             placeholder->setPlaceholderSource(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
-            placeholder->setUnitName(node_name.c_str());
+            placeholder->setUnitName("placeholder");
             return placeholder;
         }
         else if(node_class == "CAMERA"){
             Placeholder<YUVSignal>* placeholder = 
                 new Placeholder<YUVSignal>();
-            placeholder->setPlaceholderType(EAGLEEYE_SIGNAL_IMAGE);
+            placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_YUV_IMAGE);
             placeholder->setPlaceholderSource(EAGLEEYE_CAPTURE_PREVIEW_IMAGE);
-            placeholder->setUnitName(node_name.c_str());
+            placeholder->setUnitName("placeholder");
             return placeholder;
         }
-        else if(node_class == "GALLERY/IMAGE"){
+        else if(node_class == "GALLERY.IMAGE"){
             Placeholder<StringSignal>* placeholder = new Placeholder<StringSignal>();
-            placeholder->setPlaceholderType(EAGLEEYE_SIGNAL_FILE);
-            placeholder->setUnitName(node_name.c_str());
+            placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_FILE);
+            placeholder->setUnitName("placeholder");
             return placeholder;            
         }
-        else if(node_class == "GALLERY/VIDEO"){
+        else if(node_class == "GALLERY.VIDEO"){
             Placeholder<StringSignal>* placeholder = new Placeholder<StringSignal>();
-            placeholder->setPlaceholderType(EAGLEEYE_SIGNAL_FILE);
-            placeholder->setUnitName(node_name.c_str());
+            placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_FILE);
+            placeholder->setUnitName("placeholder");
             return placeholder;   
         }
     }
     else if(node_class == "VideoWriteNode"){
         return NULL;
     }
-    else if(node_class == "ImageShow"){
-        return NULL;
-    }
     else if(node_class == "ImageCanvasShow"){
         return NULL;
+    }
+    else if(node_class == "YUVResizeNode"){
+        return new YUVResizeNode();
+    }
+    else if(node_class == "YUVConvertNode"){
+        return new YUVConvertNode();
+    }
+    else if(node_class == "ImageShow"){
+        return new ImageShow();
     }
 
     AnyNode* node = NodeManager::get()->build(node_class);
@@ -67,12 +75,13 @@ struct _NodeInfo{
 };
 
 
-AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char* config_folder){
+AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char* resource_folder){
     if(!isfileexist(json_file)){
         EAGLEEYE_LOGE("Pipeline json %s dont exist.", json_file);
         return NULL;
     }
 
+    EAGLEEYE_LOGD("A");
     std::ifstream i_file_handle;
     i_file_handle.open(json_file);
     i_file_handle.seekg(0, std::ios::end);
@@ -85,22 +94,26 @@ AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char
     i_file_handle.close();
     delete[] file_buffer;
 
+    EAGLEEYE_LOGD("B");
     neb::CJsonObject pipeline_obj(content);
     // 获得管线名称
     std::string pipeline_name;
     pipeline_obj.Get("name", pipeline_name);
 
-
+    EAGLEEYE_LOGD("C");
     if(!AnyPipeline::isExist(pipeline_name.c_str())){
         // 注册管线
         const char* version = "default";
         const char* key = "";
         AnyPipeline::registerPipeline(pipeline_name.c_str(), version, key);
     }    
+    EAGLEEYE_LOGD("D");
+    EAGLEEYE_LOGD("pp %s", pipeline_name.c_str());
     AnyPipeline* pipeline = AnyPipeline::getInstance(pipeline_name.c_str());
     if(pipeline == NULL){
         EAGLEEYE_LOGE("Couldnt get pipeline instance.");
     }
+    EAGLEEYE_LOGD("E");
 
     pipeline->setPipelineName(pipeline_name.c_str());
     EAGLEEYE_LOGD("Pipeline name %s.", pipeline_name.c_str());
@@ -150,6 +163,7 @@ AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char
                 EAGLEEYE_LOGD("Node %s (class %s) dont support.", nodes[node_i].c_str(), class_name.c_str());
                 return false;
             }
+
             pipeline->add(node_ptr, nodes[node_i].c_str());
         }
 
@@ -191,7 +205,8 @@ AnyPipeline* eagleeye_build_pipeline_from_json(const char* json_file, const char
 
         return true;
     };
-    pipeline->initialize(config_folder, init_func, true);
+
+    pipeline->initialize(resource_folder, init_func, true);
     return pipeline;
 }
 } // namespace eagleeye

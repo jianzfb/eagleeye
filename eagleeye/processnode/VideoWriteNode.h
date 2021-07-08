@@ -74,7 +74,7 @@ private:
      * @brief finish writing process
      * 
      */
-    void finish();
+    void writefinish();
 
     /**
      * @brief flush encoder

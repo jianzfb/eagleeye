@@ -1,10 +1,5 @@
-#ifdef EAGLEEYE_PADDLE_SUPPORT
-#include "eagleeye/engine/paddle_run.h"
-#include "paddle_api.h"  // NOLINT
-#include "eagleeye/common/EagleeyeLog.h"
-#include <iostream>
 namespace eagleeye{
-ModelRun::ModelRun(std::string model_name, 
+PaddleRun::PaddleRun(std::string model_name, 
 			   std::string device,
 			   std::vector<std::string> input_names,
 			   std::vector<std::vector<int64_t>> input_shapes,
@@ -45,9 +40,9 @@ ModelRun::ModelRun(std::string model_name,
 }    
 
 
-ModelRun::~ModelRun(){
+PaddleRun::~PaddleRun(){
 }
-bool ModelRun::run(std::map<std::string, unsigned char*> inputs, 
+bool PaddleRun::run(std::map<std::string, unsigned char*> inputs, 
 				   std::map<std::string, unsigned char*>& outputs){	
     // ignore outside inputs
     if(!this->m_predictor.get()){
@@ -66,7 +61,7 @@ bool ModelRun::run(std::map<std::string, unsigned char*> inputs,
     return true;
 }
 
-bool ModelRun::initialize(){
+bool PaddleRun::initialize(){
     // 1. Set MobileConfig
     EAGLEEYE_LOGD("set paddle model file");
     paddle::lite_api::MobileConfig config;
@@ -107,7 +102,7 @@ bool ModelRun::initialize(){
     return true;
 }
 
-void* ModelRun::getInputPtr(std::string input_name){
+void* PaddleRun::getInputPtr(std::string input_name){
     std::unique_ptr<paddle::lite_api::Tensor> tensor = m_predictor->GetInputByName(input_name);
     if(!tensor.get()){
         EAGLEEYE_LOGE("input %s tensor is null", input_name.c_str());
@@ -117,7 +112,7 @@ void* ModelRun::getInputPtr(std::string input_name){
     return tensor->mutable_data<float>();
 }
 
-void ModelRun::setWritablePath(std::string writable_path){
+void PaddleRun::setWritablePath(std::string writable_path){
     ModelEngine::setWritablePath(writable_path);
 
 	this->m_nb_path = this->m_model_name;
@@ -135,4 +130,3 @@ void ModelRun::setWritablePath(std::string writable_path){
 	EAGLEEYE_LOGD("paddle model path %s", this->m_nb_path.c_str());
 }
 }
-#endif

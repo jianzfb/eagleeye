@@ -125,6 +125,40 @@ public:
 	std::string getModelRoot();
 
 	/**
+	 * @brief convert bgr to Tensor(CHW)
+	 * 
+	 * @param src 
+	 * @param output 
+	 * @param width 
+	 * @param height 
+	 * @param means 
+	 * @param scales 
+	 */
+	void bgrToTensorCHW(const uint8_t* src,
+                       float* output,
+                       int width,
+                       int height,
+                       float* means,
+                       float* scales);
+
+	/**
+	 * @brief convert bgr to RGB Tensor(CHW)
+	 * 
+	 * @param src 
+	 * @param output 
+	 * @param width 
+	 * @param height 
+	 * @param means 
+	 * @param scales 
+	 */
+	void bgrToRgbTensorCHW(const uint8_t* src,
+						float* output,
+						int width,
+						int height,
+						float* means,
+						float* scales);
+
+	/**
 	 * @brief Get the Input Ptr object
 	 * 
 	 * @param input_name 

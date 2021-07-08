@@ -3,6 +3,7 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/render/RenderBase.h"
+#include "eagleeye/render/RenderContext.h"
 #include <GLES3/gl3.h>
 
 
@@ -26,6 +27,13 @@ public:
     int getCanvasY();
     int getCanvasW();
     int getCanvasH();
+
+    /**
+     * @brief Get the Render Context object
+     * 
+     * @return RenderContext* 
+     */
+    RenderContext* getRenderContext();
 
     /**
      * @brief init gl 

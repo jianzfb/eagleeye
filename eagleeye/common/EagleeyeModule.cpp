@@ -88,7 +88,8 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
         EAGLEEYE_LOGD("Get register plugin func.");
         REGISTER_PLUGIN_FUNC plugin_register_func = NULL; 
         INITIALIZE_PLUGIN_FUNC plugin_initialize_func = NULL;
-        plugin_register_func = (REGISTER_PLUGIN_FUNC)dlsym(handle, "eagleeye_register_plugin_pipeline");
+        std::string register_func_name = "eagleeye_"+kv[0]+"_register_plugin_pipeline";
+        plugin_register_func = (REGISTER_PLUGIN_FUNC)dlsym(handle,register_func_name.c_str());
         if(!plugin_register_func){
             EAGLEEYE_LOGD("Dlsym error, message (%s).",dlerror());
             dlclose(handle);
@@ -103,7 +104,8 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
         }
 
         EAGLEEYE_LOGD("Get initialize plugin func.");
-        plugin_initialize_func = (INITIALIZE_PLUGIN_FUNC)dlsym(handle, "eagleeye_pipeline_initialize");
+        std::string init_func_name = "eagleeye_"+kv[0]+"_pipeline_initialize";
+        plugin_initialize_func = (INITIALIZE_PLUGIN_FUNC)dlsym(handle, init_func_name.c_str());
         if(!plugin_initialize_func){
             EAGLEEYE_LOGD("Dlsym error, message (%s)",dlerror());
             dlclose(handle);
@@ -151,42 +153,27 @@ bool eagleeye_release_module(){
     return true;
 }
 
-// #ifdef SUPPORT_STATIC_PIPELINE_PLUGIN
-// extern "C" {
-//     const char* eagleeye_register_plugin_pipeline();
-//     void eagleeye_pipeline_initialize();
-// }
-// #endif
-
-// bool eagleeye_registed_pipeline(std::string& pipeline_name){
-//     #ifdef SUPPORT_STATIC_PIPELINE_PLUGIN
-//     pipeline_name = eagleeye_register_plugin_pipeline();
-//     INITIALIZE_PLUGIN_FUNC pipelne_ini_func = eagleeye_pipeline_initialize;
-//     m_registed_plugins[pipeline_name] = std::make_pair(NULL,plugin_initialize_func);
-//     AnyPipeline::getInstance(pipeline_name.c_str())->setInitFunc(pipelne_ini_func);
-//     return true;
-//     #endif
-
-//     return false;
-// }
-
-bool eagleeye_custom_add_pipeline(REGISTER_PLUGIN_FUNC register_func, INITIALIZE_PLUGIN_FUNC init_func){
-    const char* pipeline_name = register_func();
-    if(pipeline_name == NULL){
+bool eagleeye_custom_add_pipeline(const char* pipeline_name, REGISTER_PLUGIN_FUNC register_func, INITIALIZE_PLUGIN_FUNC init_func){
+    if(m_registed_plugins.find(std::string(pipeline_name)) != m_registed_plugins.end()){
+        return true;
+    }
+    
+    const char* register_pipeline_name = register_func();
+    if(register_pipeline_name == NULL){
         EAGLEEYE_LOGE("Resiger fail.");
         return false;
     }
 
-    m_registed_plugins[std::string(pipeline_name)]=std::pair<void*,INITIALIZE_PLUGIN_FUNC>(NULL,init_func);
+    m_registed_plugins[std::string(register_pipeline_name)] = std::pair<void*,INITIALIZE_PLUGIN_FUNC>(NULL,init_func);
     return true;
 }
 
-bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* config_folder){
+bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* resource_folder){
     if(!AnyPipeline::isExist(pipeline_name)){
         // 1.step 从文件中加载
         std::string pipeline_file = AnyPipeline::getPluginRoot()+"/"+pipeline_name+"/"+pipeline_name+".json";
         if(isfileexist(pipeline_file.c_str())){
-            AnyPipeline* pipeline = eagleeye_build_pipeline_from_json(pipeline_name, config_folder);
+            AnyPipeline* pipeline = eagleeye_build_pipeline_from_json(pipeline_file.c_str(), resource_folder);            
             if(pipeline != NULL){
                 return true;
             }
@@ -199,8 +186,15 @@ bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* config_
     // 2.step 从插件库中加载
     AnyPipeline::getInstance(pipeline_name)->setInitFunc(m_registed_plugins[std::string(pipeline_name)].second);
     AnyPipeline::getInstance(pipeline_name)->setPipelineName(pipeline_name);
-    AnyPipeline::getInstance(pipeline_name)->initialize(config_folder);
+    AnyPipeline::getInstance(pipeline_name)->initialize(resource_folder);
     return true;
+}
+
+bool eagleeye_config(EagleeyeConfig config_content){
+    if(config_content.resource_folder != ""){
+        // 设置全局资源路径
+        AnyNode::setResourceFolder(config_content.resource_folder);
+    }
 }
 
 bool eagleeye_pipeline_load_config(const char* pipeline_name, const char* config_file){
@@ -218,6 +212,12 @@ bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config
 bool eagleeye_pipeline_release(const char* pipeline_name){
     EAGLEEYE_LOGD("Enter eagleeye_pipeline_release %s.", pipeline_name);    
     if(m_registed_plugins.find(std::string(pipeline_name)) == m_registed_plugins.end()){
+        if(AnyPipeline::isExist(pipeline_name)){
+            EAGLEEYE_LOGD("Finish eagleeye_pipeline_release %s.", pipeline_name);
+            AnyPipeline::releasePipeline(pipeline_name);
+            return true;
+        }
+
         EAGLEEYE_LOGD("Pipeline %s dont existed.", pipeline_name);
         return false;
     }
@@ -229,10 +229,10 @@ bool eagleeye_pipeline_release(const char* pipeline_name){
     if(m_registed_plugins[std::string(pipeline_name)].first != NULL){
         // 关闭动态库
         dlclose(m_registed_plugins[std::string(pipeline_name)].first);
-        // 删除动态库记录
-        m_registed_plugins.erase(m_registed_plugins.find(std::string(pipeline_name)));
     }
 
+    // 删除注册记录
+    m_registed_plugins.erase(m_registed_plugins.find(std::string(pipeline_name)));
     EAGLEEYE_LOGD("Finish eagleeye_pipeline_release %s.", pipeline_name);
     return true;
 }
@@ -462,9 +462,9 @@ bool eagleeye_on_surface_create(){
     return true;
 }
 
-bool eagleeye_on_surface_change(int width, int height){
+bool eagleeye_on_surface_change(int width, int height, int rotate, bool mirror){
     EAGLEEYE_LOGD("in width %d height %d", width, height);
-    AnyPipeline::onRenderSurfaceChange(width, height);
+    AnyPipeline::onRenderSurfaceChange(width, height, rotate, mirror);
     return true;
 }
 

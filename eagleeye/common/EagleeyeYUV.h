@@ -12,6 +12,12 @@ void eagleeye_I420_rotate_270(unsigned char* i420_data, int width, int height, u
 
 Matrix<Array<unsigned char,3>> eagleeye_I420_to_RGB(unsigned char* i420_data, int width, int height);
 Matrix<Array<unsigned char,3>> eagleeye_I420_to_BGR(unsigned char* i420_data, int width, int height);
+
+Matrix<Array<unsigned char,3>> eagleeye_NV21_to_RGB(unsigned char* i420_data, int width, int height);
+Matrix<Array<unsigned char,3>> eagleeye_NV21_to_BGR(unsigned char* i420_data, int width, int height);
+
+Matrix<Array<unsigned char,3>> eagleeye_NV12_to_RGB(unsigned char* i420_data, int width, int height);
+Matrix<Array<unsigned char,3>> eagleeye_NV12_to_BGR(unsigned char* i420_data, int width, int height);
 } // namespace eagleeye
 
 #endif

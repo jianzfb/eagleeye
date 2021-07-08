@@ -34,7 +34,7 @@ void SerialWriteNode::executeNodeInfo(){
 	sprintf(suffix, "_%d", this->m_order_index);
     std::string output_name = this->m_folder + "/" + this->m_prefix + suffix;
 
-    EagleeyeType data_type = this->getInputPort(0)->getSignalValueType();
+    EagleeyeType data_type = this->getInputPort(0)->getValueType();
     // 1.step read data
     if(data_type == EAGLEEYE_CHAR){
         ImageSignal<char>* input_char_signal = (ImageSignal<char>*)(this->getInputPort(0));

@@ -6,6 +6,7 @@ namespace eagleeye
 YUVSignal::YUVSignal(){
     m_release_count = 1;
     this->m_yuv_format = EAGLEEYE_YUV_I420;
+    this->setSignalType(EAGLEEYE_SIGNAL_YUV_IMAGE);
 }   
 
 YUVSignal::~YUVSignal(){
@@ -29,7 +30,7 @@ void YUVSignal::copy(AnySignal* sig){
     }
 
 	if((SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) || 
-			(this->getSignalValueType() != sig->getSignalValueType())){
+			(this->getValueType() != sig->getValueType())){
 		return;
 	}
 
@@ -116,20 +117,26 @@ void YUVSignal::setData(void* data, MetaData meta){
         meta_data.cols = width;
     } 
     else if(meta.rotation == 90){
+        EAGLEEYE_LOGD("in rotate 90");
         eagleeye_I420_rotate_90(data_ptr, width, height, blob_ptr);
         meta_data.rows = width;
         meta_data.cols = height;
+        EAGLEEYE_LOGD("after width %d height %d", meta_data.cols, meta_data.rows);
     }
     else if(meta.rotation == 180){
+        EAGLEEYE_LOGD("in rotate 180");
+        EAGLEEYE_LOGD("before width %d height %d", width, height);
         eagleeye_I420_rotate_180(data_ptr, width, height, blob_ptr);
         meta_data.rows = height;
         meta_data.cols = width;
+        EAGLEEYE_LOGD("after width %d height %d", meta_data.cols, meta_data.rows);
     }
     else if(meta.rotation == 270){
+        EAGLEEYE_LOGD("in rotate 270");
         eagleeye_I420_rotate_270(data_ptr, width, height, blob_ptr);
-
         meta_data.rows = width;
         meta_data.cols = height;
+        EAGLEEYE_LOGD("after width %d height %d", meta_data.cols, meta_data.rows);
     }
 
     this->setData(blob, meta_data);
@@ -159,7 +166,7 @@ int YUVSignal::getHeight(){
     return this->m_meta.rows;
 }
 
-void YUVSignal::setSignalValueType(EagleeyeType yuv_format){
+void YUVSignal::setValueType(EagleeyeType yuv_format){
     if(yuv_format != EAGLEEYE_YUV_I420 && yuv_format != EAGLEEYE_YUV_NV21 && yuv_format != EAGLEEYE_YUV_NV12){
         EAGLEEYE_LOGE("Dont support yuv format %d", (int)(yuv_format));
         return;

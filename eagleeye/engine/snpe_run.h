@@ -1,10 +1,12 @@
 #ifndef _SNPE_MODEL_RUN_H_
 #define _SNPE_MODEL_RUN_H_
-#ifdef EAGLEEYE_SNPE_SUPPORT
 #include "eagleeye/engine/model_engine.h"
 #include "SNPE/SNPE.hpp"
 #include "SNPE/SNPEBuilder.hpp"
 #include "SNPE/SNPEFactory.hpp"
+#include "eagleeye/common/EagleeyeStr.h"
+#include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/common/EagleeyeTime.h"
 #include "DlSystem/DlEnums.hpp"
 #include "DlSystem/DlVersion.hpp"
 #include "DlSystem/IUserBufferFactory.hpp"
@@ -19,14 +21,20 @@
 #include <string>
 #include <map>
 #include<memory> 
-
+#include <sys/time.h>
+#include <algorithm>
+#include <getopt.h>
+#include <cstdlib>
+#include <unordered_map>
+#include <stdio.h>
+#include <assert.h>
 namespace eagleeye{
-class ModelRun: public ModelEngine{
+class SnpeRun: public ModelEngine{
 public:
 	/**
 	 * [constructor: build snpe model]
 	 */
-	ModelRun(std::string model_name, 
+	SnpeRun(std::string model_name, 
 			 std::string device,
 			 std::vector<std::string> input_names=std::vector<std::string>(),
 		     std::vector<std::vector<int64_t>> input_shapes=std::vector<std::vector<int64_t>>(),
@@ -38,7 +46,7 @@ public:
 	/**
 	 * [destructor]
 	 */
-	virtual ~ModelRun();
+	virtual ~SnpeRun();
 
 	/**
 	 * [run neural network model]
@@ -115,5 +123,5 @@ protected:
 	std::vector<std::shared_ptr<float>> m_temp_ptrs;
 };	
 }
-#endif
+#include "eagleeye/engine/snpe_run.hpp"
 #endif

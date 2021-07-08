@@ -62,13 +62,24 @@ void SerialStringNode::getPrefix(std::string& prefix){
     prefix = this->m_prefix;    
 }
 
-void SerialStringNode::feadback(std::map<std::string, int>& node_state_map){
-    // 1.step call base feadback
-    Superclass::feadback(node_state_map);
+// void SerialStringNode::feadback(std::map<std::string, int>& node_state_map){
+//     // 1.step call base feadback
+//     Superclass::feadback(node_state_map);
 
+//     // 2.step whether need to update
+//     if(m_serial_string_reader->cur() < this->m_serial_string_reader->count()){
+//         this->modified();
+//     }
+// }
+
+bool SerialStringNode::finish(){
+    // 1.step call base feadback
+    Superclass::finish();
     // 2.step whether need to update
     if(m_serial_string_reader->cur() < this->m_serial_string_reader->count()){
         this->modified();
-    }
+        return false;
+    }    
+    return true;
 }
 } // namespace eagleeye

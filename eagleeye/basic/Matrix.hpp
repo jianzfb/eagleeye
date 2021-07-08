@@ -411,8 +411,8 @@ Matrix<T> Matrix<T>::reshape_(int r,int c)
 	if(!isContinuous()){
 		*this = this->clone();
 	}
-	m_rows = rows();
-	m_cols = cols();
+	m_rows = r;
+	m_cols = c;
 
 	m_r_range.s = 0;
 	m_r_range.e = m_rows;
@@ -433,7 +433,7 @@ Matrix<T> Matrix<T>::mul(const Matrix<T>& m) const
 	unsigned int mul_rows = t_rows > r_rows ? t_rows : r_rows;
 	unsigned int mul_cols = t_cols > r_cols ? t_cols : r_cols;
 
-	Matrix<T> product(mul_rows,mul_cols,T(0));
+	Matrix<T> product(mul_rows,mul_cols);
 	for (unsigned int i = 0; i < mul_rows; ++i)
 	{
 		T* product_ptr = product.row(i);
@@ -727,7 +727,7 @@ Matrix<T>& Matrix<T>::operator -=(const Matrix<T>& m)
 	for (unsigned int i = 0; i < rows; ++i)
 	{
 		T* data_ptr = row(i);
-		T* data_m_ptr = m.row(i%r_rows);
+		const T* data_m_ptr = m.row(i%r_rows);
 
 		for (unsigned int j = 0; j < cols; ++j)
 		{

@@ -131,14 +131,14 @@ public:
      */
     void dependent(const char* node, const char* dependent_node);
 
-    /**
-     * @brief add feadback action
-     * 
-     * @param trigger_node 
-     * @param trigger_node_state 
-     * @param response_action 
-     */
-    void addFeadbackRule(const char* trigger_node, int trigger_node_state, const char* response_node, const char* response_action);
+    // /**
+    //  * @brief add feadback action
+    //  * 
+    //  * @param trigger_node 
+    //  * @param trigger_node_state 
+    //  * @param response_action 
+    //  */
+    // void addFeadbackRule(const char* trigger_node, int trigger_node_state, const char* response_node, const char* response_action);
 
     /**
      * @brief load/save pipeline from file
@@ -167,7 +167,7 @@ public:
     /**
      * @brief surface change (render)
      */ 
-    static void onRenderSurfaceChange(int width, int height);
+    static void onRenderSurfaceChange(int width, int height, int rotate, bool mirror);
 
     /*
     * @brief mouse event
@@ -183,6 +183,13 @@ public:
      * @brief surface h (render)
      */ 
     static int getRenderSurfaceH();
+
+    /**
+     * @brief Get the Render Context object
+     * 
+     * @return RenderContext* 
+     */
+    static RenderContext* getRenderContext();
 
     /**
      * @brief Set the Ini Func object
@@ -370,6 +377,13 @@ public:
      */
     std::string resourceFolder();
     
+    /**
+     * @brief Set the Resoruce Folder object
+     * 
+     * @param folder 
+     */
+    void setResoruceFolder(std::string folder);
+
 protected:
     /**
      * @brief Construct a new Any Pipeline object
@@ -394,8 +408,8 @@ private:
     
     std::map<std::string, std::vector<std::string>> m_dependent_nodes;
     std::vector<std::string> m_order_nodes;
+    std::string m_resource_folder;
 
-    bool m_is_initialize;
     bool m_is_approved;
     INITIALIZE_PLUGIN_PIPELINE_FUNC m_init_func;
     static std::map<std::string, std::shared_ptr<AnyPipeline>> m_pipeline_map;

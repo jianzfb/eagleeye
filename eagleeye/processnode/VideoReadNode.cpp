@@ -267,13 +267,22 @@ void VideoReadNode::getFilePath(std::string& file_path){
     file_path = this->m_file_path;
 }
 
-void VideoReadNode::feadback(std::map<std::string, int>& node_state_map){
-    if(m_decoder_finish){
-        Superclass::feadback(node_state_map);
-    }
-    else if(!m_next.isempty()){
+// void VideoReadNode::feadback(std::map<std::string, int>& node_state_map){
+//     if(m_decoder_finish){
+//         Superclass::feadback(node_state_map);
+//     }
+//     else if(!m_next.isempty()){
+//         this->modified();
+//     }
+// }
+
+bool VideoReadNode::finish(){
+    Superclass::finish();
+    if(!m_next.isempty()){
         this->modified();
+        return false;
     }
+    return true;
 }
 
 void VideoReadNode::setFramesNumber(int num){

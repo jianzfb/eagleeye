@@ -41,7 +41,7 @@ void ImageSignal<T>::copyInfo(AnySignal* sig){
 template<class T>
 void ImageSignal<T>::copy(AnySignal* sig){
 	if((SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) || 
-			(this->getSignalValueType() != sig->getSignalValueType())){
+			(this->getValueType() != sig->getValueType())){
 		return;
 	}
 	ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	

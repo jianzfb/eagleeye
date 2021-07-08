@@ -110,7 +110,7 @@ public:
 	 * 
 	 * @return int 
 	 */
-	virtual EagleeyeType getSignalValueType(){return m_yuv_format;};
+	virtual EagleeyeType getValueType(){return m_yuv_format;};
 
 	/**
 	 * @brief Get the Derive Type object
@@ -118,7 +118,7 @@ public:
 	 * @return SignalCategory 
 	 */
 	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_IMAGE;}
-	
+
 	/**
 	 * @brief Set the Meta object
 	 * 
@@ -146,7 +146,7 @@ public:
 	/**
 	 * @brief set val type
 	 */ 
-	void setSignalValueType(EagleeyeType yuv_format);
+	void setValueType(EagleeyeType yuv_format);
 
 private:
     Blob m_blob;

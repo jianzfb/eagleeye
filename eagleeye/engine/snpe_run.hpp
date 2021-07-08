@@ -1,17 +1,5 @@
-#ifdef EAGLEEYE_SNPE_SUPPORT
-#include "eagleeye/engine/snpe_run.h"
-#include "eagleeye/common/EagleeyeStr.h"
-#include "eagleeye/common/EagleeyeLog.h"
-#include "eagleeye/common/EagleeyeTime.h"
-#include <sys/time.h>
-#include <algorithm>
-#include <getopt.h>
-#include <cstdlib>
-#include <unordered_map>
-#include <stdio.h>
-#include <assert.h>
 namespace eagleeye{
-ModelRun::ModelRun(std::string model_name, 
+SnpeRun::SnpeRun(std::string model_name, 
 			   std::string device,
 			   std::vector<std::string> input_names,
 			   std::vector<std::vector<int64_t>> input_shapes,
@@ -50,10 +38,10 @@ ModelRun::ModelRun(std::string model_name,
 	EAGLEEYE_LOGD("snpe dlc %s", this->m_dlc_path.c_str());
 }
 
-ModelRun::~ModelRun(){
+SnpeRun::~SnpeRun(){
 }
 
-bool ModelRun::run(std::map<std::string, unsigned char*> inputs, 
+bool SnpeRun::run(std::map<std::string, unsigned char*> inputs, 
 				   std::map<std::string, unsigned char*>& outputs){	
 	bool is_run_ok = false;
 	if(this->isDynamicInputShape()){
@@ -124,7 +112,7 @@ bool ModelRun::run(std::map<std::string, unsigned char*> inputs,
 	return is_run_ok;
 }
 
-bool ModelRun::initialize(){
+bool SnpeRun::initialize(){
 	// step 1. set runtime
 	zdl::DlSystem::Runtime_t runtime = this->checkRuntime();
 	// step 2. load dlc
@@ -151,7 +139,7 @@ bool ModelRun::initialize(){
 	return true;
 }
 
-zdl::DlSystem::Runtime_t ModelRun::checkRuntime(){
+zdl::DlSystem::Runtime_t SnpeRun::checkRuntime(){
     zdl::DlSystem::Runtime_t runtime;
 	static bool flag = true;
 	if(flag){
@@ -190,13 +178,13 @@ zdl::DlSystem::Runtime_t ModelRun::checkRuntime(){
     return runtime;
 }
 
-std::unique_ptr<zdl::DlContainer::IDlContainer> ModelRun::loadContainerFromFile(std::string containerPath){
+std::unique_ptr<zdl::DlContainer::IDlContainer> SnpeRun::loadContainerFromFile(std::string containerPath){
 	std::unique_ptr<zdl::DlContainer::IDlContainer> container;
     container = zdl::DlContainer::IDlContainer::open(zdl::DlSystem::String(containerPath.c_str()));
     return std::move(container);
 }
 
-bool ModelRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>& container,
+bool SnpeRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>& container,
                                                    zdl::DlSystem::Runtime_t runtime,
                                                    bool useUserSuppliedBuffers,
 						   						   zdl::DlSystem::PlatformConfig platformConfig){
@@ -229,7 +217,7 @@ bool ModelRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>
 	return true;
 }
 
-void ModelRun::createInputTensors(){
+void SnpeRun::createInputTensors(){
     const auto &strlist_name = this->m_snpe->getInputTensorNames();
     if (!strlist_name) throw std::runtime_error("Error obtaining Input tensor names");
 
@@ -247,7 +235,7 @@ void ModelRun::createInputTensors(){
     }
 }
 
-bool ModelRun::_run(std::map<std::string, unsigned char*> inputs, 
+bool SnpeRun::_run(std::map<std::string, unsigned char*> inputs, 
 			  		std::map<std::string, unsigned char*>& outputs){
 	// step 1. load input tensor
 	if(inputs.size() > 0){
@@ -296,7 +284,7 @@ bool ModelRun::_run(std::map<std::string, unsigned char*> inputs,
 	return is_run_ok;
 }
 
-void ModelRun::setWritablePath(std::string writable_path){
+void SnpeRun::setWritablePath(std::string writable_path){
 	ModelEngine::setWritablePath(writable_path);
 
 	this->m_dlc_path = this->m_model_name;
@@ -314,12 +302,10 @@ void ModelRun::setWritablePath(std::string writable_path){
 	EAGLEEYE_LOGD("dlc path %s", this->m_dlc_path.c_str());
 }
 
-void* ModelRun::getInputPtr(std::string input_name){
+void* SnpeRun::getInputPtr(std::string input_name){
 	std::string tensor_name = input_name+":0";
 	auto tensor_ptr = this->m_input_tensormap.getTensor(tensor_name.c_str());
 	return tensor_ptr->begin().dataPointer();
 }
 
 }
-
-#endif

@@ -43,12 +43,14 @@ public:
 	 */
 	virtual void executeNodeInfo();
 
-    /**
-     * @brief feadback 
-     * 
-     * @param node_state_map 
-     */
-	virtual void feadback(std::map<std::string, int>& node_state_map);
+    // /**
+    //  * @brief feadback 
+    //  * 
+    //  * @param node_state_map 
+    //  */
+	// virtual void feadback(std::map<std::string, int>& node_state_map);
+
+    virtual bool finish();
 
     /**
      * @brief Set/Get the File Path object

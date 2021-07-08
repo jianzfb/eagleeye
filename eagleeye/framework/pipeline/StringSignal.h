@@ -84,7 +84,7 @@ public:
 	 * 
 	 * @return int 
 	 */
-	virtual EagleeyeType getSignalValueType(){return EAGLEEYE_STRING;};
+	virtual EagleeyeType getValueType(){return EAGLEEYE_STRING;};
 
 	/**
 	 * @brief Get the Derive Type object

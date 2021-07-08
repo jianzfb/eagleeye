@@ -181,8 +181,6 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/StringSignal.cpp
     eagleeye/framework/pipeline/StateSignal.cpp
     eagleeye/framework/pipeline/AnyPipeline.cpp 
-    eagleeye/engine/snpe_run.cpp 
-    eagleeye/engine/paddle_run.cpp
     eagleeye/engine/model_engine.cpp 
     eagleeye/common/EagleeyeStr.cpp 
     eagleeye/common/EagleeyeIO.cpp 
@@ -245,9 +243,8 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/BooleanSignal.cpp
     eagleeye/framework/pipeline/StringSignal.cpp
     eagleeye/framework/pipeline/StateSignal.cpp
+    eagleeye/framework/pipeline/LandmarkSignal.cpp
     eagleeye/common/EagleeyeLog.cpp 
-    eagleeye/engine/snpe_run.cpp 
-    eagleeye/engine/paddle_run.cpp
     eagleeye/engine/model_engine.cpp 
     eagleeye/common/EagleeyeStr.cpp 
     eagleeye/common/EagleeyeIO.cpp 
@@ -282,6 +279,7 @@ set(EAGLEEYE_SRC
     eagleeye/render/ImageContainer.cpp
     eagleeye/render/RenderBase.cpp
     eagleeye/render/ShapeNode.cpp
+    eagleeye/render/HighlightShow.cpp
     eagleeye/ui/ScrollView.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/render/YUVShow.cpp
@@ -294,6 +292,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/YUVResizeNode.cpp
     eagleeye/processnode/OrNode.cpp
     eagleeye/processnode/IsUpdateNode.cpp
+    eagleeye/processnode/ConstNode.cpp
     eagleeye/processnode/DottingNode.cpp
     eagleeye/framework/pipeline/AnyRegister.cpp
     eagleeye/processnode/ThreadNode.cpp)

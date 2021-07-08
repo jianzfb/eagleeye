@@ -1,7 +1,7 @@
 #ifndef _PADDLE_MODEL_RUN_H_
 #define _PADDLE_MODEL_RUN_H_
-#ifdef EAGLEEYE_PADDLE_SUPPORT
 #include "eagleeye/engine/model_engine.h"
+#include "eagleeye/common/EagleeyeLog.h"
 #include "paddle_api.h"  // NOLINT
 #include <vector>
 #include <fstream>
@@ -9,13 +9,14 @@
 #include <string>
 #include <map>
 #include <memory> 
+#include <iostream>
 namespace eagleeye{
-class ModelRun: public ModelEngine{
+class PaddleRun: public ModelEngine{
 public:
 	/**
 	 * [constructor: build snpe model]
 	 */
-	ModelRun(std::string model_name, 
+	PaddleRun(std::string model_name, 
 			 std::string device,
 			 std::vector<std::string> input_names=std::vector<std::string>(),
 		     std::vector<std::vector<int64_t>> input_shapes=std::vector<std::vector<int64_t>>(),
@@ -28,7 +29,7 @@ public:
     /**
 	 * [destructor]
 	 */
-	virtual ~ModelRun();
+	virtual ~PaddleRun();
 
     /**
 	 * [run neural network model]
@@ -63,10 +64,8 @@ public:
 private:
     std::string m_nb_path;
     std::shared_ptr<paddle::lite_api::PaddlePredictor> m_predictor;
-};
-    
+};  
 } // namespace eagleeye
 
-
-#endif
+#include "eagleeye/engine/paddle_run.hpp"
 #endif

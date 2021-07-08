@@ -66,7 +66,6 @@ void ScrollView::executeNodeInfo(){
     Matrix<float> offset_data = offset_sig->getData();
     float current_x_offset = 0.0f;
     float current_y_offset = 0.0f;
-
     // 选择状态信号
     // 0:默认，1:锁定状态，2：激活状态，3：丢失状态，4：失活状态
     StateSignal* state_sig = (StateSignal*)this->getInputPort(1);
@@ -187,11 +186,9 @@ void ScrollView::executeNodeInfo(){
 
 	// Use the program object
 	glUseProgram (m_Program);
-
 	// Load the vertex data
     glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
-
     // 发现首个位于中心位置的视口
     float screen_center_x = 0.0f;
     float screen_center_y = 0.0f;

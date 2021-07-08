@@ -31,7 +31,7 @@ void ImageWriteNode::executeNodeInfo(){
         EAGLEEYE_LOGD("%s dont exsit, try to build", this->m_folder.c_str());
         createdirectory(this->m_folder.c_str());
     }
-    EagleeyeType data_type = this->getInputPort(0)->getSignalValueType();
+    EagleeyeType data_type = this->getInputPort(0)->getValueType();
     if(data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_RGB || data_type == EAGLEEYE_RGBA){
         if(data_type == EAGLEEYE_UCHAR){
             // gray image

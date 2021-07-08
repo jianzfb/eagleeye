@@ -14,6 +14,7 @@ ShaderManager::~ShaderManager(){
     for(iter = m_shader_map.begin(); iter != iend; ++iter){
         GLUtils::DeleteProgram(iter->second.program);
     }
+    m_shader_map.clear();
 }   
 
 
@@ -82,4 +83,11 @@ ShaderProgram ShaderManager::program(std::string shader_name){
     return m_shader_map[shader_name];
 }
 
+void ShaderManager::clear(){
+    std::map<std::string, ShaderProgram>::iterator iter, iend(m_shader_map.end());
+    for(iter = m_shader_map.begin(); iter != iend; ++iter){
+        GLUtils::DeleteProgram(iter->second.program);
+    }
+    m_shader_map.clear();
+}
 } // namespace eagleeye

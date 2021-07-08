@@ -3,6 +3,8 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
 #include <cmath>
+#include <math.h>       /* atan2 */
+
 #ifdef EAGLEEYE_NEON_OPTIMIZATION
 #include <arm_neon.h>
 #endif
@@ -883,4 +885,21 @@ Matrix<Array<unsigned char,3>> rotation270right(Matrix<Array<unsigned char,3>> i
 	return rotated_img;
 }
 
+Matrix<float> matan2(Matrix<float> y, Matrix<float> x){
+	int rows = y.rows();
+	int cols = y.cols();
+
+	Matrix<float> theta(rows, cols);
+	for(int r=0; r<rows; ++r){
+		float* y_ptr = y.row(r);
+		float* x_ptr = x.row(r);
+		float* theta_ptr = theta.row(r);
+
+		for(int c=0; c<cols; ++c){
+			theta_ptr[c] = atan2(y_ptr[c], x_ptr[c]);
+		}
+	}
+
+	return theta;
+}
 }

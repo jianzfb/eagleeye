@@ -41,12 +41,14 @@ public:
     void setPrefix(std::string prefix);
     void getPrefix(std::string& prefix);
 
-    /**
-     * @brief feadback
-     * 
-     * @param node_state_map 
-     */
-    void feadback(std::map<std::string, int>& node_state_map);
+    // /**
+    //  * @brief feadback
+    //  * 
+    //  * @param node_state_map 
+    //  */
+    // void feadback(std::map<std::string, int>& node_state_map);
+
+    virtual bool finish();
 
 private:
     SerialStringNode(const SerialStringNode&);

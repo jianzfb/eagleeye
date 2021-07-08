@@ -56,7 +56,7 @@ VideoWriteNode::VideoWriteNode(){
 }   
 VideoWriteNode::~VideoWriteNode(){
     if(!this->m_is_finish){
-        this->finish();
+        this->writefinish();
     }
 } 
 
@@ -199,7 +199,7 @@ void VideoWriteNode::executeNodeInfo(){
         this->m_file_path = "";
         this->m_is_finish = true;
         this->m_is_init = false;
-        this->finish();
+        this->writefinish();
 
         EAGLEEYE_LOGD("Success to finish write video.");
     }
@@ -208,7 +208,7 @@ void VideoWriteNode::executeNodeInfo(){
 void VideoWriteNode::setFilePath(std::string file_path){
     if(!this->m_is_finish){
         EAGLEEYE_LOGD("Force unfinish video stop.");
-        this->finish();        
+        this->writefinish();        
     }
 
     this->m_is_init = false;
@@ -236,7 +236,7 @@ void VideoWriteNode::getFolder(std::string& folder){
     folder = this->m_folder;
 }
 
-void VideoWriteNode::finish(){
+void VideoWriteNode::writefinish(){
     //将流尾写入输出媒体文件并释放文件数据
     flush_encoder(m_output_cxt, 0);
     av_write_trailer(m_output_cxt);

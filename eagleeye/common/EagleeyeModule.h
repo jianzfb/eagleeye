@@ -2,7 +2,6 @@
 #define _EAGLEEYE_MODULE_H_
 #include <string>
 #include <vector>
-namespace eagleeye{
 struct EagleeyeMeta{
 	double fps;				// frame rate for video
 	int nb_frames;			// frame number for video
@@ -18,11 +17,17 @@ struct EagleeyeMeta{
 	unsigned int timestamp;	// timestamp
 };
 
+struct EagleeyeConfig{
+    std::string resource_folder;
+};
+
+namespace eagleeye{
 /**
  * @brief pipeline initialize
- * 
+ * @param pipeline_name
+ * @param resource_folder
  */
-bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* config_folder=NULL);
+bool eagleeye_pipeline_initialize(const char* pipeline_name, const char* resoure_folder=NULL);
 
 /**
  * @brief load pipeline config parameter from config file
@@ -52,6 +57,15 @@ bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config
  * @return false 
  */
 bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* plugin_folder);
+
+/**
+ * @brief config system
+ * 
+ * @param config_content 
+ * @return true 
+ * @return false 
+ */
+bool eagleeye_config(EagleeyeConfig config_content);
 
 /**
  * @brief release module
@@ -312,7 +326,7 @@ bool eagleeye_on_surface_create();
 /**
  * @brief surface size change
  */ 
-bool eagleeye_on_surface_change(int width, int height);
+bool eagleeye_on_surface_change(int width, int height, int rotate=0, bool mirror=false);
 
 /**
  * @brief surface mouse event
@@ -330,16 +344,17 @@ typedef void (*INITIALIZE_PLUGIN_FUNC)();
  * @brief add custom pipeline
  * 
  * @param pipeline_name 
- * @param func 
+ * @param register_func
+ * @param  init_func
  * @return true 
  * @return false 
  */
-bool eagleeye_custom_add_pipeline(REGISTER_PLUGIN_FUNC register_func, INITIALIZE_PLUGIN_FUNC init_func);
+bool eagleeye_custom_add_pipeline(const char* pipeline_name, REGISTER_PLUGIN_FUNC register_func, INITIALIZE_PLUGIN_FUNC init_func);
 
 #define _LINK_MACRO(x) #x
 #define EAGLEEYE_PIPELINE_REGISTER(pipeline, version, key) \
 extern "C" { \
-    const char* eagleeye_register_plugin_pipeline(){ \
+    const char* eagleeye_##pipeline##_register_plugin_pipeline(){ \
         const char* pipeline_str = #pipeline; \
         const char* key_str = #key; \
         const char* version_str = #version; \
@@ -351,19 +366,18 @@ extern "C" { \
             return NULL; \
         } \
     } \
-    void eagleeye_pipeline_initialize(); \
+    void eagleeye_##pipeline##_pipeline_initialize(); \
     bool eagleeye_##pipeline##_initialize(const char* config_folder){ \
-        bool is_ok = eagleeye_custom_add_pipeline(eagleeye_register_plugin_pipeline, eagleeye_pipeline_initialize); \
+        bool is_ok = eagleeye_custom_add_pipeline(#pipeline, eagleeye_##pipeline##_register_plugin_pipeline, eagleeye_##pipeline##_pipeline_initialize); \
         if(!is_ok){ \
-            EAGLEEYE_LOGE("fail to register %s", #pipeline); \
             return false; \
         } \
         is_ok = eagleeye_pipeline_initialize(#pipeline, config_folder); \
         if(is_ok){ \
-            EAGLEEYE_LOGD("success to initialize %s", #pipeline); \
+            EAGLEEYE_LOGD("Success to initialize %s.", #pipeline); \
         } \
         else{ \
-            EAGLEEYE_LOGE("fail to initialize %s", #pipeline); \
+            EAGLEEYE_LOGE("Fail to initialize %s.", #pipeline); \
         } \
         return is_ok; \
     } \
@@ -413,7 +427,7 @@ extern "C" { \
 
 #define EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(pipeline) \
 extern "C" { \
-	void eagleeye_pipeline_initialize() { \
+	void eagleeye_##pipeline##_pipeline_initialize() { \
         AnyPipeline* pipeline = AnyPipeline::getInstance(#pipeline);
 
 #define EAGLEEYE_END_PIPELINE_INITIALIZE }}

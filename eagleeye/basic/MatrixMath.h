@@ -15,6 +15,14 @@
 #endif
 
 namespace eagleeye{
+enum InterpMethod
+{
+	LINEAR_INTERPOLATION,
+	BILINEAR_INTERPOLATION,
+	SPLINE_INTERPOLATION,
+	NEAREST_NEIGHBOR_INTERPOLATION
+};
+
 /**	
  *	@brief get the sort index
  *	@note make sure data is a vector
@@ -443,7 +451,7 @@ template<typename T>
 Matrix<T> arange(int s,int e, int stride, int axis=1);
 
 template<typename T>
-Matrix<T> concat(std::vector<Matrix<T>>& xl, unsigned int axis=0){
+Matrix<T> concat(std::vector<Matrix<T>> xl, unsigned int axis=0){
 	assert(axis == 0 || axis == 1);
 	unsigned int num = xl.size();
 	if(num == 0){
@@ -511,6 +519,8 @@ Matrix<T> tile(const Matrix<T>&x, std::vector<int> reps){
 	}
 	return tiled_x;
 }
+
+Matrix<float> matan2(Matrix<float> y, Matrix<float> x);
 
 template<typename T>
 std::vector<Matrix<T>> split(const Matrix<T> data, int num, int axis=0);
@@ -622,43 +632,6 @@ Matrix<Array<unsigned char,3>> rotation180right(Matrix<Array<unsigned char,3>> i
  * @return Matrix<Array<unsigned char,3>> 
  */
 Matrix<Array<unsigned char,3>> rotation270right(Matrix<Array<unsigned char,3>> img);
-
-/********************* MatrixMath CL version **************************************/
-
-// /**
-//  * @brief release MatrixMathCL
-//  * 
-//  * @param module 
-//  */
-// void releaseMatrixMathCL(const char* module);
-
-
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-/**
- * @brief Get the Matrix Math C L Kernel object
- * 
- * @param module 
- * @return OpenCLKernelGroup* 
- */
-OpenCLKernelGroup* getMatrixMathCLKernel(const char* module);
-
-/**
- * @brief free Kernel
- * 
- * @param group 
- */
-void freeMatrixMathCLKernel(OpenCLKernelGroup*& group);
-
-/**
- * @brief compute softmax (2 channels)
- * 
- * @param group
- * @param x 
- * @param y 
- */
-void softmax_2c_cl(OpenCLKernelGroup* group ,const Matrix<float>& x, Matrix<float>& y);
-#endif
-
 }
 
 

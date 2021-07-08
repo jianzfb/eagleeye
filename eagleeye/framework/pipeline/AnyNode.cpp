@@ -5,7 +5,7 @@
 
 namespace eagleeye{
 bool AnyNode::m_saved_resource = false;
-
+std::string AnyNode::m_resource_folder = "/sdcard/";
 unsigned long AnyNode::m_pipeline_reset_time = 0;
 unsigned long AnyNode::m_pipeline_print_time = 0;
 unsigned long AnyNode::m_pipeline_init_time = 0;
@@ -16,7 +16,7 @@ AnyNode::AnyNode(const char* unit_name)
 	m_updating_flag = false;
 	this->m_call_once = true;
 	this->m_node_state = 0;
-	this->m_action = 1;	 // "RUN"
+	// this->m_action = 1;	 // "RUN"
 	this->m_node_is_satisfied_cond = true;
 	this->m_auto_clear = false;
 
@@ -25,7 +25,8 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_init_flag = false;
 	this->m_process_flag = false;
 	this->m_get_monitor_flag = false;
-	this->m_feadback_flag = false;
+	// this->m_feadback_flag = false;
+	this->m_finish_flag = false;
 	this->m_load_config_flag = false;
 	this->m_save_config_flag = false;
 	this->m_findin_flag = false;
@@ -288,19 +289,23 @@ bool AnyNode::start(){
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		(*out_iter)->updateUnitInfo();
 	}
-
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		//complement some concrete task, such as generating some data and so on.
 		(*out_iter)->processUnitInfo();
 	}
-
-	// feadback
-	std::map<std::string, int> node_state_map;
+	// // feadback
+	// std::map<std::string, int> node_state_map;
+	// for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
+	// 	(*out_iter)->feadback(node_state_map);
+	// }
+	// return this->isDataHasBeenUpdate();
+	bool _is_finish = true;
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
-		(*out_iter)->feadback(node_state_map);
+		//complement some concrete task, such as generating some data and so on.
+		_is_finish = _is_finish & (*out_iter)->finish();
 	}
 
-	return this->isDataHasBeenUpdate();
+	return _is_finish;
 }
 
 void AnyNode::wait(){
@@ -462,7 +467,7 @@ void AnyNode::updateUnitInfo()
 		m_node_info_mtime.modified();
 	}
 
-	this->m_finish_run = false;
+	// this->m_finish_run = false;
 }
 
 void AnyNode::processUnitInfo()
@@ -505,7 +510,7 @@ void AnyNode::processUnitInfo()
 	}
 
 	// finish run
-	this->m_finish_run = true;
+	// this->m_finish_run = true;
 }
 
 void AnyNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool)
@@ -585,9 +590,9 @@ bool AnyNode::isNeedProcessed(){
 	}
 	is_need_processed = is_need_processed & is_one_ok;
 
-	if(this->getNodeAction() != 1){
-		is_need_processed = false;
-	}
+	// if(this->getNodeAction() != 1){
+	// 	is_need_processed = false;
+	// }
 	return is_need_processed;
 }
 
@@ -617,44 +622,65 @@ void AnyNode::disableAutoClear(){
 	this->m_auto_clear = false;
 }
 
-void AnyNode::addFeadbackRule(std::string trigger_node, int trigger_node_state, std::string response_action){
-	this->m_trigger_node.push_back(trigger_node);
-	this->m_trigger_node_state.push_back(trigger_node_state);
-	assert(response_action == "RUN" || response_action == "SKIP");
-	if(response_action == "RUN"){
-		this->m_response_actions.push_back(1);
-	}
-	else{
-		this->m_response_actions.push_back(0);
-	}
-}
+// void AnyNode::addFeadbackRule(std::string trigger_node, int trigger_node_state, std::string response_action){
+// 	this->m_trigger_node.push_back(trigger_node);
+// 	this->m_trigger_node_state.push_back(trigger_node_state);
+// 	assert(response_action == "RUN" || response_action == "SKIP");
+// 	if(response_action == "RUN"){
+// 		this->m_response_actions.push_back(1);
+// 	}
+// 	else{
+// 		this->m_response_actions.push_back(0);
+// 	}
+// }
 
-void AnyNode::feadback(std::map<std::string, int>& node_state_map){
-	if(m_feadback_flag){
-		return;
+// void AnyNode::feadback(std::map<std::string, int>& node_state_map){
+// 	if(m_feadback_flag){
+// 		return;
+// 	}
+
+// 	m_feadback_flag = true;
+
+// 	// change action
+// 	for(int index=0; index<this->m_trigger_node.size(); ++index){
+// 		if(node_state_map.find(this->m_trigger_node[index]) != node_state_map.end()){
+// 			if(node_state_map[this->m_trigger_node[index]] == this->m_trigger_node_state[index]){
+// 				this->m_action = this->m_response_actions[index];
+// 			}
+// 		}
+// 	}
+
+// 	// add node state into map
+// 	node_state_map[this->getUnitName()] = this->getNodeState();
+
+// 	// continue to top 
+// 	std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());
+// 	for (signal_iter = m_input_signals.begin();signal_iter != signal_iend; ++signal_iter){
+// 		(*signal_iter)->feadback(node_state_map);
+// 	}
+
+// 	m_feadback_flag = false;
+// }
+
+
+bool AnyNode::finish(){
+	if(m_finish_flag){
+		return true;
 	}
 
-	m_feadback_flag = true;
-
-	// change action
-	for(int index=0; index<this->m_trigger_node.size(); ++index){
-		if(node_state_map.find(this->m_trigger_node[index]) != node_state_map.end()){
-			if(node_state_map[this->m_trigger_node[index]] == this->m_trigger_node_state[index]){
-				this->m_action = this->m_response_actions[index];
-			}
-		}
-	}
-
-	// add node state into map
-	node_state_map[this->getUnitName()] = this->getNodeState();
+	m_finish_flag = true;
 
 	// continue to top 
 	std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());
-	for (signal_iter = m_input_signals.begin();signal_iter != signal_iend; ++signal_iter){
-		(*signal_iter)->feadback(node_state_map);
+	bool _is_finish = true;
+	for (signal_iter = m_input_signals.begin(); signal_iter != signal_iend; ++signal_iter){
+		if(*signal_iter != NULL){
+			_is_finish = _is_finish & (*signal_iter)->finish();
+		}
 	}
 
-	m_feadback_flag = false;
+	m_finish_flag = false;
+	return _is_finish;
 }
 
 void AnyNode::loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config){
@@ -807,6 +833,14 @@ unsigned long AnyNode::getExitTime(){
 
 unsigned long AnyNode::getPipelineExitTime(){
 	return this->m_pipeline_exit_time;
+}
+
+std::string AnyNode::resourceFolder(){
+	return AnyNode::m_resource_folder;
+}
+
+void AnyNode::setResourceFolder(std::string folder){
+	AnyNode::m_resource_folder = folder;
 }
 }
 

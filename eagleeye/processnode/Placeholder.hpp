@@ -16,7 +16,7 @@ Placeholder<T>::~Placeholder(){
 }
 
 template<class T>
-void Placeholder<T>::setPlaceholderType(SignalType type){
+void Placeholder<T>::setPlaceholderSignalType(SignalType type){
     this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->setSignalType(type);
 }
 

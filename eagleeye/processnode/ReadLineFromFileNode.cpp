@@ -50,14 +50,25 @@ void ReadLineFromFileNode::getFilePath(std::string& file_path){
     file_path = this->m_file_path;
 }
 
-void ReadLineFromFileNode::feadback(std::map<std::string, int>& node_state_map){
-    // 1.step call base feadback
-    Superclass::feadback(node_state_map);
+// void ReadLineFromFileNode::feadback(std::map<std::string, int>& node_state_map){
+//     // 1.step call base feadback
+//     Superclass::feadback(node_state_map);
 
-    // 2.step whether need to update
+//     // 2.step whether need to update
+//     if(m_cur_index < this->m_file_list.size()){
+//         this->modified();
+//     }
+// }
+
+bool ReadLineFromFileNode::finish(){
+    // 1.step call base feadback
+    Superclass::finish();
+
     if(m_cur_index < this->m_file_list.size()){
         this->modified();
+        return false;
     }
+    return true;
 }
 
 } // namespace eagleeye

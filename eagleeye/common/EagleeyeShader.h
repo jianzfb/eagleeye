@@ -44,6 +44,12 @@ public:
      */
     ShaderProgram program(std::string shader_name);
 
+    /**
+     * @brief clear shader
+     * 
+     */
+    void clear();
+
 private:
     ShaderManager();
 

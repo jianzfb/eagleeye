@@ -17,6 +17,9 @@ YUVResizeNode::YUVResizeNode(int resize_w, int resize_h){
 
     // 设置输入端口（拥有1个输入端口）
 	this->setNumberOfInputSignals(1);
+
+    EAGLEEYE_MONITOR_VAR(int, setResizeW, getResizeW, "width","100", "1920");
+    EAGLEEYE_MONITOR_VAR(int, setResizeH, getResizeH, "height","100", "1920");
 }    
 
 YUVResizeNode::~YUVResizeNode(){
@@ -24,6 +27,11 @@ YUVResizeNode::~YUVResizeNode(){
 }
 
 void YUVResizeNode::executeNodeInfo(){
+    if(this->getInputPort(0)->getSignalType() != EAGLEEYE_SIGNAL_YUV_IMAGE){
+        EAGLEEYE_LOGE("Dont support signal type.");
+        return;
+    }
+
     YUVSignal* input_sig = (YUVSignal*)(this->getInputPort(0));
 
     // 输入yuv数据
@@ -33,13 +41,15 @@ void YUVResizeNode::executeNodeInfo(){
     int height = input_sig->getHeight();
     int width = input_sig->getWidth();
 
+    EAGLEEYE_LOGE("blob height %d width %d", height, width);
+
     // 输出yuv数据
     Blob output_blob(sizeof(unsigned char)*(m_resize_h*m_resize_w + (m_resize_h/2)*(m_resize_w/2) + (m_resize_h/2)*(m_resize_w/2)),
             Aligned(64), 
             EagleeyeRuntime(EAGLEEYE_CPU));
     unsigned char* output_ptr = (unsigned char*)(output_blob.cpu());
 
-    if(input_sig->getSignalValueType() == EAGLEEYE_YUV_I420){
+    if(input_sig->getValueType() == EAGLEEYE_YUV_I420){
         uint8_t* src_i420_y_data = (uint8_t*)input_ptr;
         uint8_t* src_i420_u_data = src_i420_y_data + width * height;
         uint8_t* src_i420_v_data = src_i420_u_data + (int)(width * height * 0.25);
@@ -58,7 +68,7 @@ void YUVResizeNode::executeNodeInfo(){
                     libyuv::kFilterBilinear);
     }
     else{
-        EAGLEEYE_LOGD("Dont support YUV %d resize.", (int)input_sig->getSignalValueType());
+        EAGLEEYE_LOGD("Dont support YUV %d resize.", (int)input_sig->getValueType());
     }
 
     YUVSignal* output_sig = (YUVSignal*)(this->getOutputPort(0));
@@ -66,5 +76,23 @@ void YUVResizeNode::executeNodeInfo(){
     output_meta.rows = this->m_resize_h;
     output_meta.cols = this->m_resize_w;
     output_sig->setData(output_blob, output_meta);
+}
+
+void YUVResizeNode::setResizeW(int w){
+    this->m_resize_w = w;
+    modified();
+}
+
+void YUVResizeNode::getResizeW(int& w){
+    w = this->m_resize_w;
+}
+
+void YUVResizeNode::setResizeH(int h){
+    this->m_resize_h = h;
+    modified();
+}
+
+void YUVResizeNode::getResizeH(int& h){
+    h = this->m_resize_h;
 }
 } // namespace eagleeye

@@ -33,12 +33,14 @@ public:
     virtual void setFilePath(std::string file_path);
     virtual void getFilePath(std::string& file_path);
     
-    /**
-     * @brief feadback
-     * 
-     * @param node_state_map 
-     */
-    void feadback(std::map<std::string, int>& node_state_map);
+    // /**
+    //  * @brief feadback
+    //  * 
+    //  * @param node_state_map 
+    //  */
+    // void feadback(std::map<std::string, int>& node_state_map);
+
+    virtual bool finish();
 
 private:
     ReadLineFromFileNode(const ReadLineFromFileNode&);

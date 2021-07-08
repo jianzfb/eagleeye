@@ -1,4 +1,6 @@
 #include "eagleeye/render/ShapeNode.h"
+#include "eagleeye/framework/pipeline/LandmarkSignal.h"
+
 
 namespace eagleeye
 {
@@ -212,21 +214,26 @@ void ShapeNode::drawDet(Matrix<float> dets){
         vVertices[(rect_i*4)*3] = det_ptr[0];              // x
         vVertices[(rect_i*4)*3+1] = det_ptr[1];            // y
         vVertices[(rect_i*4)*3+2] = 0.0f;                  // z
+        this->getRenderContext()->getXY(vVertices[(rect_i*4)*3], vVertices[(rect_i*4)*3+1]);
 
         // 定点2
         vVertices[(rect_i*4+1)*3] = det_ptr[2];            // x
         vVertices[(rect_i*4+1)*3+1] = det_ptr[1];          // y
-        vVertices[(rect_i*4+1)*3+2] = 0.0f;                 // z
+        vVertices[(rect_i*4+1)*3+2] = 0.0f;                // z
+        this->getRenderContext()->getXY(vVertices[(rect_i*4+1)*3], vVertices[(rect_i*4+1)*3+1]);
+
 
         // 定点3
         vVertices[(rect_i*4+2)*3] = det_ptr[2];            // x
         vVertices[(rect_i*4+2)*3+1] = det_ptr[3];          // y
-        vVertices[(rect_i*4+2)*3+2] = 0.0f;                 // z
+        vVertices[(rect_i*4+2)*3+2] = 0.0f;                // z
+        this->getRenderContext()->getXY(vVertices[(rect_i*4+2)*3], vVertices[(rect_i*4+2)*3+1]);
 
         // 定点4
         vVertices[(rect_i*4+3)*3] = det_ptr[0];            // x
         vVertices[(rect_i*4+3)*3+1] = det_ptr[3];          // y
-        vVertices[(rect_i*4+3)*3+2] = 0.0f;                 // z
+        vVertices[(rect_i*4+3)*3+2] = 0.0f;                // z
+        this->getRenderContext()->getXY(vVertices[(rect_i*4+3)*3], vVertices[(rect_i*4+3)*3+1]);
     }
 	// Use the program object
 	glUseProgram (m_Program);
@@ -274,11 +281,14 @@ void ShapeNode::drawLine(Matrix<float> lines){
         vVertices[(line_i*2)*3] = line_ptr[0];              // x0
         vVertices[(line_i*2)*3+1] = line_ptr[1];            // y0
         vVertices[(line_i*2)*3+2] = 0.0f;                   // z
+        this->getRenderContext()->getXY(vVertices[(line_i*2)*3], vVertices[(line_i*2)*3+1]);
+
 
         // 定点2
         vVertices[(line_i*2+1)*3] = line_ptr[2];            // x1
         vVertices[(line_i*2+1)*3+1] = line_ptr[3];          // y1
         vVertices[(line_i*2+1)*3+2] = 0.0f;                 // z
+        this->getRenderContext()->getXY(vVertices[(line_i*2+1)*3], vVertices[(line_i*2+1)*3+1]);
     }
 	// Use the program object
 	glUseProgram (m_Program);
@@ -310,6 +320,8 @@ void ShapeNode::drawPoint(Matrix<float> points){
         vVertices[point_i*3] = point_ptr[0];                // x
         vVertices[point_i*3+1] = point_ptr[1];              // y
         vVertices[point_i*3+2] = 0.0f;                      // z
+
+        this->getRenderContext()->getXY(vVertices[point_i*3], vVertices[point_i*3+1]);
     }
 	// Use the program object
 	glUseProgram (m_Program);
@@ -333,7 +345,90 @@ void ShapeNode::processTrackingSignal(AnySignal* sig_0, ImageSignal<float>* sig_
 }
 
 void ShapeNode::processLandmarkSignal(AnySignal* sig_0, ImageSignal<float>* sig_1){
+    // 计算归一化坐标
+	int screen_w = this->getScreenW();
+	int screen_h = this->getScreenH();
+	int canvas_x = this->getCanvasX();
+	int canvas_y = this->getCanvasY();
+	int canvas_w = this->getCanvasW();
+	int canvas_h = this->getCanvasH();
+	if(canvas_w == 0 || canvas_h == 0){
+		canvas_x = 0;
+		canvas_y = 0;
+		canvas_w = this->getScreenW();
+		canvas_h = this->getScreenH();
+	}
 
+    Matrix<float> render_region = sig_1->getData();
+    float render_x0 = 0;
+    float render_y0 = 0;
+    float render_x1 = canvas_w;
+    float render_y1 = canvas_h;
+    if(render_region.size() > 0){
+        // 区域内渲染
+        render_x0 = render_region.at(0,0);
+        render_y0 = render_region.at(0,1);
+        render_x1 = render_x0 + render_region.at(0,2);
+        render_y1 = render_y0 + render_region.at(0,3);
+    }
+
+    EAGLEEYE_LOGD("render x0 %f y0 %f x1 %f y1 %f .", render_x0, render_y0, render_x1, render_y1);
+
+    LandmarkSignal* landmark_sig = (LandmarkSignal*)sig_0;
+    Matrix<float> landmarks = landmark_sig->getData();
+    int landmark_num = landmarks.rows();
+    int group_num = landmarks.cols() / 3;
+    if(landmark_num == 0 || group_num == 0){
+        return;
+    }
+    
+    Matrix<float> render_points(landmark_num*group_num, 4);
+    for(int group_i = 0; group_i < group_num; ++group_i){
+        for(int i = 0; i < landmark_num; ++i){
+            float* landmark_ptr = landmarks.row(i);
+            float* render_point_ptr = render_points.row(group_i*landmark_num + i);
+
+            float norm_x0 = landmark_ptr[group_i*3 + 0];    // 归一化坐标
+            float norm_y0 = landmark_ptr[group_i*3 + 1];    // 归一化坐标
+            
+            // draw
+            render_point_ptr[0] = ((render_x0 + norm_x0 * (render_x1 - render_x0)) / float(screen_w)) * 2.0f - 1.0f;             // x0
+            render_point_ptr[1] = ((render_y0 + (1.0f-norm_y0) * (render_y1 - render_y0)) / float(screen_h)) * 2.0f - 1.0f;      // y0
+        }
+    }
+
+    // 绘制点位置
+    drawPoint(render_points);
+
+    // 绘制连接线
+    Matrix<int> joints = landmark_sig->getJoints();
+    int joints_num = joints.rows();
+    if(joints_num == 0){
+        return;
+    }
+    Matrix<float> render_lines(joints_num * group_num, 4);
+    for(int obj_i = 0; obj_i < joints_num; ++obj_i){
+        int from_i = joints.at(obj_i, 0);
+        int to_i = joints.at(obj_i, 1);
+        
+        float* from_landmark_ptr = landmarks.row(from_i);
+        float* to_landmark_ptr = landmarks.row(to_i);
+
+        for(int group_i = 0; group_i < group_num; ++group_i){
+            float group_i_norm_x0 = from_landmark_ptr[group_i*3 + 0];    // 归一化坐标
+            float group_i_norm_y0 = from_landmark_ptr[group_i*3 + 1];    // 归一化坐标
+
+            float group_i_norm_x1 = to_landmark_ptr[group_i*3 + 0];     // 归一化坐标
+            float group_i_norm_y1 = to_landmark_ptr[group_i*3 + 1];     // 归一化坐标
+
+            render_lines.at(obj_i*group_num + group_i, 0) = ((render_x0 + group_i_norm_x0 * (render_x1 - render_x0)) / float(screen_w)) * 2.0f - 1.0f;             // x0
+            render_lines.at(obj_i*group_num + group_i, 1) = ((render_y0 + (1.0f-group_i_norm_y0) * (render_y1 - render_y0)) / float(screen_h)) * 2.0f - 1.0f;      // y0
+            render_lines.at(obj_i*group_num + group_i, 2) = ((render_x0 + group_i_norm_x1 * (render_x1 - render_x0)) / float(screen_w)) * 2.0f - 1.0f;             // x1
+            render_lines.at(obj_i*group_num + group_i, 3) = ((render_y0 + (1.0f-group_i_norm_y1) * (render_y1 - render_y0)) / float(screen_h)) * 2.0f - 1.0f;      // y1
+        }
+    }
+
+    drawLine(render_lines);
 }
 
 void ShapeNode::processPointSignal(AnySignal* sig_0, ImageSignal<float>* sig_1){

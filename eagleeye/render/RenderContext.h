@@ -18,6 +18,14 @@ public:
      * @brief get screen height
      */ 
     int getScreenH();
+    
+    /**
+     * @brief get xy
+     * 
+     * @param x 
+     * @param y 
+     */
+    void getXY(float& x, float& y);
 
     /**
      * @brief opengl context create
@@ -27,7 +35,7 @@ public:
     /**
      * @brief opengl context change
      */ 
-	void onChanged(int width, int height);
+	void onChanged(int width, int height, int rotate, bool mirror);
 
     /**
      * @brief opengl mouse event
@@ -37,6 +45,9 @@ public:
 private:
 	int m_ScreenW;
 	int m_ScreenH;
+
+    int m_rotate;
+    bool m_mirror;
 };    
 } // namespace eagleeye
 

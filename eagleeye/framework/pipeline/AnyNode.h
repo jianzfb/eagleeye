@@ -196,12 +196,12 @@ public:
 	 */
 	int getNodeState(){return this->m_node_state;}
 
-	/**
-	 * @brief Get the Node Action object
-	 * SKIP(0)/RUN(1)
-	 * @return std::string 
-	 */
-	int getNodeAction(){return this->m_action;};
+	// /**
+	//  * @brief Get the Node Action object
+	//  * SKIP(0)/RUN(1)
+	//  * @return std::string 
+	//  */
+	// int getNodeAction(){return this->m_action;};
 
 	/**
 	 * @brief Get/Set is success state
@@ -212,27 +212,29 @@ public:
 	bool getIsSatisfiedCondition(){return m_node_is_satisfied_cond;};
 	void setIsSatisfiedCondition(bool status){this->m_node_is_satisfied_cond = status;};
 
-	/**
-	 * @brief Set the Node Action object
-	 * 
-	 * @param action 
-	 */
-	void setNodeAction(int action){this->m_action = action;}
+	// /**
+	//  * @brief Set the Node Action object
+	//  * 
+	//  * @param action 
+	//  */
+	// void setNodeAction(int action){this->m_action = action;}
 
-	/**
-	 * @brief add feadback rule action
-	 * 
-	 * @param trigger_node 
-	 * @param trigger_node_state 
-	 * @param action 
-	 */
-	void addFeadbackRule(std::string trigger_node, int trigger_node_state, std::string response_action);
+	// /**
+	//  * @brief add feadback rule action
+	//  * 
+	//  * @param trigger_node 
+	//  * @param trigger_node_state 
+	//  * @param action 
+	//  */
+	// void addFeadbackRule(std::string trigger_node, int trigger_node_state, std::string response_action);
 
-	/**
-	 * @brief from bottom to top, feadback
-	 * 
-	 */
-	virtual void feadback(std::map<std::string, int>& node_state_map);
+	// /**
+	//  * @brief from bottom to top, feadback
+	//  * 
+	//  */
+	// virtual void feadback(std::map<std::string, int>& node_state_map);
+
+	virtual bool finish();
 
 	/**
 	 * @brief exit node
@@ -254,13 +256,13 @@ public:
 	 */
 	virtual void refresh(){}
 
-	/**
-	 * @brief whether data has been update
-	 * 
-	 * @return true 
-	 * @return false 
-	 */
-	bool isDataHasBeenUpdate(){return this->m_finish_run;};
+	// /**
+	//  * @brief whether data has been update
+	//  * 
+	//  * @return true 
+	//  * @return false 
+	//  */
+	// bool isDataHasBeenUpdate(){return this->m_finish_run;};
 
 	/**
 	 * @brief load/save pipeline configure
@@ -319,6 +321,20 @@ public:
 	NodeCategory getNodeCategory(){return this->m_node_category;};
 	void setNodeCategory(NodeCategory node_category){this->m_node_category = node_category;};
 
+	/**
+	 * @brief get resource folder
+	 * 
+	 * @return std::string 
+	 */
+	std::string resourceFolder();
+
+	/**
+	 * @brief Set the Resource Folder object
+	 * 
+	 * @param folder 
+	 */
+	static void setResourceFolder(std::string folder);
+
 protected:
 	/**
 	 *	@brief make one output signal
@@ -358,13 +374,13 @@ protected:
 	 */
 	int m_node_state;
 	bool m_node_is_satisfied_cond;
-	int m_action;
+	// int m_action;
 
-	std::vector<std::string> m_trigger_node;
-	std::vector<int> m_trigger_node_state;
-	std::vector<int> m_response_actions;
+	// std::vector<std::string> m_trigger_node;
+	// std::vector<int> m_trigger_node_state;
+	// std::vector<int> m_response_actions;
 
-	bool m_finish_run;
+	// bool m_finish_run;
 	EagleeyeTimeStamp m_reset_timestamp;
 	unsigned long m_reset_time;
 	static unsigned long m_pipeline_reset_time;
@@ -394,13 +410,15 @@ private:
 	bool m_wait_flag;			// prevent recurrent call (wait)
 
 	bool m_get_monitor_flag;	// ...
-	bool m_feadback_flag;		// ...
+	// bool m_feadback_flag;		// ...
+	bool m_finish_flag;
 	bool m_load_config_flag;	// ...
 	bool m_save_config_flag;	// ...
 	bool m_print_flag;			// ...
 	bool m_findin_flag;			// ...
 
 	AnyPipeline* m_pipeline;
+	static std::string m_resource_folder;
 };
 }
 

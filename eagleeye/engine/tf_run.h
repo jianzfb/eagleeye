@@ -1,18 +1,19 @@
 #ifndef _TF_MODEL_RUN_H_
 #define _TF_MODEL_RUN_H_
-#ifdef EAGLEEYE_TF_SUPPORT
 #include "tensorflow/core/public/session.h"
 #include "tensorflow/core/platform/env.h"
 #include "eagleeye/engine/model_engine.h"
+#include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/common/EagleeyeStr.h"
 #include <string>
 #include <vector>
 namespace eagleeye{
-class ModelRun:public ModelEngine{
+class TFRun:public ModelEngine{
 public:
 	/**
 	 * 
 	 */
-	ModelRun(std::string model_name, 
+	TFRun(std::string model_name, 
 			 std::string device,
 			 std::vector<std::string> input_names=std::vector<std::string>(),
 		     std::vector<std::vector<int64_t>> input_shapes=std::vector<std::vector<int64_t>>(),
@@ -25,7 +26,7 @@ public:
 	/**
 	 * 
 	 */
-	virtual ~ModelRun();
+	virtual ~TFRun();
 
 	/**
 	 * [run description]
@@ -50,5 +51,6 @@ protected:
 	std::vector<tensorflow::Tensor> m_outputs;
 };
 }
-#endif
+
+#include "eagleeye/engine/tf_run.hpp"
 #endif

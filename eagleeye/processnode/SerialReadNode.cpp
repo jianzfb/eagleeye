@@ -104,14 +104,27 @@ void SerialReadNode::executeNodeInfo(){
     this->m_next = m_serial_reader->next();
 }
 
-void SerialReadNode::feadback(std::map<std::string, int>& node_state_map){
+// void SerialReadNode::feadback(std::map<std::string, int>& node_state_map){
+//     // 1.step call base feadback
+//     Superclass::feadback(node_state_map);
+
+//     // 2.step whether need to update
+//     if(m_next.size() != 0){
+//         this->modified();
+//     }
+// }
+
+
+bool SerialReadNode::finish(){
     // 1.step call base feadback
-    Superclass::feadback(node_state_map);
+    Superclass::finish();
 
     // 2.step whether need to update
     if(m_next.size() != 0){
         this->modified();
+        return false;
     }
+    return true;
 }
 
 void SerialReadNode::setFolder(std::string folder){

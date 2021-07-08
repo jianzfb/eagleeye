@@ -99,6 +99,7 @@ public:
 	MetaSrcT meta_threshold;
 };
 
+
 template<typename MetaSrcT,typename MetaTargetT,int s_one,int s_another>
 class SwitchOperations
 {
@@ -150,6 +151,7 @@ public:
 	}
 
 };
+
 
 template<typename MetaSrcT>
 class RGB2LabOp{

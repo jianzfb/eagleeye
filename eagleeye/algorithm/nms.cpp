@@ -2,29 +2,27 @@
 #include "eagleeye/basic/MatrixMath.h"
 
 namespace eagleeye{
-Matrix<float> wnms(Matrix<float> dets,
-							   float thresh, 
-							   float prob_thresh) {
-	Matrix<float> x1 = dets(Range(0, dets.rows()), Range(0, 1));
-	Matrix<float> y1 = dets(Range(0, dets.rows()), Range(1, 2));
-	Matrix<float> x2 = dets(Range(0, dets.rows()), Range(2, 3));
-	Matrix<float> y2 = dets(Range(0, dets.rows()), Range(3, 4));
-    Matrix<float> scores = dets(Range(0, dets.rows()), Range(4, 5));
+Matrix<float> wnms(Matrix<float> dets, float thresh, float prob_thresh) {
+	int dim = dets.cols();
+	int score_axis = dim - 1;
+
+	Matrix<float> x1 = dets(Range::ALL(), Range(0, 1));
+	Matrix<float> y1 = dets(Range::ALL(), Range(1, 2));
+	Matrix<float> x2 = dets(Range::ALL(), Range(2, 3));
+	Matrix<float> y2 = dets(Range::ALL(), Range(3, 4));
+    Matrix<float> scores = dets(Range::ALL(), Range(score_axis, score_axis+1));
 
 	std::vector<unsigned int> order = sort<DescendingSort<float>>(scores);
 	Matrix<float> areas = (x2 - x1 + eagleeye_eps).mul(y2 - y1 + eagleeye_eps);
-	std::vector<unsigned int> keep;
 	std::vector<Matrix<float>> result;
     while (order.size() > 0) {
 		unsigned int index = order[0];
 		if (scores.at(index) < prob_thresh) {
 			break;
 		}
-
-		keep.push_back(index);
 		if (order.size() == 1) {
-			Matrix<float> weighted_bbox(1,5);
-			weighted_bbox.at(0,0) = x1.at(index); weighted_bbox.at(0,1) = y1.at(index); weighted_bbox.at(0,2) = x2.at(index); weighted_bbox.at(0,3) = y2.at(index); weighted_bbox.at(0,4) = scores.at(index);
+			Matrix<float> weighted_bbox(1, dim);
+			weighted_bbox.copy(dets(Range(index, index+1),Range::ALL()));
 			result.push_back(weighted_bbox);
 			break;
 		}
@@ -47,25 +45,31 @@ Matrix<float> wnms(Matrix<float> dets,
             }
         }
         if(inds_weight_mask.size() > 0){
-            Matrix<float> x1_weight = (x1.select(order, 1)).select(inds_weight_mask, 0);
-            Matrix<float> y1_weight = (y1.select(order, 1)).select(inds_weight_mask, 0);
-            Matrix<float> x2_weight = (x2.select(order, 1)).select(inds_weight_mask, 0);
-            Matrix<float> y2_weight = (y2.select(order, 1)).select(inds_weight_mask, 0);
-            Matrix<float> iou_weight = ovr.select(inds_weight_mask, 0);
-			float iou_weight_sum = vsum(iou_weight);
+			Matrix<float> around_dets = (dets.select(order, 1)).select(inds_weight_mask, 0);
+			Matrix<float> best_and_around_coords = 
+					concat(std::vector<Matrix<float>>{
+							dets(Range(index, index+1),Range(0, dim-1)), 
+							around_dets(Range::ALL(), Range(0, dim-1))}, 0);
+			
+			Matrix<float> best_and_around_score = 
+					concat(std::vector<Matrix<float>>{
+							dets(Range(index, index+1), Range(score_axis, score_axis+1)),
+					 		around_dets(Range::ALL(), Range(score_axis, score_axis+1))}, 0);
 
-			float x1_w = (vsum(x1_weight.mul_(iou_weight)) + x1.at(index))/(1 + iou_weight_sum);
-            float y1_w = (vsum(y1_weight.mul_(iou_weight)) + y1.at(index))/(1 + iou_weight_sum);
-			float x2_w = (vsum(x2_weight.mul_(iou_weight)) + x2.at(index))/(1 + iou_weight_sum);
-			float y2_w = (vsum(y2_weight.mul_(iou_weight)) + y2.at(index))/(1 + iou_weight_sum);
+			float total_score = vsum(best_and_around_score);	
 
-			Matrix<float> weighted_bbox(1,5);
-			weighted_bbox.at(0,0) = x1_w; weighted_bbox.at(0,1) = y1_w; weighted_bbox.at(0,2) = x2_w; weighted_bbox.at(0,3) = y2_w; weighted_bbox.at(0,4) = scores.at(index);
-			result.push_back(weighted_bbox);
+			Matrix<float> weighted_best_and_around_coords = best_and_around_coords.mul(best_and_around_score);
+			Matrix<float> sum_weighted_best_and_around_coords = msum(weighted_best_and_around_coords, 0);
+			sum_weighted_best_and_around_coords.div_(total_score);
+
+			Matrix<float> weighted_det(1, dim);
+			weighted_det(Range(0,1), Range(0, dim-1)).copy(sum_weighted_best_and_around_coords);
+			weighted_det.at(0, score_axis) = total_score/(inds_weight_mask.size()+1);
+			result.push_back(weighted_det);
         }
         else{
-			Matrix<float> weighted_bbox(1,5);
-			weighted_bbox.at(0,0) = x1.at(index); weighted_bbox.at(0,1) = y1.at(index); weighted_bbox.at(0,2) = x2.at(index); weighted_bbox.at(0,3) = y2.at(index); weighted_bbox.at(0,4) = scores.at(index);
+			Matrix<float> weighted_bbox(1, dim);
+			weighted_bbox.copy(dets(Range(index, index+1),Range::ALL()));
 			result.push_back(weighted_bbox);
         }
 
@@ -79,8 +83,8 @@ Matrix<float> wnms(Matrix<float> dets,
 		order = remained_order;
 	}
 
-	Matrix<float> ss = concat(result, 0);
-	return ss;
+	Matrix<float> concated_result = concat(result, 0);
+	return concated_result;
 }
 
 

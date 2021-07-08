@@ -208,10 +208,18 @@ const char* AnySignal::getSignalTarget(){
 	return this->m_signal_target.c_str();
 }
 
-void AnySignal::feadback(std::map<std::string, int>& node_state_map){
+// void AnySignal::feadback(std::map<std::string, int>& node_state_map){
+// 	if (m_link_node){
+// 		m_link_node->feadback(node_state_map);
+// 	}
+// }
+
+bool AnySignal::finish(){
 	if (m_link_node){
-		m_link_node->feadback(node_state_map);
+		bool _is_finish = m_link_node->finish();
+		return _is_finish;
 	}
+	return true;
 }
 
 void AnySignal::loadConfigure(std::map<std::string, std::shared_ptr<char>> nodes_config){

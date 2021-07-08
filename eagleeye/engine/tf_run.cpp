@@ -1,11 +1,7 @@
-#include "eagleeye/engine/tf_run.h"
-#include "eagleeye/common/EagleeyeLog.h"
-#include "eagleeye/common/EagleeyeStr.h"
 
-#ifdef EAGLEEYE_TF_SUPPORT
 namespace eagleeye{
 
-ModelRun::ModelRun(std::string model_name, 
+TFRun::TFRun(std::string model_name, 
 				   std::string device,
 				   std::vector<std::string> input_names,
 				   std::vector<std::vector<int64_t>> input_shapes,
@@ -34,12 +30,12 @@ ModelRun::ModelRun(std::string model_name,
 	EAGLEEYE_LOGD("tensorflow pb %s", this->m_graph_path.c_str());
 }
 
-ModelRun::~ModelRun(){
+TFRun::~TFRun(){
 	// close tensorflow session
 	this->m_session->Close();
 }
 
-bool ModelRun::run(std::map<std::string, unsigned char*> inputs, 
+bool TFRun::run(std::map<std::string, unsigned char*> inputs, 
 				   std::map<std::string, unsigned char*>& outputs){
 	// 1.step fill input tensor
 	std::vector<std::pair<std::string, tensorflow::Tensor>> tensor_inputs;
@@ -89,7 +85,7 @@ bool ModelRun::run(std::map<std::string, unsigned char*> inputs,
 	return true;
 }
 
-bool ModelRun::initialize(){
+bool TFRun::initialize(){
 	if(!this->isDynamicOutputShape()){
 		this->m_outputs.clear();
 		for(int index=0; index<this->m_output_names.size(); ++index){
@@ -136,5 +132,3 @@ bool ModelRun::initialize(){
 	return true;
 }
 }
-
-#endif
