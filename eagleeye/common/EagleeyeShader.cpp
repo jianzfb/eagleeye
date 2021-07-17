@@ -38,7 +38,6 @@ GLuint ShaderManager::create(std::string shader_name, const char* pvertex_shader
                                     pfrag_shader_source,
                                     vertext_shader,
 									fragment_shader);
-
             if (!program){
                 GLUtils::CheckGLError("Create Program");
                 EAGLEEYE_LOGE("CreateProgram Could not create program.");

@@ -9,6 +9,9 @@ Range Range::ALL(){
 
 Blob::Blob(){
     this->m_size = 0;
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+    this->m_buffer_to_image_kernel = NULL;
+#endif
 }
 
 Blob::Blob(size_t size, 
@@ -93,6 +96,7 @@ Blob::Blob(unsigned int texture_id)
     m_waiting_reset_runtime(false),
     m_waiting_runtime(EAGLEEYE_UNKNOWN_RUNTIME){
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION    
+    m_buffer_to_image_kernel = NULL;
     OpenCLImage* cl_img =  new OpenCLImage("t",texture_id);
     if(cl_img->m_rows == 0 || cl_img->m_cols == 0){
         return;

@@ -76,6 +76,14 @@ bool eagleeye_config(EagleeyeConfig config_content);
 bool eagleeye_release_module();
 
 /**
+ * @brief clear context
+ * 
+ * @return true 
+ * @return false 
+ */
+bool eagleeye_clear_context();
+
+/**
  * @brief register pipeline plugin
  * 
  * @param pipeline 
@@ -242,15 +250,6 @@ bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
                                          std::vector<std::string>& output_types,
                                          std::vector<std::string>& output_targets);
  
-/**
- * @brief isready pipeline
- * 
- * @param pipeline_name 
- * @return true 
- * @return false 
- */
-bool eagleeye_pipeline_isready(const char* pipeline_name, int& is_ready);
-
 /**
  * @brief pipeline run
  * 

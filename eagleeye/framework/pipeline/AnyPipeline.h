@@ -127,6 +127,15 @@ public:
     void bind(const char* node_a, int port_a, const char* node_b, int port_b);
 
     /**
+     * @brief get group node
+     * 
+     * @param group_nodes 
+     * @param node_name
+     * @return std::string 
+     */
+    std::string group(std::vector<std::string> group_nodes, const char* node_name);
+
+    /**
      * @brief add dependent node manually (only useful for output nodes)
      */
     void dependent(const char* node, const char* dependent_node);
@@ -215,13 +224,6 @@ public:
      * @brief refresh all render node
      */ 
     void refresh();
-
-    /**
-     * @brief whether pipeline is ready to run
-     * 
-     * @param is_ready 
-     */
-    void isReady(int& is_ready);
 
     /**
      * @brief reset pipeline

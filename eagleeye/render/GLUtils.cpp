@@ -141,6 +141,7 @@ void GLUtils::DeleteProgram(GLuint &program)
     {
         glUseProgram(0);
         glDeleteProgram(program);
+        CheckGLError("glDeleteProgram");
         program = 0;
     }
 }

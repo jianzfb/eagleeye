@@ -29,7 +29,7 @@ public:
     /**
      * @brief init gl and pipeline
      */ 
-    void init();
+    virtual void init();
 
     /**
      * @brief init render data(VBO, TEXTURE, ...)

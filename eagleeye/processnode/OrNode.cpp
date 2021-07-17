@@ -29,6 +29,7 @@ void OrNode::executeNodeInfo(){
 
     EAGLEEYE_LOGD("passing sig %d output", select_signal_i);
     this->getOutputPort(0)->copy(this->getInputPort(select_signal_i));
+    this->getOutputPort(0)->setSignalType(this->getInputPort(select_signal_i)->getSignalType());
 }
 
 void OrNode::addInputPort(AnySignal* sig){

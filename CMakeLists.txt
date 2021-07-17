@@ -280,6 +280,8 @@ set(EAGLEEYE_SRC
     eagleeye/render/RenderBase.cpp
     eagleeye/render/ShapeNode.cpp
     eagleeye/render/HighlightShow.cpp
+    eagleeye/render/ImageBlend.cpp
+    eagleeye/render/RenderMapToCPU.cpp
     eagleeye/ui/ScrollView.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/render/YUVShow.cpp
@@ -288,6 +290,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeGraph.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/framework/pipeline/EmptySignal.cpp
+    eagleeye/framework/pipeline/GroupSignal.cpp
     eagleeye/processnode/YUVConvertNode.cpp
     eagleeye/processnode/YUVResizeNode.cpp
     eagleeye/processnode/OrNode.cpp
@@ -295,7 +298,14 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ConstNode.cpp
     eagleeye/processnode/DottingNode.cpp
     eagleeye/framework/pipeline/AnyRegister.cpp
-    eagleeye/processnode/ThreadNode.cpp)
+    eagleeye/processnode/ThreadNode.cpp
+    eagleeye/processnode/GroupNode.cpp
+    eagleeye/processnode/IdentityNode.cpp
+    eagleeye/processnode/ClassicalFilter.cpp
+    eagleeye/basic/BGRARotateHWC.cpp
+    eagleeye/basic/BGRRotateHWC.cpp
+    eagleeye/basic/BGRAFlipHWC.cpp
+    eagleeye/basic/BGRFlipHWC.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})

@@ -57,4 +57,9 @@ void RenderNode::setCanvas(int x, int y, int w, int h){
 RenderContext* RenderNode::getRenderContext(){
     return AnyPipeline::getRenderContext();
 }
+
+void RenderNode::getMouse(int& mouse_x, int& mouse_y, int& mouse_action){
+    AnyPipeline::getRenderContext()->getMouse(mouse_x, mouse_y, mouse_action);
+}
+
 } // namespace eagleeye

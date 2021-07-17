@@ -10,6 +10,7 @@
 #include "eagleeye/common/EagleeyeIni.h"
 #include "eagleeye/common/EagleeyeGraph.h"
 #include "eagleeye/common/EagleeyeShader.h"
+#include "eagleeye/processnode/GroupNode.h"
 #include <string>
 
 
@@ -247,7 +248,7 @@ void AnyPipeline::refresh(){
 }
 
 bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
-    EAGLEEYE_LOGD("%s pipeline start", this->m_name.c_str());
+    EAGLEEYE_LOGD("Pipeline %s start", this->m_name.c_str());
 
     bool is_finish = true;
     if(node_name == NULL){
@@ -279,7 +280,7 @@ bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
 }
 
 void AnyPipeline::wait(const char* node_name, const char* ignore_prefix){
-    EAGLEEYE_LOGD("%s pipeline wait", this->m_name.c_str());
+    EAGLEEYE_LOGD("Pipeline %s wait", this->m_name.c_str());
 
     if(node_name == NULL){
         // run whole pipeline
@@ -303,17 +304,6 @@ void AnyPipeline::wait(const char* node_name, const char* ignore_prefix){
 
         this->m_nodes[std::string(node_name)]->wait();
     }
-}
-
-void AnyPipeline::isReady(int& is_ready){
-    // all needed data is ok for pipeline
-    std::map<std::string, AnyNode*>::iterator iter, iend(this->m_input_nodes.end());
-    bool is_ok = true;
-    for(iter=this->m_input_nodes.begin(); iter!=iend; ++iter){
-        is_ok = is_ok & iter->second->selfcheck();
-    }
-
-    is_ready = is_ok ? 1 : 0;
 }
 
 void AnyPipeline::reset(){
@@ -350,11 +340,11 @@ void AnyPipeline::bind(const char* node_a,
                        const char* node_b, 
                        int port_b){
     if(this->m_nodes.find(std::string(node_a)) == this->m_nodes.end()){
-        EAGLEEYE_LOGD("node a %s dont exist", node_a);
+        EAGLEEYE_LOGD("Node a %s dont exist.", node_a);
         return;
     }
     if(this->m_nodes.find(std::string(node_b)) == this->m_nodes.end()){
-        EAGLEEYE_LOGD("node b %s dont exist", node_b);
+        EAGLEEYE_LOGD("Node b %s dont exist.", node_b);
         return;
     }
 
@@ -364,6 +354,38 @@ void AnyPipeline::bind(const char* node_a,
         node_b_ptr->setNumberOfInputSignals(port_b+1);
     }
     node_b_ptr->setInputPort(node_a_ptr->getOutputPort(port_a), port_b);
+}
+
+std::string AnyPipeline::group(std::vector<std::string> group_nodes, const char* node_name){
+    for(int i=0; i<group_nodes.size(); ++i){
+        std::string nn = group_nodes[i];
+        //  检查node是否存在
+        if(this->m_nodes.find(nn) == this->m_nodes.end()){
+            EAGLEEYE_LOGD("Node %s dont exist", nn.c_str());
+            return "";
+        }
+    }
+
+    if(this->m_nodes.find(std::string(node_name)) != this->m_nodes.end()){
+        EAGLEEYE_LOGD("Node %s has exist in pipeline", node_name);
+        return "";
+    }
+
+    GroupNode* gn = new GroupNode();
+    // set node name
+    gn->setUnitName(node_name);
+    // set pipeline
+    gn->setPipeline(this);
+    // add to 
+    this->m_nodes[std::string(node_name)] = gn;
+    
+    int default_port = 0;
+    for(int i=0; i<group_nodes.size(); ++i){
+        AnyNode* node_ptr = this->m_nodes[group_nodes[i]];
+        gn->setInputPort(node_ptr->getOutputPort(default_port), i);
+    }
+
+    return node_name;
 }
 
 void AnyPipeline::dependent(const char* node, const char* dependent_node){
@@ -896,9 +918,6 @@ void AnyPipeline::getPipelineMonitors(std::vector<std::string>& monitor_names,
 }
 
 void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> init_func, bool ignore){    
-    // 清空shader
-    ShaderManager::getInstance()->clear();
-
     if(!ignore){
         // 设置基本信息
         if(AnyPipeline::m_pipeline_version.find(this->m_name) == AnyPipeline::m_pipeline_version.end()){
@@ -1221,6 +1240,13 @@ void AnyPipeline::onRenderSurfaceCreate(){
                 std::shared_ptr<RenderContext>(new RenderContext(), 
                                 [](RenderContext* ptr){delete ptr;});
     }
+
+    // 清空shader环境
+    // shader/opengl 环境与工作线程有关
+    ShaderManager::getInstance()->clear();
+
+    // 渲染上下文清空
+    AnyPipeline::m_render_context->onCreated();
 }
 
 void AnyPipeline::onRenderSurfaceChange(int width, int height, int rotate, bool mirror){

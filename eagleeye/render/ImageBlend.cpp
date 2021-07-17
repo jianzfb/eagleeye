@@ -1,4 +1,4 @@
-#include "eagleeye/render/HighlightShow.h"
+#include "eagleeye/render/ImageBlend.h"
 #include "eagleeye/render/GLUtils.h"
 #include "glm/mat4x4.hpp"
 #include "glm/ext.hpp"
@@ -8,29 +8,35 @@
 
 
 namespace eagleeye{
-HighlightShow::HighlightShow(){
+ImageBlend::ImageBlend(){
     // 设置输出端口（拥有1个输出端口）
     this->setNumberOfOutputSignals(1);
 	this->setOutputPort(new ImageSignal<float>(), 0);
 	this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_RECT);
 
     // 设置输入端口
-    // 0: RGB 
-    // 1: MASK 高亮着色 
-    this->setNumberOfInputSignals(2);
+    // port 0: foreground RGB Image
+    // port 1: foreground Mask 
+    // port 2: background RGB Image
+    this->setNumberOfInputSignals(3);
 
-	this->m_TextureId = 0;
-	this->m_MaskTextureId = 0;
+	this->m_low_thres = 0.4f;
+	this->m_high_thres = 1.0f;
+	this->m_using_nonlinear_map = 1;
+	EAGLEEYE_MONITOR_VAR(float, setLowThresh, getLowThresh, "low_thres", "0.0", "1.0");
+	EAGLEEYE_MONITOR_VAR(float, setHighThresh, getHighThresh, "high_thres", "0.0", "1.0");
+    EAGLEEYE_MONITOR_VAR(int, setNonlinearMap, getNonelinearMap, "nonlinear", "0", "2");
 }   
 
-HighlightShow::~HighlightShow(){
+ImageBlend::~ImageBlend(){
 
 }
 
-void HighlightShow::executeNodeInfo(){
+void ImageBlend::executeNodeInfo(){
 	unsigned char* img_ptr = NULL;
 	int img_height = 0;
 	int img_width = 0;
+    // 前景图像
 	if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_RGB_IMAGE || this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_BGR_IMAGE){
 		// 获得输入信号
 		ImageSignal<Array<unsigned char, 3>>* input_img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getInputPort(0));
@@ -56,29 +62,44 @@ void HighlightShow::executeNodeInfo(){
 		img_width = img.cols();
 	}
 	else{
-		EAGLEEYE_LOGE("Dont support input port-1 type");
+		EAGLEEYE_LOGE("Dont support input port type.");
 		return;
 	}
 
+    // 前景Mask图像
     if(this->getInputPort(1)->getSignalType() != EAGLEEYE_SIGNAL_MASK){
-        EAGLEEYE_LOGE("Dont support port-2 type (needed EAGLEEYE_SIGNAL_MASK)");
+        EAGLEEYE_LOGE("Dont support input port type.");
+        return;
+    }
+    ImageSignal<unsigned char>* mask_sig =  (ImageSignal<unsigned char>*)(this->getInputPort(1));
+    Matrix<unsigned char> mask = mask_sig->getData();
+    if(mask.rows() == 0 || mask.cols() == 0){
+        EAGLEEYE_LOGE("Mask is emtpy.");
+        return;
+    }
+    int mask_height = mask.rows();
+    int mask_width = mask.cols();
+    unsigned char* mask_ptr = mask.dataptr();
+
+    // 背景图像
+    if(this->getInputPort(2)->getSignalType() != EAGLEEYE_SIGNAL_RGB_IMAGE && this->getInputPort(2)->getSignalType() != EAGLEEYE_SIGNAL_BGR_IMAGE){
+        EAGLEEYE_LOGE("Dont support input port type.");
+        return;
+    }
+    ImageSignal<Array<unsigned char,3>>* background_img_sig = (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(2));;
+    Matrix<Array<unsigned char,3>> background_img = background_img_sig->getData();
+    if(background_img.rows() == 0 || background_img.cols() == 0){
+        EAGLEEYE_LOGE("Background image is empty.");
         return;
     }
 
-    // 高亮区域
-    ImageSignal<unsigned char>* mask_sig = (ImageSignal<unsigned char>*)(this->getInputPort(1));
-    Matrix<unsigned char> mask = mask_sig->getData();
-    if(!mask.isContinuous()){
-        mask = mask.clone();
+    if(background_img.isContinuous()){
+        background_img = background_img.clone();
     }
-	int mask_rows = mask.rows();
-	int mask_cols = mask.cols();
-    unsigned char* mask_ptr = mask.dataptr();
-	EAGLEEYE_LOGD("hightlight mask width %d height %d", mask_cols, mask_rows);
 
 	// 渲染过程
 	EAGLEEYE_LOGD("Image width %d height %d.", img_width, img_height);
-    if(m_Program == GL_NONE || m_TextureId == GL_NONE || m_MaskTextureId == GL_NONE) return;
+    if(m_Program == GL_NONE || m_TextureId == GL_NONE || m_MaskTextureId == GL_NONE || m_BackgrounndTextureId == GL_NONE) return;
 
 	// 计算归一化坐标
 	int screen_w = this->getScreenW();
@@ -164,9 +185,14 @@ void HighlightShow::executeNodeInfo(){
 	glBindBuffer(GL_ARRAY_BUFFER, GL_NONE);
 
 	glUseProgram(m_Program);	
-	glBindVertexArray(m_VAO);
+	glBindVertexArray(m_VAO);	
 
-	// 绑定RGB纹理数据
+	GLUtils::setInt(m_Program, "using_nonlinear", m_using_nonlinear_map);
+	GLUtils::setFloat(m_Program, "low_thres", m_low_thres);
+	GLUtils::setFloat(m_Program, "high_thres", m_high_thres);
+
+	// 重新绑定纹理数据
+    // 前景纹理绑定
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, m_TextureId);
     GLUtils::setInt(m_Program, "u_texture", 0);
@@ -174,28 +200,55 @@ void HighlightShow::executeNodeInfo(){
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);    
 	}
 	if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_RGB_IMAGE){
+		GLUtils::setInt(m_Program, "foreground_is_rgb", 1);
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img_width, img_height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_ptr);
 	}
 	else if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_BGR_IMAGE){
 		// TODO 对BGR格式渲染存在问题，需要修改shader进行兼容
+		GLUtils::setInt(m_Program, "foreground_is_rgb", 0);
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img_width, img_height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_ptr);
 	}
 	else if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_GRAY_IMAGE){
+		GLUtils::setInt(m_Program, "foreground_is_rgb", 1);
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, img_width, img_height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_ptr);
 	}
 	if(img_width % 4 != 0){
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);    
 	}
 
-    // 绑定MASK纹理数据
+    // Mask纹理绑定
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, m_MaskTextureId);
     GLUtils::setInt(m_Program, "m_texture", 1);
-	if(mask_cols % 4 != 0){
+	if(mask_width % 4 != 0){
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);    
 	}
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, mask_cols, mask_rows, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, mask_ptr);
-	if(mask_cols % 4 != 0){
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, mask_width, mask_height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, mask_ptr);
+	if(mask_width % 4 != 0){
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);    
+	}
+
+    // 背景纹理绑定
+    glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, m_BackgrounndTextureId);
+    GLUtils::setInt(m_Program, "background_texture", 2);
+	int background_width = background_img.cols();
+	int background_height = background_img.rows();
+	if(background_width % 4 != 0){
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 0);    
+	}
+ 	if(this->getInputPort(2)->getSignalType() == EAGLEEYE_SIGNAL_RGB_IMAGE){
+		GLUtils::setInt(m_Program, "background_is_rgb", 1);
+		unsigned char* background_img_ptr = (unsigned char*)background_img.dataptr();
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, background_width, background_height, 0, GL_RGB, GL_UNSIGNED_BYTE, background_img_ptr);
+	}
+	else if(this->getInputPort(2)->getSignalType() == EAGLEEYE_SIGNAL_BGR_IMAGE){
+		// TODO 对BGR格式渲染存在问题，需要修改shader进行兼容
+		GLUtils::setInt(m_Program, "background_is_rgb", 0);
+		unsigned char* background_img_ptr = (unsigned char*)background_img.dataptr();
+	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, background_width, background_height, 0, GL_RGB, GL_UNSIGNED_BYTE, background_img_ptr);
+	}   
+	if(background_width % 4 != 0){
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);    
 	}
 
@@ -206,7 +259,7 @@ void HighlightShow::executeNodeInfo(){
 	glBindVertexArray(GL_NONE);
 }
 
-void HighlightShow::build(){
+void ImageBlend::build(){
 	// create RGB texture
 	glGenTextures(1, &m_TextureId);
 	glBindTexture(GL_TEXTURE_2D, m_TextureId);
@@ -220,8 +273,16 @@ void HighlightShow::build(){
 	glBindTexture(GL_TEXTURE_2D, m_MaskTextureId);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, GL_NONE);
+
+    glGenTextures(1, &m_BackgrounndTextureId);
+	glBindTexture(GL_TEXTURE_2D, m_BackgrounndTextureId);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, GL_NONE);
 
 	// 创建纹理
@@ -265,7 +326,7 @@ void HighlightShow::build(){
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_VboIds[2]);
 }
 
-void HighlightShow::init(){
+void ImageBlend::init(){
 	// 1.step 调用管线初始化
 	Superclass::init();
 
@@ -286,34 +347,92 @@ void HighlightShow::init(){
             "#extension GL_EXT_texture_buffer : require\n"
 			"precision mediump float;\n"
             "in vec2 v_texCoord;\n"
-			"vec3 colormap[10]=vec3[10](vec3(0.2081, 0.1663, 0.5292),vec3(0.1802, 0.2832, 0.7634),vec3(0.0116, 0.4203, 0.8805),vec3(0.0761, 0.4974, 0.8418),vec3(0.0408, 0.5874, 0.8217),vec3(0.0238, 0.6585, 0.7696),vec3(0.1258, 0.7049, 0.6775),vec3(0.3177, 0.7394, 0.563),vec3(0.5418, 0.749, 0.4613),vec3(0.7261, 0.7405, 0.3874)); \n"
+			"uniform int foreground_is_rgb;\n"
+            "uniform int background_is_rgb;\n"
+			"uniform float low_thres; \n"
+			"uniform float high_thres; \n"
+			"uniform int using_nonlinear; \n"
             "layout(location = 0) out vec4 outColor;\n"
             "uniform sampler2D u_texture;\n"
             "uniform sampler2D m_texture;\n"
+            "uniform sampler2D background_texture;\n"
             "void main()\n"
             "{\n"
-            "    vec4 rgb_v = texture(u_texture, v_texCoord); \n"
-            "    vec4 mask_v = texture(m_texture, v_texCoord); \n"
-			"    int label = int(mask_v.r * 255.0); \n"
-            "    if(label > 0){ \n"
-			"        vec3 label_color = colormap[label%10]; \n"
-            "        rgb_v.r = clamp(rgb_v.r*0.2 + label_color.r*0.8,0.0,1.0); \n"
-			"		 rgb_v.g = clamp(rgb_v.g*0.2 + label_color.g*0.8,0.0,1.0); \n"
-			"        rgb_v.b = clamp(rgb_v.b*0.2 + label_color.b*0.8,0.0,1.0); \n"
-            "    } \n"
-			"    outColor = rgb_v;  \n"
+            "    vec4 forground_color;\n"
+			"    if(foreground_is_rgb == 1){ \n"
+            "        forground_color = texture(u_texture, v_texCoord); \n"
+			"    } \n"
+			"    else{ \n"
+			"        vec4 c = texture(u_texture, v_texCoord);\n"
+			"        forground_color = c; \n"
+			"        forground_color.r = c.b; \n"
+			"        forground_color.b = c.r; \n"
+			"    }\n"
+            "    vec4 background_color;\n"
+            "    if(background_is_rgb == 1){\n"
+            "        background_color = texture(background_texture, v_texCoord); \n"
+            "    }\n"
+            "    else{\n"
+            "        vec4 c = texture(background_texture, v_texCoord);\n"
+            "        background_color = c; \n"
+			"        background_color.r = c.b; \n"
+			"        background_color.b = c.r; \n"
+            "    }\n"
+            "    vec4 mask_val = texture(m_texture, v_texCoord);\n"
+			"    if(using_nonlinear == 1){ \n"
+			"        mask_val = (mask_val - low_thres)/(high_thres-low_thres); \n"
+			"        mask_val = clamp(mask_val, 0.0, 1.0); \n"
+			"        mask_val = mask_val*mask_val*(3.0-2.0*mask_val); \n"
+			"    }\n"
+			"    else{\n"
+            "        if(mask_val.r < low_thres){ \n"
+			"            mask_val = vec4(0.0); \n"
+			"        }\n"
+			"        else if(mask_val.r > high_thres){\n"
+			"            mask_val = vec4(1.0);\n"
+			"        } \n"
+			"    }\n"
+            "    outColor = mask_val*forground_color + (1.0-mask_val)*background_color;\n"
             "}";
 
-	this->create("HighlightShow", vShaderStr, fShaderStr);
+	this->create("ImageBlend", vShaderStr, fShaderStr);
 }
 
-void HighlightShow::destroy(){
+void ImageBlend::destroy(){
 	glDeleteBuffers(3, m_VboIds);
 	glDeleteTextures(1, &m_TextureId);
     glDeleteTextures(1, &m_MaskTextureId);
-
+    glDeleteTextures(1, &m_BackgrounndTextureId);
 	m_TextureId = 0;
-    m_MaskTextureId = 0;
 	Superclass::destroy();
+}
+
+void ImageBlend::setLowThresh(float thres){
+	this->m_low_thres = thres;
+	this->modified();
+}
+void ImageBlend::getLowThresh(float& thres){
+	thres = this->m_low_thres;
+}
+
+void ImageBlend::setHighThresh(float thres){
+	if(thres < this->m_low_thres){
+		EAGLEEYE_LOGE("HighThres Invalid set.");
+		return;
+	}
+
+	this->m_high_thres = thres;
+	this->modified();
+}
+void ImageBlend::getHighThresh(float& thres){
+	thres = this->m_high_thres;
+}
+
+void ImageBlend::setNonlinearMap(int ok){
+	this->m_using_nonlinear_map = ok;
+	this->modified();
+}
+void ImageBlend::getNonelinearMap(int& ok){
+	ok = this->m_using_nonlinear_map;
 }
 } // namespace eagleeye

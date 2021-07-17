@@ -184,7 +184,9 @@ enum SignalType{
 	EAGLEEYE_SIGNAL_TRACKING		= 21,				// Matrix<float> x,y,w,h,id,s
 	EAGLEEYE_SIGNAL_CLS				= 22,				// Matrix<int>
 	EAGLEEYE_SIGNAL_DATA			= 23,				// Matrix<float> data
-	EAGLEEYE_SIGNAL_POS_2D			= 24,
+	EAGLEEYE_SIGNAL_POS_2D			= 24,				//
+	EAGLEEYE_SIGNAL_POS_3D			= 25,
+	EAGLEEYE_SIGNAL_GROUP			= 26 				// 
 };
 
 enum SignalTarget{

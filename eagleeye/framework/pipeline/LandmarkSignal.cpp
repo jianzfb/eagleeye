@@ -103,7 +103,7 @@ void LandmarkSignal::setData(typename LandmarkSignal::DataType data, MetaData mm
 }
 
 void LandmarkSignal::setData(void* data, MetaData meta){
-    Matrix<float> signal_content(meta.rows, 3, data, true);
+    Matrix<float> signal_content(meta.rows, meta.cols, data, true);
     this->setData(signal_content, meta);
 }
 

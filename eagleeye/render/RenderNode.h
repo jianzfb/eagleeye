@@ -28,6 +28,8 @@ public:
     int getCanvasW();
     int getCanvasH();
 
+    void getMouse(int& mouse_x, int& mouse_y, int& mouse_action);
+
     /**
      * @brief Get the Render Context object
      * 

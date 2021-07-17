@@ -10,7 +10,6 @@ YUVSignal::YUVSignal(){
 }   
 
 YUVSignal::~YUVSignal(){
-
 }
 
 void YUVSignal::copyInfo(AnySignal* sig){

@@ -93,6 +93,15 @@ public:
 	 */
 	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_STATE;}
 
+	/**
+	 * @brief Get the Signal Content object
+	 * 
+	 * @param data 
+	 * @param data_size 
+	 * @param data_dims 
+	 */
+	virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type);
+
 private:
 	int m_state;	
     int m_ini_state;

@@ -1,5 +1,5 @@
-#ifndef _EAGLEEYE_IMAGESHOW_H_
-#define _EAGLEEYE_IMAGESHOW_H_
+#ifndef _EAGLEEYE_IMAGEBLEND_H_
+#define _EAGLEEYE_IMAGEBLEND_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/render/RenderNode.h"
@@ -10,15 +10,15 @@
 
 
 namespace eagleeye{
-class ImageShow:public RenderNode{
+class ImageBlend:public RenderNode{
 public:
-    typedef ImageShow                   Self;
-    typedef RenderNode                  Superclass;
+    typedef ImageBlend                      Self;
+    typedef RenderNode                      Superclass;
 
-    EAGLEEYE_CLASSIDENTITY(ImageShow);
+    EAGLEEYE_CLASSIDENTITY(ImageBlend);
 
-    ImageShow();
-    virtual ~ImageShow();
+    ImageBlend();
+    virtual ~ImageBlend();
 
     /**
 	 *	@brief execute Node
@@ -41,12 +41,27 @@ public:
      */ 
     virtual void destroy();
 
+    void setLowThresh(float thres);
+    void getLowThresh(float& thres);
+
+    void setHighThresh(float thres);
+    void getHighThresh(float& thres);
+
+    void setNonlinearMap(int ok);
+    void getNonelinearMap(int& ok);
+
 private:
-    ImageShow(const ImageShow&);
-    void operator=(const ImageShow&);
+    ImageBlend(const ImageBlend&);
+    void operator=(const ImageBlend&);
     
     GLuint m_TextureId;
+    GLuint m_MaskTextureId;
+    GLuint m_BackgrounndTextureId;
 	GLuint m_VboIds[3];
+
+    float m_low_thres;
+    float m_high_thres;
+    int m_using_nonlinear_map;
 };    
 } // namespace eagleeye
 

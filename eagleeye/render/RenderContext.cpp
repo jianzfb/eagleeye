@@ -10,6 +10,10 @@ RenderContext::RenderContext(){
 
     this->m_rotate = 0;
     this->m_mirror = false;
+
+    this->m_mouse_action = -1;  // -1 默认状态; 2 抬起状态;0 按下状态; 1 移动状态
+    this->m_mouse_x = 0;
+    this->m_mouse_y = 0;
 }
 RenderContext::~RenderContext(){
 
@@ -17,10 +21,12 @@ RenderContext::~RenderContext(){
 
 void RenderContext::onCreated(){
 	glClearColor(1.0f,1.0f,1.0f, 1.0f);
+    this->m_rotate = 0;
+    this->m_mirror = false;
 }
 
 void RenderContext::onChanged(int width, int height, int rotate, bool mirror){
-    EAGLEEYE_LOGD("set screen width %d height %d (rotate %d, mirror %d)", width, height, rotate, (int)mirror);
+    EAGLEEYE_LOGD("onChanged screen width %d height %d (rotate %d, mirror %d)", width, height, rotate, (int)mirror);
     if(width > 0){
         m_ScreenW = width;
     }
@@ -38,8 +44,33 @@ void RenderContext::onChanged(int width, int height, int rotate, bool mirror){
     this->m_mirror = mirror;
 }
 
-void RenderContext::onMouse(int mouse_x, int mouse_y, int mouse_flag){
+void RenderContext::onMouse(int mouse_x, int mouse_y, int mouse_action){
     // 回调控制
+    if(mouse_action == 0){
+        // DOWN
+        this->m_mouse_action = 0;
+    }
+    else if(mouse_action == 1){
+        // MOVE
+        this->m_mouse_action = 1;
+    }
+    else if(mouse_action == 2){
+        // UP
+        this->m_mouse_action = 2;
+    }
+
+    this->m_mouse_x = mouse_x;
+    this->m_mouse_y = mouse_y;
+}
+
+void RenderContext::getMouse(int& mouse_x, int& mouse_y, int& mouse_action){
+    mouse_x = this->m_mouse_x;
+    mouse_y = this->m_mouse_y;
+    mouse_action = this->m_mouse_action;
+}
+
+void RenderContext::onTransformMatrix(float* data){
+
 }
 
 int RenderContext::getScreenW(){
@@ -93,5 +124,13 @@ void RenderContext::getXY(float& x, float& y){
 
     x = xn;
     y = yn;
+}
+
+int RenderContext::getRotate(){
+    return this->m_rotate;
+}
+
+bool RenderContext::getMirror(){
+    return this->m_mirror;
 }
 } // namespace eagleeye

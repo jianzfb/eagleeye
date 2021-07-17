@@ -56,7 +56,7 @@ AnyNode::AnyNode(const char* unit_name)
 }
 
 AnyNode::~AnyNode()
-{
+{	
 	std::vector<AnySignal*>::iterator iter,iend(m_output_signals.end());
 	for (iter = m_output_signals.begin(); iter != iend; ++iter)
 	{

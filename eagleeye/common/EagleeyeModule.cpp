@@ -6,6 +6,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include "eagleeye/common/EagleeyeFactory.h"
+#include "eagleeye/common/EagleeyeShader.h"
 #include <dlfcn.h>
 #include <dirent.h>
 
@@ -237,6 +238,14 @@ bool eagleeye_pipeline_release(const char* pipeline_name){
     return true;
 }
 
+bool eagleeye_clear_context(){
+    // 清空opengl上下文
+    ShaderManager::getInstance()->clear();
+
+    // 清空opencl上下文
+    return true;
+}
+
 bool eagleeye_pipeline_version(const char* pipeline_name, char* pipeline_version){
     const char* version = AnyPipeline::getInstance(pipeline_name)->getPipelineVersion();
     memcpy(pipeline_version, version, sizeof(char)*strlen(version) + 1);
@@ -378,39 +387,44 @@ bool eagleeye_pipeline_get_output(const char* pipeline_name,
 }
 
 bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix){
-    if(AnyPipeline::getInstance(pipeline_name) == NULL){
-        return false;
-    }
-
     std::string s_pipeline_name = pipeline_name;
     if(s_pipeline_name.find("/") != std::string::npos){
         std::vector<std::string> kterms = split(s_pipeline_name, "/");
         std::string pn = kterms[0];
         std::string nn = kterms[1];
+        if(AnyPipeline::getInstance(pn.c_str()) == NULL){
+            return false;
+        }
         
+        AnyPipeline::getInstance(pn.c_str())->refresh();
         bool r = AnyPipeline::getInstance(pn.c_str())->start(nn.c_str());
         return r;
     }
 
+    if(AnyPipeline::getInstance(pipeline_name) == NULL){
+        return false;
+    }
     bool result = AnyPipeline::getInstance(pipeline_name)->start(NULL, ignore_prefix);
     return result;
 }
 
 bool eagleeye_pipeline_wait(const char* pipeline_name, const char* ignore_prefix){
-    if(AnyPipeline::getInstance(pipeline_name) == NULL){
-        return false;
-    }
-
     std::string s_pipeline_name = pipeline_name;
     if(s_pipeline_name.find("/") != std::string::npos){
         std::vector<std::string> kterms = split(s_pipeline_name, "/");
         std::string pn = kterms[0];
         std::string nn = kterms[1];
         
+        if(AnyPipeline::getInstance(pn.c_str()) == NULL){
+            return false;
+        }
         AnyPipeline::getInstance(pn.c_str())->wait(nn.c_str());
         return true;
     }
 
+    if(AnyPipeline::getInstance(pipeline_name) == NULL){
+        return false;
+    }
     AnyPipeline::getInstance(pipeline_name)->wait(NULL, ignore_prefix);
     return true;
 }
@@ -427,14 +441,6 @@ bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_pref
     bool result = eagleeye_pipeline_run(pipeline_name, ignore_prefix);
     return result;
 } 
-
-bool eagleeye_pipeline_isready(const char* pipeline_name, int& is_ready){
-    if(AnyPipeline::getInstance(pipeline_name) == NULL){
-        return false;
-    }
-    AnyPipeline::getInstance(pipeline_name)->isReady(is_ready);
-    return true;
-}
 
 bool eagleeye_pipeline_reset(const char* pipeline_name){
     if(AnyPipeline::getInstance(pipeline_name) == NULL){
@@ -458,12 +464,13 @@ bool eagleeye_pipeline_debug_restore_at(const char* pipeline_name, const char* n
 }
 
 bool eagleeye_on_surface_create(){
+    EAGLEEYE_LOGD("Surface create.");
     AnyPipeline::onRenderSurfaceCreate();
     return true;
 }
 
 bool eagleeye_on_surface_change(int width, int height, int rotate, bool mirror){
-    EAGLEEYE_LOGD("in width %d height %d", width, height);
+    EAGLEEYE_LOGD("Surface width %d height %d.", width, height);
     AnyPipeline::onRenderSurfaceChange(width, height, rotate, mirror);
     return true;
 }

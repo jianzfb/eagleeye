@@ -1,4 +1,5 @@
 #include "eagleeye/framework/pipeline/StateSignal.h"
+#include "eagleeye/basic/type.h"
 
 namespace eagleeye
 {
@@ -61,4 +62,15 @@ void StateSignal::copy(AnySignal* sig){
         this->m_ini_state = state_sig->m_ini_state;
 	}
 }
+
+void StateSignal::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
+    data = (void*)(&(this->m_state));
+	data_dims = 3;
+	data_size[0] = 1;
+	data_size[1] = 1;
+	data_size[2] = 1;
+
+    data_type = TypeTrait<int>::type;
+}
+
 } // namespace eagleeye
