@@ -123,8 +123,9 @@ public:
      * @param port_a 
      * @param node_b 
      * @param port_b 
+     * @param is_recurrent
      */
-    void bind(const char* node_a, int port_a, const char* node_b, int port_b);
+    void bind(const char* node_a, int port_a, const char* node_b, int port_b, bool is_recurrent=false);
 
     /**
      * @brief get group node
@@ -136,18 +137,9 @@ public:
     std::string group(std::vector<std::string> group_nodes, const char* node_name);
 
     /**
-     * @brief add dependent node manually (only useful for output nodes)
+     * @brief add depend node manually (only useful for output nodes)
      */
-    void dependent(const char* node, const char* dependent_node);
-
-    // /**
-    //  * @brief add feadback action
-    //  * 
-    //  * @param trigger_node 
-    //  * @param trigger_node_state 
-    //  * @param response_action 
-    //  */
-    // void addFeadbackRule(const char* trigger_node, int trigger_node_state, const char* response_node, const char* response_action);
+    void depend(const char* node, std::vector<std::string> dependent_nodes);
 
     /**
      * @brief load/save pipeline from file

@@ -62,6 +62,7 @@ void ClassicalFilter::executeNodeInfo(){
 }
 
 void ClassicalFilter::setFilterCategory(int category){
+    EAGLEEYE_LOGD("set filter category %d", category);
     if(category < 0 || category > 3){
         return;
     }

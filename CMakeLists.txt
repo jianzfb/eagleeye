@@ -297,15 +297,19 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/IsUpdateNode.cpp
     eagleeye/processnode/ConstNode.cpp
     eagleeye/processnode/DottingNode.cpp
+    eagleeye/processnode/MosaicNode.cpp
     eagleeye/framework/pipeline/AnyRegister.cpp
     eagleeye/processnode/ThreadNode.cpp
     eagleeye/processnode/GroupNode.cpp
     eagleeye/processnode/IdentityNode.cpp
     eagleeye/processnode/ClassicalFilter.cpp
+    eagleeye/processnode/SwitchNode.cpp
+    eagleeye/processnode/AnyPlaceholder.cpp
     eagleeye/basic/BGRARotateHWC.cpp
     eagleeye/basic/BGRRotateHWC.cpp
     eagleeye/basic/BGRAFlipHWC.cpp
-    eagleeye/basic/BGRFlipHWC.cpp)
+    eagleeye/basic/BGRFlipHWC.cpp
+    eagleeye/render/AutoRenderRegion.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})

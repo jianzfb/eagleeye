@@ -44,28 +44,4 @@ bool Placeholder<T>::selfcheck(){
         return true;
     }
 }
-
-template<class T>
-void Placeholder<T>::preexit(){
-
-}
-
-template<class T>
-void Placeholder<T>::postexit(){
-    if(this->m_queue_mode){
-        T* output_img_signal = (T*)(this->getOutputPort(OUTPUT_PORT_PLACEHOLDER));
-        // dont care data is what
-        output_img_signal->setData(typename T::DataType());
-    }
-}
-
-template<class T>
-void Placeholder<T>::reset(){
-    T* output_img_signal = (T*)(this->getOutputPort(OUTPUT_PORT_PLACEHOLDER));
-    output_img_signal->makeempty();
-
-    // update reset time
-	m_reset_timestamp.modified();
-	m_reset_time = m_reset_timestamp.getMTime();
-}
 }

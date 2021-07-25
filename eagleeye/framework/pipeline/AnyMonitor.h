@@ -2,6 +2,8 @@
 #define _ANYMONITOR_H_
 
 #include "eagleeye/common/EagleeyeMacro.h"
+#include <functional>
+#include <memory>
 #include <string>
 #include <iostream>
 
@@ -52,6 +54,11 @@ public:
 	static const int var_size = -1;
 };
 
+enum MonitorCategory{
+	MONITOR_DEFAULT = 0,
+	MONITOR_MOUSE = 1
+};
+
 class AnyMonitor
 {
 public:
@@ -61,10 +68,36 @@ public:
 		monitor_var_text(monitor_text),
 		monitor_min_v(min_v),
 		monitor_max_v(max_v),
-		monitor_description(description){}
+		monitor_description(description){
+			monitor_category = MONITOR_DEFAULT;
+		}
+	AnyMonitor(){
+		monitor_var_type = EAGLEEYE_MONITOR_UNDEFINED;
+		monitor_var_size = 0;
+		monitor_var_text = "";
+		monitor_min_v = 0;
+		monitor_max_v = 0;
+		monitor_description = "";
+		monitor_category = MONITOR_DEFAULT;
+	};
 	virtual ~AnyMonitor(){};
+
 	virtual void setVar(const void* var)=0;
 	virtual void getVar(void* var)=0;
+
+	/**
+	 * @brief mouse 
+	 * 
+	 * @param mouse_x 
+	 * @param mouse_y 
+	 * @param mouse_action 
+	 */
+	virtual void run(int mouse_x, int mouse_y, int mouse_action) {}
+
+	void setPrefixCallback(std::function<void()> func){
+		this->prefix_func = func;
+	}
+
 	char* getMin(){
 		return monitor_min_v;
 	}
@@ -78,6 +111,9 @@ public:
 	char* monitor_description;
 	char* monitor_min_v;
 	char* monitor_max_v;	
+
+	std::function<void()> prefix_func;
+	MonitorCategory monitor_category;
 };
 
 template<class HostT,class T>
@@ -96,6 +132,10 @@ public:
 
 	virtual void setVar(const void* var)
 	{
+		if(this->prefix_func){
+			this->prefix_func();
+		}
+
 		const T* v=static_cast<const T*>(var);
 		(monitor_host->*set_var_fun)(*v);
 	}
@@ -111,12 +151,37 @@ public:
 	HostT* monitor_host;
 };
 
+class MouseMonitor:public AnyMonitor{
+public:
+	MouseMonitor(std::function<void(int,int,int)> func){
+		m_mouse_func = func;
+		this->monitor_category = MONITOR_MOUSE;
+	}
+	virtual ~MouseMonitor(){};
+
+	virtual void run(int mouse_x, int mouse_y, int mouse_action){
+		if(this->prefix_func){
+			this->prefix_func();
+		}
+
+		m_mouse_func(mouse_x, mouse_y, mouse_action);
+	}
+	virtual void setVar(const void* var){};
+	virtual void getVar(void* var){};
+
+
+	std::function<void(int,int,int)> m_mouse_func;
+};
+
 #define EAGLEEYE_MONITOR_VAR(VarT,set_fun,get_fun,name,min_v,max_v) \
 	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,name,min_v,max_v));
 
 #define EAGLEEYE_MONITOR_VAR_EXT(VarT,set_fun,get_fun,name,min_v,max_v,description) \
 	this->m_unit_monitor_pool.push_back(new VarMonitor<Self,VarT>(this,&Self::set_fun,&Self::get_fun,name,min_v,max_v,description));
 
+#define EAGLEEYE_MOUSE_MONINTOR(func) \
+	this->m_unit_monitor_pool.push_back(new MouseMonitor(func)); \
+	AnyPipeline::getRenderContext()->listeningMouse(this->m_unit_monitor_pool[this->m_unit_monitor_pool.size()-1]);
 }
 
 #endif

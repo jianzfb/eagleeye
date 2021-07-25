@@ -40,7 +40,7 @@ public:
      * @param node 
      * @param nodetype 
      */
-    void add(AnyNode* node, std::string name, SubPipelineNode nodetype=OTHER_NODE, int dontcare=-1);
+    void add(AnyNode* node, std::string name, SubPipelineNode nodetype=OTHER_NODE);
 
     /**
      * @brief connect two nodes
@@ -86,12 +86,7 @@ public:
 
 protected:
     std::map<std::string, AnyNode*> m_subpipeline;
-
-    AnyNode* m_source_node;
-    int m_source_ignore_port;
-    int* m_source_port_map;
-
-    std::map<int, std::pair<std::string, int>> m_special_source_port_map;
+    std::map<int, std::vector<std::pair<std::string, int>>> m_special_source_port_map;
 
     AnyNode* m_sink_node;
     int m_sink_ignore_port;

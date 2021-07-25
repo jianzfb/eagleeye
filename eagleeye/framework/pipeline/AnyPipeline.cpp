@@ -255,11 +255,21 @@ bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
         // run whole pipeline
         for(int i=0; i<this->m_order_nodes.size(); ++i){
             std::string order_name = m_order_nodes[i];
+            bool is_ignore = false;
             if(ignore_prefix != NULL && (ignore_prefix[0] != '\0')){
-                if(startswith(order_name, ignore_prefix)){
-                    EAGLEEYE_LOGD("Ignore %s.", order_name.c_str());
-                    continue;
+                std::string ignore_prefix_str = ignore_prefix;
+                std::string separator = ",";
+                std::vector<std::string> terms = split(ignore_prefix_str, separator);
+                for(int t=0; t<terms.size(); ++t){
+                    if(startswith(order_name, terms[t])){
+                        is_ignore = true;
+                        break;
+                    }
                 }
+            }
+            if(is_ignore){
+                EAGLEEYE_LOGD("Ignore %s.", order_name.c_str());
+                continue;
             }
 
             is_finish = is_finish & m_output_nodes[order_name]->start();
@@ -338,7 +348,8 @@ bool AnyPipeline::add(AnyNode* node, const char* node_name){
 void AnyPipeline::bind(const char* node_a, 
                        int port_a, 
                        const char* node_b, 
-                       int port_b){
+                       int port_b,
+                       bool is_recurrent){
     if(this->m_nodes.find(std::string(node_a)) == this->m_nodes.end()){
         EAGLEEYE_LOGD("Node a %s dont exist.", node_a);
         return;
@@ -353,7 +364,18 @@ void AnyPipeline::bind(const char* node_a,
     if(node_b_ptr->getNumberOfInputSignals() < port_b+1){
         node_b_ptr->setNumberOfInputSignals(port_b+1);
     }
-    node_b_ptr->setInputPort(node_a_ptr->getOutputPort(port_a), port_b);
+    AnySignal* output_sig = NULL;
+    if(is_recurrent){
+        output_sig = node_a_ptr->getRecurrentOutputPort(port_a);
+    }
+    else{
+        output_sig = node_a_ptr->getOutputPort(port_a);
+    }
+    if(output_sig == NULL){
+        EAGLEEYE_LOGD("Node a output signal is NULL");
+    }
+
+    node_b_ptr->setInputPort(output_sig, port_b);
 }
 
 std::string AnyPipeline::group(std::vector<std::string> group_nodes, const char* node_name){
@@ -388,26 +410,26 @@ std::string AnyPipeline::group(std::vector<std::string> group_nodes, const char*
     return node_name;
 }
 
-void AnyPipeline::dependent(const char* node, const char* dependent_node){
+void AnyPipeline::depend(const char* node, std::vector<std::string> dependent_nodes){
     // 手动添加依赖关系
     // 用于编排无绝对依赖关系的计算节点。（一般用于输出节点的计算顺序）
     std::string node_name = node;
-    std::string dependent_node_name = dependent_node;
-
     if(this->m_dependent_nodes.find(node_name) != this->m_dependent_nodes.end()){
         this->m_dependent_nodes[node_name] = std::vector<std::string>();
     }
 
-    bool is_finding = false;
-    for(int i=0; i<this->m_dependent_nodes[node_name].size(); ++i){
-        if(this->m_dependent_nodes[node_name][i] == dependent_node_name){
-            is_finding = true;
-            break;
+    for(int i=0; i<dependent_nodes.size(); ++i){
+        bool is_finding = false;
+        for(int k=0; k<this->m_dependent_nodes[node_name].size(); ++k){
+            if(this->m_dependent_nodes[node_name][k] == dependent_nodes[i]){
+                is_finding = true;
+                break;
+            }
         }
-    }
 
-    if(!is_finding){
-        this->m_dependent_nodes[node_name].push_back(dependent_node_name);
+        if(!is_finding){
+            this->m_dependent_nodes[node_name].push_back(dependent_nodes[i]);
+        }
     }
 }
 
@@ -898,6 +920,10 @@ void AnyPipeline::getPipelineMonitors(std::vector<std::string>& monitor_names,
                                       std::vector<std::string>& monitor_range){
     std::map<std::string, AnyMonitor*>::iterator iter, iend(this->m_monitor_params.end());
     for(iter = this->m_monitor_params.begin(); iter != iend; ++iter){
+        if(iter->second->monitor_category != MONITOR_DEFAULT){
+            continue;
+        }
+
         // format 1: node_name/param_name
         // format 2: node_name/{}/param_name
         std::vector<std::string> terms = split(iter->first, "/");
@@ -978,42 +1004,57 @@ void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> 
         }
     }
 
-    // 根据手动依赖关系，对输出节点重新排序
-    // m_dependent_nodes,排序后保存在m_order_nodes
-    std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
+    // 分析强制依赖关系
     if(m_dependent_nodes.size() > 0){
-        // 排序
-        std::vector<std::string> result = eagleeye_topology_sort(m_dependent_nodes);
-
-        this->m_order_nodes.clear();
-        // 记录未构建依赖关系的节点
-        for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
-            bool is_finding=false;
-            for(int i=0; i<result.size(); ++i){
-                if(output_iter->first == result[i]){
-                    is_finding = true;
-                    break;
-                }
-            }
-
-            if(!is_finding){
-                this->m_order_nodes.push_back(output_iter->first);
-            }
-        }
-
-        // 加入排序后的节点
-        for(int i=0; i<result.size(); ++i){
-            if(this->m_output_nodes.find(result[i]) != this->m_output_nodes.end()){
-                this->m_order_nodes.push_back(result[i]);
+        std::map<std::string, std::vector<std::string>>::iterator depend_iter, depend_iend(m_dependent_nodes.end());
+        for(depend_iter = m_dependent_nodes.begin(); depend_iter != depend_iend; ++depend_iter){
+            for(int k=0; k<depend_iter->second.size(); ++k){
+                this->m_nodes[depend_iter->first]->addDependentNode(this->m_nodes[depend_iter->second[k]]);
             }
         }
     }
-    else{
-        this->m_order_nodes.clear();
-        for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
-            this->m_order_nodes.push_back(output_iter->first);
-        }
+    this->m_order_nodes.clear();
+    std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
+    for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
+        this->m_order_nodes.push_back(output_iter->first);
     }
+
+    // // 根据手动依赖关系，对输出节点重新排序
+    // // m_dependent_nodes,排序后保存在m_order_nodes
+    // std::map<std::string, AnyNode*>::iterator output_iter, output_iend(this->m_output_nodes.end());
+    // if(m_dependent_nodes.size() > 0){
+    //     // 排序
+    //     std::vector<std::string> result = eagleeye_topology_sort(m_dependent_nodes);
+
+    //     this->m_order_nodes.clear();
+    //     // 记录未构建依赖关系的节点
+    //     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
+    //         bool is_finding=false;
+    //         for(int i=0; i<result.size(); ++i){
+    //             if(output_iter->first == result[i]){
+    //                 is_finding = true;
+    //                 break;
+    //             }
+    //         }
+
+    //         if(!is_finding){
+    //             this->m_order_nodes.push_back(output_iter->first);
+    //         }
+    //     }
+
+    //     // 加入排序后的节点
+    //     for(int i=0; i<result.size(); ++i){
+    //         if(this->m_output_nodes.find(result[i]) != this->m_output_nodes.end()){
+    //             this->m_order_nodes.push_back(result[i]);
+    //         }
+    //     }
+    // }
+    // else{
+    //     this->m_order_nodes.clear();
+    //     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
+    //         this->m_order_nodes.push_back(output_iter->first);
+    //     }
+    // }
 
     EAGLEEYE_LOGD("Pipeline %s has %d output nodes.", this->m_name.c_str(), this->m_output_nodes.size());
     for(output_iter=this->m_output_nodes.begin(); output_iter != output_iend; ++output_iter){
@@ -1043,6 +1084,10 @@ void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> 
         std::string node_name = monitor_iter->first;
 
         for(int i=0; i<monitor_iter->second.size(); ++i){
+            if(monitor_iter->second[i]->monitor_category != MONITOR_DEFAULT){
+                continue;
+            }
+
             std::string param_name = monitor_iter->second[i]->monitor_var_text;
             std::string param_key = std::string(node_name) + std::string("/") + std::string(param_name);
 

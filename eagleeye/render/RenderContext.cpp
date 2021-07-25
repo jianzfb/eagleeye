@@ -1,5 +1,6 @@
 #include "eagleeye/render/RenderContext.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include <math.h>
 
 namespace eagleeye
@@ -61,6 +62,12 @@ void RenderContext::onMouse(int mouse_x, int mouse_y, int mouse_action){
 
     this->m_mouse_x = mouse_x;
     this->m_mouse_y = mouse_y;
+
+    // 监听
+    for(int i = 0; i < this->m_listening_funcs.size(); ++i){
+        MouseMonitor* mouse_monitor = (MouseMonitor*)this->m_listening_funcs[i];
+        mouse_monitor->run(mouse_x, mouse_y, mouse_action);
+    }
 }
 
 void RenderContext::getMouse(int& mouse_x, int& mouse_y, int& mouse_action){
@@ -133,4 +140,11 @@ int RenderContext::getRotate(){
 bool RenderContext::getMirror(){
     return this->m_mirror;
 }
+
+void RenderContext::listeningMouse(AnyMonitor* listening_func){
+    if(listening_func->monitor_category == MONITOR_MOUSE){
+        m_listening_funcs.push_back(listening_func);
+    }
+}
+
 } // namespace eagleeye

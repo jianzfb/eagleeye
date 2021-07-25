@@ -15,6 +15,7 @@ void CopyNode::executeNodeInfo(){
     int signal_num = this->getNumberOfInputSignals();
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
         this->getOutputPort(sig_i)->copy(this->getInputPort(sig_i));
+        this->getOutputPort(sig_i)->setSignalType(this->getInputPort(sig_i)->getSignalType());
     }
 
     if(this->m_is_clear_input){

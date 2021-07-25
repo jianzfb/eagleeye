@@ -74,6 +74,14 @@ public:
 	virtual void setInputPort(AnySignal* sig,int index=0);
 	virtual void removeInputPort(AnySignal* sig);
 	virtual void removeInputPort(int index);
+	void clearInputPort(int index);
+
+	/**
+	 * @brief add dependent node(only for order compute)
+	 * 
+	 * @param dependent_node
+	 */
+	void addDependentNode(AnyNode* dependent_node);
 
 	virtual AnySignal* getInputPort(unsigned int index=0);
 	virtual const AnySignal* getInputPort(unsigned int index=0) const;
@@ -86,6 +94,14 @@ public:
 	
 	virtual void setOutputPort(AnySignal* sig,int index=0);
 	
+	/**
+	 * @brief Get the Recurrent Output Port object
+	 * 
+	 * @param index 
+	 * @return AnySignal* 
+	 */
+	virtual AnySignal* getRecurrentOutputPort(unsigned int index=0){return NULL;}
+
 	/**
 	 *	@brief set/get the number of output signals and input signals
 	 */

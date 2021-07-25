@@ -109,8 +109,36 @@ void IfElseNode::exit(){
 
 void IfElseNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool){
     // collect all node monitors in subpipeline
-    this->m_x->getPipelineMonitors(pipeline_monitor_pool);
-    this->m_y->getPipelineMonitors(pipeline_monitor_pool);
+    std::map<std::string,std::vector<AnyMonitor*>> temp;
+    this->m_x->getPipelineMonitors(temp);
+    // 给temp添加更新时的前置回调函数
+    std::map<std::string,std::vector<AnyMonitor*>>::iterator monitor_iter, monitor_iend(temp.end());
+    for(monitor_iter = temp.begin(); monitor_iter != monitor_iend; ++monitor_iter){
+        for(int i=0; i<monitor_iter->second.size(); ++i){
+            monitor_iter->second[i]->setPrefixCallback(
+                [this](){
+                    this->modified();
+                }
+            );
+        }
+    }
+    pipeline_monitor_pool.insert(temp.begin(), temp.end());
+    temp.clear();
+
+    this->m_y->getPipelineMonitors(temp);
+    // 给temp添加更新时的前置回调函数
+    monitor_iend = temp.end();
+    for(monitor_iter = temp.begin(); monitor_iter != monitor_iend; ++monitor_iter){
+        for(int i=0; i<monitor_iter->second.size(); ++i){
+            monitor_iter->second[i]->setPrefixCallback(
+                [this](){
+                    this->modified();
+                }
+            );
+        }
+    }
+    pipeline_monitor_pool.insert(temp.begin(), temp.end());
+    temp.clear();   
 
 	//traverse the whole pipeline
 	std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());

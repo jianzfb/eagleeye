@@ -3,10 +3,11 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/common/EagleeyeIO.h"
+#include "eagleeye/processnode/AnyPlaceholder.h"
 
 namespace eagleeye{
 template<class T>
-class Placeholder:public AnyNode{
+class Placeholder:public AnyPlaceholder{
 public:
     typedef Placeholder                  	Self;
     typedef AnyNode                         Superclass;
@@ -41,19 +42,6 @@ public:
 	 *	@brief make some self check, such as judge whether support the predefined file type.
 	 */
 	virtual bool selfcheck();
-
-	/**
-     * @brief (pre/post) exit
-     * 
-     */
-    virtual void preexit();
-    virtual void postexit();
-
-	/**
-	 * @brief reset 
-	 * 
-	 */
-	virtual void reset();
 
 	/**
 	 * @brief set source type.

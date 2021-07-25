@@ -123,9 +123,8 @@ void AnySignal::updateUnitInfo(){
 	this->m_data_update = false;
 }
 
-void AnySignal::processUnitInfo()
-{	
-	if ((getMTime()<m_pipeline_time && m_link_node) || (m_link_node && EagleeyeTimeStamp::isCrossBorder())){
+void AnySignal::processUnitInfo(){	
+	if ((getMTime() < m_pipeline_time && m_link_node) || (m_link_node && EagleeyeTimeStamp::isCrossBorder())){
 		m_link_node->processUnitInfo();
 	}
 

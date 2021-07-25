@@ -1,9 +1,12 @@
 #ifndef __EAGLEEYE_RENDER_CONTEXT_H_
 #define __EAGLEEYE_RENDER_CONTEXT_H_
 #include <GLES3/gl3.h>
+#include <functional>
+#include <vector>
 
 namespace eagleeye
 {
+class AnyMonitor;
 class RenderContext{
 public:
     RenderContext();
@@ -66,6 +69,11 @@ public:
      */
     void onTransformMatrix(float* data);
 
+    /**
+     * @brief listening mouse
+     * 
+     */
+    void listeningMouse(AnyMonitor* listening_func);
 
 private:
 	int m_ScreenW;
@@ -77,6 +85,8 @@ private:
     int m_mouse_action;
     int m_mouse_x;
     int m_mouse_y;
+
+    std::vector<AnyMonitor*> m_listening_funcs;
 };    
 } // namespace eagleeye
 

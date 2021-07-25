@@ -83,7 +83,27 @@ void AnyNode::setInputPort(AnySignal* sig,int index)
 	m_input_signals[index] = sig;
 
 	// increment input signal out degree
-	sig->incrementOutDegree();
+	if(sig != NULL){
+		sig->incrementOutDegree();
+	}
+	modified();
+}
+
+void AnyNode::clearInputPort(int index){
+	if(index >= this->m_input_signals.size()){
+		return;
+	}
+
+	if(m_input_signals[index] != NULL){
+		m_input_signals[index]->decrementOutDegree();
+	}
+	m_input_signals[index] = NULL;
+}
+
+void AnyNode::addDependentNode(AnyNode* dependent_node){
+	// 忽略依赖节点的输出端口实际含义
+	m_input_signals.push_back(dependent_node->getOutputPort(0));
+	dependent_node->getOutputPort(0)->incrementOutDegree();
 	modified();
 }
 
@@ -285,10 +305,12 @@ void AnyNode::passonNodeInfo(){
 bool AnyNode::start(){
 	//update some necessary info, such as basic format or struct of AnySignal(without content),
 	//re-assign update time
+	EAGLEEYE_LOGD("START A");
 	std::vector<AnySignal*>::iterator out_iter,out_iend(m_output_signals.end());
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		(*out_iter)->updateUnitInfo();
 	}
+	EAGLEEYE_LOGD("START B");
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		//complement some concrete task, such as generating some data and so on.
 		(*out_iter)->processUnitInfo();
@@ -391,6 +413,7 @@ void AnyNode::print(){
 
 void AnyNode::updateUnitInfo()
 {
+	EAGLEEYE_LOGD("updateUnitInfo %s", this->getUnitName());
 	unsigned long t1,t2;
 
 	//watch out for loops in the pipeline
@@ -472,6 +495,8 @@ void AnyNode::updateUnitInfo()
 
 void AnyNode::processUnitInfo()
 {	
+	EAGLEEYE_LOGD("processUnitInfo %s", this->getUnitName());
+
 	if(m_process_flag){
 		return;
 	}
