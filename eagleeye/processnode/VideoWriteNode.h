@@ -66,6 +66,14 @@ public:
     virtual void setFolder(std::string folder);
     virtual void getFolder(std::string& folder);
 
+    /**
+     * @brief Set/Get the Force Stop object
+     * 
+     * @param stop 
+     */
+    void setStop(int stop);
+    void getStop(int& stop);
+
 private:
     VideoWriteNode(const VideoWriteNode&);
     void operator=(const VideoWriteNode&);
@@ -74,7 +82,7 @@ private:
      * @brief finish writing process
      * 
      */
-    void writefinish();
+    void writeFinish();
 
     /**
      * @brief flush encoder
@@ -83,7 +91,7 @@ private:
      * @param stream_index 
      * @return int 
      */
-    int flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_index);
+    int flushEncoder(AVFormatContext *fmt_ctx, unsigned int stream_index);
 
     bool m_is_init;
     bool m_is_finish;
@@ -96,6 +104,8 @@ private:
 
     std::string m_prefix;
     std::string m_folder;
+
+    int m_manually_stop;
 };
 }
 #endif

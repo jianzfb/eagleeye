@@ -12,9 +12,7 @@
 #include <memory>
 #include <algorithm>
 #include <vector>
-#ifdef EAGLEEYE_OPENMP
 #include <omp.h>
-#endif
 
 namespace eagleeye{
 // Each abstract model is made of abstract parameters
@@ -63,11 +61,7 @@ private:
 
 public:
     RANSAC(void){
-#ifdef EAGLEEYE_OPENMP        
-        m_nThreads = std::max(1, omp_get_max_threads());
-#else
-        m_nThreads = 1;
-#endif        
+        m_nThreads = std::max(1, omp_get_max_threads());   
         EAGLEEYE_LOGD("RANSAC Maximum usable threads: %d", m_nThreads);
         for (int i = 0; i < m_nThreads; ++i){
             std::random_device SeedDevice;
@@ -103,19 +97,12 @@ public:
         int DataSize = m_Data.size();
         std::vector<Matrix<float>> ransac_models(m_MaxIterations);
 
-
-        EAGLEEYE_TIME_START(ini_ransac_models);
-#ifdef EAGLEEYE_OPENMP        
+        EAGLEEYE_TIME_START(ini_ransac_models);      
         omp_set_dynamic(0); // Explicitly disable dynamic teams
         omp_set_num_threads(m_nThreads);
 #pragma omp parallel for
-#endif
-        for(int i=0; i<m_MaxIterations; ++i){
-#ifdef  EAGLEEYE_OPENMP     
+        for(int i=0; i<m_MaxIterations; ++i){ 
             int thread_id = omp_get_thread_num();
-#else   
-            int thread_id = 0;
-#endif           
             // Select t_NumParams random samples
             std::vector<std::shared_ptr<AbstractParameter>> RandomSamples(t_NumParams);
             std::vector<std::shared_ptr<AbstractParameter>> RemainderSamples = m_Data; // Without the chosen random samples

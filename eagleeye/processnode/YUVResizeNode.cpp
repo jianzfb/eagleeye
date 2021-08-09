@@ -41,8 +41,6 @@ void YUVResizeNode::executeNodeInfo(){
     int height = input_sig->getHeight();
     int width = input_sig->getWidth();
 
-    EAGLEEYE_LOGE("blob height %d width %d", height, width);
-
     // 输出yuv数据
     Blob output_blob(sizeof(unsigned char)*(m_resize_h*m_resize_w + (m_resize_h/2)*(m_resize_w/2) + (m_resize_h/2)*(m_resize_w/2)),
             Aligned(64), 

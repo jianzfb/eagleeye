@@ -2,6 +2,8 @@
 #include "eagleeye/processnode/ImageWriteNode.h"
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/common/EagleeyeTime.h"
+#include "eagleeye/common/EagleeyeStr.h"
+#include "libyuv.h"
 #ifdef EAGLEEYE_FFMPEG
 extern "C" { 
 #include "libavformat/avformat.h"
@@ -51,12 +53,16 @@ VideoWriteNode::VideoWriteNode(){
     EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
     EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
 
+    EAGLEEYE_MONITOR_VAR(int, setStop, getStop, "stop","0","2");
+
     this->m_prefix = "video_";
     this->m_folder = "/sdcard/";
+    this->m_manually_stop = 0;
 }   
+
 VideoWriteNode::~VideoWriteNode(){
     if(!this->m_is_finish){
-        this->writefinish();
+        this->writeFinish();
     }
 } 
 
@@ -84,6 +90,18 @@ void VideoWriteNode::executeNodeInfo(){
 
         this->setFilePath(this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp()+".mp4");
         EAGLEEYE_LOGD("Video path %s.", this->m_file_path.c_str());
+    }
+
+    if(this->m_is_init && this->m_manually_stop != 0){
+        // 开始保存
+        this->m_file_path = "";
+        this->m_is_finish = true;
+        this->m_is_init = false;
+        this->m_manually_stop = 0;
+        this->writeFinish();
+
+        EAGLEEYE_LOGD("Success to finish write video.");
+        return;
     }
 
     if(!this->m_is_init){
@@ -156,40 +174,55 @@ void VideoWriteNode::executeNodeInfo(){
         m_is_finish = false;
     }
 
-    // 将RGB24转换成YUVframe
-    SwsContext* swsContext = sws_getContext(image.cols(), 
-                                            image.rows(),
-                                            AV_PIX_FMT_RGB24 ,
-                                            image.cols(), 
-                                            image.rows(),
-                                            AV_PIX_FMT_YUV420P ,
-                                            NULL, NULL, NULL, NULL);
-    uint8_t *const rgb_bufer[1] = {(uint8_t*)image.dataptr()};
-    int srcStride[1];
-    srcStride[0] = image.cols()*3;
-    // increment +1
+    // // 将RGB24转换成YUVframe
+    // SwsContext* swsContext = sws_getContext(image.cols(), 
+    //                                         image.rows(),
+    //                                         AV_PIX_FMT_RGB24 ,
+    //                                         image.cols(), 
+    //                                         image.rows(),
+    //                                         AV_PIX_FMT_YUV420P ,
+    //                                         NULL, NULL, NULL, NULL);
+    // uint8_t *const rgb_bufer[1] = {(uint8_t*)image.dataptr()};
+    // int srcStride[1];
+    // srcStride[0] = image.cols()*3;
+
     frame->pts = this->m_fps;
     this->m_fps += 1;
     frame->format = m_codec_cxt->pix_fmt;
     frame->width  = image.cols();
     frame->height = image.rows();
 
-    sws_scale(swsContext, rgb_bufer, srcStride, 0, image.rows(), frame->data, frame->linesize);
-    sws_freeContext(swsContext);
+    // sws_scale(swsContext, rgb_bufer, srcStride, 0, image.rows(), frame->data, frame->linesize);
+    // sws_freeContext(swsContext);
 
+    EAGLEEYE_TIME_START(A);
+    // 使用libyuv 转换空间
+    libyuv::RAWToI420((uint8_t*)image.dataptr(), 
+                image.cols()*3, 
+                frame->data[0],frame->linesize[0],
+                frame->data[1],frame->linesize[1],
+                frame->data[2],frame->linesize[2],
+                frame->width,
+                frame->height);
+    EAGLEEYE_TIME_END(A);
+
+    EAGLEEYE_TIME_START(B);
     int got_picture = 0;
     int ret = avcodec_encode_video2(m_codec_cxt, packet, frame, &got_picture);
     if(ret < 0){
         EAGLEEYE_LOGD("Fail to encoder.");
         return;
     }
+    EAGLEEYE_TIME_END(B);
+
     if(got_picture == 1){
+        EAGLEEYE_TIME_START(C);
         //将packet中的数据写入本地文件
         packet->stream_index = stream->index;
         av_packet_rescale_ts(packet, m_codec_cxt->time_base, stream->time_base);
         packet->pos = -1;
         av_interleaved_write_frame(m_output_cxt, packet);
-
+        EAGLEEYE_TIME_END(C);
         // av_packet_unref(packet);
         // av_frame_unref(frame);
     }
@@ -199,7 +232,8 @@ void VideoWriteNode::executeNodeInfo(){
         this->m_file_path = "";
         this->m_is_finish = true;
         this->m_is_init = false;
-        this->writefinish();
+        this->m_manually_stop = 0;
+        this->writeFinish();
 
         EAGLEEYE_LOGD("Success to finish write video.");
     }
@@ -208,13 +242,14 @@ void VideoWriteNode::executeNodeInfo(){
 void VideoWriteNode::setFilePath(std::string file_path){
     if(!this->m_is_finish){
         EAGLEEYE_LOGD("Force unfinish video stop.");
-        this->writefinish();        
+        this->writeFinish();        
     }
 
     this->m_is_init = false;
     this->m_file_path = file_path;
     this->m_is_finish = true;
     this->m_fps = 0;
+    this->m_manually_stop = 0;
 }
 
 void VideoWriteNode::getFilePath(std::string& file_path){
@@ -231,14 +266,17 @@ void VideoWriteNode::getPrefix(std::string& prefix){
 
 void VideoWriteNode::setFolder(std::string folder){
     this->m_folder = folder;
+    if(!endswith(this->m_folder, "/")){
+        this->m_folder = folder +"/";
+    }
 }
 void VideoWriteNode::getFolder(std::string& folder){
     folder = this->m_folder;
 }
 
-void VideoWriteNode::writefinish(){
+void VideoWriteNode::writeFinish(){
     //将流尾写入输出媒体文件并释放文件数据
-    flush_encoder(m_output_cxt, 0);
+    flushEncoder(m_output_cxt, 0);
     av_write_trailer(m_output_cxt);
 
     if(this->m_codec_cxt){
@@ -262,7 +300,7 @@ void VideoWriteNode::writefinish(){
     this->m_is_finish = true;
 }
 
-int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_index)
+int VideoWriteNode::flushEncoder(AVFormatContext *fmt_ctx, unsigned int stream_index)
 {
     int ret;
     int got_frame;
@@ -294,6 +332,19 @@ int VideoWriteNode::flush_encoder(AVFormatContext *fmt_ctx, unsigned int stream_
             break;
     }
     return ret;
+}
+
+void VideoWriteNode::setStop(int stop){
+    if(stop != 0){
+        stop = 1;
+    }
+
+    this->m_manually_stop = stop;
+    this->modified();
+}
+
+void VideoWriteNode::getStop(int& stop){
+    stop = this->m_manually_stop;
 }
 
 } // namespace  eagleeye

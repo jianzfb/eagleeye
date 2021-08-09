@@ -1,5 +1,5 @@
-#ifndef _PADDLE_MODEL_RUN_H_
-#define _PADDLE_MODEL_RUN_H_
+#ifndef _TNN_MODEL_RUN_H_
+#define _TNN_MODEL_RUN_H_
 #include "eagleeye/engine/model_engine.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/engine/model_run.h"
@@ -10,17 +10,21 @@
 #include <map>
 #include <memory> 
 #include <iostream>
-#include "paddle_api.h"  // NOLINT
+#include "tnn/core/common.h"
+#include "tnn/core/macro.h"
+#include "tnn/core/tnn.h"
+#include "tnn/utils/blob_converter.h"
+#include "tnn/utils/cpu_utils.h"
+#include "tnn/utils/mat_utils.h"
 
-
-namespace eagleeye{
-
+namespace eagleeye
+{
 template<typename Enabled>
-class ModelRun<PaddleRun, Enabled>:public ModelEngine{
+class ModelRun<TNNRun, Enabled>:public ModelEngine{
 public:
-	typedef PaddleRun                   ModelEngineType;
+    typedef TNNRun                   ModelEngineType;
 
-	/**
+    /**
 	 * [constructor: build snpe model]
 	 */
 	ModelRun(std::string model_name, 
@@ -95,12 +99,21 @@ public:
 	 */
 	void getOutput(std::string output_name, void*& output_ptr, std::vector<int64_t>& shape);
 
+	/**
+	 * @brief refresh input
+	 * 
+	 */
+	void refresh();
+
 private:
-    std::string m_nb_name;
-    std::shared_ptr<paddle::lite_api::PaddlePredictor> m_predictor;
+    std::string m_tnnproto;
+    std::string m_tnnmodel;
+	std::shared_ptr<TNN_NS::Instance> m_predictor;
+
+	std::map<std::string, std::shared_ptr<TNN_NS::Mat>> m_input_map;
 	bool m_is_init;
 };
 } // namespace eagleeye
 
-#include "eagleeye/engine/paddle_run.hpp"
+#include "eagleeye/engine/tnn_run.hpp"
 #endif

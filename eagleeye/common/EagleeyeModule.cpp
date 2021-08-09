@@ -213,7 +213,6 @@ bool eagleeye_pipeline_save_config(const char* pipeline_name, const char* config
 bool eagleeye_pipeline_release(const char* pipeline_name){
     EAGLEEYE_LOGD("Enter eagleeye_pipeline_release %s.", pipeline_name);    
     if(m_registed_plugins.find(std::string(pipeline_name)) == m_registed_plugins.end()){
-        EAGLEEYE_LOGD("111");
         if(AnyPipeline::isExist(pipeline_name)){
             EAGLEEYE_LOGD("Finish eagleeye_pipeline_release %s.", pipeline_name);
             AnyPipeline::releasePipeline(pipeline_name);
@@ -224,17 +223,14 @@ bool eagleeye_pipeline_release(const char* pipeline_name){
         return false;
     }
     
-    EAGLEEYE_LOGD("A");
     // 注销管线
     AnyPipeline::releasePipeline(pipeline_name);
-    EAGLEEYE_LOGD("B");
     // 关闭动态库
     if(m_registed_plugins[std::string(pipeline_name)].first != NULL){
         // 关闭动态库
         dlclose(m_registed_plugins[std::string(pipeline_name)].first);
     }
 
-    EAGLEEYE_LOGD("C");
     // 删除注册记录
     m_registed_plugins.erase(m_registed_plugins.find(std::string(pipeline_name)));
     EAGLEEYE_LOGD("Finish eagleeye_pipeline_release %s.", pipeline_name);

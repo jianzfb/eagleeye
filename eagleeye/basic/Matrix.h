@@ -13,7 +13,6 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/type.h"
 #include "eagleeye/basic/blob.h"
-#include "eagleeye/basic/Tensor.h"
 
 namespace eagleeye
 {

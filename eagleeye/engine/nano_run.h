@@ -9,11 +9,11 @@
 #include <map>
 #include<memory> 
 namespace eagleeye{
-class NNRun{
+class NanoRun{
 	/**
 	 * 
 	 */
-	NNRun(std::string model_name, 
+	NanoRun(std::string model_name, 
 			 std::string device,
 			 std::vector<std::string> input_names=std::vector<std::string>(),
 		     std::vector<std::vector<int64_t>> input_shapes=std::vector<std::vector<int64_t>>(),
@@ -23,7 +23,7 @@ class NNRun{
 		     int cpu_affinity_policy=-1, 
 		     std::string writable_path="/data/local/tmp/");
 
-    virtual ~NNRun();
+    virtual ~NanoRun();
 
     /**
 	 * [run run neural network model]

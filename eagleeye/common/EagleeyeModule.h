@@ -14,7 +14,7 @@ struct EagleeyeMeta{
 	int needed_rows;		// rows(largest)
 	int needed_cols;		// cols(largest)
 	int allocate_mode;		// 0（do nothing）;1（InPlace）;2（largest）;3（same size with input）;
-	unsigned int timestamp;	// timestamp
+	int64_t timestamp;	    // timestamp
 };
 
 struct EagleeyeConfig{

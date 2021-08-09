@@ -22,7 +22,6 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 
 	this->m_meta.timestamp = 0;
 	this->m_sig_category = SIGNAL_CATEGORY_IMAGE;
-	this->m_timestamp = 0;
 }
 
 template<class T>
@@ -82,7 +81,6 @@ void ImageSignal<T>::makeempty(bool auto_empty)
 	this->m_meta.rows = 0;
 	this->m_meta.cols = 0;
 	this->m_meta.timestamp = 0;
-	this->m_timestamp = 0;
 	if(auto_empty){
 		// reset count
 		this->m_release_count = 1;
@@ -239,7 +237,6 @@ void ImageSignal<T>::setData(void* data, MetaData meta){
 		unsigned int texture_id = *((unsigned int*)(data));
 		EAGLEEYE_LOGD("TEXTURE ID %d", texture_id);
 		this->img = Matrix<T>(texture_id);
-		this->m_timestamp = 0;
 		this->m_meta = meta;
 		return;
 	}
@@ -260,9 +257,6 @@ void ImageSignal<T>::setData(void* data, MetaData meta){
 		// Copy Mode
 		signal_content = Matrix<T>(meta.rows, meta.cols, data, true);
 	}
-	
-	meta.timestamp = this->m_timestamp;
-	this->m_timestamp += 1;
 	this->setData(signal_content, meta);
 }
 

@@ -13,16 +13,23 @@ ModelEngine::ModelEngine(std::string model_name,
 		     	std::vector<std::string> output_names,
 		     	std::vector<std::vector<int64_t>> output_shapes,
 		     	int omp_num_threads,
-		     	int cpu_affinity_policy,
+		     	RunPower model_power,
 		     	std::string writable_path){
 	this->m_omp_num_threads = omp_num_threads;
-	this->m_cpu_affinity_policy = cpu_affinity_policy;
+  this->m_model_power = model_power;
 	this->m_writable_path = writable_path;
 	this->m_device = device;
 	this->m_model_name = model_name;
 
 	this->m_input_names = input_names;
 	this->m_output_names = output_names;
+
+  for(int index=0; index < input_names.size(); ++index){
+    m_input_map_index[input_names[index]] = index;
+  }
+  for(int index=0; index < output_names.size(); ++index){
+    m_output_map_index[output_names[index]] = index;
+  }
 
 	this->m_is_dynamic_input_shape = false;
 	this->m_is_dynamic_output_shape = false;
@@ -61,6 +68,14 @@ ModelEngine::ModelEngine(std::string model_name,
 }
 
 ModelEngine::~ModelEngine(){
+}
+
+void ModelEngine::setModelFolder(std::string model_folder){
+  this->m_model_folder = model_folder;
+}
+
+std::string ModelEngine::getModelFolder(){
+  return this->m_model_folder;
 }
 
 bool ModelEngine::isDynamicInputShape(){
@@ -340,7 +355,7 @@ void ModelEngine::bgrToTensorCHW(const uint8_t* src,
   }
 }
 
-void bgrToRgbTensorCHW(const uint8_t* src,
+void ModelEngine::bgrToRgbTensorCHW(const uint8_t* src,
                        float* output,
                        int width,
                        int height,

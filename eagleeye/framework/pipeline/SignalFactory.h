@@ -200,8 +200,6 @@ private:
 	std::queue<Matrix<T>> m_queue;
 	std::queue<MetaData> m_meta_queue;
 	SignalCategory m_sig_category;
-
-	unsigned int m_timestamp;
 };
 }
 

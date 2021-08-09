@@ -6,7 +6,9 @@ set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -pie -Wl,--gc-sections")
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
 SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -ldl -llog -lz")
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
+# set(LIBCXX_LINK_FLAGS "-rtlib=compiler-rt")
+# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
 
 add_definitions(-DARM_WITH_OMP)
 add_definitions(-DHPPL_STUB_FUNC)
@@ -31,68 +33,6 @@ else()
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin)
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin)
     set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin)
-endif()
-
-# support mace
-if(${NN_ENGINE} MATCHES "mace")
-    # message(STATUS "support mace NN engine")
-    # add_definitions(-DEAGLEEYE_MACE_SUPPORT)
-    # add_definitions(-DMACE_ENABLE_OPENCL)
-    # # copy model to 
-    # include_directories(${MACE_PATH}/public/)
-    # file(COPY ${eagleeye_SOURCE_DIR}/eagleeye/models/mace/${ANDROID_ABI}/srpn_103_183.a DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
-    # file(COPY ${eagleeye_SOURCE_DIR}/eagleeye/models/mace/${ANDROID_ABI}/portrait_segmentation.a DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
-    # file(COPY ${MACE_PATH}/model/${ANDROID_ABI}/libmace.so DESTINATION ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
-
-    # # load detect lib 
-    # add_library(srpn_103_183 STATIC IMPORTED)
-    # set_target_properties(
-    #     srpn_103_183
-    #     PROPERTIES IMPORTED_LOCATION 
-    #     ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/srpn_103_183.a
-    # )
-    # add_library(portrait_segmentation STATIC IMPORTED)
-    # set_target_properties(
-    #     portrait_segmentation
-    #     PROPERTIES IMPORTED_LOCATION 
-    #     ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/portrait_segmentation.a
-    # )
-    
-    # # load mace lib
-    # add_library(libmace SHARED IMPORTED)
-    # set_target_properties(
-    #     libmace
-    #     PROPERTIES IMPORTED_LOCATION 
-    #     ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI}/libmace.so
-    # )
-elseif(${NN_ENGINE} MATCHES "snpe")
-    message(STATUS "support snpe NN engine")
-    add_definitions(-DEAGLEEYE_SNPE_SUPPORT)
-
-    # load snpe lib
-    set(SNPE_LIB_DIR ${SNPE_PATH}/lib/aarch64-android-clang6.0)
-    set(SNPE_INCLUDE_DIR ${SNPE_PATH}/include/zdl)
-    include_directories(${SNPE_INCLUDE_DIR})
-
-    add_library(libSNPE SHARED IMPORTED)
-    set_target_properties(
-        libSNPE
-        PROPERTIES IMPORTED_LOCATION 
-        ${SNPE_LIB_DIR}/libSNPE.so
-    )
-elseif(${NN_ENGINE} MATCHES "paddle")
-    message(STATUS "support paddle engine")
-    add_definitions(-DEAGLEEYE_PADDLE_SUPPORT)
-
-    include_directories(${PADDLE_PATH}/include)
-    add_library(libpaddle_api_light_bundled SHARED IMPORTED)
-    set_target_properties(
-    libpaddle_api_light_bundled
-    PROPERTIES IMPORTED_LOCATION 
-    ${PADDLE_PATH}/lib/libpaddle_light_api_shared.so
-)
-else()
-    message(STATUS "support eagleeye NN engine")    
 endif()
 
 # support opencl
@@ -226,7 +166,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/State2BooleanNode.cpp
     eagleeye/processnode/CopyNode.cpp
     eagleeye/processnode/DelayFetch.cpp
-    eagleeye/engine/nn_run.cpp
     eagleeye/common/EagleeyeFile.cpp 
     eagleeye/common/EagleeyeTime.cpp 
     eagleeye/common/EagleeyeProcessor.cpp
@@ -305,6 +244,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ClassicalFilter.cpp
     eagleeye/processnode/SwitchNode.cpp
     eagleeye/processnode/AnyPlaceholder.cpp
+    eagleeye/processnode/CropNode.cpp
     eagleeye/basic/BGRARotateHWC.cpp
     eagleeye/basic/BGRRotateHWC.cpp
     eagleeye/basic/BGRAFlipHWC.cpp
@@ -320,13 +260,14 @@ if(DEFINED PYTHON)
                         ${Boost_LIBRARIES})
 endif()
 
-if(DEFINED OPENMP)
-    add_definitions(-DEAGLEEYE_OPENMP)
-    find_package(OpenMP REQUIRED)
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
-    endif()
+
+FIND_PACKAGE( OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
+
 
 if(DEFINED FFMPEG AND DEFINED X264)
     message("use FFMPEG")
@@ -353,15 +294,6 @@ if(DEFINED PNG AND pnglib_FOUND)
     target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
 endif()
 
-if(${NN_ENGINE} MATCHES "snpe")
-    target_link_libraries(eagleeye libSNPE)
-endif()
-
-if(${NN_ENGINE} MATCHES "paddle")
-    TARGET_LINK_LIBRARIES(eagleeye libpaddle_api_light_bundled)
-endif()
-
-
 if(DEFINED OPENCL)
 target_link_libraries(eagleeye libOpenCL)
 target_link_libraries(eagleeye EGL)
@@ -379,6 +311,14 @@ set_target_properties(libyuv PROPERTIES IMPORTED_LOCATION
                         ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${ANDROID_ABI}/libyuv.so)
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
 target_link_libraries(eagleeye libyuv)
+
+# add_library(libunwind STATIC IMPORTED)
+# set_target_properties(
+#         libunwind
+#         PROPERTIES IMPORTED_LOCATION
+#         ${ANDROID_NDK}/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/arm-linux-androideabi/libunwind.a
+# )
+
 
 # set(OpenCV_DIR ../sdk/native/jni)
 # # set(OpenCV_DIR "/Users/jian/Downloads/opencv-master")

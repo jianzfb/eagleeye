@@ -5,6 +5,18 @@
 #include <vector>
 
 namespace eagleeye{
+enum RunPower{
+    HIGH_POWER = 0,
+    LOW_POWER,
+    NO_BIND,
+};
+
+struct ConvertParam {
+    std::vector<float> scale = {1.0f, 1.0f, 1.0f, 1.0f};
+    std::vector<float> bias  = {0.0f, 0.0f, 0.0f, 0.0f};
+    bool reverse_channel     = false;
+};
+
 class ModelEngine{
 public:
 	ModelEngine(std::string model_name, 
@@ -14,10 +26,19 @@ public:
 		     	std::vector<std::string> output_names=std::vector<std::string>(),
 		     	std::vector<std::vector<int64_t>> output_shapes=std::vector<std::vector<int64_t>>(),
 		     	int omp_num_threads=-1,
-		     	int cpu_affinity_policy=-1,
+		     	RunPower model_power = HIGH_POWER,
 		     	std::string writable_path="/data/local/tmp/");
 
 	virtual ~ModelEngine();
+
+	/**
+	 * @brief Set/Get the Model Folder object
+	 * 
+	 * @param model_folder 
+	 */
+	virtual void setModelFolder(std::string model_folder);
+	std::string getModelFolder();
+
 	/**
 	 * [run description]
 	 * @param  inputs  [description]
@@ -159,6 +180,16 @@ public:
 						float* scales);
 
 	/**
+	 * @brief Set the Input Convert Param object(预处理)
+	 * 
+	 * @param node_name 
+	 * @param convert_param 
+	 */
+	void setInputConvertParam(std::string node_name, ConvertParam convert_param){
+		this->m_input_convert_params[node_name] = convert_param;
+	}
+
+	/**
 	 * @brief Get the Input Ptr object
 	 * 
 	 * @param input_name 
@@ -169,7 +200,9 @@ public:
 protected:
 	int m_omp_num_threads;
 	int m_cpu_affinity_policy;
+	RunPower m_model_power;
 	std::string m_writable_path;
+	std::string m_model_folder;
 
 	bool m_is_dynamic_input_shape;
 	bool m_is_dynamic_output_shape;
@@ -192,6 +225,10 @@ protected:
 	std::map<std::string, std::string> m_inv_input_name_map;
 
 	std::string m_root;
+
+	std::map<std::string, ConvertParam> m_input_convert_params;
+	std::map<std::string, int> m_input_map_index;
+	std::map<std::string, int> m_output_map_index;
 };
 }
 

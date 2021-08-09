@@ -43,7 +43,7 @@ public:
 	int needed_rows;		// rows(largest)
 	int needed_cols;		// cols(largest)
 	int allocate_mode;		// 0（do nothing）;1（InPlace）;2（largest）;3（same size with input）;
-	unsigned int timestamp;	// timestamp
+	int64_t timestamp;		// timestamp
 	bool mirror;			// mirror(mirror, rotation)
 };	
 
@@ -88,6 +88,9 @@ public:
 	 */
 	virtual void copyInfo(AnySignal* sig){
 		this->m_prepared_ok = this->m_prepared_ok&sig->isPreparedOK();
+
+		// 传递时间戳
+		this->m_meta.timestamp = sig->meta().timestamp;
 	};
 	
 	/**

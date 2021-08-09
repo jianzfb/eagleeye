@@ -305,12 +305,10 @@ void AnyNode::passonNodeInfo(){
 bool AnyNode::start(){
 	//update some necessary info, such as basic format or struct of AnySignal(without content),
 	//re-assign update time
-	EAGLEEYE_LOGD("START A");
 	std::vector<AnySignal*>::iterator out_iter,out_iend(m_output_signals.end());
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		(*out_iter)->updateUnitInfo();
 	}
-	EAGLEEYE_LOGD("START B");
 	for (out_iter = m_output_signals.begin(); out_iter != out_iend; ++out_iter){
 		//complement some concrete task, such as generating some data and so on.
 		(*out_iter)->processUnitInfo();
@@ -413,7 +411,6 @@ void AnyNode::print(){
 
 void AnyNode::updateUnitInfo()
 {
-	EAGLEEYE_LOGD("updateUnitInfo %s", this->getUnitName());
 	unsigned long t1,t2;
 
 	//watch out for loops in the pipeline
@@ -495,8 +492,6 @@ void AnyNode::updateUnitInfo()
 
 void AnyNode::processUnitInfo()
 {	
-	EAGLEEYE_LOGD("processUnitInfo %s", this->getUnitName());
-
 	if(m_process_flag){
 		return;
 	}

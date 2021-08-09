@@ -15,7 +15,7 @@
 #include "eagleeye/port/android/env.h"
 
 #include <errno.h>
-#include <unwind.h>
+// #include <unwind.h>
 #include <dlfcn.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -53,24 +53,25 @@ struct BacktraceState {
   void **end;
 };
 
-_Unwind_Reason_Code UnwindCallback(struct _Unwind_Context *context, void *arg) {
-  BacktraceState *state = static_cast<BacktraceState *>(arg);
-  uintptr_t pc = _Unwind_GetIP(context);
-  if (pc) {
-    if (state->current == state->end) {
-      return _URC_END_OF_STACK;
-    } else {
-      *state->current++ = reinterpret_cast<void *>(pc);
-    }
-  }
-  return _URC_NO_REASON;
-}
+// _Unwind_Reason_Code UnwindCallback(struct _Unwind_Context *context, void *arg) {
+//   BacktraceState *state = static_cast<BacktraceState *>(arg);
+//   uintptr_t pc = _Unwind_GetIP(context);
+//   if (pc) {
+//     if (state->current == state->end) {
+//       return _URC_END_OF_STACK;
+//     } else {
+//       *state->current++ = reinterpret_cast<void *>(pc);
+//     }
+//   }
+//   return _URC_NO_REASON;
+// }
 
 size_t BackTrace(void **buffer, size_t max) {
-  BacktraceState state = {buffer, buffer + max};
-  _Unwind_Backtrace(UnwindCallback, &state);
+  // BacktraceState state = {buffer, buffer + max};
+  // _Unwind_Backtrace(UnwindCallback, &state);
 
-  return state.current - buffer;
+  // return state.current - buffer;
+  return 0;
 }
 
 bool CpuIsolate(size_t cpu_id) {
@@ -109,26 +110,27 @@ EagleeyeError AndroidEnv::GetCPUMaxFreq(std::vector<float> *max_freqs) {
 }
 
 std::vector<std::string> AndroidEnv::GetBackTraceUnsafe(int max_steps) {
-  std::vector<void *> buffer(max_steps, 0);
-  int steps = BackTrace(buffer.data(), max_steps);
+  // std::vector<void *> buffer(max_steps, 0);
+  // int steps = BackTrace(buffer.data(), max_steps);
 
-  std::vector<std::string> bt;
-  for (int i = 0; i < steps; ++i) {
-    std::ostringstream os;
+  // std::vector<std::string> bt;
+  // for (int i = 0; i < steps; ++i) {
+  //   std::ostringstream os;
 
-    const void *addr = buffer[i];
-    const char *symbol = "";
-    Dl_info info;
-    if (dladdr(addr, &info) && info.dli_sname) {
-      symbol = info.dli_sname;
-    }
+  //   const void *addr = buffer[i];
+  //   const char *symbol = "";
+  //   Dl_info info;
+  //   if (dladdr(addr, &info) && info.dli_sname) {
+  //     symbol = info.dli_sname;
+  //   }
 
-    os << "pc " << addr << " " << symbol;
+  //   os << "pc " << addr << " " << symbol;
 
-    bt.push_back(os.str());
-  }
+  //   bt.push_back(os.str());
+  // }
 
-  return bt;
+  // return bt;
+  return std::vector<std::string>();
 }
 
 // std::unique_ptr<MallocLogger> AndroidEnv::NewMallocLogger(

@@ -1,0 +1,6 @@
+#ifndef _EAGLEEYE_PLATFORM_NODE_H_
+#define _EAGLEEYE_PLATFORM_NODE_H_
+
+
+
+#endif

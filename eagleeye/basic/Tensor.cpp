@@ -8,7 +8,6 @@ Tensor::Tensor(std::vector<int64_t> shape,
             std::vector<int64_t> image_shape,
             Aligned aligned)
             :Blob(shape, data_type, memory_type, image_shape, aligned){
-    assert(data_format == DataFormat::NHWC || data_format == DataFormat::OIHW);
     assert(data_type == EAGLEEYE_FLOAT || data_type == EAGLEEYE_UCHAR);
     this->m_format = data_format;
     this->m_shape = shape;

@@ -19,6 +19,7 @@ ThreadNode::ThreadNode(std::function<AnyNode*()> generator):
     this->setNumberOfOutputSignals(signal_num);
     for(int signal_i=0; signal_i<signal_num; ++signal_i){
         AnySignal* output_signal = m_run_node->getOutputPort(signal_i)->make();
+        output_signal->setSignalType(m_run_node->getOutputPort(signal_i)->getSignalType());
         this->setOutputPort(output_signal, signal_i);
     }
 
@@ -35,27 +36,27 @@ void ThreadNode::executeNodeInfo(){
     std::vector<std::shared_ptr<AnySignal>> input_signals_cp;
     for(int i=0; i<this->getNumberOfInputSignals(); ++i){
 
-        MetaData dd = this->getInputPort(i)->meta();
-        if(dd.is_end_frame){
-            EAGLEEYE_LOGD("thread node II end frame");
-        }
+        // MetaData dd = this->getInputPort(i)->meta();
+        // if(dd.is_end_frame){
+        //     EAGLEEYE_LOGD("thread node II end frame");
+        // }
 
-        if(dd.is_start_frame){
-            EAGLEEYE_LOGD("thread node II start frame");
-        }
+        // if(dd.is_start_frame){
+        //     EAGLEEYE_LOGD("thread node II start frame");
+        // }
 
         AnySignal* signal_cp = this->getInputPort(i)->make();
         signal_cp->copy(this->getInputPort(i));
+        signal_cp->setSignalType(this->getInputPort(i)->getSignalType());
 
-        dd = signal_cp->meta();
-        if(dd.is_end_frame){
-            EAGLEEYE_LOGD("thread node WW end frame");
-        }
+        // dd = signal_cp->meta();
+        // if(dd.is_end_frame){
+        //     EAGLEEYE_LOGD("thread node WW end frame");
+        // }
 
-        if(dd.is_start_frame){
-            EAGLEEYE_LOGD("thread node WW start frame");
-        }
-
+        // if(dd.is_start_frame){
+        //     EAGLEEYE_LOGD("thread node WW start frame");
+        // }
 
         input_signals_cp.push_back(std::shared_ptr<AnySignal>(signal_cp, [](AnySignal* a){delete a;}));
     }
@@ -64,7 +65,7 @@ void ThreadNode::executeNodeInfo(){
 	std::unique_lock<std::mutex> input_locker(this->m_input_mu);
     m_input_cache.push_back(input_signals_cp);
     this->m_receive_num += 1;
-    EAGLEEYE_LOGD("increment 1 in threadnode, now is %d", m_receive_num);
+    EAGLEEYE_LOGD("Increment 1 in ThreadNode, now is %d.", m_receive_num);
     input_locker.unlock();
 
 	// 3.step notify thread
@@ -173,7 +174,7 @@ void ThreadNode::wait(){
 
     // 阻塞，直到清空所有未完成计算
     while (1){
-        EAGLEEYE_LOGD("waiting receive %d finish %d", m_receive_num, m_finish_num);
+        EAGLEEYE_LOGD("Waiting receive %d finish %d.", m_receive_num, m_finish_num);
         std::unique_lock<std::mutex> input_locker(this->m_input_mu);
         std::unique_lock<std::mutex> output_locker(this->m_output_mu);
         if(this->m_receive_num == this->m_finish_num){
