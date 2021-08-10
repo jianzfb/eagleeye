@@ -1,3 +1,5 @@
+#include "EagleeyeModule.h"
+
 extern "C"{
     /**
      * @brief initialize {{project}} pipeline
@@ -91,7 +93,8 @@ extern "C"{
      * @return true 
      * @return false 
      */
-    bool eagleeye_{{project}}_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_type);
+    bool eagleeye_{{project}}_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type);
+    bool eagleeye_{{project}}_set_input2(const char* node_name, void* data, EagleeyeMeta meta);
 
     /**
      * @brief get output data from {{project}} output node

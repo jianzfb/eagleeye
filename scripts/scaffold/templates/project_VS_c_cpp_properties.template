@@ -3,8 +3,8 @@
         {
             "includePath": [
                 "${workspaceFolder}/**",
-                "{{eagleeye}}",
-                "{{eagleeye}}/eagleeye/"
+                "{{eagleeye}}/install",
+                "{{eagleeye}}/install/eagleeye/"
             ]
         }
     ],

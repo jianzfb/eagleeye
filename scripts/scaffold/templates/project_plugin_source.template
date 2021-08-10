@@ -1,10 +1,8 @@
 #include "eagleeye/common/EagleeyeMacro.h"
-#include "eagleeye/common/EagleeyeModule.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/framework/pipeline/AnyPipeline.h"
 #include "eagleeye/processnode/Placeholder.h"
-#include "eagleeye/common/EagleeyeVisTool.h"
 #include "{{project}}_plugin.h"
 
 namespace eagleeye{
@@ -23,7 +21,6 @@ EAGLEEYE_BEGIN_PIPELINE_INITIALIZE({{project}})
 // 1.step build datasource node
 Placeholder<ImageSignal<Array<unsigned char, 3>>>* placeholder = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
 placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_IMAGE);
-placeholder->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 2.step build your algorithm node
 // for example:
@@ -32,7 +29,7 @@ placeholder->setPlaceholderSource(EAGLEEYE_CAPTURE_STILL_IMAGE);
 
 // 3.step add all node to pipeline
 // 3.1.step add data source node
-{{project}}->add(placeholder,"placeholder", SOURCE_NODE);
+{{project}}->add(placeholder,"placeholder");
 // 3.2.step add your algorithm node
 // for example:
 // {{project}}->add(instance_person_seg_node, "instance_person_seg_node");

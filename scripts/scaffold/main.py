@@ -9,32 +9,22 @@ from __future__ import unicode_literals
 from jinja2 import Environment, FileSystemLoader
 import sys
 import os
-from .prepare import *
 from . import flags
 from . import help
 import zipfile
+import shutil
 
 flags.DEFINE_string('project', None, 'project name')
 flags.DEFINE_string("version", None, "project version")
 flags.DEFINE_string("signature",None, "projct signature")
-flags.DEFINE_string("opencv", "", "opencv path")
-flags.DEFINE_string("snpe","","snpe path")
-flags.DEFINE_string("mace","","mace path")
 flags.DEFINE_string("eagleeye", "", "eagleeye path")
+flags.DEFINE_string("opencv", "", "opencv path")
 flags.DEFINE_string("abi", "arm64-v8a", "abi")
 flags.DEFINE_string("build_type","Release","set build type")
 flags.DEFINE_string("api_level","android-23", "android api level")
-flags.DEFINE_boolean("neon", True, "support neon")
-flags.DEFINE_boolean("sse", True, "support sse")
-flags.DEFINE_string("opencl", "", "support opencl")
 flags.DEFINE_string("name", "", "node name")
 flags.DEFINE_string("inputport", "", "input port list")
 flags.DEFINE_string("outputport","", "output port list")
-flags.DEFINE_string("folder", "", "folder")
-flags.DEFINE_string("mean","128,128,128","mean rgb")
-flags.DEFINE_string("var","255,255,255","var rgb")
-flags.DEFINE_string("size", "160,160","standard size")
-flags.DEFINE_string("format", "raw","image format")
 flags.DEFINE_string("host_platform", "MACOS", "host platform")
 
 
@@ -48,7 +38,6 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] == 'help':
       help.printhelp()
       return
-
 
     if(sys.argv[1] == 'node'):
       flags.cli_param_flags(sys.argv[2:])
@@ -83,31 +72,32 @@ def main():
         fp.write(output)
 
       return
-    elif sys.argv[1] == 'image2raw':
-        flags.cli_param_flags(sys.argv[2:])
-        image_folder = FLAGS.folder()
-        target_image_size = [int(s) for s in FLAGS.size().split(',')]
-        print("target size w %d h %d"%(target_image_size[0], target_image_size[1]))
-        mean_rgb = [float(s) for s in FLAGS.mean().split(',')]
-        print("target preprocess mean r %f g %f b %f"%(mean_rgb[0],mean_rgb[1],mean_rgb[2]))
-        var_rgb = [float(s) for s in FLAGS.var().split(',')]
-        print("target preprocess var r %f g %f b %f"%(var_rgb[0],var_rgb[1],var_rgb[2]))
-        
-        traverse_folder_and_transform_to_raw(image_folder,target_image_size[0], target_image_size[1], mean_rgb, var_rgb)
-        return
     elif sys.argv[1] == 'release':
         flags.cli_param_flags(sys.argv[2:])
-        package_folder = FLAGS.folder()
-        package_name = FLAGS.name()
-        if not os.path.exists(package_folder):
-          print("package folder %s dont exist"%package_folder)
+        if not os.path.exists(os.path.join(os.curdir, "package")):
+          print("Couldnt find package folder")
           return
 
-        # zip package
-        if(package_name == ""):
-          package_name = package_folder.split('/')[-1]
+        project_name = FLAGS.project()
+        if project_name is None or project_name == "":
+          print("Scan package folder.")
+          if os.path.exists(os.path.join(os.curdir, "package")):
+            for f in os.listdir(os.path.join(os.curdir, "package")):
+              if f[0] == '.':
+                continue
+
+              if os.path.isdir(os.path.join(os.curdir, "package", f)):
+                project_name = f
+                print("Finding default project %s"%project_name)
+                break
         
-        z = zipfile.ZipFile("./%s.zip"%package_name, mode='w', compression=zipfile.ZIP_DEFLATED)
+        if project_name == "" or not os.path.exists(os.path.join(os.curdir, "package", project_name)):
+          print("Package %s dont exist."%project_name)
+          return
+
+        package_folder = os.path.join(os.curdir, "package")
+        # zip package
+        z = zipfile.ZipFile("./package/%s.zip"%project_name, mode='w', compression=zipfile.ZIP_DEFLATED)
         for dirpath, dirnames, filenames in os.walk(package_folder):
           fpath = dirpath.replace(package_folder,'') 
           fpath = fpath and fpath + os.sep or ''
@@ -115,15 +105,21 @@ def main():
             z.write(os.path.join(dirpath, filename),fpath+filename)
 
         z.close()
-        print("success to build package")
+        print("Success to build package.")
         return
     elif sys.argv[1] == "project":
-      # 生成插件模板
       flags.cli_param_flags(sys.argv[2:])
+      if FLAGS.eagleeye() == "":
+        print("Must set eagleeye path.")
+        return
+
+      if FLAGS.project() is None:
+        print("Must set project name.")
+        return
+
+      # 生成插件模板
       project_name = FLAGS.project()
-      if project_name is None:
-        project_name = FLAGS.name()
-      print("generate project %s"%project_name)
+      print("Generate project %s"%project_name)
 
       project_version = FLAGS.version()
       project_signature = FLAGS.signature()
@@ -155,9 +151,7 @@ def main():
       output = template.render(project=project_name,
                               eagleeye=FLAGS.eagleeye(),
                               abi=FLAGS.abi(),
-                              opencv=FLAGS.opencv(),
-                              opencl=FLAGS.opencl(),
-                              neon=FLAGS.neon())
+                              opencv=FLAGS.opencv())
 
       if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
           os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
@@ -165,11 +159,16 @@ def main():
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "CMakeLists.txt"),'w') as fp:
         fp.write(output)
 
+      # 拷贝头文件
+      shutil.copyfile(os.path.join(FLAGS.eagleeye(), "include", "eagleeye", "common", "EagleeyeModule.h"),
+                      os.path.join("%s_plugin"%project_name, "EagleeyeModule.h"))
+
       # 生成build.sh
       template = env.get_template('project_shell.template')
       output = template.render(abi=FLAGS.abi(),
                               build_type=FLAGS.build_type(),
-                              api_level=FLAGS.api_level())
+                              api_level=FLAGS.api_level(),
+                              project=project_name)
 
       if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
           os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
@@ -195,9 +194,7 @@ def main():
       template = env.get_template('project_VS_settings_json.template')
       output = template.render(abi=FLAGS.abi(),
                               build_type=FLAGS.build_type(),
-                              api_level=FLAGS.api_level(),
-                              snpe=FLAGS.snpe(),
-                              mace=FLAGS.mace())
+                              api_level=FLAGS.api_level())
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode", "settings.json"), 'w') as fp:
         fp.write(output)
 
@@ -229,6 +226,14 @@ def main():
         fp.write(output)
 
       # 生成说明文档
+
+      # 生成插件包目录
+      os.makedirs(os.path.join(os.curdir,  "%s_plugin"%project_name, "package", project_name, "resource"))
+      template = env.get_template('project_plugin_config.template')
+      output = template.render(project=project_name)
+      with open(os.path.join(os.curdir,  "%s_plugin"%project_name, "package", project_name, "resource", "config.json"), 'w') as fp:
+        fp.write(output)
+
 
 if __name__ == '__main__':
   main()

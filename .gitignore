@@ -1,7 +1,9 @@
 bin/*
 build/*
+install/*
 .vscode
 .DS_Store
 **/.DS_Store
 scripts/dist/
+scripts/build
 scripts/eagleeye.egg-info/

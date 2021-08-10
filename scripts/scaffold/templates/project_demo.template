@@ -26,7 +26,7 @@ int main(int argc, char** argv){
     void* data = NULL; // YOUR IMAGE DATA POINTER;
     int data_size[] = {0,0,0}; // {IMAGE HEIGHT, IMAGE WIDTH, IMAGE CHANNEL}; 
     int data_type = 6;   // float
-    is_ok = eagleeye_{{project}}_set_input("INPUT NODE", data, data_size, 3, data_type);
+    is_ok = eagleeye_{{project}}_set_input("INPUT NODE", data, data_size, 3, 0, data_type);
     if(is_ok){
         EAGLEEYE_LOGD("success to set data for pipeline input node");
     }

@@ -1,0 +1,68 @@
+{
+    "name": "{{project}}",
+    "scene": "GALLERY.IMAGE",               // app scene (CAMERA, CAMERA.IMAGE, GALLERY.IMAGE, GALLERY.VIDEO)
+    "attr": {
+        "mode": "standard"
+    },
+    "monitor":{
+        "classicalfilter/filter": {
+            "type": "int",                  // monitor value type (int)
+            "name": "name",                 // monitor value name
+            "value": [{
+                "value": 0,
+                "image": "images/1.png",
+                "text": "title-1"},{
+                "value": 1,
+                "image": "images/2.png",
+                "text": "title-2"}],
+            "category": "default",          // category
+            "control": "select",            // widget type (click image)
+            "bind": {
+                "monitor": "switch_con/state",  // simutaneous trigger
+                "value": 6,                     // value
+                "type": "int"                   // value type
+            },
+            "image": "",
+            "range":{                       // monitor value range
+                "min": 0,
+                "max": 4,
+                "step": 1
+            }
+        },
+        "image_blend/low_thres":{
+            "type": "float",                // monitor value type (float)
+            "name": "lowlimit",             // monitor value name
+            "value": [],                    // empty for float
+            "category": "default",          // category
+            "control": "seekbar",           // widget type (seekbar)
+            "image": "",                    // empty for float
+            "range":{                       // monitor value range
+                "min": 0.0,
+                "max": 1.0,
+                "step": 0.01
+            }
+        },
+        "image_blend/nonlinear":{
+            "type": "int",                  // monitor value type (int)
+            "name": "change",               // monitor value name
+            "value": [],                    // empty 
+            "category": "category",         // category 
+            "control": "switch",            // widget type (switch), 0 or 1
+            "image": "",                    // empty
+            "range":{                       // monitor value range
+                "min": 0,
+                "max": 2,
+                "step": 1
+            }
+        },
+    },
+    "input":[
+        {
+            "name": "placeholder_1",        // pipeline input - 1
+            "source": "FILE"
+        },{
+            "name": "placeholder_2",        // pipeline input - 2
+            "source": "CAMERA"
+        }
+    ]
+}

@@ -12,13 +12,14 @@ namespace eagleeye
     this->setNumberOfOutputSignals({{outputport|length}});
 
     // 3.step set output port instance
-    // for example, this->setOutputPort(new ImageSignal<Array<float,2>>, 0);
+    // for example, this->setOutputPort(new ImageSignal<Array<unsigned char,3>>, 0);
     {% for port in outputport -%} 
     this->setOutputPort(/*OUTPUT SIGNAL INSTANCE*/, OUTPUT_PORT_{{port}});
+    this->getOutputPort(OUTPUT_PORT_{{port}})->setSignalType(/*OUTPUT SIGNAL TYPE*/);
     {% endfor %}
 
     // 4.step add monitor variable
-    EAGLEEYE_MONITOR_VAR(float, setAlpha, getAlpha, "PARAM NAME","","");
+    EAGLEEYE_MONITOR_VAR(float, setAlpha, getAlpha, "PARAM NAME","0.0","1.0");
 }    
 
 {{MYNODE}}::~{{MYNODE}}(){
@@ -50,6 +51,8 @@ void {{MYNODE}}::executeNodeInfo(){
 
 void {{MYNODE}}::setAlpha(float alpha){
     // set parameter
+    
+    // nodify pipeline update timestamp
     modified();
 }
 

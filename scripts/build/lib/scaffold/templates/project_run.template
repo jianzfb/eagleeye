@@ -1,4 +1,0 @@
-adb shell "if [ ! -d '/data/local/tmp/{{project}}' ]; then mkdir /data/local/tmp/{{project}}; fi;"
-adb push {{eagleeye}}/bin/{{abi}}/* /data/local/tmp/{{project}}/
-adb push ./bin/{{abi}}/* /data/local/tmp/{{project}}/
-adb shell "cd /data/local/tmp/{{project}}; export LD_LIBRARY_PATH=.; ./{{project}}_demo $*;"
