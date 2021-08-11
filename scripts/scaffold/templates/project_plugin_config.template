@@ -58,11 +58,22 @@
     },
     "input":[
         {
-            "name": "placeholder_1",        // pipeline input - 1
-            "source": "FILE"
+            "name": "placeholder_1",        // pipeline node name (defined in code by user)
+            "source": "FILE",               // [FILE,CAMERA]
+            "label": ""                     // (now) no use
         },{
-            "name": "placeholder_2",        // pipeline input - 2
-            "source": "CAMERA"
+            "name": "placeholder_2",        // pipeline node name (defined in code by user)
+            "source": "CAMERA",             // [FILE,CAMERA]
+            "label": ""                     // (now) no use
+        }
+    ],
+    "output":[
+        {
+            "name": "save",                 // pipeline node name (defined in code by user)
+            "label": "save"                 // (role) save pipeline to file
+        },{
+            "name": "apply",                // pipeline ndoe name (defined in code by user)
+            "label":: "apply"               // (role) save intermediate data
         }
     ]
 }
