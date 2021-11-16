@@ -38,32 +38,29 @@ int Placeholder::init(std::map<std::string, std::vector<float>> params){
             int(this->m_memory_type),
             int(this->m_data_format),
             int(this->m_data_type));
-
-    this->m_output_tensors.resize(1);
     return 0;
 }
 
-int Placeholder::runOnCpu(std::vector<Tensor>& output, std::vector<Tensor> input){
-    output = this->m_output_tensors;
+int Placeholder::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int Placeholder::runOnGpu(std::vector<Tensor>& output, std::vector<Tensor> input){
-    output = this->m_output_tensors;
+int Placeholder::runOnGpu(std::vector<Tensor> input){
     return 0;
 }
 
 int Placeholder::update(void* data, int index){
-    // data in host
-    if(this->m_output_tensors[0].size() == 0){
-        this->m_output_tensors[0] = 
-                Tensor(std::vector<int64_t>{this->m_b, this->m_h, this->m_w, this->m_c}, 
-                this->m_data_type, 
-                this->m_data_format, 
-                this->m_memory_type);
-    }
+    // // data in host
+    // if(this->m_output_tensors[0].size() == 0){
+    //     this->m_output_tensors[0] = 
+    //             Tensor(std::vector<int64_t>{this->m_b, this->m_h, this->m_w, this->m_c}, 
+    //             this->m_data_type, 
+    //             this->m_data_format, 
+    //             this->m_memory_type);
+    // }
     
-    this->m_output_tensors[0].update(data);
+    // this->m_output_tensors[0].update(data);
+    
     return 0;
 }
 } // namespace dataflow

@@ -14,10 +14,11 @@
 #include <functional>
 #include <iostream>
 #include "eagleeye/basic/blob.h"
+#include "eagleeye/basic/Dim.h"
 #include "eagleeye/common/EagleeyeRuntime.h"
 
 
-namespace eagleeye{
+namespace eagleeye{    
 class Tensor:public Blob{
 public:
     /**
@@ -41,29 +42,15 @@ public:
     virtual ~Tensor();
 
     /**
-     * @brief get element number
-     */ 
-    int64_t size() const;
-
-    /**
-     * @brief get dimension number
-     */ 
-	int64_t ndim() const;
-
-    /**
-     * @brief get index dimension size
-     */ 
-	int64_t dim(int index) const;
-
-    /**
      * @brief get tensor format
      */ 
     DataFormat format() const;
 
     /**
-     * @brief get tensor shape
-     */ 
-    std::vector<int64_t> shape() const;
+     * @brief clone blob
+     * 
+     */
+    virtual Tensor clone() const;
 
 protected:
     DataFormat m_format;

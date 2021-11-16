@@ -3,6 +3,7 @@
 #include "eagleeye/engine/model_engine.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/engine/model_run.h"
+#include "eagleeye/common/EagleeyeFile.h"
 #include <vector>
 #include <fstream>
 #include <sstream>

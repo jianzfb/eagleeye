@@ -20,7 +20,7 @@ add_definitions(-DPADDLE_DISABLE_PROFILER)
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-add_definitions(-DEAGLEEYE_ANDROID_APP)
+# add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -207,8 +207,6 @@ set(EAGLEEYE_SRC
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/runtime/gpu/opencl_runtime.cpp
     eagleeye/engine/nano/util/opencl_util.cpp
-    eagleeye/engine/nano/dataflow/schedule.cpp
-    eagleeye/engine/nano/dataflow/heft.cpp
     eagleeye/engine/nano/op/placeholder.cpp
     eagleeye/render/ImageShow.cpp
     eagleeye/codegen/opencl/encrypt_opencl_kernel.cc
@@ -249,7 +247,8 @@ set(EAGLEEYE_SRC
     eagleeye/basic/BGRRotateHWC.cpp
     eagleeye/basic/BGRAFlipHWC.cpp
     eagleeye/basic/BGRFlipHWC.cpp
-    eagleeye/render/AutoRenderRegion.cpp)
+    eagleeye/render/AutoRenderRegion.cpp
+    eagleeye/basic/Dim.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})

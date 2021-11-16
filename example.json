@@ -1,0 +1,96 @@
+{"name":"default",
+    "pipeline":{
+        "node":[
+            "YUVResizeNode/1",
+            "CAMERA/1",
+            "YUVConvertNode/1",
+            "EdgeCannyNode/1",
+            "ImageShow/1"],
+        "attribute":{
+            "CAMERA/1":{
+                "type":"CAMERA","input":0,"output":1,"title":"相机预览/1",
+                "param":{
+                    "output_size": [[1024,768],[512,256]],          // 列表选择（参数类型)
+                    "fps": 20                                       // 数值型
+                },
+                "signal":{
+                    "input": [],
+                    "output": [
+                        {
+                            "type": "EAGLEEYE_SIGNAL_YUV_IMAGE",
+                            "value": "EAGLEEYE_UCHAR"
+                        }
+                    ]
+                }
+            },
+            "EdgeCannyNode/1":{
+                "type":"EdgeCannyNode","input":1,"output":1,"title":"边缘提取/1",
+                "param":{
+                    "algorithm": "canny_v1",                        // 数值型
+                    "degree": 1.0                                   // 数值型
+                },
+                "signal":{
+                    "input": [{
+                        "type": "EAGLEEYE_SIGNAL_RGB_IMAGE/EAGLEEYE_SIGNAL_BGR_IMAGE",          // 输入类型存在多种可能
+                        "value": "EAGLEEYE_UCHAR"
+                    }],
+                    "output":[{
+                        "type": "",                                                             // 为空时，定义为与输出保持绑定关系（即输入是EAGLEEYE_SIGNAL_RGB_IMAGE，则输出也为EAGLEEYE_SIGNAL_RGB_IMAGE）
+                        "value": "EAGLEEYE_UCHAR"
+                    }]
+                }
+            },
+            "YUVConvertNode/1":{
+                "type":"YUVConvertNode","input":1,"output":1,"title":"YUV转BGR/1",
+                "param":{
+                    "convert_type": "YUV2BGR"                       // 数值型
+                },
+                "signal":{
+                    "input":[{
+                        "type": "EAGLEEYE_SIGNAL_YUV_IMAGE",
+                        "value": "EAGLEEYE_UCHAR"
+                    }],
+                    "output":[{
+                        "type": "EAGLEEYE_SIGNAL_BGR_IMAGE",
+                        "value": "EAGLEEYE_UCHAR"
+                    }]
+                }
+            },
+            "YUVResizeNode/1":{
+                "type":"YUVResizeNode","input":1,"output":1,"title":"YUVRESIZE/1",
+                "param":{
+                    "resize_type": "NEAREST", 
+                    "resize_scale": 2.5
+                },
+                "signal":{
+                    "input":[{
+                        "type": "EAGLEEYE_SIGNAL_IMAGE",
+                        "value": "EAGLEEYE_UCHAR"
+                    }],
+                    "output":[{
+                        "type": "EAGLEEYE_SIGNAL_IMAGE",
+                        "value": "EAGLEEYE_UCHAR"
+                    }]
+                }
+            },
+            "ImageShow/1":{
+                "type":"ImageShow","input":1,"output":0,"title":"显示/1"
+                }
+            },
+        "topology":{
+                "CAMERA/1":[
+                    {"from":{"node":"","port":0},"to":{"node":"YUVResizeNode/1","port":0}}
+                ],
+                "EdgeCannyNode/1":[
+                    {"from":{"node":"","port":0},"to":{"node":"ImageShow/1","port":0}}
+                ],
+                "YUVConvertNode/1":[
+                    {"from":{"node":"","port":0},"to":{"node":"EdgeCannyNode/1","port":0}}
+                ],
+                "YUVResizeNode/1":[
+                    {"from":{"node":"","port":0},"to":{"node":"YUVConvertNode/1","port":0}}
+                ],
+                "ImageShow/1":[]
+        }
+    }
+}

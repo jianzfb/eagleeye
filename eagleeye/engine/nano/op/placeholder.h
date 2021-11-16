@@ -18,8 +18,8 @@ public:
     virtual ~Placeholder();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor>& output, std::vector<Tensor> input=std::vector<Tensor>{});
-    virtual int runOnGpu(std::vector<Tensor>& output, std::vector<Tensor> input=std::vector<Tensor>{});
+    virtual int runOnCpu(std::vector<Tensor> input=std::vector<Tensor>{});
+    virtual int runOnGpu(std::vector<Tensor> input=std::vector<Tensor>{});
     virtual int update(void* data, int index=0);
 
 private:

@@ -138,6 +138,7 @@ Blob::Blob(std::vector<int64_t> shape,
             Aligned aligned){
     this->m_size = 0;
     this->m_shape = shape;
+    this->m_dims.ConstructFrom(shape);
     switch (data_type){
     case EAGLEEYE_CHAR:
     case EAGLEEYE_UCHAR:
@@ -148,6 +149,9 @@ Blob::Blob(std::vector<int64_t> shape,
         m_size = 
             sizeof(float)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
         break;
+    case EAGLEEYE_INT:
+        m_size = 
+            sizeof(int32_t)*std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
     default:
         EAGLEEYE_LOGE("only support EAGLEEYE_CHAR, EAGLEEYE_UCHAR and EAGLEEYE_FLOAT");
         return;
@@ -204,7 +208,7 @@ Blob::Blob(std::vector<int64_t> shape,
         else{
             // use gpu image
             if(this->m_image_shape.size() == 0){
-                EAGLEEYE_LOGE("must set image shape");
+                EAGLEEYE_LOGE("Must set image shape.");
                 return;
             }
             unsigned int size = std::accumulate(shape.begin(), shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
@@ -665,5 +669,21 @@ bool Blob::update(void* data, MemoryType mem_type, std::string option){
 
 std::vector<int64_t> Blob::getImageShape() const{
     return this->m_image_shape;
+}
+
+std::vector<int64_t> Blob::shape() const{
+    return std::move(this->m_shape);
+}
+
+void Blob::reshape(std::vector<int64_t> s){
+    int old_num = std::accumulate(m_shape.begin(), m_shape.end(), 1, [](int64_t a, int64_t b){return a*b;});
+    int new_num = std::accumulate(s.begin(), s.end(), 1, [](int64_t a, int64_t b){return a*b;});
+    if(old_num != new_num){
+        EAGLEEYE_LOGE("Shape not consistent.");
+        return;
+    }
+
+    this->m_shape = s;
+    this->m_dims.ConstructFrom(this->m_shape);
 }
 }
