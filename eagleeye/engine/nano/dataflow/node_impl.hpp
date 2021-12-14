@@ -25,9 +25,7 @@ public:
    * @param fixed 
    */
   NodeImpl(F handler, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  : Node(id, fixed){
-      m_handler = handler;
-  }
+  : Node(id, fixed),m_handler(handler){}
 
   /**
    * @brief Destroy the Node Impl object
@@ -71,10 +69,9 @@ public:
   /**
    * @brief initialize node
    * 
-   * @param runtime 
    * @param data 
    */
-  int init(EagleeyeRuntime runtime, std::map<std::string, std::vector<float>> data) noexcept override{
+  int init(std::map<std::string, std::vector<float>> data) noexcept override{
     if(!this->init_){
       // 1.step initialize hanlder
       int result = (&m_handler)->init(data);
@@ -83,22 +80,18 @@ public:
       this->init_ = true;
       return result;
     }
+    return 0;
   }
 
-  bool update(typename F::Type data, int index=0){
-    (&m_handler)->update(data, index);
-    return true;
-  }
-
-  virtual bool update(void* data, int index=0){
+  virtual bool update(void* data, std::vector<int64_t> shape, int index=0){
     // block
-    (&m_handler)->update(data, index);
+    (&m_handler)->update(data, shape, index);
     return true;
   }
 
-  virtual bool fetch(void*& data, int index=0, bool block=false){
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=false){
     // block / no block
-    return (&m_handler)->fetch(data, index, block);
+    return (&m_handler)->fetch(data, shape, index, block);
   }
 
 private:

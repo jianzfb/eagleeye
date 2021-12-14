@@ -5,9 +5,9 @@ add_definitions(-std=c++11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{abi}})
-set(EXECUTABLE_OUTPUT_PATH {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{abi}})
-set(LIBRARY_OUTPUT_PATH {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{abi}})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{'${ANDROID_ABI}'}})
+set(EXECUTABLE_OUTPUT_PATH {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{'${ANDROID_ABI}'}})
+set(LIBRARY_OUTPUT_PATH {{'${'}}{{project}}_SOURCE_DIR{{'}'}}/bin/{{'${ANDROID_ABI}'}})
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} {{'${CMAKE_CURRENT_SOURCE_DIR}'}}/cmake) 
 
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
@@ -18,16 +18,31 @@ set({{project}}_SRC
 
 include_directories({{eagleeye}}/include/eagleeye/)
 include_directories({{eagleeye}}/include)
-link_directories({{eagleeye}}/libs/{{abi}})
+link_directories({{eagleeye}}/libs/{{'${ANDROID_ABI}'}})
 add_library({{project}} SHARED {{'${'}}{{project}}_SRC{{'}'}})  
 
 {% if opencv != "" %}
-set(OpenCV_DIR {{opencv}})
+set(OpenCV_DIR {{opencv}}/{{'${ANDROID_ABI}'}})
 find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 TARGET_LINK_LIBRARIES({{project}} ${OpenCV_LIBS})
+{% endif %}
+
+{% if paddlelite != "" %}
+include_directories({{paddlelite}}/{{'${ANDROID_ABI}'}}/include)
+include_directories({{paddlelite}}/{{'${ANDROID_ABI}'}}/include/lite/api)
+add_library(libpaddlelite SHARED IMPORTED)
+set_target_properties(
+    libpaddlelite
+    PROPERTIES IMPORTED_LOCATION 
+    {{paddlelite}}/{{'${ANDROID_ABI}'}}/lib/libpaddle_light_api_shared.so
+)
+TARGET_LINK_LIBRARIES({{project}} libpaddlelite)
+{% endif %}
+
+{% if tnn != ""%}
 {% endif %}
 
 add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
@@ -36,7 +51,7 @@ add_library(libOpenCL SHARED IMPORTED)
 set_target_properties(
     libOpenCL
     PROPERTIES IMPORTED_LOCATION 
-    {{eagleeye}}/3rd/opencl/lib/{{abi}}/libOpenCL.so
+    {{eagleeye}}/3rd/opencl/lib/{{'${ANDROID_ABI}'}}/libOpenCL.so
 )
 TARGET_LINK_LIBRARIES({{project}} libOpenCL)
 

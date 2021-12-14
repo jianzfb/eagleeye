@@ -116,9 +116,6 @@ private:
     OpticalFlowNode(const OpticalFlowNode&);
     void operator=(const OpticalFlowNode&);
 
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(opticalflow);
-#endif
     int m_N;            // biref feature length
     int m_sx;           // processed image width
     int m_sy;           // processed image height

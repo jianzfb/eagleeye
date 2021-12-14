@@ -13,18 +13,13 @@ public:
     typedef ImageTransformNode                                  Self;
     typedef ImageProcessNode<ImageSignal<Array<unsigned char, 3>>, ImageSignal<Array<unsigned char, 3>>>      Superclass;
 
-    typedef ImageSignal<Array<unsigned char, 3>>    IMAGE_SIGNAL_TYPE;
-    
     EAGLEEYE_CLASSIDENTITY(ImageTransformNode);
-
-    EAGLEEYE_INPUT_PORT_TYPE(IMAGE_SIGNAL_TYPE,         0,      INPUT_IMAGE);
-    EAGLEEYE_OUTPUT_PORT_TYPE(IMAGE_SIGNAL_TYPE,        0,      OUTPUT_IMAGE);
 
     /**
 	 *	@brief execute ImageTransformNode algorithm
      *  @note user must finish this function
 	 */
-    ImageTransformNode(bool is_crop=false);
+    ImageTransformNode(std::vector<float> region, std::vector<int> size);
     virtual ~ImageTransformNode();
 
     /**
@@ -33,8 +28,13 @@ public:
 	 */
 	virtual void executeNodeInfo();
 
-    void setScale(float scale);
-    void getScale(float& scale);
+    /**
+     * @brief add/set input port
+     * 
+     * @param sig 
+     */
+	virtual void addInputPort(AnySignal* sig);
+	virtual void setInputPort(AnySignal* sig,int index=0);
 
     void setMinSize(int size);
     void getMinSize(int& size);
@@ -47,9 +47,9 @@ private:
     ImageTransformNode(const ImageTransformNode&);
 	void operator=(const ImageTransformNode&);
 
-    float m_scale;
     int m_min_size;
-    bool m_is_crop;
+    std::vector<int> m_default_size;
+    std::vector<float> m_default_region;
 };
 }
 #endif

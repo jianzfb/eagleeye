@@ -1,0 +1,180 @@
+{
+    "name":"default",
+    "pipeline":{
+        "node":[
+            "PLACEHOLDER.RGB.1",
+            "ImageResizeNode.1",
+            "NNNode.1"],
+        "attribute":{
+            "PLACEHOLDER.RGB.1":{
+                "type":"PLACEHOLDER.RGB","input":0,"output":1,"title":"1",
+                "param":{
+                },
+                "signal":{
+                    "input": [],
+                    "output": [
+                        {
+                            "type": "EAGLEEYE_SIGNAL_RGB_IMAGE",
+                            "value": "EAGLEEYE_RGB"
+                        }
+                    ]
+                }
+            },
+            "ImageResizeNode.1":{
+                "type":"ImageResizeNode","input":1,"output":1,"title":"2/1",
+                "param":{
+                    "resize_type": "BILINEAR",
+                    "resize_scale": 0.0,
+                    "resize_h": 256,
+                    "resize_w": 192
+                },
+                "signal":{
+                    "input":[{
+                        "type": "EAGLEEYE_SIGNAL_RGB_IMAGE",
+                        "value": "EAGLEEYE_RGB"
+                    }],
+                    "output":[{
+                        "type": "EAGLEEYE_SIGNAL_RGB_IMAGE",
+                        "value": "EAGLEEYE_RGB"
+                    }]
+                }
+            },
+            "NNNode.1":{
+                "type": "NNNode", "input": 1, "output": 1, "title": "NNNode.1",
+                "signal":{
+                    "input":[{
+                        "type": "EAGLEEYE_SIGNAL_RGB_IMAGE",
+                        "value": "EAGLEEYE_UCHAR"
+                    }],
+                    "output":[{
+                        "type": "EAGLEEYE_SIGNAL_RGB_IMAGE",
+                        "value": "EAGLEEYE_UCHAR"
+                    }]
+                },
+                "param":{
+                    "node":[
+                        "placeholder/1",
+                        "cast/1",
+                        "const/1",
+                        "concat/1",
+                        "transposeOp/1",
+                        "PaddleOp.1",
+                        "resize/1"],
+                    "attribute":{
+                        "placeholder/1":{
+                            "type":"PlaceholderOp",
+                            "input": 1,
+                            "output": 1,
+                            "param":{
+                                "shape": [1,-1,-1,-1],
+                                "data_format": "NHWC",
+                                "data_type": "UCHAR"
+                            }
+                        },
+                        "const/1":{
+                            "type": "ConstOp",
+                            "input": 0,
+                            "output": 1,
+                            "param":{
+                                "shape": [1,2,256,192],
+                                "val": 0.0,
+                                "device": "CPU"
+                            }
+                        },
+                        "concat/1":{
+                            "type": "ConcatOp",
+                            "input": 2,
+                            "output": 1,
+                            "param":{
+                                "axis": 1
+                            }
+                        },
+                        "PaddleOp.1":{
+                            "type": "PaddleOp",
+                            "input": 1,
+                            "output": 1,
+                            "param":{
+                                "input":{
+                                    "name": ["image"],
+                                    "shape": [[1, 5, 256, 192]],
+                                    "type": ["FLOAT"]
+                                },
+                                "output":{
+                                    "name": ["save_infer_model/scale_0.tmp_0"],
+                                    "shape": [[1, 2, 256, 192]],
+                                    "type": ["FLOAT"]
+                                },
+                                "device": "GPU"
+                            }
+                        },
+                        "cast/1":{
+                            "type": "CastOp",
+                            "input": 1,
+                            "output": 1,
+                            "param":{
+                                "data_type": "FLOAT",
+                                "scale": 1.0
+                            }
+                        },
+                        "transposeOp/1":{
+                            "type":"TransposeOp",
+                            "input": 1,
+                            "output": 1,
+                            "param":{
+                                "axis": [0,3,1,2]
+                            }
+                        },
+                        "resize/1":{
+                            "type":"InterpolateOp",
+                            "input": 1,
+                            "output": 1,
+                            "param":{
+                                "out_size": [256, 192],
+                                "scale": 0.0,
+                                "align_corner": true,
+                                "interpolate_type": "BILINER"                                
+                            }
+                        }
+                    },
+                    "topology":{
+                        "input":[
+                            {"from":{"node":"", "port":0}, "to":{"node":"placeholder/1", "port": 0}}
+                        ],
+                        "placeholder/1":[
+                            {"from":{"node":"","port":0},"to":{"node":"cast/1","port":0}}
+                        ],
+                        "cast/1":[
+                            {"from":{"node":"","port":0},"to":{"node":"transposeOp/1","port":0}}
+                        ],                        
+                        "transposeOp/1":[
+                            {"from":{"node":"","port":0},"to":{"node":"resize/1","port":0}}
+                        ],
+                        "resize/1":[
+                            {"from":{"node":"","port":0},"to":{"node":"concat/1","port":0}}
+                        ],
+                        "const/1":[
+                            {"from":{"node":"","port":0},"to":{"node":"concat/1", "port": 1}}
+                        ],
+                        "concat/1":[
+                            {"from":{"node":"","port":0},"to":{"node":"PaddleOp.1","port":0}}
+                        ],
+                        "PaddleOp.1":[
+                            {"from":{"node":"","port":0}, "to":{"node":"output","port": 0}}
+                        ]
+                    }
+                }
+            }
+        },
+        "topology":{
+            "PLACEHOLDER.RGB.1":[
+                {"from":{"node":"","port":0},"to":{"node":"ImageResizeNode.1","port":0}}
+            ],
+            "ImageResizeNode.1":[
+                {"from":{"node":"","port":0},"to":{"node":"NNNode.1","port":0}}
+            ],
+            "NNNode.1":[
+                
+            ]
+        }
+    }
+}

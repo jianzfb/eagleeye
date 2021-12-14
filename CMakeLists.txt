@@ -207,7 +207,7 @@ set(EAGLEEYE_SRC
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/runtime/gpu/opencl_runtime.cpp
     eagleeye/engine/nano/util/opencl_util.cpp
-    eagleeye/engine/nano/op/placeholder.cpp
+    eagleeye/engine/nano/op/placeholder_op.cpp
     eagleeye/render/ImageShow.cpp
     eagleeye/codegen/opencl/encrypt_opencl_kernel.cc
     eagleeye/render/GLUtils.cpp
@@ -248,7 +248,34 @@ set(EAGLEEYE_SRC
     eagleeye/basic/BGRAFlipHWC.cpp
     eagleeye/basic/BGRFlipHWC.cpp
     eagleeye/render/AutoRenderRegion.cpp
-    eagleeye/basic/Dim.cpp)
+    eagleeye/basic/Dim.cpp
+    eagleeye/engine/nano/op/factory.cpp
+    eagleeye/engine/math/arm/clip.cc
+    eagleeye/engine/math/arm/elementwise.cc
+    eagleeye/engine/math/arm/interpolate.cc
+    eagleeye/engine/math/arm/pad2d.cc
+    eagleeye/engine/math/arm/reduce_max.cc
+    eagleeye/engine/math/arm/reduce_mean.cc
+    eagleeye/engine/math/arm/reduce_min.cc
+    eagleeye/engine/math/arm/reduce_prod.cc
+    eagleeye/engine/math/arm/reduce_sum.cc
+    eagleeye/engine/math/arm/type_trans.cc
+    eagleeye/engine/nano/op/cast_op.cpp
+    eagleeye/engine/nano/op/clip_op.cpp
+    eagleeye/engine/nano/op/concat_op.cpp
+    eagleeye/engine/nano/op/interpolate_op.cpp
+    eagleeye/engine/nano/op/pad2d_op.cpp
+    eagleeye/engine/nano/op/reduce_op.cpp
+    eagleeye/engine/nano/op/repeat_op.cpp
+    eagleeye/engine/nano/op/reshape_op.cpp
+    eagleeye/engine/nano/op/transpose_op.cpp
+    eagleeye/engine/nano/op/preprocess_op.cpp
+    eagleeye/engine/nano/op/split_op.cpp
+    eagleeye/engine/nano/op/shape_op.cpp
+    eagleeye/engine/nano/op/slice_op.cpp
+    eagleeye/engine/nano/op/image_resize_op.cpp
+    eagleeye/processnode/ImageResizeNode.cpp
+    eagleeye/processnode/ImageTransformNode)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})

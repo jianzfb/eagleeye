@@ -14,7 +14,7 @@ class YUVResizeNode: public AnyNode{
     EAGLEEYE_CLASSIDENTITY(YUVResizeNode);
 
 public:
-    YUVResizeNode(int resize_w=360, int resize_h=640);
+    YUVResizeNode(int resize_w=0, int resize_h=0, float resize_scale=0.0f);
     virtual ~YUVResizeNode();
 
     /**
@@ -35,6 +35,7 @@ private:
 
     int m_resize_w;
     int m_resize_h;   
+    float m_resize_scale;
 };    
 } // namespace eagleeye
 

@@ -44,13 +44,9 @@ void AutoNode::run(){
         if(!running_ischange){
             // 1.step get input
             int signal_num = this->getNumberOfInputSignals();
-            // std::cout<<"auto node has input signal "<<signal_num<<std::endl;
             for(int signal_i = 0; signal_i<signal_num; ++signal_i){
                 // block call
-                // std::cout<<"copy string"<<std::endl;
-                // std::cout<<"signal list size "<<signal_list.size()<<std::endl;
                 signal_list[signal_i]->copy(this->getInputPort(signal_i));
-                // std::cout<<"finish copy "<<std::endl;
                 if(!this->m_thread_status){
                     break;
                 }
@@ -66,11 +62,9 @@ void AutoNode::run(){
 
         // 2.step run node
         running_ischange = m_auto_node->start();
-        // std::cout<<"runing runing runing"<<std::endl;
         if(!running_ischange){
             continue;
         }
-        // std::cout<<"GGGG"<<std::endl;
         // 3.step get output
         int signal_num = m_auto_node->getNumberOfOutputSignals();
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){

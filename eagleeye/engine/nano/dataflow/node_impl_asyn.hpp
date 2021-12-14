@@ -105,7 +105,7 @@ public:
    * @param runtime 
    * @param data 
    */
-  int init(EagleeyeRuntime runtime, std::map<std::string, std::vector<float>> data) noexcept override{
+  int init(std::map<std::string, std::vector<float>> data) noexcept override{
     if(!this->init_){
       // 1.step initialize hanlder
       int result = false;
@@ -130,7 +130,7 @@ public:
    * @return true 
    * @return false 
    */
-  virtual bool fetch(void*& data, int index=0, bool block=true){
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=true){
     if(m_response_count <= m_request_count){
       m_lock.lock();
       typename std::map<int, std::pair<int, std::vector<typename F::Type>>>::iterator iter = m_outputs.find(m_response_count);

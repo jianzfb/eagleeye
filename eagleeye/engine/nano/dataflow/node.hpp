@@ -67,7 +67,7 @@ public:
   /**
    * @brief initialize node
    */ 
-  virtual int init(EagleeyeRuntime runtime, std::map<std::string, std::vector<float>> data) noexcept = 0;
+  virtual int init(std::map<std::string, std::vector<float>> data) noexcept = 0;
 
   /**
    * @brief transfer target runtime
@@ -112,12 +112,12 @@ public:
   /*
    * @brief update node data
    */
-  virtual bool update(void* data, int index=0)=0;
+  virtual bool update(void* data, std::vector<int64_t> shape, int index=0)=0;
 
   /**
    * @brief get node data
    */ 
-  virtual bool fetch(void*& data, int index=0, bool block=false)=0;
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=false)=0;
 
   /**
    * @brief Get the Dependent Num

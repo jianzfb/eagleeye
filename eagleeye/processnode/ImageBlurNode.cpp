@@ -35,7 +35,6 @@ void ImageBlurNode::executeNodeInfo(){
 
     // 
     
-
     output_sig->setData(output);
     this->getOutputPort(0)->setSignalType(this->getInputPort(0)->getSignalType());
 }

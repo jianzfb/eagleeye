@@ -1,5 +1,5 @@
 #ifndef _EAGLEEYE_NANO_GRAPH_H_
-#define _EAGLEEYE_NANO_sGRAPH_H_
+#define _EAGLEEYE_NANO_GRAPH_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/engine/nano/dataflow/edge.hpp"
@@ -106,9 +106,8 @@ public:
 
     // 3.step init node
     for(Node* n: m_nodes){
-      EagleeyeRuntime runtime = this->m_schedule->getRuntime(n);
       std::map<std::string, std::vector<float>> data;
-      n->init(runtime, data);
+      n->init(data);
     }
   }
 
@@ -125,7 +124,10 @@ public:
    * @brief start worker thread
    * 
    */
-  void run(std::map<std::string, void*> inputs, std::map<std::string, void*>& outputs){
+  void run(std::map<std::string, 
+                    std::pair<void*,std::vector<int64_t>>> inputs, 
+           std::map<std::string, 
+                    std::pair<void*,std::vector<int64_t>>>& outputs){
     // 1.step check
     if(outputs.size() == 0){
       EAGLEEYE_LOGD("Output node empty, skip run.");
@@ -139,16 +141,16 @@ public:
     }
 
     // 3.step update input data
-    std::map<std::string, void*>::iterator in_iter,in_iend(inputs.end());
+    std::map<std::string, std::pair<void*,std::vector<int64_t>>>::iterator in_iter,in_iend(inputs.end());
     for(in_iter = inputs.begin(); in_iter != in_iend; ++in_iter){
       if(m_nodes_map.find(in_iter->first) != m_nodes_map.end()){
-        m_nodes_map[in_iter->first]->update(in_iter->second, 0);
+        m_nodes_map[in_iter->first]->update(in_iter->second.first, in_iter->second.second,0);
       }
     }
 
     // 4.step reset output flag
     std::map<std::string, bool> output_map;
-    std::map<std::string, void*>::iterator out_iter,out_iend(outputs.end());
+    std::map<std::string, std::pair<void*,std::vector<int64_t>>>::iterator out_iter,out_iend(outputs.end());
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
       m_nodes_map[out_iter->first]->output_ = true;
     }
@@ -183,11 +185,12 @@ public:
     }
 
     // 7.step output
-    std::map<std::string, void*> result;
+    std::map<std::string, std::pair<void*, std::vector<int64_t>>> result;
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
       void* data = NULL;
-      m_nodes_map[out_iter->first]->fetch(data, 0, true);
-      result[out_iter->first] = data;
+      std::vector<int64_t> shape;
+      m_nodes_map[out_iter->first]->fetch(data, shape, 0, true);
+      result[out_iter->first] = std::make_pair(data, shape);
     }
 
     outputs = result;
@@ -253,6 +256,10 @@ public:
 
   std::vector<Edge*> getEdges(){
     return this->m_edges;
+  }
+
+  std::vector<Node*> getEntryNodes(){
+    return this->m_entry_nodes;
   }
 
   int size(){

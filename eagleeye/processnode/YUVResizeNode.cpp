@@ -7,9 +7,10 @@
 
 namespace eagleeye
 {
-YUVResizeNode::YUVResizeNode(int resize_w, int resize_h){
+YUVResizeNode::YUVResizeNode(int resize_w, int resize_h, float resize_scale){
     this->m_resize_w = resize_w;
     this->m_resize_h = resize_h;
+    this->m_resize_scale = resize_scale;
 
     // 设置输出端口（拥有1个输出端口）
     this->setNumberOfOutputSignals(1);
@@ -40,9 +41,15 @@ void YUVResizeNode::executeNodeInfo(){
     unsigned char* input_ptr = (unsigned char*)(input_blob.cpu());
     int height = input_sig->getHeight();
     int width = input_sig->getWidth();
+    int target_resize_h = m_resize_h;
+    int target_resize_w = m_resize_w;
+    if(target_resize_h <= 0 || target_resize_w <= 0){
+        target_resize_h = (int)(height * this->m_resize_scale);
+        target_resize_w = (int)(width * this->m_resize_scale);
+    }
 
     // 输出yuv数据
-    Blob output_blob(sizeof(unsigned char)*(m_resize_h*m_resize_w + (m_resize_h/2)*(m_resize_w/2) + (m_resize_h/2)*(m_resize_w/2)),
+    Blob output_blob(sizeof(unsigned char)*(target_resize_h*target_resize_w + (target_resize_h/2)*(target_resize_w/2) + (target_resize_h/2)*(target_resize_w/2)),
             Aligned(64), 
             EagleeyeRuntime(EAGLEEYE_CPU));
     unsigned char* output_ptr = (unsigned char*)(output_blob.cpu());
@@ -53,16 +60,16 @@ void YUVResizeNode::executeNodeInfo(){
         uint8_t* src_i420_v_data = src_i420_u_data + (int)(width * height * 0.25);
 
         uint8_t* dst_i420_y_data = (uint8_t*)output_ptr;
-        uint8_t* dst_i420_u_data = dst_i420_y_data + m_resize_w * m_resize_h;
-        uint8_t* dst_i420_v_data = dst_i420_u_data + (int)(m_resize_w * m_resize_h * 0.25);
+        uint8_t* dst_i420_u_data = dst_i420_y_data + target_resize_w * target_resize_h;
+        uint8_t* dst_i420_v_data = dst_i420_u_data + (int)(target_resize_w * target_resize_h * 0.25);
         libyuv::I420Scale((const uint8_t *) src_i420_y_data, width,
                     (const uint8_t *) src_i420_u_data, width >> 1,
                     (const uint8_t *) src_i420_v_data, width >> 1,
                     width, height,
-                    (uint8_t *) dst_i420_y_data, m_resize_w,
-                    (uint8_t *) dst_i420_u_data, m_resize_w >> 1,
-                    (uint8_t *) dst_i420_v_data, m_resize_w >> 1,
-                    m_resize_w, m_resize_h,
+                    (uint8_t *) dst_i420_y_data, target_resize_w,
+                    (uint8_t *) dst_i420_u_data, target_resize_w >> 1,
+                    (uint8_t *) dst_i420_v_data, target_resize_w >> 1,
+                    target_resize_w, target_resize_h,
                     libyuv::kFilterBilinear);
     }
     else{
@@ -71,8 +78,8 @@ void YUVResizeNode::executeNodeInfo(){
 
     YUVSignal* output_sig = (YUVSignal*)(this->getOutputPort(0));
     MetaData output_meta = input_meta;
-    output_meta.rows = this->m_resize_h;
-    output_meta.cols = this->m_resize_w;
+    output_meta.rows = target_resize_h;
+    output_meta.cols = target_resize_w;
     output_sig->setData(output_blob, output_meta);
 }
 

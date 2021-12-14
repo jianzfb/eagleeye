@@ -15,9 +15,6 @@ HomographyModel::HomographyModel(){
 }    
 
 HomographyModel::~HomographyModel(){
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION   
-    EAGLEEYE_OPENCL_RELEASE_KERNEL_GROUP(homography);
-#endif   
 }
 
 Matrix<float> HomographyModel::build(const std::vector<std::shared_ptr<AbstractParameter>>& input_params){

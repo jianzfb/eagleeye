@@ -26,9 +26,7 @@ public:
         // 仅支持固定设备运行，在创建节点是设置
     };
     virtual ~AsynGraph(){
-        std::cout<<"in ~"<<std::endl;
         for (Node * n : m_nodes) {
-            std::cout<<"delete "<<n->name<<std::endl;
             delete n;
         }
         for (Edge * e : m_edges) {
@@ -61,7 +59,7 @@ public:
             if(iter != params.end()){
                 node_param = iter->second;
             }
-            n->init(EagleeyeRuntime(EAGLEEYE_CPU), node_param);
+            n->init(node_param);
         }
     }
 
@@ -110,20 +108,21 @@ public:
         }
     }
 
-    void get(std::map<std::string, void*>& outputs){
-        std::map<std::string, void*> result;
-        std::map<std::string, void*>::iterator out_iter,out_iend(outputs.end());
+    void get(std::map<std::string, std::pair<void*, std::vector<int64_t>>>& outputs){
+        std::map<std::string, std::pair<void*, std::vector<int64_t>>> result;
+        std::map<std::string, std::pair<void*, std::vector<int64_t>>>::iterator out_iter,out_iend(outputs.end());
         for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
             std::unordered_map<std::string, Node*>::iterator d_iter = m_nodes_map.find(out_iter->first);
             if(d_iter == m_nodes_map.end()){
                 EAGLEEYE_LOGE("Output node %s dont exist.", out_iter->first.c_str());
-                result[out_iter->first] = NULL;
+                result[out_iter->first] = std::make_pair((void*)(NULL), std::vector<int64_t>());
                 continue;
             }
 
             void* data = NULL;
-            m_nodes_map[out_iter->first]->fetch(data, 0, true);
-            result[out_iter->first] = data;
+            std::vector<int64_t> shape;
+            m_nodes_map[out_iter->first]->fetch(data, shape, 0, true);
+            result[out_iter->first] = std::make_pair(data, shape);
         }
 
         outputs = result;

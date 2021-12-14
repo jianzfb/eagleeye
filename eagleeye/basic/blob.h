@@ -75,7 +75,8 @@ public:
          EagleeyeType data_type, 
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,
-         Aligned aligned=Aligned(64));
+         Aligned aligned=Aligned(64),
+         void* data=NULL);
 
     /**
      * @brief Destroy the Blob object
@@ -277,11 +278,6 @@ protected:
     mutable bool m_is_gpu_waiting_from_cpu;
     mutable bool m_is_gpu_ready;
     mutable std::shared_ptr<spinlock> m_lock;
-
-private:
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    OpenCLKernelGroup* m_buffer_to_image_kernel;
-#endif
 };    
 }
 #endif

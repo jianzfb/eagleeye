@@ -31,6 +31,9 @@ public:
             std::vector<int64_t> image_shape=std::vector<int64_t>(),
             Aligned aligned=Aligned(64));
 
+    Tensor(std::vector<int64_t> shape, 
+            EagleeyeType data_type, DataFormat data_format, void* data);
+
     /**
      * @brief null tensor
      */ 
@@ -47,10 +50,23 @@ public:
     DataFormat format() const;
 
     /**
+     * @brief reset tensor format
+     * 
+     */
+    void setFormat(DataFormat data_format);
+
+    /**
      * @brief clone blob
      * 
      */
     virtual Tensor clone() const;
+
+    /**
+     * @brief copy from t
+     * 
+     * @param t 
+     */
+    void copy(const Tensor& t);
 
 protected:
     DataFormat m_format;

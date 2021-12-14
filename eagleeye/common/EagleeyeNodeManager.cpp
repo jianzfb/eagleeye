@@ -1,6 +1,7 @@
 #include "eagleeye/common/EagleeyeNodeManager.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/common/EagleeyeFile.h"
 #include <vector>
 #include <dlfcn.h>
 #include <dirent.h>
@@ -34,7 +35,12 @@ void NodeManager::update(){
     std::vector<std::string> terms = split(so_path, separator);
     terms[terms.size() - 1] = "libfeatureext.so";
     std::string libfeatureext_path = pathJoin(terms);
+
     EAGLEEYE_LOGD("Load featureext %s", libfeatureext_path.c_str());
+    if(!isfileexist(libfeatureext_path.c_str())){
+        EAGLEEYE_LOGE("Couldnt find libfeatureext.so");
+        return;
+    }
 
     // 发现节点生成动态库
     void* handle = dlopen(libfeatureext_path.c_str(), RTLD_LAZY);
@@ -55,8 +61,6 @@ AnyNode* NodeManager::build(std::string node){
             return node_ptr;
         }
     }
-
-    EAGLEEYE_LOGE("Couldnt build node %s.", node.c_str());
     return NULL;
 }
 

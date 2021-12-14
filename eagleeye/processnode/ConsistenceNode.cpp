@@ -70,8 +70,6 @@ void ConsistenceNode::executeNodeInfo(){
 		return;
 	}
 
-	// std::cout<<"H "<<H<<" W "<<W<<std::endl;
-
 	// cv::Mat preframe_uchar(H,W,CV_8U);
 	// for(int i=0; i<H; ++i){
 	// 	for(int j=0; j<W; ++j){
@@ -153,7 +151,6 @@ void ConsistenceNode::solveFrame(unsigned char* prevInput,
 		}
 	}
 
-	std::cout<<"step 5"<<std::endl;
 	float* backward_opt_flow_data = (float*)backward_opt_flow.dataptr();
 	//build RHS and weights
 	std::vector<float> rhs(W*H, 0.);

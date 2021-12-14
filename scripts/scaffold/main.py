@@ -13,20 +13,23 @@ from . import flags
 from . import help
 import zipfile
 import shutil
+import json
 
 flags.DEFINE_string('project', None, 'project name')
 flags.DEFINE_string("version", None, "project version")
 flags.DEFINE_string("signature",None, "projct signature")
 flags.DEFINE_string("eagleeye", "", "eagleeye path")
 flags.DEFINE_string("opencv", "", "opencv path")
-flags.DEFINE_string("abi", "arm64-v8a", "abi")
+flags.DEFINE_string("abi", "arm64-v8a,armeabi-v7a", "abi")
 flags.DEFINE_string("build_type","Release","set build type")
 flags.DEFINE_string("api_level","android-23", "android api level")
 flags.DEFINE_string("name", "", "node name")
 flags.DEFINE_string("inputport", "", "input port list")
 flags.DEFINE_string("outputport","", "output port list")
 flags.DEFINE_string("host_platform", "MACOS", "host platform")
-
+flags.DEFINE_string("structure", None, "plugin load from json")
+flags.DEFINE_string("paddlelite", "", "paddle lib")
+flags.DEFINE_string("tnn", "", "tnn lib")
 
 FLAGS = flags.AntFLAGS
 def main():
@@ -37,7 +40,7 @@ def main():
 
     if len(sys.argv) < 2 or sys.argv[1] == 'help':
       help.printhelp()
-      return
+      sys.exit(-1)
 
     if(sys.argv[1] == 'node'):
       flags.cli_param_flags(sys.argv[2:])
@@ -71,12 +74,12 @@ def main():
       with open(os.path.join(os.curdir, "%s.cpp"%node_name),'w') as fp:
         fp.write(output)
 
-      return
+      sys.exit(0)
     elif sys.argv[1] == 'release':
         flags.cli_param_flags(sys.argv[2:])
         if not os.path.exists(os.path.join(os.curdir, "package")):
           print("Couldnt find package folder")
-          return
+          sys.exit(-1)
 
         project_name = FLAGS.project()
         if project_name is None or project_name == "":
@@ -91,35 +94,44 @@ def main():
                 print("Finding default project %s"%project_name)
                 break
         
-        if project_name == "" or not os.path.exists(os.path.join(os.curdir, "package", project_name)):
-          print("Package %s dont exist."%project_name)
-          return
+        for abi in FLAGS.abi().split(','):
+          package_folder = os.path.join(os.curdir, "package", abi)
+          if not os.path.exists(os.path.join(package_folder, project_name, 'lib%s.so'%project_name)):
+            print("Package %s/%s dont exist."%(project_name, abi))
+            sys.exit(-1)
+          
+          if not os.path.exists(os.path.join(package_folder, project_name, 'resource')):
+            os.makedirs(os.path.join(package_folder, project_name, 'resource'))
 
-        package_folder = os.path.join(os.curdir, "package")
-        # zip package
-        z = zipfile.ZipFile("./package/%s.zip"%project_name, mode='w', compression=zipfile.ZIP_DEFLATED)
-        for dirpath, dirnames, filenames in os.walk(package_folder):
-          fpath = dirpath.replace(package_folder,'') 
-          fpath = fpath and fpath + os.sep or ''
-          for filename in filenames:
-            z.write(os.path.join(dirpath, filename),fpath+filename)
+          template = env.get_template('project_plugin_config.template')
+          output = template.render(project=project_name)
+          with open(os.path.join(package_folder, project_name, 'resource', "config.json"), 'w') as fp:
+            fp.write(output)
 
-        z.close()
+          # zip package
+          z = zipfile.ZipFile("./package/%s.%s.zip"%(project_name, abi), mode='w', compression=zipfile.ZIP_DEFLATED)
+          for dirpath, dirnames, filenames in os.walk(package_folder):
+            fpath = dirpath.replace(package_folder,'') 
+            fpath = fpath and fpath + os.sep or ''
+            for filename in filenames:
+              z.write(os.path.join(dirpath, filename),fpath+filename)
+
+          z.close()
         print("Success to build package.")
-        return
+        sys.exit(0)
     elif sys.argv[1] == "project":
       flags.cli_param_flags(sys.argv[2:])
       if FLAGS.eagleeye() == "":
         print("Must set eagleeye path.")
-        return
+        sys.exit(-1)
 
       if FLAGS.project() is None:
         print("Must set project name.")
-        return
+        sys.exit(-1)
 
       # 生成插件模板
       project_name = FLAGS.project()
-      print("Generate project %s"%project_name)
+      print("Generate project %s."%project_name)
 
       project_version = FLAGS.version()
       project_signature = FLAGS.signature()
@@ -135,10 +147,47 @@ def main():
         fp.write(output)
 
       # 生成插件源文件
-      template = env.get_template('project_plugin_source.template')
-      output = template.render(project=project_name,
-                              version=project_version,
-                              signature=project_signature)
+      if FLAGS.structure() is None:
+        template = env.get_template('project_plugin_source.template')
+        output = template.render(project=project_name,
+                        version=project_version,
+                        signature=project_signature)
+      else:
+        template = env.get_template('project_plugin_source_auto.template')
+
+        with open(FLAGS.structure(), 'r') as fp:
+          structure_json = json.load(fp)
+        pipeline_info = structure_json['pipeline']
+        nodes_attrs = pipeline_info['attribute']
+
+        PaddleOpList = []
+        TNNOpList = []
+        for node_name, node_attr in nodes_attrs.items():
+          if node_attr['type'] == "NNNode":
+            nn_attr = node_attr['param']['attribute']
+
+            for k,v in nn_attr.items():
+              if v['type'] == 'PaddleOp':
+                PaddleOpList.append({
+                  'name': k,
+                  'cls': v['type'],
+                  'input': v['param']['input']['name'],
+                  'output': v['param']['output']['name']
+                })
+              elif v['type'] == 'TNNOp':
+                TNNOpList.append({
+                  'name': k,
+                  'cls': v['type'],
+                  'input': v['param']['input']['name'],
+                  'output': v['param']['output']['name']
+                })
+
+        output = template.render(project=project_name,
+                        version=project_version,
+                        signature=project_signature,
+                        custom_paddle_ops=PaddleOpList,
+                        custom_tnn_ops=TNNOpList
+                        )
 
       if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
           os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
@@ -150,8 +199,9 @@ def main():
       template = env.get_template('project_plugin_cmake.template')
       output = template.render(project=project_name,
                               eagleeye=FLAGS.eagleeye(),
-                              abi=FLAGS.abi(),
-                              opencv=FLAGS.opencv())
+                              opencv=FLAGS.opencv(),
+                              paddlelite=FLAGS.paddlelite(),
+                              tnn=FLAGS.tnn())
 
       if not os.path.exists(os.path.join(os.curdir, "%s_plugin"%project_name)):
           os.mkdir(os.path.join(os.curdir, "%s_plugin"%project_name))
@@ -165,7 +215,7 @@ def main():
 
       # 生成build.sh
       template = env.get_template('project_shell.template')
-      output = template.render(abi=FLAGS.abi(),
+      output = template.render(build_abis=FLAGS.abi().split(','),
                               build_type=FLAGS.build_type(),
                               api_level=FLAGS.api_level(),
                               project=project_name)
@@ -192,7 +242,7 @@ def main():
 
       # VS CODE - settings.json
       template = env.get_template('project_VS_settings_json.template')
-      output = template.render(abi=FLAGS.abi(),
+      output = template.render(abi=FLAGS.abi().split(',')[0],
                               build_type=FLAGS.build_type(),
                               api_level=FLAGS.api_level())
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, ".vscode", "settings.json"), 'w') as fp:
@@ -220,7 +270,7 @@ def main():
       template = env.get_template('project_run.template')
       output = template.render(project=project_name,
                                 eagleeye=FLAGS.eagleeye(),
-                                abi=FLAGS.abi())
+                                abi=FLAGS.abi().split(',')[0])
 
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "run.sh"), 'w') as fp:
         fp.write(output)
@@ -228,11 +278,11 @@ def main():
       # 生成说明文档
 
       # 生成插件包目录
-      os.makedirs(os.path.join(os.curdir,  "%s_plugin"%project_name, "package", project_name, "resource"))
-      template = env.get_template('project_plugin_config.template')
-      output = template.render(project=project_name)
-      with open(os.path.join(os.curdir,  "%s_plugin"%project_name, "package", project_name, "resource", "config.json"), 'w') as fp:
-        fp.write(output)
+      # os.makedirs(os.path.join(os.curdir,  "%s_plugin"%project_name, "package", project_name, "resource"))
+      # template = env.get_template('project_plugin_config.template')
+      # output = template.render(project=project_name)
+      # with open(os.path.join(os.curdir,  "%s_plugin"%project_name, "package", project_name, "resource", "config.json"), 'w') as fp:
+      #   fp.write(output)
 
 
 if __name__ == '__main__':
