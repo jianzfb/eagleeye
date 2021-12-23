@@ -1,6 +1,7 @@
 #include "eagleeye/common/EagleeyeNodeManager.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/common/EagleeyeFile.h"
 #include <vector>
 #include <dlfcn.h>
 #include <dirent.h>
@@ -34,7 +35,12 @@ void NodeManager::update(){
     std::vector<std::string> terms = split(so_path, separator);
     terms[terms.size() - 1] = "libfeatureext.so";
     std::string libfeatureext_path = pathJoin(terms);
+
     EAGLEEYE_LOGD("Load featureext %s", libfeatureext_path.c_str());
+    if(!isfileexist(libfeatureext_path.c_str())){
+        EAGLEEYE_LOGE("Couldnt find libfeatureext.so");
+        return;
+    }
 
     // 发现节点生成动态库
     void* handle = dlopen(libfeatureext_path.c_str(), RTLD_LAZY);
@@ -47,16 +53,14 @@ void NodeManager::update(){
     m_node_build_func_map["featureext"] = build_node_func;
 }
 
-AnyNode* NodeManager::build(std::string node){
+AnyNode* NodeManager::build(std::string node, neb::CJsonObject node_param){
     std::map<std::string, BUILD_NODE_FUNC_TYPE>::iterator iter, iend(m_node_build_func_map.end());
     for(iter = m_node_build_func_map.begin(); iter != iend; ++iter){
-        AnyNode* node_ptr = m_node_build_func_map[iter->first](node.c_str());
+        AnyNode* node_ptr = m_node_build_func_map[iter->first](node.c_str(), node_param);
         if(node_ptr != NULL){
             return node_ptr;
         }
     }
-
-    EAGLEEYE_LOGE("Couldnt build node %s.", node.c_str());
     return NULL;
 }
 

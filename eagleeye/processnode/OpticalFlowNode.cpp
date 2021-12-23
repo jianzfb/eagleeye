@@ -59,9 +59,6 @@ OpticalFlowNode::OpticalFlowNode(bool isback){
 }   
 
 OpticalFlowNode::~OpticalFlowNode(){
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION    
-    EAGLEEYE_OPENCL_RELEASE_KERNEL_GROUP(opticalflow);
-#endif
 } 
 
 void OpticalFlowNode::executeNodeInfo(){

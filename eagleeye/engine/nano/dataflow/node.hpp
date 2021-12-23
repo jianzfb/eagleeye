@@ -14,19 +14,19 @@
 namespace eagleeye{
 namespace dataflow {
 
-class Graph;
 class Node {
 public:
   friend class Graph;
-  std::string label;
+  friend class AsynGraph;
   std::string name;
 
-  Node(Graph* g, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  :g_(g),id_(id),init_(false),fixed_on_runtime_(false) {
+  Node(int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
+  :id_(id),init_(false),fixed_on_runtime_(false) {
     if(fixed.type() != EAGLEEYE_UNKNOWN_RUNTIME){
       runtime_ = fixed;
       fixed_on_runtime_ = true;
     }
+
     count_ = 0;
     output_ = false;
   }
@@ -55,14 +55,9 @@ public:
   }
 
   /**
-   * @brief get data ptr
-   */ 
-  virtual void* data(int index) = 0;
-
-  /**
    * @brief run on runtime 
    */ 
-  virtual float fire(EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU)) = 0;
+  virtual float fire(EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU), void* data=NULL) noexcept = 0;
 
   /**
    * @brief get buffer size of node output
@@ -72,33 +67,20 @@ public:
   /**
    * @brief initialize node
    */ 
-  virtual int init(EagleeyeRuntime runtime, std::map<std::string, std::vector<float>> data) noexcept = 0;
+  virtual int init(std::map<std::string, std::vector<float>> data) noexcept = 0;
 
   /**
    * @brief transfer target runtime
    */ 
-  virtual void transfer(EagleeyeRuntime runtime, bool asyn) noexcept = 0;
-  virtual void transfer(int which, EagleeyeRuntime runtime, bool asyn) = 0;
+  virtual void transfer(int which, EagleeyeRuntime runtime, bool asyn) noexcept = 0;
 
-  int linkIndexOfNode(Node& data_node){
-    for(int index=0; index<data_.size(); ++index){
-      if(data_[index] == &data_node){
-        return index;
-      }
-    }
-    return -1;
-  }
-
-  bool operator== (Node const & other) const noexcept {
+  
+  bool operator==(Node const & other) const noexcept {
     return this == &other;
   }
 
-  bool operator!= (Node const & other) const noexcept {
+  bool operator!=(Node const & other) const noexcept {
     return !(*this == other);
-  }
-
-  Graph* g () noexcept {
-    return g_;
   }
 
   int getId(){
@@ -130,15 +112,23 @@ public:
   /*
    * @brief update node data
    */
-  virtual bool update(void* data, int index=0)=0;
+  virtual bool update(void* data, std::vector<int64_t> shape, int index=0)=0;
 
   /**
    * @brief get node data
    */ 
-  virtual bool fetch(void*& data, int index=0, bool block=false)=0;
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=false)=0;
+
+  /**
+   * @brief Get the Dependent Num
+   * 
+   * @return int 
+   */
+  int getDependentNum(){
+    return data_.size();
+  }
 
 protected:
-  Graph*  g_;
   std::atomic_uint count_;
   bool output_;
 
@@ -146,6 +136,8 @@ protected:
   std::vector<Edge *> prev_;
   std::vector<Node *> data_;
   std::vector<int>    index_;
+  std::vector<int>    order_;
+  std::vector<int>    inv_order_;
 
   int id_;
   EagleeyeRuntime runtime_;

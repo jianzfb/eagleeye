@@ -3,12 +3,8 @@
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 namespace eagleeye
 {
-CropNode::CropNode(){
-    // 设置输入端口
-    // 0: 输入图像
-    // 1: 输入图像人脸检测
-	this->setNumberOfInputSignals(2);
-
+CropNode::CropNode(std::vector<float> region)
+    :m_default_region(region){
     // 设置输出端口（拥有1个输出端口）
     this->setNumberOfOutputSignals(1);
 }   
@@ -26,13 +22,24 @@ void CropNode::executeNodeInfo(){
             EAGLEEYE_LOGE("Input signal 0 type not correct.");
             return;
     }
-    if(this->getInputPort(1)->getSignalType() != EAGLEEYE_SIGNAL_DET){
-        EAGLEEYE_LOGE("Input signal 1 type not correct.");
-        return;
+    if(this->getNumberOfInputSignals() > 1){
+        if(this->getInputPort(1)->getSignalType() != EAGLEEYE_SIGNAL_DET &&
+            this->getInputPort(1)->getSignalType() != EAGLEEYE_SIGNAL_RECT){
+            EAGLEEYE_LOGE("Input signal 1 type not correct.");
+            return;
+        }
     }
 
-    ImageSignal<float>* det_sig = (ImageSignal<float>*)this->getInputPort(1);
-    Matrix<float> det_result = det_sig->getData();
+    Matrix<float> det_result(1,4);
+    det_result.at(0,0) = m_default_region[0];
+    det_result.at(0,1) = m_default_region[1];
+    det_result.at(0,2) = m_default_region[2];
+    det_result.at(0,3) = m_default_region[3];
+    if(this->getNumberOfInputSignals() > 1){
+        ImageSignal<float>* det_sig = (ImageSignal<float>*)this->getInputPort(1);
+        det_result = det_sig->getData();
+    }
+    
     float norm_x = det_result.at(0,0);
     float norm_y = det_result.at(0,1);
     float norm_w = det_result.at(0,2);
@@ -126,8 +133,11 @@ void CropNode::setInputPort(AnySignal* sig,int index){
         EAGLEEYE_LOGE("Only support input signal 2");
         return;
     }
-    Superclass::setInputPort(sig, index);
+    if(this->getNumberOfInputSignals() < index+1){
+        this->setNumberOfInputSignals(index+1);
+    }
 
+    Superclass::setInputPort(sig, index);
     if(index == 0){
         this->setOutputPort(sig->make(), index);
         this->getOutputPort(0)->setSignalType(sig->getSignalType());

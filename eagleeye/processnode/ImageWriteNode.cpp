@@ -5,6 +5,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/common/EagleeyeStr.h"
+#include "eagleeye/framework/pipeline/EmptySignal.h"
 #ifdef EAGLEEYE_PNG
 #include "eagleeye/3rd/pnglib/png.h"
 #endif
@@ -15,11 +16,12 @@ ImageWriteNode::ImageWriteNode(){
     // 输出信号
     this->setNumberOfInputSignals(1);
     this->setNumberOfOutputSignals(1);
-    this->setOutputPort(new ImageSignal<unsigned char>, 0);
+    this->setOutputPort(new EmptySignal(), 0);
 
-    this->m_folder = "/data/local/tmp/";
+    this->m_folder = "/data/local/tmp";
     this->m_count = 0;
     EAGLEEYE_MONITOR_VAR(std::string, setWriteFolder, getWriteFolder, "folder","", "");
+    EAGLEEYE_MONITOR_VAR(std::string, setFileName, getFileName, "file", "", "");
 }
 
 ImageWriteNode::~ImageWriteNode(){
@@ -31,22 +33,33 @@ void ImageWriteNode::executeNodeInfo(){
         EAGLEEYE_LOGD("%s dont exsit, try to build", this->m_folder.c_str());
         createdirectory(this->m_folder.c_str());
     }
+
+    SignalType signal_type = this->getInputPort(0)->getSignalType();
     EagleeyeType data_type = this->getInputPort(0)->getValueType();
-    if(data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_RGB || data_type == EAGLEEYE_RGBA){
-        if(data_type == EAGLEEYE_UCHAR){
+    if((signal_type == EAGLEEYE_SIGNAL_IMAGE && (data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_RGB || data_type == EAGLEEYE_RGBA)) || 
+        (signal_type == EAGLEEYE_SIGNAL_GRAY_IMAGE || signal_type == EAGLEEYE_SIGNAL_RGB_IMAGE || signal_type == EAGLEEYE_SIGNAL_RGBA_IMAGE)){
+        if(data_type == EAGLEEYE_UCHAR || signal_type == EAGLEEYE_SIGNAL_GRAY_IMAGE){
             // gray image
             ImageSignal<unsigned char>* input_uchar_signal = (ImageSignal<unsigned char>*)(this->getInputPort(0));
             Matrix<unsigned char> data_uchar = input_uchar_signal->getData();
             std::string file_prefix = this->getFileNamePrefix(input_uchar_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".png";
+            if(this->m_name != ""){
+                file_path = this->m_folder + "/" + this->m_name;
+            }
+
             writePngFile(file_path.c_str(), data_uchar.row(0), data_uchar.rows(), data_uchar.cols(), data_uchar.stride(), 1);
         }
-        else if(data_type == EAGLEEYE_RGB){
+        else if(data_type == EAGLEEYE_RGB || signal_type == EAGLEEYE_SIGNAL_RGB_IMAGE){
             // rgb image
             ImageSignal<Array<unsigned char,3>>* input_rgb_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
             Matrix<Array<unsigned char,3>> data_rgb = input_rgb_signal->getData();
             std::string file_prefix = this->getFileNamePrefix(input_rgb_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".png";
+            if(this->m_name != ""){
+                file_path = this->m_folder + "/" + this->m_name;
+            }
+
             writePngFile(file_path.c_str(), (unsigned char*)data_rgb.row(0), data_rgb.rows(), data_rgb.cols(), data_rgb.stride(), 3);
         }
         else{
@@ -55,6 +68,10 @@ void ImageWriteNode::executeNodeInfo(){
             Matrix<Array<unsigned char,4>> data_rgba = input_rgba_signal->getData();
             std::string file_prefix = this->getFileNamePrefix(input_rgba_signal->meta().name);
             std::string file_path = this->m_folder + "/" + file_prefix + ".png";
+            if(this->m_name != ""){
+                file_path = this->m_folder + "/" + this->m_name;
+            }
+
             writePngFile(file_path.c_str(), (unsigned char*)data_rgba.row(0), data_rgba.rows(), data_rgba.cols(), data_rgba.stride(), 4);
         }
     }
@@ -172,10 +189,22 @@ void ImageWriteNode::writePngFile(const char* file_path, unsigned char* data, in
 
 void ImageWriteNode::setWriteFolder(std::string folder){
     this->m_folder = folder;
+    int len = this->m_folder.size();
+    if(this->m_folder.at(len-1) == '/'){
+        this->m_folder = this->m_folder.substr(0, len-1);
+    }
 }
 
 void ImageWriteNode::getWriteFolder(std::string& folder){
     folder = this->m_folder;
+}
+
+
+void ImageWriteNode::setFileName(std::string name){
+    this->m_name = name;
+}
+void ImageWriteNode::getFileName(std::string& name){
+    name = this->m_name;
 }
 
 std::string ImageWriteNode::getFileNamePrefix(std::string filename){

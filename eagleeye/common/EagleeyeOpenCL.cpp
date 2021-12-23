@@ -612,6 +612,66 @@ std::string DtToCLCMDDt(const EagleeyeType dt) {
       return "";
   }
 }
+
+std::shared_ptr<OpenCLKernelGroupManager> OpenCLKernelGroupManager::m_kernel_manager;    
+OpenCLKernelGroupManager::OpenCLKernelGroupManager(){
+
+}
+OpenCLKernelGroupManager::~OpenCLKernelGroupManager(){
+    std::map<std::string, OpenCLKernelGroup*>::iterator iter, iend(m_kernel_map.end());
+    for(iter = m_kernel_map.begin(); iter != iend; ++iter){
+        delete iter->second;
+    }
+    m_kernel_map.clear();
 }
 
+std::shared_ptr<OpenCLKernelGroupManager> OpenCLKernelGroupManager::getInstance(){
+    if(m_kernel_manager.get() == NULL){
+        m_kernel_manager = 
+            std::shared_ptr<OpenCLKernelGroupManager>(new OpenCLKernelGroupManager(), 
+                                [](OpenCLKernelGroupManager* ptr){delete ptr;});
+    }
+
+    return m_kernel_manager;
+}
+
+bool OpenCLKernelGroupManager::add(std::string name, OpenCLKernelGroup* k){
+    if(this->m_kernel_map.find(name) != this->m_kernel_map.end()){
+        EAGLEEYE_LOGE("%s has been in OpenCLKernelGroupManager", name.c_str());
+        return false;
+    }
+
+    m_kernel_map[name] = k;
+    return true;
+}
+
+bool OpenCLKernelGroupManager::release(std::string name){
+    if(this->m_kernel_map.find(name) == this->m_kernel_map.end()){
+        EAGLEEYE_LOGE("%s not in OpenCLKernelGroupManager", name.c_str());
+        return false;
+    }
+
+    m_kernel_map.erase(m_kernel_map.find(name));
+    return true;
+}
+
+void OpenCLKernelGroupManager::clear(){
+    std::map<std::string, OpenCLKernelGroup*>::iterator iter, iend(m_kernel_map.end());
+    for(iter = m_kernel_map.begin(); iter != iend; ++iter){
+        delete iter->second;
+    }
+    m_kernel_map.clear();
+}
+
+OpenCLKernelGroup* OpenCLKernelGroupManager::kgroup(std::string name){
+    if(this->m_kernel_map.find(name) == this->m_kernel_map.end()){
+        return NULL;
+    }
+
+    return this->m_kernel_map[name];
+}
+}
+
+
 #endif  
+

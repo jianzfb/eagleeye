@@ -104,7 +104,6 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
     }
 
     // 1. Set MobileConfig
-    EAGLEEYE_LOGD("PADDLELITE Set paddle model file");
     paddle::lite_api::MobileConfig config;
 	std::string nb_path;
     if(endswith(model_folder, "/")){
@@ -113,16 +112,35 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
     else{
         nb_path = model_folder + "/" + this->m_nb_name;
     }
-	EAGLEEYE_LOGD("%s", nb_path.c_str());
+    EAGLEEYE_LOGD("PADDLELITE Set paddle model file %s", nb_path.c_str());
     config.set_model_from_file(nb_path);
-	// if(this->m_device == "GPU"){
-	// 	bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();		
-	// 	if (!is_opencl_backend_valid) {
-	// 		EAGLEEYE_LOGE("Unsupport opencl nb model.");
-	// 		return false;
-	// 	}
-	// 	config.set_opencl_tune(true);
-	// }
+
+	if(this->m_device == "GPU"){
+		bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();		
+		if (!is_opencl_backend_valid) {
+			EAGLEEYE_LOGE("Unsupport opencl nb model.");
+			return false;
+		}
+
+		std::string kernel_bin_path = "";
+		if(endswith(this->m_writable_path, "/")){
+			kernel_bin_path = this->m_writable_path + m_model_name + "_kernel.bin";
+		}
+		else{
+			kernel_bin_path = this->m_writable_path + "/" + m_model_name + "_kernel.bin";
+		}
+		if(isfileexist(kernel_bin_path.c_str())){
+			config.set_opencl_binary_path_name(this->m_writable_path, m_model_name+"_kernel.bin");
+		}
+		else{
+			static bool run_once = false;
+			if(!run_once){
+				config.set_opencl_binary_path_name(this->m_writable_path, m_model_name+"_kernel.bin");
+				run_once = true;
+			}
+		}
+		// config.set_opencl_tune(true);
+	}
 
     // NOTE: To load model transformed by model_optimize_tool before
     // release/v2.3.0, plese use `set_model_dir` API as listed below.

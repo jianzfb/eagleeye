@@ -29,8 +29,6 @@ void test_FixedResizedOp_on_CPU(){
         }
     }
 
-    std::cout<<t_ptr[10]<<" "<<t_ptr[100]<<std::endl;
-
     FixedResizeOp* resized_op = new FixedResizeOp(1,1,"resize");
     Tensor<short> output(std::vector<int64_t>{1,3,40,40});
     std::vector<Tensor<short>> input_list={t};

@@ -80,13 +80,10 @@ void SaliencyDetNode::executeNodeInfo(){
 }
 
 Matrix<float> SaliencyDetNode::getRC(Matrix<Array<unsigned char,3>> img){
-	std::cout<<"in get RC"<<std::endl;
 	// cv::imwrite("/sdcard/input.png", cv::Mat(img.rows(),img.cols(),CV_8UC3, img.dataptr()));
 	Matrix<Array<float,3>> imgLab3f = img.transform(RGB2LabOp<Array<unsigned char,3>>());
-	std::cout<<"transform to lab"<<std::endl;
 	Matrix<int> regIdx1i;
 	int regNum = segmentImage(imgLab3f, regIdx1i, this->m_segsigma, this->m_segk, this->m_segminsize);	
-	std::cout<<regIdx1i<<std::endl;
 	EAGLEEYE_LOGD("after segment");
 
 	// Mat colorIdx1i, regSal1v, tmp, color3fv;

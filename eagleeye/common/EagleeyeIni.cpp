@@ -124,10 +124,8 @@ std::vector<ININode>::size_type EagleeyeINI::setValue(std::string root, std::str
 void EagleeyeINI::travel(){
 	for (std::map<std::string, SubNode>::iterator itr = this->map_ini.begin(); itr!= this->map_ini.end(); ++itr){
 		//root
-		std::cout << "[" << itr->first << "]" << std::endl;
 		for (std::map<std::string, std::string>::iterator itr1=itr->second.sub_node.begin(); itr1!=itr->second.sub_node.end();
 			++itr1){
-			std::cout << "    " << itr1->first << " = " << itr1->second << std::endl;
 		}
 	}
 }

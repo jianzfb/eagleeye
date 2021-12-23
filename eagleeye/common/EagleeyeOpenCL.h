@@ -234,15 +234,6 @@ private:
 template<>
 void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int index, std::string name);
 
-
-#define EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(group) \
-    OpenCLKernelGroup* group##_kernels=NULL;
-#define EAGLEEYE_OPENCL_RELEASE_KERNEL_GROUP(group) \
-    if(group##_kernels != NULL){                    \
-        delete group##_kernels;                     \
-        group##_kernels = NULL;                     \
-    }
-
 #define EAGLEEYE_OPENCL_REGISTER_SOURCE_CODE(program, code)    \
     OpenCLRuntime::getOpenCLEnv()->registerProgramSource(#program, code);
 
@@ -265,80 +256,80 @@ void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int i
 #define VARGS(...) VARGS_(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
 
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_1(group, program, a) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_2(group, program, a,b) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_3(group, program, a,b,c) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_4(group, program, a,b,c,d) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_5(group, program, a,b,c,d,e) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_6(group, program, a,b,c,d,e,f) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_7(group, program, a,b,c,d,e,f,g) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_8(group, program, a,b,c,d,e,f,g,h) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g,#h}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g,#h}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_9(group, program, a,b,c,d,e,f,g,h,i) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g,#h,#i}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g,#h,#i}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP_10(group, program, a,b,c,d,e,f,g,h,i,j) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g,#h,#i,#j}, #program);
+    OpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a,#b,#c,#d,#e,#f,#g,#h,#i,#j}, #program));
 #define EAGLEEYE_OPENCL_KERNEL_GROUP(...) CONCAT(EAGLEEYE_OPENCL_KERNEL_GROUP_,VARGS(__VA_ARGS__))(__VA_ARGS__)
 
 #define EAGLEEYE_OPENCL_KERNEL_OPTION_GROUP(group, program, a, options) \
-    group##_kernels = new OpenCLKernelGroup(std::vector<std::string>{#a}, #program, options);
+    gOpenCLKernelGroupManager::getInstance()->add(#group, new OpenCLKernelGroup(std::vector<std::string>{#a}, #program, options));
 
 #define EAGLEEYE_OPENCL_CREATE_READ_BUFFER(group, name, size) \ 
-    group##_kernels->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_READ);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_READ);
 
 #define EAGLEEYE_OPENCL_CREATE_WRITE_BUFFER(group, name, size) \ 
-    group##_kernels->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_WRITE);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_WRITE);
 
 #define EAGLEEYE_OPENCL_CREATE_READ_WRITE_BUFFER(group, name, size) \ 
-    group##_kernels->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_READ_WRITE);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_READ_WRITE);
 
 #define EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_BUFFER(group, name, size) \ 
-    group##_kernels->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_READ_WRITE_PINNED);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceMem(#name, size, EAGLEEYE_CL_MEM_READ_WRITE_PINNED);
 
 #define EAGLEEYE_OPENCL_CREATE_READ_IMAGE(group, name, rows, cols, channels, pixel) \ 
-    group##_kernels->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_READ);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_READ);
 
 #define EAGLEEYE_OPENCL_CREATE_WRITE_IMAGE(group, name, rows, cols, channels, pixel) \ 
-    group##_kernels->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_WRITE);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_WRITE);
 
 #define EAGLEEYE_OPENCL_CREATE_READ_WRITE_IMAGE(group, name, rows, cols, channels, pixel) \ 
-    group##_kernels->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_READ_WRITE);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_READ_WRITE);
 
 #define EAGLEEYE_OPENCL_CREATE_READ_WRITE_PINNED_IMAGE(group, name, rows, cols, channels, pixel) \ 
-    group##_kernels->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_READ_WRITE_PINNED);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->createDeviceImage(#name, rows, cols, channels, pixel, EAGLEEYE_CL_MEM_READ_WRITE_PINNED);
 
 #define EAGLEEYE_OPENCL_MAP_BUFFER(group, name) \
-    group##_kernels->map(#name);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->map(#name);
 
 #define EAGLEEYE_OPENCL_MAP_IMAGE(group, name, row_pitch) \
-    group##_kernels->map(#name, row_pitch);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->map(#name, row_pitch);
 
 #define EAGLEEYE_OPENCL_UNMAP(group, name) \
-    group##_kernels->unmap(#name);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->unmap(#name);
 
 #define EAGLEEYE_OPENCL_COPY_TO_DEVICE(group, name, data) \
-    group##_kernels->copyToDevice(#name, data);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->copyToDevice(#name, data);
 
 #define EAGLEEYE_OPENCL_COPY_TO_HOST(group, name, data) \
-    group##_kernels->copyToHost(#name, data);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->copyToHost(#name, data);
 
 #define EAGLEEYE_OPENCL_SWAP(group, name_1, name_2) \ 
-    group##_kernels->swap(#name_1, #name_2);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->swap(#name_1, #name_2);
 
 #define EAGLEEYE_OPENCL_KERNEL_RUN(group, kernel, work_dims, global_size, local_size) \
-    group##_kernels->run(#kernel, work_dims, global_size, local_size);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->run(#kernel, work_dims, global_size, local_size);
 
 #define EAGLEEYE_OPENCL_KERNEL_SET_BUFFER_ARG(group, kernel, index, value) \
-    group##_kernels->setKernelArg(#kernel, index, std::string(#value));
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->setKernelArg(#kernel, index, std::string(#value));
 
 #define EAGLEEYE_OPENCL_KERNEL_SET_ARG(group, kernel, index, value) \
-    group##_kernels->setKernelArg(#kernel, index, value);
+    OpenCLKernelGroupManager::getInstance()->kgroup(#group)->setKernelArg(#kernel, index, value);
 
 #define EAGLEEYE_OPECNCL_GLOBAL_SIZE(global_size, local_size) ((global_size)%(local_size)==0) ? (global_size) : (((global_size)/(local_size)+1)*(local_size))
 
@@ -385,6 +376,22 @@ void OpenCLKernelGroup::setKernelArg<std::string>(std::string kernel_name, int i
 
 std::string DtToCLDt(const EagleeyeType dt);
 std::string DtToCLCMDDt(const EagleeyeType dt);
+
+class OpenCLKernelGroupManager{
+public:
+    virtual ~OpenCLKernelGroupManager();
+    static std::shared_ptr<OpenCLKernelGroupManager> getInstance();
+    
+    bool add(std::string name, OpenCLKernelGroup* k);
+    bool release(std::string name);
+    void clear();
+    OpenCLKernelGroup* kgroup(std::string name);
+
+private:
+    OpenCLKernelGroupManager();
+    std::map<std::string, OpenCLKernelGroup*> m_kernel_map;
+    static std::shared_ptr<OpenCLKernelGroupManager> m_kernel_manager;
+};
 }
 #else
 namespace eagleeye{

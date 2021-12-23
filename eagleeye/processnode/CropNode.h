@@ -12,7 +12,7 @@ public:
 
     EAGLEEYE_CLASSIDENTITY(CropNode);
 
-    CropNode();
+    CropNode(std::vector<float> region);
     virtual ~CropNode();
 
     /**
@@ -32,6 +32,8 @@ public:
 private:
     CropNode(const CropNode&);
     void operator=(const CropNode&);
+
+    std::vector<float> m_default_region;
 };
 }
 #endif

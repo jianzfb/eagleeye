@@ -211,7 +211,7 @@ enum EagleeyeRuntimeType{
 };
 
 enum class DataFormat {
-  NONE = 0, NHWC = 1, NCHW = 2,
+  NONE = 0, NHWC = 1, NCHW = 2, NC = 3,
   HWOI = 100, OIHW = 101, HWIO = 102, OHWI = 103,
   AUTO = 1000,
 };

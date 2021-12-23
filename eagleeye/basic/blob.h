@@ -3,9 +3,11 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/spinlock.hpp"
 #include "eagleeye/common/EagleeyeRuntime.h"
+#include "eagleeye/basic/Dim.h"
 #include <vector>
 #include <map>
 #include <memory>
+
 
 namespace eagleeye{
 class OpenCLObject;
@@ -34,7 +36,7 @@ public:
 };
 
 enum MemoryType{
-    GPU_IMAGE,
+    GPU_IMAGE = 0,
     GPU_BUFFER,
     CPU_BUFFER
 };
@@ -73,7 +75,8 @@ public:
          EagleeyeType data_type, 
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,
-         Aligned aligned=Aligned(64));
+         Aligned aligned=Aligned(64),
+         void* data=NULL);
 
     /**
      * @brief Destroy the Blob object
@@ -176,6 +179,32 @@ public:
      */
     std::vector<int64_t> getImageShape() const;
 
+    /**
+     * @brief get tensor shape
+     */ 
+    std::vector<int64_t> shape() const;
+
+    /**
+     * @brief reshape tensor
+     * 
+     * @param s 
+     */
+    void reshape(std::vector<int64_t> s);
+
+    /**
+     * @brief get blob dims
+     * 
+     * @return const Dim& 
+     */
+    const Dim &dims() const { return m_dims; }
+
+    /**
+     * @brief get element number
+     * 
+     * @return int64_t 
+     */
+    int64_t numel() const { return m_dims.production(); }
+
 protected:
     /**
      * @brief sync memory between device
@@ -203,6 +232,12 @@ protected:
     std::vector<int64_t> m_shape;
 
     /**
+     * @brief blob dims
+     * 
+     */
+    Dim m_dims;
+
+    /**
      * @brief blob range
      * 
      */
@@ -228,7 +263,6 @@ protected:
      */ 
     std::vector<int64_t> m_image_shape;
     
-    
 protected:
     size_t m_size;
     Aligned m_aligned;
@@ -244,11 +278,6 @@ protected:
     mutable bool m_is_gpu_waiting_from_cpu;
     mutable bool m_is_gpu_ready;
     mutable std::shared_ptr<spinlock> m_lock;
-
-private:
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    OpenCLKernelGroup* m_buffer_to_image_kernel;
-#endif
 };    
 }
 #endif

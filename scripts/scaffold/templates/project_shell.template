@@ -4,11 +4,18 @@ then
 fi
 
 # compile
-mkdir build
+
+{% for abi in build_abis%}
+echo "start compile {{abi}}"
+mkdir -p build
 cd build
 cmake -DCMAKE_BUILD_TYPE={{build_type}} -DCMAKE_TOOLCHAIN_FILE={{'${ANDROID_NDK_HOME}'}}/build/cmake/android.toolchain.cmake -DANDROID_ABI={{abi}} -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL={{api_level}} ..
 make
-cd ..
+cd ../
 
 # install (package)
-cp -r ./bin/{{abi}}/*.so ./package/{{project}}/
+mkdir -p ./package/{{abi}}/{{project}}
+cp -r ./bin/{{abi}}/*.so ./package/{{abi}}/{{project}}/
+echo "finish compile {{abi}}"
+echo "FINISH-{{abi}}"
+{% endfor %}

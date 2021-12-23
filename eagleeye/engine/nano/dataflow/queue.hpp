@@ -20,12 +20,12 @@ public:
   Queue(){}
   virtual ~Queue(){}
   
-  void push (T const & val) {
+  void push(T const & val) {
     std::lock_guard<mutex> lock(mtx_);
     data_.push_back(val);    
   }
 
-  bool try_pop (T & val) noexcept {
+  bool try_pop(T & val) noexcept {
     std::lock_guard<mutex> lock(mtx_);
     if (data_.size() == 0) { return false; }
 
@@ -34,14 +34,14 @@ public:
     return true;
   }
 
-  std::size_t size () const noexcept {
+  std::size_t size() const noexcept {
     return data_.size();
   }
+
 private:
   std::deque<T> data_;
   mutex mtx_;
 };
-
 }
 
 }

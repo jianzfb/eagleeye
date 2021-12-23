@@ -3,6 +3,7 @@
 #include "eagleeye/engine/model_engine.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/engine/model_run.h"
+#include "eagleeye/common/EagleeyeFile.h"
 #include <vector>
 #include <fstream>
 #include <sstream>
@@ -11,7 +12,10 @@
 #include <memory> 
 #include <iostream>
 #include "paddle_api.h"  // NOLINT
-
+#ifdef EAGLEEYE_PADDLE_STATIC_LINK
+#include "paddle_use_kernels.h"  // NOLINT
+#include "paddle_use_ops.h"      // NOLINT
+#endif
 
 namespace eagleeye{
 

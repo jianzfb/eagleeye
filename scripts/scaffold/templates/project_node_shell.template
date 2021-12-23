@@ -1,0 +1,15 @@
+if [ -d "./build" ]; 
+then
+  rm -rf ./build
+fi
+
+# compile
+
+{% for abi in build_abis%}
+echo "start compile {{abi}}"
+mkdir -p build
+cd build
+cmake -DCMAKE_BUILD_TYPE={{build_type}} -DCMAKE_TOOLCHAIN_FILE={{'${ANDROID_NDK_HOME}'}}/build/cmake/android.toolchain.cmake -DANDROID_ABI={{abi}} -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL={{api_level}} ..
+make
+cd ../
+{% endfor %}

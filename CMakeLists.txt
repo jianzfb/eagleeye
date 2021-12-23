@@ -10,14 +10,6 @@ SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
 # set(LIBCXX_LINK_FLAGS "-rtlib=compiler-rt")
 # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
 
-add_definitions(-DARM_WITH_OMP)
-add_definitions(-DHPPL_STUB_FUNC)
-add_definitions(-DLITE_WITH_ARM)
-add_definitions(-DLITE_WITH_LIGHT_WEIGHT_FRAMEWORK)
-add_definitions(-DLITE_WITH_LINUX)
-add_definitions(-DPADDLE_DISABLE_PROFILER)
-
-
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
 add_definitions(-DEAGLEEYE_ANDROID_APP)
@@ -207,9 +199,7 @@ set(EAGLEEYE_SRC
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/runtime/gpu/opencl_runtime.cpp
     eagleeye/engine/nano/util/opencl_util.cpp
-    eagleeye/engine/nano/dataflow/schedule.cpp
-    eagleeye/engine/nano/dataflow/heft.cpp
-    eagleeye/engine/nano/op/placeholder.cpp
+    eagleeye/engine/nano/op/placeholder_op.cpp
     eagleeye/render/ImageShow.cpp
     eagleeye/codegen/opencl/encrypt_opencl_kernel.cc
     eagleeye/render/GLUtils.cpp
@@ -249,7 +239,37 @@ set(EAGLEEYE_SRC
     eagleeye/basic/BGRRotateHWC.cpp
     eagleeye/basic/BGRAFlipHWC.cpp
     eagleeye/basic/BGRFlipHWC.cpp
-    eagleeye/render/AutoRenderRegion.cpp)
+    eagleeye/render/AutoRenderRegion.cpp
+    eagleeye/basic/Dim.cpp
+    eagleeye/engine/nano/op/factory.cpp
+    eagleeye/engine/math/arm/clip.cc
+    eagleeye/engine/math/arm/elementwise.cc
+    eagleeye/engine/math/arm/interpolate.cc
+    eagleeye/engine/math/arm/pad2d.cc
+    eagleeye/engine/math/arm/reduce_max.cc
+    eagleeye/engine/math/arm/reduce_mean.cc
+    eagleeye/engine/math/arm/reduce_min.cc
+    eagleeye/engine/math/arm/reduce_prod.cc
+    eagleeye/engine/math/arm/reduce_sum.cc
+    eagleeye/engine/math/arm/type_trans.cc
+    eagleeye/engine/nano/op/cast_op.cpp
+    eagleeye/engine/nano/op/clip_op.cpp
+    eagleeye/engine/nano/op/concat_op.cpp
+    eagleeye/engine/nano/op/interpolate_op.cpp
+    eagleeye/engine/nano/op/pad2d_op.cpp
+    eagleeye/engine/nano/op/reduce_op.cpp
+    eagleeye/engine/nano/op/repeat_op.cpp
+    eagleeye/engine/nano/op/reshape_op.cpp
+    eagleeye/engine/nano/op/transpose_op.cpp
+    eagleeye/engine/nano/op/preprocess_op.cpp
+    eagleeye/engine/nano/op/split_op.cpp
+    eagleeye/engine/nano/op/shape_op.cpp
+    eagleeye/engine/nano/op/slice_op.cpp
+    eagleeye/engine/nano/op/image_resize_op.cpp
+    eagleeye/processnode/ImageResizeNode.cpp
+    eagleeye/processnode/ImageTransformNode
+    eagleeye/common/EagleeyeImageUti.cpp
+    eagleeye/processnode/ImageSelect.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
@@ -288,7 +308,7 @@ if(DEFINED FFMPEG AND DEFINED X264)
 endif()
 
 find_package(pnglib)
-if(DEFINED PNG AND pnglib_FOUND)
+if(pnglib_FOUND)
     add_definitions(-DEAGLEEYE_PNG)
     include_directories(${pnglib_INCLUDE_DIRS})
     target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})

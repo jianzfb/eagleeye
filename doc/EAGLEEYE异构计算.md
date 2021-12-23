@@ -144,7 +144,7 @@ Graph(std::vector<EagleeyeRuntime> runtimes,
     g.run();
 
     // 获得任务d的输出数据
-    Node* n = g.findNode("d");
+    Node* n = g.find("d");
     Tensor<float> dd = *(Tensor<float>*)(n->data(0));
 ```
 ####NANO神经网络推断引擎

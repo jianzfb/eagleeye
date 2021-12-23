@@ -30,12 +30,18 @@ class AndroidEnv : public LinuxBaseEnv {
   // LogWriter *GetLogWriter() override;
   EagleeyeError GetCPUMaxFreq(std::vector<float> *max_freqs) override;
   std::vector<std::string> GetBackTraceUnsafe(int max_steps) override;
+
+  // set/get architecture
+  void SetArch(ARMArch arch) { arch_ = arch; }
+  ARMArch arch(){return arch_;};
+
   // std::unique_ptr<MallocLogger> NewMallocLogger(
   //     std::ostringstream *oss,
   //     const std::string &name) override;
 
  private:
   // AndroidLogWriter log_writer_;
+  ARMArch arch_;
 };
 
 }  // namespace port

@@ -59,9 +59,6 @@ private:
     TemplateMatchingNode(const TemplateMatchingNode&);
     void operator=(const TemplateMatchingNode&);
 
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(TM);
-#endif
     Matrix<Array<unsigned char, 3>> m_tmpl;
     bool m_tmpl_update;
     int m_mode;

@@ -961,6 +961,12 @@ void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> 
         EAGLEEYE_LOGD("Signature    %s.", this->m_signature.c_str());
     }
 
+    // 创建管道资源文件夹
+    if(resource_folder != NULL){
+        this->setResoruceFolder(resource_folder);
+    }
+
+    // 初始化管线
     if(init_func == nullptr){
         // 初始化管道结构
         EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());
@@ -968,12 +974,8 @@ void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> 
     }
     else{
         init_func();
-    }    
+    }   
 
-    // 创建管道资源文件夹
-    if(resource_folder != NULL){
-        this->setResoruceFolder(resource_folder);
-    }
     std::string resource_folder_s = this->resourceFolder();
     if(!isdirexist(resource_folder_s.c_str())){
         createdirectory(resource_folder_s.c_str());

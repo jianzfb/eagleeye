@@ -47,10 +47,6 @@ public:
      * @param rotation 
      */
     static bool decompose(const Matrix<float> model, Matrix<float>& translation, Matrix<float>& scale, float& rotation);
-
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-    EAGLEEYE_OPENCL_DECLARE_KERNEL_GROUP(homography);
-#endif
 };
 }
 #endif

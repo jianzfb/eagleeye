@@ -11,8 +11,9 @@ class Graph;
 class Node;
 class Schedule{
 public:
-    Schedule(Graph* g, std::vector<EagleeyeRuntime> runtime);
-    virtual ~Schedule();
+    Schedule(Graph* g, std::vector<EagleeyeRuntime> runtime)
+        :g_(g),runtime_(runtime){};
+    virtual ~Schedule(){};
     
     /**
      * @brief Get the Runtime object for node
@@ -20,7 +21,9 @@ public:
      * @param node 
      * @return EagleeyeRuntime 
      */
-    virtual EagleeyeRuntime getRuntime(Node* node);
+    virtual EagleeyeRuntime getRuntime(Node* node){
+        return EagleeyeRuntime(EAGLEEYE_CPU);    
+    }
 
     /**
      * @brief analyze context

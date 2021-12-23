@@ -7,6 +7,13 @@
 #include <vector>
 #include <map>
 #include <string>
+#define OP_SUPPORT(DEVICE) \
+    if (std::string(#DEVICE) == "CPU"){ \
+        this->m_support_cpu = true; \
+    } \
+    else if(std::string(#DEVICE) == "GPU"){ \
+        this->m_support_gpu = true; \
+    }
 
 namespace eagleeye{
 namespace dataflow{
@@ -27,6 +34,9 @@ public:
         :m_input_num(IN),m_output_num(OUT){
             this->m_input_shape.resize(m_input_num);
             this->m_output_shape.resize(m_output_num);
+            this->m_support_cpu = false;
+            this->m_support_gpu = false;
+            this->m_outputs.resize(OUT);
         };
 
     /**
@@ -48,15 +58,24 @@ public:
      * @param output 
      * @param input 
      */
-    virtual int runOnCpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnCpu(std::vector<T> input=std::vector<T>{})=0;
 
     /**
-     * @brief ru on gpu
+     * @brief run on gpu
      * 
      * @param output 
      * @param input 
      */
-    virtual int runOnGpu(std::vector<T>& output, std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnGpu(std::vector<T> input=std::vector<T>{})=0;
+
+    /**
+     * @brief check whether support implementation
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool isSupportCPU(){return m_support_cpu;}
+    bool isSupportGPU(){return m_support_gpu;}
 
     /**
      * @brief Get the Output Num object
@@ -102,13 +121,17 @@ public:
      * @param index 
      * @return T& 
      */
-    virtual T& getOutputTensor(int index){
+    virtual T& getOutput(int index){
+        return this->m_outputs[index];
+    }
+
+    virtual int getOutputSize(int index){
         if(index >= this->m_output_num){
-            EAGLEEYE_LOGD("index out of bounds for getOutputTensor of BufferToImageOp");
-            return this->m_output_tensors[this->m_output_num - 1];
+            EAGLEEYE_LOGD("Index out of bounds.");
+            return 0;
         }
 
-        return this->m_output_tensors[index];
+        return this->m_outputs[index].blobsize();
     }
 
     virtual int update(T data, int index){return -1;}
@@ -116,21 +139,28 @@ public:
     /**
      * @brief use cpu data, update
      */
-    virtual int update(void* data, int index){return -1;}
+    virtual int update(void* data, std::vector<int64_t> shape, int index){return -1;}
 
     /**
      * @brief get cpu data, from 
      */
-    virtual int fetch(void*& data, int index, bool block){
+    virtual int fetch(void*& data, std::vector<int64_t>& shape, int index, bool block){
         if(!block){
-            this->getOutputTensor(index).transfer(EagleeyeRuntime(EAGLEEYE_CPU));
+            this->getOutput(index).transfer(EagleeyeRuntime(EAGLEEYE_CPU));
             return -1;
         }
         else{
-            data = this->getOutputTensor(index).cpu();
+            data = this->getOutput(index).cpu();
+            shape = this->getOutput(index).shape();
             return 0;
         }        
     }
+
+    /**
+     * @brief clear resource
+     * 
+     */
+    virtual void clear(){}
 
 protected:
     int m_input_num;
@@ -138,7 +168,10 @@ protected:
 
     std::vector<std::vector<int64_t>> m_output_shape;
     std::vector<std::vector<int64_t>> m_input_shape;
-    std::vector<T> m_output_tensors;
+    std::vector<T> m_outputs;
+
+    bool m_support_cpu;
+    bool m_support_gpu;
 };
 }
 }
