@@ -4,10 +4,12 @@
 #include <memory>
 #include <map>
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/common/CJsonObject.hpp"
+
 
 namespace eagleeye
 {
-typedef AnyNode* (*BUILD_NODE_FUNC_TYPE)(const char*);
+typedef AnyNode* (*BUILD_NODE_FUNC_TYPE)(const char*, neb::CJsonObject);
 
 class NodeManager
 {
@@ -22,7 +24,7 @@ public:
     /**
      * @brief 创建节点
      */ 
-    AnyNode* build(std::string node);
+    AnyNode* build(std::string node, neb::CJsonObject node_param);
 
 
     virtual ~NodeManager();

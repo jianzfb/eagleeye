@@ -12,6 +12,7 @@ namespace eagleeye
 ImageReadNode::ImageReadNode(){
 	this->setNumberOfOutputSignals(1);
 	this->setOutputPort(new ImageSignal<Array<unsigned char,3>>,0);
+    this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_RGB_IMAGE);
 
     EAGLEEYE_MONITOR_VAR(std::string, setImagePath, getImagePath, "file","", "");
 }
@@ -44,6 +45,7 @@ void ImageReadNode::executeNodeInfo(){
 
 void ImageReadNode::setImagePath(std::string image_path){
     this->m_image_path = image_path;
+    this->modified();
 }
 
 void ImageReadNode::getImagePath(std::string& image_path){

@@ -21,16 +21,26 @@ include_directories({{eagleeye}}/include)
 link_directories({{eagleeye}}/libs/{{'${ANDROID_ABI}'}})
 add_library({{project}} SHARED {{'${'}}{{project}}_SRC{{'}'}})  
 
-{% if opencv != "" %}
-set(OpenCV_DIR {{opencv}}/{{'${ANDROID_ABI}'}})
+{% if opencv != '' %}
+set(OpenCV_DIR {{opencv}}}})
 find_package(OpenCV REQUIRED)
 message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 TARGET_LINK_LIBRARIES({{project}} ${OpenCV_LIBS})
+{% else %}
+include_directories({{eagleeye}}/3rd/opencv/include)
+add_library(libopencv SHARED IMPORTED)
+set_target_properties(
+    libopencv
+    PROPERTIES IMPORTED_LOCATION 
+    {{eagleeye}}/3rd/opencv/lib/${ANDROID_ABI}/libopencv_java3.so
+)
+TARGET_LINK_LIBRARIES({{project}} libopencv)
 {% endif %}
 
-{% if paddlelite != "" %}
+
+{% if paddlelite != '' %}
 include_directories({{paddlelite}}/{{'${ANDROID_ABI}'}}/include)
 include_directories({{paddlelite}}/{{'${ANDROID_ABI}'}}/include/lite/api)
 add_library(libpaddlelite SHARED IMPORTED)
@@ -42,8 +52,18 @@ set_target_properties(
 TARGET_LINK_LIBRARIES({{project}} libpaddlelite)
 {% endif %}
 
-{% if tnn != ""%}
+{% if tnn != '' %}
 {% endif %}
+
+{% for model in precompiled_models %}
+add_library(lib{{model}} STATIC IMPORTED)
+set_target_properties(
+    lib{{model}}
+    PROPERTIES IMPORTED_LOCATION 
+    ../../lib{{model}}.a
+)
+TARGET_LINK_LIBRARIES({{project}} lib{{model}})
+{% endfor %}
 
 add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
 include_directories({{eagleeye}}/3rd/opencl/include)

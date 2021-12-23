@@ -53,10 +53,10 @@ void NodeManager::update(){
     m_node_build_func_map["featureext"] = build_node_func;
 }
 
-AnyNode* NodeManager::build(std::string node){
+AnyNode* NodeManager::build(std::string node, neb::CJsonObject node_param){
     std::map<std::string, BUILD_NODE_FUNC_TYPE>::iterator iter, iend(m_node_build_func_map.end());
     for(iter = m_node_build_func_map.begin(); iter != iend; ++iter){
-        AnyNode* node_ptr = m_node_build_func_map[iter->first](node.c_str());
+        AnyNode* node_ptr = m_node_build_func_map[iter->first](node.c_str(), node_param);
         if(node_ptr != NULL){
             return node_ptr;
         }

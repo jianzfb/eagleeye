@@ -30,6 +30,9 @@ public:
     void setWriteFolder(std::string folder);
     void getWriteFolder(std::string& folder);
 
+    void setFileName(std::string name);
+    void getFileName(std::string& name);
+
     /**
 	 * @brief reset pipeline
 	 * 
@@ -56,6 +59,7 @@ private:
 
     int m_count;
     std::string m_folder;
+    std::string m_name;
 };
 }
 #endif

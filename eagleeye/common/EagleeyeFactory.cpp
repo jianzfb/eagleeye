@@ -8,11 +8,16 @@
 #include "eagleeye/processnode/YUVResizeNode.h"
 #include "eagleeye/processnode/YUVConvertNode.h"
 #include "eagleeye/render/ImageShow.h"
+#include "eagleeye/render/ImageBlend.h"
+#include "eagleeye/render/HighlightShow.h"
+#include "eagleeye/render/ShapeNode.h"
 #include "eagleeye/processnode/CropNode.h"
 #include "eagleeye/processnode/IdentityNode.h"
 #include "eagleeye/processnode/ImageResizeNode.h"
 #include "eagleeye/processnode/NNNode.h"
 #include "eagleeye/processnode/ImageTransformNode.h"
+#include "eagleeye/processnode/ImageSelect.h"
+#include "eagleeye/processnode/ImageReadNode.h"
 
 namespace eagleeye
 {
@@ -194,8 +199,28 @@ AnyNode* __build_node(std::string node_name, std::string node_class, neb::CJsonO
         node->setUnitName(node_name.c_str());
         return node;
     }
+    else if(node_class == "ImageBlend"){
+        ImageBlend* node = new ImageBlend();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "HighlightShow"){
+        HighlightShow* node = new HighlightShow();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "ShapeNode"){
+        ShapeNode* node = new ShapeNode();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "ImageSelect"){
+        ImageSelect* node = new ImageSelect();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
 
-    AnyNode* node = NodeManager::get()->build(node_class);
+    AnyNode* node = NodeManager::get()->build(node_class, node_param);
     if(node != NULL){
         node->setUnitName(node_name.c_str());
     }
@@ -523,8 +548,8 @@ bool eagleeye_build_pipeline_from_json(AnyPipeline*pipeline,
             else if(signal_type_str == "EAGLEEYE_SIGNAL_POINT"){
                 st = EAGLEEYE_SIGNAL_POINT;
             }   
-            else if(signal_type_str == "EAGLEEYE_SIGNAL_LINE"){
-                st = EAGLEEYE_SIGNAL_LINE;
+            else if(signal_type_str == "EAGLEEYE_SIGNAL_FILE"){
+                st = EAGLEEYE_SIGNAL_FILE;
             }                                                
             else if(signal_type_str == "EAGLEEYE_SIGNAL_MASK"){
                 st = EAGLEEYE_SIGNAL_MASK;
@@ -552,8 +577,19 @@ bool eagleeye_build_pipeline_from_json(AnyPipeline*pipeline,
             } 
             else if(signal_type_str == "EAGLEEYE_SIGNAL_POS_3D"){
                 st = EAGLEEYE_SIGNAL_POS_3D;
-            }                                                                                                
-
+            }
+            else if(signal_type_str == "EAGLEEYE_SIGNAL_YUV_IMAGE"){
+                st = EAGLEEYE_SIGNAL_YUV_IMAGE;
+            }                                                                                         
+            else if(signal_type_str == "EAGLEEYE_SIGNAL_STRING"){
+                st = EAGLEEYE_SIGNAL_STRING;
+            }   
+            else if(signal_type_str == "EAGLEEYE_SIGNAL_SWITCH"){
+                st = EAGLEEYE_SIGNAL_SWITCH;
+            }  
+            else if(signal_type_str == "EAGLEEYE_SIGNAL_DATA"){
+                st = EAGLEEYE_SIGNAL_DATA;
+            }               
             node_ptrs[node_i]->getOutputPort(i)->setSignalType(st);
         }
     }

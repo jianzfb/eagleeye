@@ -7,7 +7,9 @@
 #include "eagleeye/processnode/IdentityNode.h"
 #include "eagleeye/common/EagleeyeFactory.h"
 #include "eagleeye/common/EagleeyeStr.h"
+{% if custom_paddle_ops|length > 0 %}
 #include "eagleeye/engine/nano/op/paddle_op.hpp"
+{% endif %}
 #include <functional>
 #include "{{project}}_plugin.h"
 
@@ -27,6 +29,7 @@ OpBFuncType op_builder=[](dataflow::Graph* g, std::string op_name, std::string o
     // 基于op_cls，创建模型算子
     if(op_cls == "PaddleOp"){
         // input config
+        {% if custom_paddle_ops|length > 0 %}
         neb::CJsonObject input_config;
         op_config.Get("input", input_config);
         neb::CJsonObject input_name_arr;
@@ -131,6 +134,7 @@ OpBFuncType op_builder=[](dataflow::Graph* g, std::string op_name, std::string o
         }
 
         {% endfor %}
+        {% endif %}
     }
     else if(op_cls == "TNNOp"){
         op_ptr = NULL;
@@ -143,6 +147,9 @@ OpBFuncType op_builder=[](dataflow::Graph* g, std::string op_name, std::string o
  * @brief pipeline node custom builder
  * 
  */
+{% for model in precompiled_models %}
+void __build_{{model}}_node(neb::CJsonObject node_param, AnyNode*& node);
+{% endfor %} 
 NodeBFuncType node_builder=[](std::string node_name, std::string cls_name, neb::CJsonObject node_config, AnyNode*& node_ptr, std::string resource_folder){
     // 创建自定义节点
     if(cls_name == "NNNode"){
@@ -156,6 +163,15 @@ NodeBFuncType node_builder=[](std::string node_name, std::string cls_name, neb::
         delete nn_node;
         node_ptr = NULL;
         return false;
+    }
+    else{
+        // 所有其他节点
+        {% for model in precompiled_models %}
+        if(cls_name == "{{model}}"){
+            __build_{{model}}_node(node_config, node_ptr);
+            return true;
+        }
+        {% endfor %}
     }
 
     node_ptr = NULL;

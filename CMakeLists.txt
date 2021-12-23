@@ -10,17 +10,9 @@ SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
 # set(LIBCXX_LINK_FLAGS "-rtlib=compiler-rt")
 # set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
 
-add_definitions(-DARM_WITH_OMP)
-add_definitions(-DHPPL_STUB_FUNC)
-add_definitions(-DLITE_WITH_ARM)
-add_definitions(-DLITE_WITH_LIGHT_WEIGHT_FRAMEWORK)
-add_definitions(-DLITE_WITH_LINUX)
-add_definitions(-DPADDLE_DISABLE_PROFILER)
-
-
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-# add_definitions(-DEAGLEEYE_ANDROID_APP)
+add_definitions(-DEAGLEEYE_ANDROID_APP)
 
 if(DEFINED ANDROID_ABI)
     message(STATUS "configure android .so")
@@ -275,7 +267,9 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/slice_op.cpp
     eagleeye/engine/nano/op/image_resize_op.cpp
     eagleeye/processnode/ImageResizeNode.cpp
-    eagleeye/processnode/ImageTransformNode)
+    eagleeye/processnode/ImageTransformNode
+    eagleeye/common/EagleeyeImageUti.cpp
+    eagleeye/processnode/ImageSelect.cpp)
 endif()
 
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
@@ -314,7 +308,7 @@ if(DEFINED FFMPEG AND DEFINED X264)
 endif()
 
 find_package(pnglib)
-if(DEFINED PNG AND pnglib_FOUND)
+if(pnglib_FOUND)
     add_definitions(-DEAGLEEYE_PNG)
     include_directories(${pnglib_INCLUDE_DIRS})
     target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})

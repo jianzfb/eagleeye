@@ -2,6 +2,8 @@
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
+#include "eagleeye/common/CJsonObject.hpp"
+
 namespace eagleeye
 {
 {{MYNODE}}::{{MYNODE}}(){
@@ -58,5 +60,10 @@ void {{MYNODE}}::setAlpha(float alpha){
 
 void {{MYNODE}}::getAlpha(float& alpha){
     // get parameter
+}
+
+void __build_{{MYNODE}}t_node(neb::CJsonObject node_param, AnyNode*& node){
+    // new 
+    node = new {{MYNODE}}();
 }
 } // namespace eagleeye
