@@ -181,7 +181,7 @@ public:
 
 #define EAGLEEYE_MOUSE_MONINTOR(func) \
 	this->m_unit_monitor_pool.push_back(new MouseMonitor(func)); \
-	AnyPipeline::getRenderContext()->listeningMouse(this->m_unit_monitor_pool[this->m_unit_monitor_pool.size()-1]);
+	AnyPipeline::getRenderContext()->registerListeningMouse(this->m_unit_monitor_pool[this->m_unit_monitor_pool.size()-1]);
 }
 
 #endif

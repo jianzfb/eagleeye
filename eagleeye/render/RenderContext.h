@@ -70,10 +70,11 @@ public:
     void onTransformMatrix(float* data);
 
     /**
-     * @brief listening mouse
+     * @brief register/cancel listening mouse
      * 
      */
-    void listeningMouse(AnyMonitor* listening_func);
+    void registerListeningMouse(AnyMonitor* listening_func);
+    void cancelListeningMouse(AnyMonitor* listening_func);
 
 private:
 	int m_ScreenW;

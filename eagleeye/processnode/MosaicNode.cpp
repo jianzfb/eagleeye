@@ -29,13 +29,6 @@ MosaicNode::MosaicNode(){
                 this->modified();
             }
     );
-    // this->m_unit_monitor_pool.push_back(new MouseMonitor(
-    //         [this](int mouse_x, int mouse_y, int mouse_action){
-    //             this->modified();
-    //         }
-    // ));
-	// AnyPipeline::getRenderContext()->listeningMouse(this->m_unit_monitor_pool[this->m_unit_monitor_pool.size()-1]);
-
 }   
 
 MosaicNode::~MosaicNode(){

@@ -141,10 +141,21 @@ bool RenderContext::getMirror(){
     return this->m_mirror;
 }
 
-void RenderContext::listeningMouse(AnyMonitor* listening_func){
+void RenderContext::registerListeningMouse(AnyMonitor* listening_func){
     if(listening_func->monitor_category == MONITOR_MOUSE){
         m_listening_funcs.push_back(listening_func);
     }
 }
+void RenderContext::cancelListeningMouse(AnyMonitor* listening_func){
+    if(listening_func->monitor_category == MONITOR_MOUSE){
+        std::vector<AnyMonitor*> remained_funcs;
+        for(int i=0; i<m_listening_funcs.size(); ++i){
+            if(m_listening_funcs[i] != listening_func){
+                remained_funcs.push_back(m_listening_funcs[i]);
+            }
+        }
 
+        m_listening_funcs = remained_funcs;
+    }
+}
 } // namespace eagleeye

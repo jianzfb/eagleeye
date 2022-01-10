@@ -1,6 +1,8 @@
 #include "eagleeye/framework/pipeline/AnyUnit.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/render/RenderContext.h"
+#include "eagleeye/framework/pipeline/AnyPipeline.h"
 
 namespace eagleeye
 {
@@ -16,6 +18,9 @@ AnyUnit::~AnyUnit()
 	std::vector<AnyMonitor*>::iterator iter,iend(m_unit_monitor_pool.end());
 	for (iter = m_unit_monitor_pool.begin(); iter != iend; ++iter)
 	{
+		if(AnyPipeline::getRenderContext() != NULL){
+			AnyPipeline::getRenderContext()->cancelListeningMouse(*iter);
+		}
 		delete (*iter);
 	}
 }

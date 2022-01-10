@@ -26,10 +26,8 @@ eagleeye-cli project --project=PLUGIN_NAME      \\ 定义要生成的插件名�
             --version=1.0.0.0                   \\ 定义插件版本
             --signature=xxxxx                   \\ 定义插件签名（目前未启用）
             --build_type=Release                \\ 定义编译版本
-            --opencv=OPENCV_PATH                \\ 定义opencv路径(选择性设置)
             --abi=arm64-v8a                     \\ 定义abi
             --eagleeye=EAGLEEYE_PATH            \\ 定义eagleeye路径
-            --host_platform=MACOS               \\ 设置主机平台（MACOS/LINUX）
 ```
 运行后将生成模板工程。如果您使用的是VSCODE编辑器，那么脚手架将生成工程配置信息。
 

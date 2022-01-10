@@ -18,6 +18,7 @@
 #include "eagleeye/processnode/ImageTransformNode.h"
 #include "eagleeye/processnode/ImageSelect.h"
 #include "eagleeye/processnode/ImageReadNode.h"
+#include "eagleeye/processnode/ImageWriteNode.h"
 
 namespace eagleeye
 {
@@ -216,6 +217,16 @@ AnyNode* __build_node(std::string node_name, std::string node_class, neb::CJsonO
     }
     else if(node_class == "ImageSelect"){
         ImageSelect* node = new ImageSelect();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "ImageRead"){
+        ImageReadNode* node = new ImageReadNode();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "ImageWrite"){
+        ImageWriteNode* node = new ImageWriteNode();
         node->setUnitName(node_name.c_str());
         return node;
     }

@@ -22,16 +22,15 @@ ImageReadNode::~ImageReadNode(){
 }
 
 void ImageReadNode::executeNodeInfo(){
+    if(this->getNumberOfInputSignals() > 0 && this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_FILE){
+        StringSignal* input_sig = (StringSignal*)(this->getInputPort(0));
+        std::string image_path = input_sig->getData();
+        this->setImagePath(image_path);
+    }
+
     if(this->m_image_path == ""){
-        if(this->getNumberOfInputSignals() > 0){
-            StringSignal* input_sig = (StringSignal*)(this->getInputPort(0));
-            std::string image_path = input_sig->getData();
-            this->setImagePath(image_path);
-        }
-        else{
-            EAGLEEYE_LOGD("dont set image path");
-            return;
-        }
+        EAGLEEYE_LOGD("dont set image path");
+        return;        
     }
 
     if(!isfileexist(this->m_image_path.c_str())){
