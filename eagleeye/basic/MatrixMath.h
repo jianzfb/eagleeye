@@ -10,9 +10,6 @@
 #include <assert.h>
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/basic/ApproxMath.h"
-#ifdef EAGLEEYE_OPENCL_OPTIMIZATION
-#include "eagleeye/common/EagleeyeOpenCL.h"
-#endif
 
 namespace eagleeye{
 enum InterpMethod

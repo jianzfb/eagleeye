@@ -6,7 +6,9 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include "eagleeye/common/EagleeyeFactory.h"
+#ifdef EAGLEEYE_OPENGL
 #include "eagleeye/common/EagleeyeShader.h"
+#endif
 #include <dlfcn.h>
 #include <dirent.h>
 
@@ -238,9 +240,10 @@ bool eagleeye_pipeline_release(const char* pipeline_name){
 }
 
 bool eagleeye_clear_context(){
+#ifdef EAGLEEYE_OPENGL    
     // 清空opengl上下文
     ShaderManager::getInstance()->clear();
-
+#endif
     // 清空opencl上下文
     return true;
 }

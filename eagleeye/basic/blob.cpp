@@ -237,7 +237,9 @@ void Blob::_reset() const{
             this->m_memory_type = CPU_BUFFER;
         }
         else{
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION            
             this->m_memory_type = this->m_gpu_data->type() == 0 ? GPU_BUFFER : GPU_IMAGE;
+#endif
         }
         this->m_waiting_reset_runtime = false;
     }
@@ -251,23 +253,23 @@ void Blob::_reset() const{
 void Blob::_sync() const{
     if(this->m_is_cpu_waiting_from_gpu){
         // gpu -> cpu
-    #ifdef EAGLEEYE_OPENCL_OPTIMIZATION  
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION  
         // 同步
         this->m_gpu_data.get()->finish();
         // 设置
         m_is_cpu_ready = true;
         m_is_cpu_waiting_from_gpu = false;
-    #endif
+#endif
     }
     else if(this->m_is_gpu_waiting_from_cpu){
         // cpu -> gpu
-    #ifdef EAGLEEYE_OPENCL_OPTIMIZATION  
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION  
         // 同步
         this->m_gpu_data.get()->finish();
         // 设置
         m_is_gpu_waiting_from_cpu = false;
         m_is_gpu_ready = true;
-    #endif
+#endif
     }
     else{
         // do nothing
@@ -305,7 +307,7 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn, std::vector<int64_t> ima
         switch (m_runtime.type())
         {
         case EAGLEEYE_GPU:
-    #ifdef EAGLEEYE_OPENCL_OPTIMIZATION        
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION        
             if(this->m_cpu_data.get() == NULL){
                 const size_t mem_size = this->buffersize();
                 this->m_cpu_data = 
@@ -322,7 +324,7 @@ void Blob::transfer(EagleeyeRuntime runtime, bool asyn, std::vector<int64_t> ima
                 this->m_is_cpu_waiting_from_gpu = false;
                 this->m_is_cpu_ready = true;
             }
-    #endif
+#endif
             break;
         default:
             break;

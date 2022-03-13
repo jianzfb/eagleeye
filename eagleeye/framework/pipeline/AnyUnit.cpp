@@ -72,7 +72,7 @@ void AnyUnit::setUnitPara(std::shared_ptr<char> param_block){
 	// 1.step monitor number
 	int monitor_num = *((int*)data);
 	data = data + sizeof(int);
-	assert(monitor_num == this->m_unit_monitor_pool.size());
+	// assert(monitor_num == this->m_unit_monitor_pool.size());
 	if(monitor_num != this->m_unit_monitor_pool.size()){
 		EAGLEEYE_LOGD("monitor num %d(!=%d) not match in config", monitor_num, this->m_unit_monitor_pool.size());
 	}

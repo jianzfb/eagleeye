@@ -7,6 +7,7 @@
 #include <set>
 #include <stdio.h>
 #include <stdarg.h>
+#include <algorithm>
 
 namespace eagleeye{
 template<typename T>	

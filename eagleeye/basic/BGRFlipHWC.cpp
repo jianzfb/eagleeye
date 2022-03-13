@@ -6,7 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <algorithm>
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined(__ANDROID__) || defined(ANDROID)
 #include <arm_neon.h>
 #endif
 
@@ -31,6 +31,7 @@ void bgr_flip_hwc(const unsigned char* src, unsigned char* dst, int w_in, int h_
     }
 
 }
+#if defined(__ANDROID__) || defined(ANDROID)
 /*
 bgr1 bgr2 bgr3
 bgr4 bgr5 bgr6
@@ -890,5 +891,9 @@ void flip_xy_hwc(const unsigned char* src, unsigned char* dst, int w, int h_in){
         }
     }
 }
+#endif
+
+#elif __linux__
+#pragma message("x86 bgra bgrfliphwc")
 #endif
 } //namespace easy_mobile_util

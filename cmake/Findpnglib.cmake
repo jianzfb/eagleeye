@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.4.1)
 file(GLOB LIB_PNG_SRC "./eagleeye/3rd/pnglib/*.c")
 message(STATUS ${LIB_PNG_SRC})
 
-set(CMAKE_C_FLAGS "-lz -Wunused-command-line-argument ${CMAKE_C_FLAGS}")
+# set(CMAKE_C_FLAGS "-lz -Wunused-command-line-argument ${CMAKE_C_FLAGS}")
 add_library(pnglib SHARED ${LIB_PNG_SRC})
 
 # set(CMAKE_PREFIX_PATH ../bin/arm64-v8a)

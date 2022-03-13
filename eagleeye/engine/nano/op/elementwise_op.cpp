@@ -1,5 +1,7 @@
 #include "eagleeye/engine/nano/op/elementwise_op.h"
+#if defined(__ANDROID__) || defined(ANDROID)
 #include "eagleeye/engine/math/arm/elementwise.h"
+#endif
 #include "eagleeye/common/EagleeyeLog.h"
 
 namespace eagleeye{
@@ -99,66 +101,96 @@ void ElementwiseOp::processNCOnCpu(Tensor x, Tensor y){
     switch(this->m_op_type){
     case ELEMENTWISE_ADD:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_add<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]);
+#endif
         }
         else{
             if(y_dim[0] == 1){
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_add_broadcast_1c<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
             else{
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_add_broadcast_n1<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
         }
         break;
     case ELEMENTWISE_SUB:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_sub<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]);
+#endif
         }
         else{
             if(y_dim[0] == 1){
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_sub_broadcast_1c<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
             else{
+#if defined(__ANDROID__) || defined(ANDROID)
                 math::arm::elementwise_sub_broadcast_n1<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
         }
         break;
     case ELEMENTWISE_MUL:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_mul<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]);            
+#endif
         }
         else{
             if(y_dim[0] == 1){
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_mul_broadcast_1c<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
             else{
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_mul_broadcast_n1<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
         }
         break;
     case ELEMENTWISE_DIV:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_div<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]);
+#endif
         }
         else{
             if(y_dim[0] == 1){
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_div_broadcast_1c<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
             else{
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_div_broadcast_n1<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }            
         }        
         break;
     case ELEMENTWISE_POW:
          if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)             
             math::arm::elementwise_pow<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]);
+#endif
         }
         else{
             if(y_dim[0] == 1){
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_pow_broadcast_1c<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }
             else{
+#if defined(__ANDROID__) || defined(ANDROID)                
                 math::arm::elementwise_pow_broadcast_n1<float>(x_data, y_data, out_data, out_dim[0], out_dim[1]);
+#endif
             }                
         }    
         break;
@@ -190,42 +222,62 @@ void ElementwiseOp::processNCHWOnCpu(Tensor x, Tensor y){
     switch (this->m_op_type){
     case ELEMENTWISE_ADD:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_add<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]*out_dim[2]*out_dim[3]);
+#endif
         }
         else{
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_add_broadcast<float>(x_data, y_data, out_data, out_dim[0], out_dim[1], out_dim[2]*out_dim[3]);
+#endif
         }
         break;
     case ELEMENTWISE_SUB:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_sub<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]*out_dim[2]*out_dim[3]);
+#endif
         }
         else{
+#if defined(__ANDROID__) || defined(ANDROID)
             math::arm::elementwise_sub_broadcast<float>(x_data, y_data, out_data, out_dim[0], out_dim[1], out_dim[2]*out_dim[3]);
+#endif
         }
         break;
     case ELEMENTWISE_MUL:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_mul<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]*out_dim[2]*out_dim[3]);
+#endif
         }
         else{
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_mul_broadcast<float>(x_data, y_data, out_data, out_dim[0], out_dim[1], out_dim[2]*out_dim[3]);
+#endif
         }
         break;
     case ELEMENTWISE_DIV:
         if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_div<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]*out_dim[2]*out_dim[3]);
+#endif
         }
         else{
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::elementwise_div_broadcast<float>(x_data, y_data, out_data, out_dim[0], out_dim[1], out_dim[2]*out_dim[3]);
+#endif
         }
         break;
     case ELEMENTWISE_POW:
          if(!is_broadcast){
+#if defined(__ANDROID__) || defined(ANDROID)             
             math::arm::elementwise_pow<float>(x_data, y_data, out_data, out_dim[0]*out_dim[1]*out_dim[2]*out_dim[3]);
+#endif
         }
         else{
+#if defined(__ANDROID__) || defined(ANDROID)
             math::arm::elementwise_pow_broadcast<float>(x_data, y_data, out_data, out_dim[0], out_dim[1], out_dim[2]*out_dim[3]);
+#endif
         }
         break;
     default:

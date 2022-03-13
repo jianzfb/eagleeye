@@ -24,7 +24,7 @@ public:
 	DynamicArray(const Array<ArrayT,D>& arr)
 	{		
 		//judge whether type is compatible
-		assert(sizeof(T)==sizeof(ArrayT));
+		// assert(sizeof(T)==sizeof(ArrayT));
 		
 		m_size = D;
 		m_data = std::shared_ptr<T>(new T[D], [](T* arr) {delete[] arr;});
@@ -178,7 +178,7 @@ const T& DynamicArray<T>::operator[](int index) const{
 
 template<typename T>
 DynamicArray<T>& DynamicArray<T>::operator+(const DynamicArray<T>& arr){
-	assert(m_size==arr.m_size);
+	// assert(m_size==arr.m_size);
 	T* ptr = this->m_data.get();
 
 	for (int i=0;i<m_size;++i){
@@ -190,7 +190,7 @@ DynamicArray<T>& DynamicArray<T>::operator+(const DynamicArray<T>& arr){
 
 template<typename T>
 DynamicArray<T>& DynamicArray<T>::operator-(const DynamicArray<T>& arr){
-	assert(m_size==arr.m_size);
+	// assert(m_size==arr.m_size);
 	T* ptr = this->m_data.get();
 
 	for (int i=0;i<m_size;++i){
@@ -202,7 +202,7 @@ DynamicArray<T>& DynamicArray<T>::operator-(const DynamicArray<T>& arr){
 
 template<typename T>
 DynamicArray<T>& DynamicArray<T>::operator*(const DynamicArray<T>& arr){
-	assert(m_size==arr.m_size);
+	// assert(m_size==arr.m_size);
 	T* ptr = this->m_data.get();
 
 	for (int i=0;i<m_size;++i){
@@ -214,7 +214,7 @@ DynamicArray<T>& DynamicArray<T>::operator*(const DynamicArray<T>& arr){
 
 template<typename T>
 DynamicArray<T>& DynamicArray<T>::operator/(const DynamicArray<T>& arr){
-	assert(m_size==arr.m_size);
+	// assert(m_size==arr.m_size);
 	T* ptr = this->m_data.get();
 	for (int i=0;i<m_size;++i){
 		ptr[i]=ptr[i]/arr[i];

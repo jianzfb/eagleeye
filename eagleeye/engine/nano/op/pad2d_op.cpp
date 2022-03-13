@@ -1,5 +1,7 @@
 #include "eagleeye/engine/nano/op/pad2d_op.h"
+#if defined(__ANDROID__) || defined(ANDROID)  
 #include "eagleeye/engine/math/arm/pad2d.h"
+#endif
 namespace eagleeye{
 namespace dataflow{
 Pad2dOp::Pad2dOp(Pad2dOpType pad_type, std::vector<int64_t> pad_c, std::vector<int64_t> pad_h, std::vector<int64_t> pad_w, float pad_value){
@@ -72,7 +74,7 @@ int Pad2dOp::runOnCpu(std::vector<Tensor> input){
     int oc = out_dim[1];
     int oh = out_dim[2];
     int ow = out_dim[3];
-    
+#if defined(__ANDROID__) || defined(ANDROID)  
   if (m_pad_type == PAD2D_CONSTANT) {
     math::arm::pad_constant(din,
                  dout,
@@ -112,6 +114,8 @@ int Pad2dOp::runOnCpu(std::vector<Tensor> input){
   } else {
     EAGLEEYE_LOGE("Unkown pad mode.");
   }
+
+#endif
     return 0;
 }
 

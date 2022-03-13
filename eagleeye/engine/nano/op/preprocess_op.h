@@ -20,19 +20,6 @@ public:
     virtual int runOnGpu(std::vector<Tensor> input={});
 
 protected:
-    void bgrToTensorCHW(const uint8_t* src,
-                       float* output,
-                       int width,
-                       int height,
-                       float* means,
-                       float* scales);
-    void bgrToRgbTensorCHW(const uint8_t* src,
-                       float* output,
-                       int width,
-                       int height,
-                       float* means,
-                       float* scales);
-
     std::vector<float> m_mean_v;
     std::vector<float> m_scale_v;
 

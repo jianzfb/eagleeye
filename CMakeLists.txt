@@ -1,7 +1,7 @@
 PROJECT(eagleeye)
 
 cmake_minimum_required(VERSION 3.5)
-set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -pie -Wl,--gc-sections")
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -pie -Wl,--gc-sections -fpermissive")
 
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
@@ -12,33 +12,24 @@ SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
-add_definitions(-DEAGLEEYE_ANDROID_APP)
-
 if(DEFINED ANDROID_ABI)
-    message(STATUS "configure android .so")
-    add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)
+    message(STATUS "CONFIGURE ANDROID")
+    add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)       # 默认对于arm都采用neon加速
+    add_definitions(-DEAGLEEYE_ANDROID_APP)
+
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
-
 else()
-    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin)
-    set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin)
-    set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin)
+    # WINDOW/LINUX
+    # (x86/x86-64)
+    message(STATUS "CONFIGURE X86")
+
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${X86_ABI})
+    set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${X86_ABI})
+    set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${X86_ABI})
 endif()
 
-# support opencl
-if(DEFINED OPENCL)
-    message(STATUS "OPENCL path "${OPENCL})
-    add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
-    include_directories(${OPENCL}/include)
-    add_library(libOpenCL SHARED IMPORTED)
-    set_target_properties(
-        libOpenCL
-        PROPERTIES IMPORTED_LOCATION 
-        ${OPENCL}/lib/${ANDROID_ABI}/libOpenCL.so
-    )
-endif()
 
 if(DEFINED PYTHON)
 # #   support python interface
@@ -74,63 +65,8 @@ include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
 
 
-ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
 if(DEFINED LITE)
-message(STATUS "LITE version")
-set(EAGLEEYE_SRC 
-    eagleeye/processnode/SubPipeline.cpp
-    eagleeye/processnode/ParallelNode.cpp
-    eagleeye/processnode/IfElseNode.cpp
-    eagleeye/processnode/SkipNode.cpp
-    eagleeye/processnode/VideoReadNode.cpp
-    eagleeye/processnode/VideoWriteNode.cpp
-    eagleeye/processnode/AsynNode.cpp
-    eagleeye/processnode/NNNode.cpp
-    eagleeye/processnode/SerialReadNode.cpp
-    eagleeye/processnode/SerialWriteNode.cpp
-    eagleeye/processnode/ImageWriteNode.cpp
-    eagleeye/processnode/ImageReadNode.cpp
-    eagleeye/processnode/ReadLineFromFileNode.cpp
-    eagleeye/processnode/SerialStringNode.cpp
-    eagleeye/processnode/AutoNode.cpp
-    eagleeye/processnode/QueueNode.cpp
-    eagleeye/processnode/DebugNode.cpp
-    eagleeye/processnode/LogicalNode.cpp
-    eagleeye/processnode/State2BooleanNode.cpp
-    eagleeye/processnode/CopyNode.cpp
-    eagleeye/processnode/DelayFetch.cpp
-    eagleeye/common/EagleeyeFile.cpp 
-    eagleeye/common/EagleeyeTime.cpp 
-    eagleeye/common/EagleeyeProcessor.cpp
-    eagleeye/common/EagleeyeSerial.cpp
-    eagleeye/common/EagleeyeLog.cpp 
-    eagleeye/common/EagleeyeIni.cpp
-    eagleeye/framework/EagleeyeTimeStamp.cpp 
-    eagleeye/framework/pipeline/AnyNode.cpp 
-    eagleeye/framework/pipeline/AnySignal.cpp 
-    eagleeye/framework/pipeline/AnyUnit.cpp 
-    eagleeye/framework/pipeline/BooleanSignal.cpp
-    eagleeye/framework/pipeline/StringSignal.cpp
-    eagleeye/framework/pipeline/StateSignal.cpp
-    eagleeye/framework/pipeline/AnyPipeline.cpp 
-    eagleeye/engine/model_engine.cpp 
-    eagleeye/common/EagleeyeStr.cpp 
-    eagleeye/common/EagleeyeIO.cpp 
-    eagleeye/common/EagleeyeModule.cpp
-    eagleeye/common/EagleeyePy.cpp
-    eagleeye/common/EagleeyeIO.cpp
-    eagleeye/common/EagleeyeThreadPool.cpp
-    eagleeye/common/EagleeyeOpenCL.cpp
-    eagleeye/basic/MatrixMath.cpp
-    eagleeye/basic/blob.cpp
-    eagleeye/basic/Tensor.cpp
-    eagleeye/port/linux_base/env.cpp
-    eagleeye/port/android/env.cpp
-    eagleeye/runtime/cpu/cpu_runtime.cpp
-    eagleeye/runtime/gpu/opencl_runtime.cpp
-    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc)
-else()
-message(STATUS "FULL version")
+message(STATUS "LITE EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
     eagleeye/processnode/OpticalFlowNode.cpp
     eagleeye/processnode/ConsistenceNode.cpp
@@ -164,7 +100,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeSerial.cpp
     eagleeye/common/EagleeyeIni.cpp
     eagleeye/common/cJSON.cpp
-    eagleeye/common/cJsonObject.cpp
+    eagleeye/common/CJsonObject.cpp
     eagleeye/common/EagleeyeFactory.cpp
     eagleeye/common/EagleeyeNodeManager.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
@@ -194,14 +130,130 @@ set(EAGLEEYE_SRC
     eagleeye/algorithm/segment.cpp
     eagleeye/algorithm/filter.cpp
     eagleeye/common/EagleeyeOpenCL.cpp
+    eagleeye/runtime/gpu/opencl_runtime.cpp
+    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc    
     eagleeye/port/linux_base/env.cpp
     eagleeye/port/android/env.cpp
     eagleeye/runtime/cpu/cpu_runtime.cpp
-    eagleeye/runtime/gpu/opencl_runtime.cpp
-    eagleeye/engine/nano/util/opencl_util.cpp
     eagleeye/engine/nano/op/placeholder_op.cpp
-    eagleeye/render/ImageShow.cpp
-    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc
+    eagleeye/framework/pipeline/YUVSignal.cpp
+    eagleeye/common/EagleeyeYUV.cpp
+    eagleeye/common/EagleeyeGraph.cpp
+    eagleeye/framework/pipeline/YUVSignal.cpp
+    eagleeye/framework/pipeline/EmptySignal.cpp
+    eagleeye/framework/pipeline/GroupSignal.cpp
+    eagleeye/processnode/YUVConvertNode.cpp
+    eagleeye/processnode/YUVResizeNode.cpp
+    eagleeye/processnode/OrNode.cpp
+    eagleeye/processnode/IsUpdateNode.cpp
+    eagleeye/processnode/ConstNode.cpp
+    eagleeye/processnode/DottingNode.cpp
+    eagleeye/processnode/MosaicNode.cpp
+    eagleeye/framework/pipeline/AnyRegister.cpp
+    eagleeye/processnode/ThreadNode.cpp
+    eagleeye/processnode/GroupNode.cpp
+    eagleeye/processnode/IdentityNode.cpp
+    eagleeye/processnode/ClassicalFilter.cpp
+    eagleeye/processnode/SwitchNode.cpp
+    eagleeye/processnode/AnyPlaceholder.cpp
+    eagleeye/processnode/CropNode.cpp
+    eagleeye/basic/BGRARotateHWC.cpp
+    eagleeye/basic/BGRRotateHWC.cpp
+    eagleeye/basic/BGRAFlipHWC.cpp
+    eagleeye/basic/BGRFlipHWC.cpp
+    eagleeye/basic/Dim.cpp
+    eagleeye/engine/nano/op/factory.cpp
+    eagleeye/engine/nano/op/cast_op.cpp
+    eagleeye/engine/nano/op/clip_op.cpp
+    eagleeye/engine/nano/op/concat_op.cpp
+    eagleeye/engine/nano/op/interpolate_op.cpp
+    eagleeye/engine/nano/op/pad2d_op.cpp
+    eagleeye/engine/nano/op/reduce_op.cpp
+    eagleeye/engine/nano/op/repeat_op.cpp
+    eagleeye/engine/nano/op/reshape_op.cpp
+    eagleeye/engine/nano/op/transpose_op.cpp
+    eagleeye/engine/nano/op/preprocess_op.cpp
+    eagleeye/engine/nano/op/split_op.cpp
+    eagleeye/engine/nano/op/shape_op.cpp
+    eagleeye/engine/nano/op/slice_op.cpp
+    eagleeye/engine/nano/op/image_resize_op.cpp
+    eagleeye/processnode/ImageResizeNode.cpp
+    eagleeye/processnode/ImageTransformNode
+    eagleeye/common/EagleeyeImageUti.cpp
+    eagleeye/processnode/ImageSelect.cpp
+    eagleeye/render/RenderContext.cpp)
+else()
+message(STATUS "FULL EAGLEEYE VERSION")
+set(EAGLEEYE_SRC 
+    eagleeye/processnode/OpticalFlowNode.cpp
+    eagleeye/processnode/ConsistenceNode.cpp
+    eagleeye/processnode/AdaptorNode.cpp
+    eagleeye/processnode/TemplateMatchingNode.cpp
+    eagleeye/processnode/SubPipeline.cpp
+    eagleeye/processnode/ParallelNode.cpp
+    eagleeye/processnode/IfElseNode.cpp
+    eagleeye/processnode/SkipNode.cpp
+    eagleeye/processnode/VideoReadNode.cpp
+    eagleeye/processnode/VideoWriteNode.cpp
+    eagleeye/processnode/AsynNode.cpp
+    eagleeye/processnode/NNNode.cpp
+    eagleeye/processnode/SerialReadNode.cpp
+    eagleeye/processnode/SerialWriteNode.cpp
+    eagleeye/processnode/ImageWriteNode.cpp
+    eagleeye/processnode/ImageReadNode.cpp
+    eagleeye/processnode/HistogramEqualizationNode.cpp
+    eagleeye/processnode/ReadLineFromFileNode.cpp
+    eagleeye/processnode/SerialStringNode.cpp
+    eagleeye/processnode/AutoNode.cpp
+    eagleeye/processnode/QueueNode.cpp
+    eagleeye/processnode/DebugNode.cpp
+    eagleeye/processnode/LogicalNode.cpp
+    eagleeye/processnode/State2BooleanNode.cpp
+    eagleeye/processnode/CopyNode.cpp
+    eagleeye/processnode/DelayFetch.cpp
+    eagleeye/common/EagleeyeFile.cpp 
+    eagleeye/common/EagleeyeTime.cpp 
+    eagleeye/common/EagleeyeProcessor.cpp
+    eagleeye/common/EagleeyeSerial.cpp
+    eagleeye/common/EagleeyeIni.cpp
+    eagleeye/common/cJSON.cpp
+    eagleeye/common/CJsonObject.cpp
+    eagleeye/common/EagleeyeFactory.cpp
+    eagleeye/common/EagleeyeNodeManager.cpp
+    eagleeye/framework/EagleeyeTimeStamp.cpp 
+    eagleeye/framework/pipeline/AnyNode.cpp 
+    eagleeye/framework/pipeline/AnySignal.cpp 
+    eagleeye/framework/pipeline/AnyUnit.cpp 
+    eagleeye/framework/pipeline/BooleanSignal.cpp
+    eagleeye/framework/pipeline/StringSignal.cpp
+    eagleeye/framework/pipeline/StateSignal.cpp
+    eagleeye/framework/pipeline/LandmarkSignal.cpp
+    eagleeye/common/EagleeyeLog.cpp 
+    eagleeye/engine/model_engine.cpp 
+    eagleeye/common/EagleeyeStr.cpp 
+    eagleeye/common/EagleeyeIO.cpp 
+    eagleeye/framework/pipeline/AnyPipeline.cpp 
+    eagleeye/common/EagleeyeModule.cpp
+    eagleeye/common/EagleeyePy.cpp
+    eagleeye/common/EagleeyeIO.cpp
+    eagleeye/common/EagleeyeThreadPool.cpp
+    eagleeye/basic/MatrixMath.cpp
+    eagleeye/basic/blob.cpp
+    eagleeye/basic/Tensor.cpp
+    eagleeye/algorithm/qr_solver.cpp
+    eagleeye/algorithm/llsp.cpp
+    eagleeye/algorithm/nms.cpp
+    eagleeye/algorithm/homographymodel.cpp
+    eagleeye/algorithm/segment.cpp
+    eagleeye/algorithm/filter.cpp
+    eagleeye/common/EagleeyeOpenCL.cpp
+    eagleeye/runtime/gpu/opencl_runtime.cpp
+    eagleeye/codegen/opencl/encrypt_opencl_kernel.cc    
+    eagleeye/port/linux_base/env.cpp
+    eagleeye/port/android/env.cpp
+    eagleeye/runtime/cpu/cpu_runtime.cpp
+    eagleeye/engine/nano/op/placeholder_op.cpp
+    eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/render/GLUtils.cpp
     eagleeye/render/RenderContext.cpp
     eagleeye/render/RenderNode.cpp
@@ -211,8 +263,8 @@ set(EAGLEEYE_SRC
     eagleeye/render/HighlightShow.cpp
     eagleeye/render/ImageBlend.cpp
     eagleeye/render/RenderMapToCPU.cpp
+    eagleeye/render/ImageShow.cpp
     eagleeye/ui/ScrollView.cpp
-    eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/render/YUVShow.cpp
     eagleeye/common/EagleeyeYUV.cpp
     eagleeye/common/EagleeyeShader.cpp
@@ -242,16 +294,6 @@ set(EAGLEEYE_SRC
     eagleeye/render/AutoRenderRegion.cpp
     eagleeye/basic/Dim.cpp
     eagleeye/engine/nano/op/factory.cpp
-    eagleeye/engine/math/arm/clip.cc
-    eagleeye/engine/math/arm/elementwise.cc
-    eagleeye/engine/math/arm/interpolate.cc
-    eagleeye/engine/math/arm/pad2d.cc
-    eagleeye/engine/math/arm/reduce_max.cc
-    eagleeye/engine/math/arm/reduce_mean.cc
-    eagleeye/engine/math/arm/reduce_min.cc
-    eagleeye/engine/math/arm/reduce_prod.cc
-    eagleeye/engine/math/arm/reduce_sum.cc
-    eagleeye/engine/math/arm/type_trans.cc
     eagleeye/engine/nano/op/cast_op.cpp
     eagleeye/engine/nano/op/clip_op.cpp
     eagleeye/engine/nano/op/concat_op.cpp
@@ -272,6 +314,41 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageSelect.cpp)
 endif()
 
+# code related with arm
+if(DEFINED ANDROID_ABI)
+set(EAGLEEYE_SRC 
+    ${EAGLEEYE_SRC} 
+    eagleeye/engine/math/arm/elementwise.cc
+    eagleeye/engine/math/arm/interpolate.cc
+    eagleeye/engine/math/arm/pad2d.cc
+    eagleeye/engine/math/arm/reduce_max.cc
+    eagleeye/engine/math/arm/reduce_mean.cc
+    eagleeye/engine/math/arm/reduce_min.cc
+    eagleeye/engine/math/arm/reduce_prod.cc
+    eagleeye/engine/math/arm/reduce_sum.cc
+    eagleeye/engine/math/arm/preprocess.cc
+    eagleeye/engine/math/arm/type_trans.cc)
+elseif(DEFINED X86_ABI)
+endif()
+
+# opencl
+if(DEFINED ANDROID_ABI AND DEFINED OPENCL)
+    message(STATUS "OPENCL PATH "${OPENCL})
+    add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
+    include_directories(${OPENCL}/include)
+    add_library(libOpenCL SHARED IMPORTED)
+    set_target_properties(
+        libOpenCL
+        PROPERTIES IMPORTED_LOCATION 
+        ${OPENCL}/lib/${ANDROID_ABI}/libOpenCL.so
+    )
+
+    set(EAGLEEYE_SRC 
+        ${EAGLEEYE_SRC} 
+        eagleeye/engine/nano/util/opencl_util.cpp
+        )
+endif()
+
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 
 if(DEFINED PYTHON)
@@ -281,7 +358,7 @@ if(DEFINED PYTHON)
 endif()
 
 
-FIND_PACKAGE( OpenMP REQUIRED)
+FIND_PACKAGE(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -309,43 +386,43 @@ endif()
 
 find_package(pnglib)
 if(pnglib_FOUND)
+    message(STATUS "message find pnglib")
     add_definitions(-DEAGLEEYE_PNG)
     include_directories(${pnglib_INCLUDE_DIRS})
-    target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    # target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
 endif()
 
-if(DEFINED OPENCL)
-target_link_libraries(eagleeye libOpenCL)
-target_link_libraries(eagleeye EGL)
+if(DEFINED ANDROID_ABI AND DEFINED OPENCL)
+    target_link_libraries(eagleeye libOpenCL)
+    target_link_libraries(eagleeye EGL)
 endif()
 
-find_path(GLES3_INCLUDE_DIR GLES3/gl3.h
-    HINTS ${ANDROID_NDK})              #找到opengl头文件路径
-find_library(GLES3_LIBRARY libGLESv3.so
-    HINTS ${GLES3_INCLUDE_DIR}/../lib) #找到opengl库文件路径
-include_directories(${GLES3_INCLUDE_DIR})
-target_link_libraries(eagleeye ${GLES3_LIBRARY})
+if(DEFINED ANDROID_ABI)
+    # 仅针对ANDROID平台，引入opengl环境
+    ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
+    find_path(GLES3_INCLUDE_DIR GLES3/gl3.h HINTS ${ANDROID_NDK})              #找到opengl头文件路径
+    find_library(GLES3_LIBRARY libGLESv3.so HINTS ${GLES3_INCLUDE_DIR}/../lib) #找到opengl库文件路径
+    include_directories(${GLES3_INCLUDE_DIR})
+    target_link_libraries(eagleeye ${GLES3_LIBRARY})
+    add_definitions(-DEAGLEEYE_OPENGL)
+endif()
+
+if(DEFINED ANDROID_ABI)
+    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${ANDROID_ABI}/libyuv.so)
+    set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
+elseif(DEFINED X86_ABI)
+    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${X86_ABI}/libyuv.so)
+    set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
+endif()
+
 
 add_library(libyuv SHARED IMPORTED)
-set_target_properties(libyuv PROPERTIES IMPORTED_LOCATION
-                        ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${ANDROID_ABI}/libyuv.so)
-include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
+set_target_properties(libyuv PROPERTIES IMPORTED_LOCATION ${LIBYUV_SDK_LIB_PATH})
+include_directories(${LIBYUV_SDK_INCLUDE_PATH})
 target_link_libraries(eagleeye libyuv)
 
-# add_library(libunwind STATIC IMPORTED)
-# set_target_properties(
-#         libunwind
-#         PROPERTIES IMPORTED_LOCATION
-#         ${ANDROID_NDK}/toolchains/llvm/prebuilt/darwin-x86_64/sysroot/usr/lib/arm-linux-androideabi/libunwind.a
-# )
 
-
-# set(OpenCV_DIR ../sdk/native/jni)
-# # set(OpenCV_DIR "/Users/jian/Downloads/opencv-master")
-# find_package(OpenCV REQUIRED)
-# message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
-# include_directories(${OpenCV_INCLUDE_DIRS})
 if(DEFINED ANDROID_ABI)
-target_link_libraries(eagleeye log)
+    target_link_libraries(eagleeye log)
 endif()
 

@@ -1,5 +1,7 @@
 #include "eagleeye/engine/nano/op/image_resize_op.h"
+#if defined(__ANDROID__) || defined(ANDROID)  
 #include "eagleeye/engine/math/arm/interpolate.h"
+#endif
 #include "eagleeye/common/EagleeyeLog.h"
 
 namespace eagleeye{
@@ -65,6 +67,7 @@ int ImageResizeOp::runOnCpu(std::vector<Tensor> input){
     }
     unsigned char* x_ptr = (unsigned char*)x.cpu();
     unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
+#if defined(__ANDROID__) || defined(ANDROID)      
     if(channels == 3){
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
@@ -95,7 +98,7 @@ int ImageResizeOp::runOnCpu(std::vector<Tensor> input){
             );
         } 
     }
-
+#endif
     return 0;
 }
 
@@ -159,6 +162,7 @@ int ImageResizeWithShapeOp::runOnCpu(std::vector<Tensor> input){
     }
     unsigned char* x_ptr = (unsigned char*)x.cpu();
     unsigned char* z_ptr = (unsigned char*)this->m_outputs[0].cpu();
+#if defined(__ANDROID__) || defined(ANDROID)      
     if(channels == 3){
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
@@ -189,7 +193,7 @@ int ImageResizeWithShapeOp::runOnCpu(std::vector<Tensor> input){
             );
         } 
     }
-
+#endif
     return 0;
 }
 

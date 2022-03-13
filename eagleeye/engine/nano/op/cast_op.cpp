@@ -1,5 +1,7 @@
 #include "eagleeye/engine/nano/op/cast_op.h"
+#if defined(__ANDROID__) || defined(ANDROID)
 #include "eagleeye/engine/math/arm/type_trans.h"
+#endif
 
 namespace eagleeye{
 namespace dataflow{
@@ -68,7 +70,9 @@ int CastOp::runOnCpu(std::vector<Tensor> input){
             float* din = (float*)x.cpu();
             int8_t* dout = (int8_t*)this->m_outputs[0].cpu();
             std::vector<float> scale({m_scale});
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::fp32_to_int8(din, dout, scale.data(), 1,1,x_dim.production());
+#endif
         }
     }
     else if(m_data_type == EAGLEEYE_UCHAR){
@@ -77,7 +81,9 @@ int CastOp::runOnCpu(std::vector<Tensor> input){
             float* din = (float*)x.cpu();
             uint8_t* dout = (uint8_t*)this->m_outputs[0].cpu();
             std::vector<float> scale({m_scale});
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::fp32_to_uint8(din, dout, scale.data(), 1,1,x_dim.production());
+#endif
         }
     }    
     else if(m_data_type == EAGLEEYE_FLOAT){
@@ -86,13 +92,17 @@ int CastOp::runOnCpu(std::vector<Tensor> input){
             int8_t* din = (int8_t*)x.cpu();
             float* dout = (float*)this->m_outputs[0].cpu();
             std::vector<float> scale({m_scale});
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::int8_to_fp32(din, dout, scale.data(), 1, 1, x_dim.production());
+#endif
         }
         else if(x.type() == EAGLEEYE_INT){
             int* din = (int*)x.cpu();
             float* dout = (float*)this->m_outputs[0].cpu();
             std::vector<float> scale({m_scale});
+#if defined(__ANDROID__) || defined(ANDROID)            
             math::arm::int32_to_dtype<float>(din, dout, scale.data(), 1, 1, x_dim.production());
+#endif
         }
     }
     return 0;

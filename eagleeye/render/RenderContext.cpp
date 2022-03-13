@@ -2,6 +2,9 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include <math.h>
+#ifdef EAGLEEYE_OPENGL
+#include <GLES3/gl3.h>
+#endif
 
 namespace eagleeye
 {
@@ -21,7 +24,9 @@ RenderContext::~RenderContext(){
 }
 
 void RenderContext::onCreated(){
+#ifdef EAGLEEYE_OPENGL
 	glClearColor(1.0f,1.0f,1.0f, 1.0f);
+#endif
     this->m_rotate = 0;
     this->m_mirror = false;
 }
@@ -35,7 +40,9 @@ void RenderContext::onChanged(int width, int height, int rotate, bool mirror){
         m_ScreenH = height;
     }
     if(m_ScreenW > 0 && m_ScreenH > 0){
+#ifdef EAGLEEYE_OPENGL        
         glViewport(0, 0, m_ScreenW, m_ScreenH);
+#endif
     }
 	
     if(rotate >= 0){

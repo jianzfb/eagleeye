@@ -1,5 +1,7 @@
 #include "eagleeye/engine/nano/op/clip_op.h"
+#if defined(__ANDROID__) || defined(ANDROID)
 #include "eagleeye/engine/math/arm/clip.h"
+#endif
 namespace eagleeye{
 namespace dataflow{
 ClipOp::ClipOp(float min_v, float max_v){
@@ -44,7 +46,9 @@ int ClipOp::runOnCpu(std::vector<Tensor> input){
     float* dout = (float*)this->m_outputs[0].cpu();
     out_dim = this->m_outputs[0].dims();
 
+#if defined(__ANDROID__) || defined(ANDROID)
     math::arm::clip_fp32(din, out_dim.production(), m_min_v, m_max_v, dout);
+#endif
     return 0;
 }
 

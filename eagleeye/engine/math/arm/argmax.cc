@@ -22,9 +22,8 @@
 #include "lite/backends/arm/math/funcs.h"
 
 namespace paddle {
-namespace lite {
-namespace arm {
 namespace math {
+namespace arm {
 
 template <typename InType, typename OutType>
 void argmax_func(const lite::Tensor *input,
@@ -98,7 +97,6 @@ template void argmax_func<uint8_t, int64_t>(const lite::Tensor *input,
                                             const int axis,
                                             lite::Tensor *output);
 #endif
-}  // namespace math
 }  // namespace arm
-}  // namespace lite
+}  // namespace math
 }  // namespace paddle
