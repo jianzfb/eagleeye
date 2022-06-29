@@ -45,8 +45,8 @@ void split_func(Tensor input, int axis, int num, std::vector<Tensor>& output){
     }
 }
 
-int Split2DOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int Split2DOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     if(x.type() != EAGLEEYE_FLOAT && x.type() != EAGLEEYE_INT && x.type() != EAGLEEYE_UCHAR && x.type() != EAGLEEYE_CHAR){
         EAGLEEYE_LOGE("x type only support float/int/uchar.");
         return -1;
@@ -82,7 +82,7 @@ int Split2DOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int Split2DOp::runOnGpu(std::vector<Tensor> input){
+int Split2DOp::runOnGpu(const std::vector<Tensor>& input){
     return 0;
 }
 

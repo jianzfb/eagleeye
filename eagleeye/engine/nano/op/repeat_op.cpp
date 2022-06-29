@@ -32,8 +32,8 @@ int RepeatOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int RepeatOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int RepeatOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x type only support float.");
@@ -76,7 +76,7 @@ int RepeatOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int RepeatOp::runOnGpu(std::vector<Tensor> input){
+int RepeatOp::runOnGpu(const std::vector<Tensor>& input){
     return -1;
 }
 } // namespace dataflow

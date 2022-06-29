@@ -46,8 +46,8 @@ int PreprocessOp::init(std::map<std::string, std::vector<float>> params){
 //   math::arm::bgrToRgbTensorCHW(src, output, width, height, means, scales);
 // }
 
-int PreprocessOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int PreprocessOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     Dim x_dim = x.dims();
         
     if(x.type() != EAGLEEYE_UCHAR){
@@ -108,7 +108,7 @@ int PreprocessOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int PreprocessOp::runOnGpu(std::vector<Tensor> input){
+int PreprocessOp::runOnGpu(const std::vector<Tensor>& input){
     return 0;
 }
 } // namespace dataflow

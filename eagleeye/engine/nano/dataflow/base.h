@@ -58,7 +58,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual int runOnCpu(std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnCpu(const std::vector<T>& input)=0;
 
     /**
      * @brief run on gpu
@@ -66,7 +66,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual int runOnGpu(std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnGpu(const std::vector<T>& input)=0;
 
     /**
      * @brief check whether support implementation
@@ -151,7 +151,7 @@ public:
         }
         else{
             data = this->getOutput(index).cpu();
-            shape = this->getOutput(index).shape();
+            shape = this->getOutput(index).dims().data();
             return 0;
         }        
     }

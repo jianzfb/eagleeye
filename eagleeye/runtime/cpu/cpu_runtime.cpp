@@ -1,5 +1,6 @@
 #include "eagleeye/runtime/cpu/cpu_runtime.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/engine/thread_pool.h"
 #include "eagleeye/port/env.h"
 #include <algorithm>
 #include <numeric>
@@ -8,32 +9,8 @@ namespace eagleeye
 {
 constexpr int kMinCpuCoresForPerformance = 3;
 constexpr int kMaxCpuCoresForPerformance = 5;    
-CPURuntime::CPURuntime(const int num_threads, CPUAffinityPolicy policy){
-    if(num_threads > 0){
-        // 启用线程池（当前线程和线程池中的线程根据policy绑定CPU）
-        this->m_thread_pool = new ThreadPool(num_threads, policy);
-    }
-    else{
-        // 不启用线程池（将当前线程根据policy绑定CPU）
-        this->m_thread_pool = NULL;
-        std::vector<float> cpu_max_freqs;
-        if (port::Env::Default()->GetCPUMaxFreq(&cpu_max_freqs)
-            != EagleeyeError::EAGLEEYE_NO_ERROR) {
-            EAGLEEYE_LOGE("Fail to get cpu max frequencies");
-        }
-
-        std::vector<size_t> cores_to_use;
-        int thread_count = 1;
-        this->GetCPUCoresToUse(cpu_max_freqs, policy, &thread_count, &cores_to_use);
-        if (!cores_to_use.empty()) {
-            if (port::Env::Default()->SchedSetAffinity(cores_to_use)
-                != EagleeyeError::EAGLEEYE_NO_ERROR) {
-                EAGLEEYE_LOGE("Failed to sched_set_affinity");
-            }
-        }
-    }
-
-    m_policy = policy;
+CPURuntime::CPURuntime(){
+    this->m_thread_pool = NULL;
 }
 
 CPURuntime::~CPURuntime(){
@@ -41,6 +18,29 @@ CPURuntime::~CPURuntime(){
         delete m_thread_pool;
     }
 }
+
+EagleeyeError CPURuntime::GetCPUMaxFreq(std::vector<float>& cpu_max_freqs){
+  return port::Env::Default()->GetCPUMaxFreq(&cpu_max_freqs);
+}
+
+EagleeyeError CPURuntime::SchedSetAffinity(CPUAffinityPolicy policy){
+    std::vector<float> cpu_max_freqs;
+    if (port::Env::Default()->GetCPUMaxFreq(&cpu_max_freqs) != EagleeyeError::EAGLEEYE_NO_ERROR) {
+        EAGLEEYE_LOGE("Fail to get cpu max frequencies");
+    }
+
+    std::vector<size_t> cores_to_use;
+    int thread_count = 1;
+    this->GetCPUCoresToUse(cpu_max_freqs, policy, &thread_count, &cores_to_use);
+    if (!cores_to_use.empty()) {
+        if (port::Env::Default()->SchedSetAffinity(cores_to_use) != EagleeyeError::EAGLEEYE_NO_ERROR) {
+            EAGLEEYE_LOGE("Failed to sched_set_affinity");
+        }
+    }
+
+    return EagleeyeError::EAGLEEYE_NO_ERROR;
+}
+
 
 int CPURuntime::GetCpuCoresForPerfomance(
     const std::vector<CPUFreq> &cpu_freqs,
@@ -66,6 +66,19 @@ int CPURuntime::GetCpuCoresForPerfomance(
 
   return cores_to_use;
 }
+
+ThreadPool* CPURuntime::GetOrCreateThreadPool(const int num_threads, CPUAffinityPolicy policy){
+  if(this->m_thread_pool == NULL || this->m_thread_pool->getThreadsNum() != num_threads){
+      if(this->m_thread_pool != NULL){
+        delete this->m_thread_pool;
+      }
+
+      this->m_thread_pool = new ThreadPool(num_threads, policy);    
+  }
+
+  return this->m_thread_pool;
+}
+
 
 EagleeyeError CPURuntime::GetCPUCoresToUse(const std::vector<float> &cpu_max_freqs,
                             const CPUAffinityPolicy policy,

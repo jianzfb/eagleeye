@@ -14,14 +14,15 @@ enum InterpolateOpType{
 
 class InterpolateOp:public BaseOp<Tensor, 1, 1>{
 public:
-    InterpolateOp(){}
     InterpolateOp(std::vector<int64_t> out_size, float scale, bool align_corner, InterpolateOpType op_type);
     InterpolateOp(const InterpolateOp& op);
     virtual ~InterpolateOp();
 
+    InterpolateOp() = default;
+
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 private:
     std::vector<int64_t> m_out_size;
@@ -56,8 +57,8 @@ public:
     virtual ~InterpolateWithShapeOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 private:
     InterpolateOpType m_op_type;

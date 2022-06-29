@@ -24,10 +24,10 @@ public:
     OpenCLObject(): m_event(NULL){};
     virtual ~OpenCLObject(){};
 
-    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
-    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE) = 0;
-    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE) = 0;
-    virtual void* map(cl_bool blocking){return NULL;}
+    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE, int64_t src_offset=0, int64_t dst_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0) = 0;
+    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE, int64_t src_offset=0, int64_t dst_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0) = 0;
+    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE, int64_t src_offset=0, int64_t dst_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0) = 0;
+    virtual void* map(cl_bool blocking, int64_t src_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t cp_size_y=0){return NULL;}
     virtual void unmap(){};
 
     void finish(){
@@ -54,10 +54,10 @@ public:
     OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size, void* host_ptr=NULL);
     virtual ~OpenCLMem();
 
-    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE);
-    virtual void* map(cl_bool blocking);
+    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE, int64_t src_offset=0, int64_t dst_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0);
+    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE, int64_t src_offset=0, int64_t dst_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0);
+    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE, int64_t src_offset=0, int64_t dst_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0);
+    virtual void* map(cl_bool blocking, int64_t src_offset=0, int64_t cp_size=0, int64_t src_offset_y=0, int64_t cp_size_y=0);
     virtual void unmap();
 
     // 返回opencl对象类型
@@ -87,10 +87,10 @@ public:
     OpenCLImage(std::string name, unsigned int texture_id);
     virtual ~OpenCLImage();
 
-    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE);
-    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE);
-    virtual void* map(cl_bool blocking);
+    virtual void copyToHost(void* host_ptr, cl_bool blocking=CL_TRUE, int64_t src_offset_x=0, int64_t dst_offset_x=0, int64_t cp_size_x=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0);
+    virtual void copyToDevice(void* host_ptr, cl_bool blocking=CL_TRUE, int64_t src_offset_x=0, int64_t dst_offset_x=0, int64_t cp_size_x=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0);
+    virtual void copyToDeviceFromDevice(void* ptr, cl_bool blocking=CL_TRUE, int64_t src_offset_x=0, int64_t dst_offset_x=0, int64_t cp_size_x=0, int64_t src_offset_y=0, int64_t dst_offset_y=0, int64_t cp_size_y=0);
+    virtual void* map(cl_bool blocking, int64_t src_offset_x=0, int64_t cp_size_x=0, int64_t src_offset_y=0, int64_t cp_size_y=0);
     virtual void unmap();
 
     // 返回opencl对象类型

@@ -20,8 +20,8 @@ public:
     virtual ~ElementwiseOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
     void processNCHWOnCpu(Tensor x, Tensor y);

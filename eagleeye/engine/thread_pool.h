@@ -1,13 +1,14 @@
 #ifndef _EAGLEEYE_THREADPOOL_H_
 #define _EAGLEEYE_THREADPOOL_H_
 #include "eagleeye/common/EagleeyeMacro.h"
+#include "eagleeye/basic/count_down_latch.h"
 #include <functional>
 #include <condition_variable>  // NOLINT(build/c++11)
 #include <mutex>  // NOLINT(build/c++11)
 #include <thread>  // NOLINT(build/c++11)
 #include <vector>
 #include <atomic>
-#include "eagleeye/basic/count_down_latch.h"
+
 
 namespace eagleeye{
 class ThreadPool {
@@ -21,6 +22,7 @@ class ThreadPool {
   void Run(const std::function<void(const int64_t)> &func,
            const int64_t iterations);
 
+  void Run(const std::pair<std::function<void(const int64_t)>, int64_t> &func);
   int getThreadsNum();
 
   void Compute1D(const std::function<void(int64_t /* start */,

@@ -23,8 +23,8 @@ int ClipOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int ClipOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int ClipOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x type only support float.");
@@ -32,6 +32,10 @@ int ClipOp::runOnCpu(std::vector<Tensor> input){
     }
 
     Dim x_dim = x.dims(); 
+    if(x_dim.size() == 0 || x_dim[0] == 0){
+        return -1;
+    }
+
     Dim out_dim = this->m_outputs[0].dims();
     Dim needed_out_dim = x_dim;
     if(out_dim.size() == 0 || out_dim.production() != needed_out_dim.production()){
@@ -52,7 +56,7 @@ int ClipOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int ClipOp::runOnGpu(std::vector<Tensor> input){
+int ClipOp::runOnGpu(const std::vector<Tensor>& input){
     return 0;
 }
 }    

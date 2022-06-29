@@ -326,19 +326,11 @@ Node* build_node_op(Graph* g, std::string op_name, std::string op_cls, neb::CJso
         return node; 
     }
     else if(op_cls == "ShapeOp"){
-        neb::CJsonObject axis_obj;
-        op_config.Get("axis", axis_obj);
-        std::vector<int64_t> axis;
-        for(int i=0; i<axis_obj.GetArraySize(); ++i){
-            int v = -1;
-            axis_obj.Get(i, v);
-            if(v == -1){
-                continue;
-            }
-
-            axis.push_back(v);
-        }
-        Node* node = g->add(op_name, ShapeOp(axis), EagleeyeRuntime(EAGLEEYE_CPU));
+        int start = -1;
+        op_config.Get("start", start);
+        int stop = -1;
+        op_config.Get("stop", stop);
+        Node* node = g->add(op_name, ShapeOp(start, stop), EagleeyeRuntime(EAGLEEYE_CPU));
         return node;  
     }
     else if(op_cls == "ImageResizeOp"){

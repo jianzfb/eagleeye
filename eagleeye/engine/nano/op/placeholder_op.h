@@ -2,9 +2,7 @@
 #define _EAGLEEYE_PLACEHOLDER_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
-#include "eagleeye/engine/nano/util/opencl_util.h"
 #include<vector>
-#include "eagleeye/common/EagleeyeOpenCL.h"
 
 namespace eagleeye{
 namespace dataflow{
@@ -20,8 +18,8 @@ public:
     virtual ~PlaceholderOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input=std::vector<Tensor>{});
-    virtual int runOnGpu(std::vector<Tensor> input=std::vector<Tensor>{});
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
     virtual int update(void* data, std::vector<int64_t> shape, int index=0);
 
 private:

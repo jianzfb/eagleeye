@@ -209,7 +209,7 @@ void arm_transpose_mat(const float* din,
 #endif
 
 
-int TransposeOp::runOnCpu(std::vector<Tensor> input){
+int TransposeOp::runOnCpu(const std::vector<Tensor>& input){
     // 1.step 构建变换参数
     this->reInitWhenNeeded(input[0]);
 
@@ -246,7 +246,7 @@ int TransposeOp::runOnCpu(std::vector<Tensor> input){
         float* din = (float*)input[0].cpu();
         float* dout = (float*)this->m_outputs[0].cpu();
 #if defined(__ANDROID__) || defined(ANDROID)          
-        transpose_mat(din, dout, m_trans_num, m_trans_w, m_trans_h);
+        arm_transpose_mat(din, dout, m_trans_num, m_trans_w, m_trans_h);
 #endif
         return 0;
     }
@@ -255,7 +255,7 @@ int TransposeOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int TransposeOp::runOnGpu(std::vector<Tensor> input){
+int TransposeOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return 0;
 }

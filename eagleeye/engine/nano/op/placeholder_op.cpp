@@ -1,6 +1,7 @@
 #include "eagleeye/engine/nano/op/placeholder_op.h"
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include "eagleeye/common/EagleeyeOpenCL.h"
+#include "eagleeye/engine/nano/util/opencl_util.h"
 #include "eagleeye/basic/Math.h"
 
 namespace eagleeye{
@@ -73,12 +74,12 @@ int PlaceholderOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int PlaceholderOp::runOnCpu(std::vector<Tensor> input){
+int PlaceholderOp::runOnCpu(const std::vector<Tensor>& input){
     // do nothing
     return 0;
 }
 
-int PlaceholderOp::runOnGpu(std::vector<Tensor> input){
+int PlaceholderOp::runOnGpu(const std::vector<Tensor>& input){
     // do nothing
     return 0;
 }

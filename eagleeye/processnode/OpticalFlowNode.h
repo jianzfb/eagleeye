@@ -5,7 +5,6 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
-#include "eagleeye/common/EagleeyeOpenCL.h"
 
 namespace eagleeye{
 /**

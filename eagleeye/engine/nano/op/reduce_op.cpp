@@ -87,8 +87,8 @@ int ReduceOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int ReduceOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int ReduceOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x type only support float.");
@@ -320,7 +320,7 @@ int ReduceOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int ReduceOp::runOnGpu(std::vector<Tensor> input){
+int ReduceOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

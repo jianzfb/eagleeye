@@ -35,9 +35,9 @@ int InterpolateOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int InterpolateOp::runOnCpu(std::vector<Tensor> input){
+int InterpolateOp::runOnCpu(const std::vector<Tensor>& input){
     // 0: x
-    Tensor x = input[0];
+    const Tensor x = input[0];
     if(x.dims().size() != 4){
         EAGLEEYE_LOGE("InterpolateOp only support NCHW.");
         return -1;
@@ -123,7 +123,7 @@ int InterpolateOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int InterpolateOp::runOnGpu(std::vector<Tensor> input){
+int InterpolateOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }
@@ -148,9 +148,9 @@ int InterpolateWithShapeOp::init(std::map<std::string, std::vector<float>> param
     return 0;
 }
 
-int InterpolateWithShapeOp::runOnCpu(std::vector<Tensor> input){
+int InterpolateWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
     // 0: x
-    Tensor x = input[0];
+    const Tensor x = input[0];
     Dim dimx = x.dims();
     if(dimx.size() != 4){
         EAGLEEYE_LOGE("InterpolateWithShapeOp only support NCHW.");
@@ -226,7 +226,7 @@ int InterpolateWithShapeOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int InterpolateWithShapeOp::runOnGpu(std::vector<Tensor> input){
+int InterpolateWithShapeOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

@@ -113,13 +113,13 @@ if (x != NULL)\
 
 enum EagleeyeType{
 	EAGLEEYE_UNDEFINED 				=-1,
-	EAGLEEYE_CHAR 	   				= 0,
-	EAGLEEYE_UCHAR	   				= 1,
-	EAGLEEYE_SHORT	   				= 2,
-	EAGLEEYE_USHORT	   				= 3,
-	EAGLEEYE_INT	   				= 4,
-	EAGLEEYE_UINT	   				= 5,
-	EAGLEEYE_FLOAT	   				= 6,
+	EAGLEEYE_CHAR 	   				= 0,		// int8
+	EAGLEEYE_UCHAR	   				= 1,		// uint8
+	EAGLEEYE_SHORT	   				= 2,		// int16
+	EAGLEEYE_USHORT	   				= 3,		// uint16
+	EAGLEEYE_INT	   				= 4,		// int32
+	EAGLEEYE_UINT	   				= 5,		// uint32
+	EAGLEEYE_FLOAT	   				= 6,		// float16
 	EAGLEEYE_DOUBLE	   				= 7,
 	EAGLEEYE_RGB	   				= 8,
 	EAGLEEYE_RGBA	   				= 9,
@@ -130,7 +130,18 @@ enum EagleeyeType{
 	EAGLEEYE_TEXTURE_UINT4_RGBA		= 14,
 	EAGLEEYE_YUV_I420				= 15,
 	EAGLEEYE_YUV_NV21				= 16,
-	EAGLEEYE_YUV_NV12				= 17
+	EAGLEEYE_YUV_NV12				= 17,
+	EAGLEEYE_INT8					= 0,
+	EAGLEEYE_UINT8					= 1,
+	EAGLEEYE_INT16					= 2,
+	EAGLEEYE_UINT16					= 3,
+	EAGLEEYE_INT32					= 4,
+	EAGLEEYE_INT64					= 18,
+	EAGLEEYE_FLOAT32				= 6,
+	EAGLEEYE_UCHAR3					= 8,
+	EAGLEEYE_UCHAR4					= 9,
+	EAGLEEYE_UINT8_3				= 8,
+	EAGLEEYE_UINT8_4				= 9,
 };
 
 enum EagleeyeError{

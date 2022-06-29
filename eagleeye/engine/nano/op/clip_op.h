@@ -10,14 +10,15 @@ namespace eagleeye{
 namespace dataflow{
 class ClipOp:public BaseOp<Tensor, 1, 1>{
 public:
-    ClipOp(){}
     ClipOp(float min_v=0.0f, float max_v=1.0f);
     ClipOp(const ClipOp& op);
     virtual ~ClipOp();
 
+    ClipOp() = default;
+
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
     float m_min_v;

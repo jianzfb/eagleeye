@@ -120,7 +120,7 @@ EagleeyeError LinuxBaseEnv::SchedSetAffinity(const std::vector<size_t> &cpu_ids)
     CPU_SET(cpu_id, &mask);
   }
 
-  pid_t pid = syscall(SYS_gettid);
+  pid_t pid = syscall(SYS_gettid);  // thread id
   int err = sched_setaffinity(pid, sizeof(mask), &mask);
   if (err) {
     EAGLEEYE_LOGE("Fail to Set affinity.");
@@ -151,7 +151,7 @@ EagleeyeError LinuxBaseEnv::AdviseFree(void *addr, size_t length) {
   return EagleeyeError::EAGLEEYE_NO_ERROR;
 }
 
-#if defined(__linux__)
+#if defined(__linux__) && (!defined(__ANDROID__) || !defined(ANDROID))
 Env *Env::Default() {
   static LinuxBaseEnv linux_env;
   return &linux_env;

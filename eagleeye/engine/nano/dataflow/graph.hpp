@@ -9,10 +9,9 @@
 #include "eagleeye/engine/nano/dataflow/worker.hpp"
 #include "eagleeye/engine/nano/dataflow/schedule.h"
 #include "eagleeye/engine/nano/dataflow/noschedule.h"
+#include "eagleeye/basic/count_down_latch.h"
 // #include "eagleeye/engine/nano/dataflow/heft.h"
 #include "eagleeye/common/EagleeyeStr.h"
-#include "eagleeye/basic/spinlock.hpp"
-#include "eagleeye/basic/Tensor.h"
 #include <atomic>
 #include <iostream>
 #include <memory>
@@ -40,7 +39,8 @@ public:
   Graph(std::vector<EagleeyeRuntime> runtimes, 
         std::size_t num_worker = 2,
         ScheduleType schedule_type=NO_SCHEDULE)
-    :m_queue(num_worker) {
+    :m_queue(num_worker),
+     m_count_down_latch(0){
     // 1.step build worker
     for (std::size_t i = 0; i < num_worker; ++i) {
       m_worker.emplace_back(i);
@@ -59,8 +59,8 @@ public:
         break;
     }  
 
-    // 3.step others
-    m_waiting_stop_count = 0;
+    // // 3.step others
+    // m_waiting_stop_count = 0;
   }
 
   /**
@@ -154,11 +154,8 @@ public:
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
       m_nodes_map[out_iter->first]->output_ = true;
     }
-    m_exit_node_num = outputs.size();
 
     // 5.step push to work queue    
-    m_stop = false;
-    m_waiting_stop_count = 0;
     m_queue = std::vector<Queue<Node*>>(this->numWorker());
     int queue_index = 0;
     for(auto & n : m_entry_nodes){
@@ -167,17 +164,15 @@ public:
     }
 
     // 6.step launch thread
+    m_count_down_latch.Reset(outputs.size());
+    m_is_success = true;
+
     if(this->numWorker() > 1){
-      // TODO: using thread pool
       for (auto & worker : m_worker) {
         worker.thread = std::thread([&](){this->work(worker.id);});
       }
 
-      for (auto & worker : m_worker) {
-        if (worker.thread.joinable()) {
-          worker.thread.join();
-        }
-      }
+      m_count_down_latch.Wait();
     }
     else{
       // single thread
@@ -189,7 +184,9 @@ public:
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
       void* data = NULL;
       std::vector<int64_t> shape;
-      m_nodes_map[out_iter->first]->fetch(data, shape, 0, true);
+      if(m_is_success){
+          m_nodes_map[out_iter->first]->fetch(data, shape, 0, true);
+      }
       result[out_iter->first] = std::make_pair(data, shape);
     }
 
@@ -271,16 +268,15 @@ private:
   std::vector<Edge*>                        m_edges;
   std::unordered_map<std::string, Node*>    m_nodes_map;
   std::vector<Node*>                        m_entry_nodes;
-  int                                       m_exit_node_num;
 
   std::vector<Queue<Node*>>                 m_queue;
   std::vector<Worker>                       m_worker;
-  std::atomic_bool                          m_stop;
-  std::atomic_int                           m_waiting_stop_count;  
   Schedule*                                 m_schedule;
+  bool                                      m_is_success;
+  CountDownLatch                            m_count_down_latch;
 
   void work(std::size_t id) {
-    while (!m_stop) {
+    while (m_count_down_latch.Count() > 0) {
       Node * n = nullptr;
       bool flag = false;
       for (std::size_t i = 0; i < numWorker(); ++i) {
@@ -307,11 +303,18 @@ private:
     EagleeyeRuntime runtime = this->m_schedule->getRuntime(node);
 
     // 3.step execute node
-    node->fire(runtime);
-
-    // 4.step check whether stop
-    if(this->__finish(node)){
+    // rtn_code=0   -> success
+    // rnt_code=-1  -> error (directly return)
+    int32_t elapsed_time = 0;
+    int rtn_code = node->fire(runtime, NULL, elapsed_time);
+    if(rtn_code != 0){
+      m_count_down_latch.ZeroDown();
+      m_is_success = false;
       return;
+    }
+
+    if(node->output_){
+      m_count_down_latch.CountDown();
     }
 
     // 5.step active succeed nodes
@@ -331,24 +334,6 @@ private:
         ++i;
       }
     }
-  }
-
-  /**
-   * @brief finish node 
-   * 
-   * @param node
-   */
-  bool __finish(Node* node){
-    if(node->output_){
-      m_waiting_stop_count += 1;
-    }
-
-    if(m_waiting_stop_count == m_exit_node_num){
-      m_stop = true;
-      return true;
-    }
-
-    return false;
   }
 };
 }

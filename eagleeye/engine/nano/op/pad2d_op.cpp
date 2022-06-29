@@ -32,8 +32,8 @@ int Pad2dOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int Pad2dOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int Pad2dOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x type only support float.");
@@ -119,7 +119,7 @@ int Pad2dOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int Pad2dOp::runOnGpu(std::vector<Tensor> input){
+int Pad2dOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

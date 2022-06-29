@@ -10,14 +10,14 @@ namespace eagleeye{
 namespace dataflow{
 class PreprocessOp:public BaseOp<Tensor, 1, 1>{
 public:
-    PreprocessOp(){}
     PreprocessOp(std::vector<float> mean_v, std::vector<float> scale_v, bool reverse_channel);
     PreprocessOp(const PreprocessOp& op);
     virtual ~PreprocessOp();
 
+    PreprocessOp() = default;
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
     std::vector<float> m_mean_v;

@@ -26,8 +26,8 @@ int ImageResizeOp::init(std::map<std::string, std::vector<float>> params){
 }
 
 
-int ImageResizeOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int ImageResizeOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     Dim dimx = x.dims();
     if(dimx.size() != 4){
         EAGLEEYE_LOGE("InterpolateOp only support NHWC.");
@@ -102,7 +102,7 @@ int ImageResizeOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int ImageResizeOp::runOnGpu(std::vector<Tensor> input){
+int ImageResizeOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }
@@ -123,9 +123,9 @@ int ImageResizeWithShapeOp::init(std::map<std::string, std::vector<float>> param
     return 0;
 }
 
-int ImageResizeWithShapeOp::runOnCpu(std::vector<Tensor> input){
+int ImageResizeWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
     // 0: x
-    Tensor x = input[0];
+    const Tensor x = input[0];
     Dim dimx = x.dims();
     if(dimx.size() != 4){
         EAGLEEYE_LOGE("ImageResizeWithShapeOp only support NHWC.");
@@ -197,7 +197,7 @@ int ImageResizeWithShapeOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int ImageResizeWithShapeOp::runOnGpu(std::vector<Tensor> input){
+int ImageResizeWithShapeOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

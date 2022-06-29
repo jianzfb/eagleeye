@@ -3,6 +3,7 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include <eagleeye/engine/nano/dataflow/edge.hpp>
 #include "eagleeye/common/EagleeyeRuntime.h"
+#include <map>
 #include <atomic>
 #include <mutex>
 #include <memory>
@@ -57,7 +58,7 @@ public:
   /**
    * @brief run on runtime 
    */ 
-  virtual float fire(EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU), void* data=NULL) noexcept = 0;
+  virtual int fire(EagleeyeRuntime d, void* data, int32_t& elapsed_time) noexcept = 0;
 
   /**
    * @brief get buffer size of node output
@@ -124,9 +125,16 @@ public:
    * 
    * @return int 
    */
-  int getDependentNum(){
-    return data_.size();
-  }
+  int getDependentNum(){return data_.size();}
+
+  /**
+   * @brief Get the Output object
+   * 
+   * @param index 
+   * @param request_count 
+   * @return void* 
+   */
+  virtual void* getOutput(int index, int request_count=0){return NULL;};
 
 protected:
   std::atomic_uint count_;

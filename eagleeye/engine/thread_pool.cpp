@@ -1,21 +1,8 @@
-// Copyright 2019 The MACE Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include <algorithm>
 #include <numeric>
-#include "eagleeye/common/EagleeyeThreadPool.h"
+#include "eagleeye/engine/thread_pool.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/runtime/cpu/cpu_runtime.h"
 #include "eagleeye/basic/Math.h"
 #include "eagleeye/port/env.h"
 
@@ -33,14 +20,13 @@ enum {
   kThreadPoolShutdown = 4,
   kThreadPoolEventMask = 0x7fffffff
 };
-class CPURuntime;
 class EagleeyeCPU;
-ThreadPool::ThreadPool(const int thread_count_hint,
-                       const CPUAffinityPolicy policy)
+ThreadPool::ThreadPool(const int thread_count_hint, const CPUAffinityPolicy policy)
     : event_(kThreadPoolNone),
       count_down_latch_(kThreadPoolSpinWaitTime) {
   int thread_count = thread_count_hint;
 
+  // TODO: 对于线程池的亲和性设置存在问题
   if (port::Env::Default()->GetCPUMaxFreq(&cpu_max_freqs_)
       != EagleeyeError::EAGLEEYE_NO_ERROR) {
     EAGLEEYE_LOGE("Fail to get cpu max frequencies");
@@ -48,8 +34,6 @@ ThreadPool::ThreadPool(const int thread_count_hint,
 
   std::vector<size_t> cores_to_use;
   port::Env::Default()->GetCPUDevice()->getRuntime()->GetCPUCoresToUse(cpu_max_freqs_, policy, &thread_count, &cores_to_use);
-  EAGLEEYE_CHECK(thread_count > 0);
-  EAGLEEYE_LOGD("Use %d threads",thread_count);
 
   if (!cores_to_use.empty()) {
     if (port::Env::Default()->SchedSetAffinity(cores_to_use)
@@ -134,8 +118,13 @@ void ThreadPool::Run(const std::function<void(const int64_t)> &func,
   count_down_latch_.Wait();
 }
 
+
+void ThreadPool::Run(const std::pair<std::function<void(const int64_t)>, int64_t> &func){
+  this->Run(func.first, func.second);
+}
+
 void ThreadPool::Destroy() {
-  EAGLEEYE_LOGD("Destroy thread pool");
+  EAGLEEYE_LOGD("Destroy thread pool.");
   if (threads_.size() <= 1) {
     return;
   }

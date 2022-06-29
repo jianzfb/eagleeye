@@ -4,9 +4,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/common/EagleeyeStr.h"
-#ifdef EAGLEEYE_PNG
 #include "eagleeye/3rd/pnglib/png.h"
-#endif
 namespace eagleeye
 {
 ImageReadNode::ImageReadNode(){
@@ -52,7 +50,6 @@ void ImageReadNode::getImagePath(std::string& image_path){
 }
 
 void ImageReadNode::readPngFile(const char *filename){
-#ifdef EAGLEEYE_PNG
     EAGLEEYE_LOGD("parse png file %s", filename);
     FILE *fp = fopen(filename, "rb");
 
@@ -160,6 +157,5 @@ void ImageReadNode::readPngFile(const char *filename){
 
     fclose(fp);
     png_destroy_read_struct(&png, &info, NULL);
-#endif
 }
 } // namespace eagleeye

@@ -101,11 +101,12 @@ void YUVSignal::setData(void* data, MetaData meta){
     // ignore is_texture
     int height = meta.rows;  // rows
     int width = meta.cols;   // cols
-    Blob blob(sizeof(unsigned char)*(height*width + (height/2)*(width/2) + (height/2)*(width/2)), 
-                    Aligned(64), 
-                    EagleeyeRuntime(EAGLEEYE_CPU));
+    Blob blob((height*width + (height/2)*(width/2) + (height/2)*(width/2)), 
+                TypeTrait<unsigned char>::type,
+                CPU_BUFFER,
+                Aligned(64));
     
-    unsigned char* blob_ptr = (unsigned char*)blob.cpu();
+    unsigned char* blob_ptr = blob.cpu<unsigned char>();
     unsigned char* data_ptr = (unsigned char*)data;
     MetaData meta_data = meta;
     // 旋转

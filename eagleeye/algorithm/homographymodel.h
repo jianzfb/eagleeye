@@ -8,7 +8,7 @@
 #include <vector>
 #include <array>
 #include <memory>
-#include "eagleeye/common/EagleeyeOpenCL.h"
+
 
 namespace eagleeye{
 class HomographyParam:public AbstractParameter{

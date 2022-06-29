@@ -69,37 +69,40 @@ OpenCLMem::~OpenCLMem(){
     clReleaseMemObject(m_mem);
 }
 
-void OpenCLMem::copyToDevice(void* host_ptr, cl_bool blocking){
+void OpenCLMem::copyToDevice(void* host_ptr, cl_bool blocking, int64_t src_offset, int64_t dst_offset, int64_t cp_size, int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y){
+    // ignore: int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y
     int err = 
         clEnqueueWriteBuffer(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
-                            m_mem, blocking, 0, m_size, host_ptr, 0, NULL, &this->m_event);
+                            m_mem, blocking, dst_offset, cp_size==0?m_size:cp_size, host_ptr, 0, NULL, &this->m_event);
 
     if(err != CL_SUCCESS){
         EAGLEEYE_LOGE("fail to write device buffer with error %s", OpenCLErrorToString(err));
     }
 }
 
-void OpenCLMem::copyToHost(void* host_ptr, cl_bool blocking){
+void OpenCLMem::copyToHost(void* host_ptr, cl_bool blocking, int64_t src_offset, int64_t dst_offset, int64_t cp_size, int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y){
+    // ignore: int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y
     int err = 
         clEnqueueReadBuffer(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
-                            m_mem, blocking, 0, m_size, host_ptr, 0, NULL, &this->m_event ); 
+                            m_mem, blocking, src_offset, cp_size==0?m_size:cp_size, host_ptr, 0, NULL, &this->m_event ); 
  
     if(err != CL_SUCCESS){
         EAGLEEYE_LOGE("fail to read device buffer with error %s", OpenCLErrorToString(err));
     }
 }
 
-void OpenCLMem::copyToDeviceFromDevice(void* ptr, cl_bool blocking){
+void OpenCLMem::copyToDeviceFromDevice(void* ptr, cl_bool blocking, int64_t src_offset, int64_t dst_offset, int64_t cp_size, int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y){
+    // ignore: int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y
     int err = 
         clEnqueueCopyBuffer(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false),
-                         (cl_mem)ptr, m_mem, 0, 0, m_size, 0, NULL, &this->m_event);  
+                         (cl_mem)ptr, m_mem, src_offset, dst_offset, cp_size==0?m_size:cp_size, 0, NULL, &this->m_event);  
 
     if(err != CL_SUCCESS){
         EAGLEEYE_LOGE("fail to copy device buffer with error %s", OpenCLErrorToString(err));
     }
 }
 
-void* OpenCLMem::map(cl_bool blocking){
+void* OpenCLMem::map(cl_bool blocking, int64_t src_offset, int64_t cp_size, int64_t src_offset_y, int64_t cp_size_y){
     if(this->m_mem_status != EAGLEEYE_CL_MEM_READ_WRITE_PINNED){
         return NULL;
     }
@@ -115,8 +118,8 @@ void* OpenCLMem::map(cl_bool blocking){
             m_mem, 
             blocking, 
             map_f, 
-            0, 
-            this->m_size, 
+            src_offset, 
+            cp_size==0?m_size:cp_size, 
             0, 
             NULL, 
             &this->m_event, 
@@ -172,8 +175,11 @@ OpenCLImage::OpenCLImage(OpenCLMemStatus mem_status,
     case 3:
         m_image_format.image_channel_order=CL_RGB;
         break;
-    default:
+    case 4:
         m_image_format.image_channel_order=CL_RGBA;
+        break;
+    default:
+        m_image_format.image_channel_order=CL_R;
         break;
     }
     this->m_channels = channels;
@@ -286,14 +292,14 @@ OpenCLImage::~OpenCLImage(){
     clReleaseMemObject(m_image);
 }
 
-void OpenCLImage::copyToDevice(void* host_ptr, cl_bool blocking){
+void OpenCLImage::copyToDevice(void* host_ptr, cl_bool blocking, int64_t src_offset_x, int64_t dst_offset_x, int64_t cp_size_x, int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y){
     size_t origin[3];
-    origin[0] = 0;
-    origin[1] = 0;
+    origin[0] = src_offset_x;
+    origin[1] = src_offset_y;
     origin[2] = 0;
     size_t region[3];
-    region[0] = m_cols;
-    region[1] = m_rows;
+    region[0] = cp_size_x==0?m_cols:cp_size_x;
+    region[1] = cp_size_y==0?m_rows:cp_size_y;
     region[2] = 1;
     int err = 
         clEnqueueWriteImage(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
@@ -313,14 +319,14 @@ void OpenCLImage::copyToDevice(void* host_ptr, cl_bool blocking){
     }
 }
 
-void OpenCLImage::copyToHost(void* host_ptr, cl_bool blocking){
+void OpenCLImage::copyToHost(void* host_ptr, cl_bool blocking, int64_t src_offset_x, int64_t dst_offset_x, int64_t cp_size_x, int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y){
     size_t origin[3];
-    origin[0] = 0;
-    origin[1] = 0;
+    origin[0] = src_offset_x;
+    origin[1] = src_offset_y;
     origin[2] = 0;
     size_t region[3];
-    region[0] = m_cols;
-    region[1] = m_rows;
+    region[0] = cp_size_x==0?m_cols:cp_size_x;
+    region[1] = cp_size_y==0?m_rows:cp_size_y;
     region[2] = 1;
     int err = 
         clEnqueueReadImage(OpenCLRuntime::getOpenCLEnv()->getOrCreateCommandQueue(false), 
@@ -340,11 +346,11 @@ void OpenCLImage::copyToHost(void* host_ptr, cl_bool blocking){
     }
 }
 
-void OpenCLImage::copyToDeviceFromDevice(void* host_ptr, cl_bool blocking){
+void OpenCLImage::copyToDeviceFromDevice(void* host_ptr, cl_bool blocking, int64_t src_offset_x, int64_t dst_offset_x, int64_t cp_size_x, int64_t src_offset_y, int64_t dst_offset_y, int64_t cp_size_y){
     EAGLEEYE_LOGE("dont support");
 }
 
-void* OpenCLImage::map(cl_bool blocking){
+void* OpenCLImage::map(cl_bool blocking, int64_t src_offset_x, int64_t cp_size_x, int64_t src_offset_y, int64_t cp_size_y){
     if(this->m_mem_status != EAGLEEYE_CL_MEM_READ_WRITE_PINNED){
         return NULL;
     }
@@ -354,12 +360,12 @@ void* OpenCLImage::map(cl_bool blocking){
     }
 
     size_t origin[3];
-    origin[0] = 0;
-    origin[1] = 0;
+    origin[0] = src_offset_x;
+    origin[1] = src_offset_y;
     origin[2] = 0;
     size_t region[3];
-    region[0] = m_cols;
-    region[1] = m_rows;
+    region[0] = cp_size_x==0?m_cols:cp_size_x;
+    region[1] = cp_size_y==0?m_rows:cp_size_y;
     region[2] = 1;
     cl_map_flags map_f = CL_MAP_WRITE|CL_MAP_READ;
     int err;

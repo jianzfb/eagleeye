@@ -25,10 +25,10 @@ int CastOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int CastOp::runOnCpu(std::vector<Tensor> input){
+int CastOp::runOnCpu(const std::vector<Tensor>& input){
     // support float32->uint8
     // support int32->float32,uint8->float32
-    Tensor x = input[0];
+    const Tensor x = input[0];
     if(x.type() == m_data_type){
         // 类型相同
         this->m_outputs[0] = x;
@@ -54,6 +54,10 @@ int CastOp::runOnCpu(std::vector<Tensor> input){
     }
 
     Dim x_dim = x.dims(); 
+    if(x_dim.size() == 0 || x_dim[0] == 0){
+        return -1;
+    }
+
     Dim out_dim = this->m_outputs[0].dims();
     Dim needed_out_dim = x_dim;
     if(out_dim.production() != needed_out_dim.production()){
@@ -108,7 +112,7 @@ int CastOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int CastOp::runOnGpu(std::vector<Tensor> input){
+int CastOp::runOnGpu(const std::vector<Tensor>& input){
     return -1;
 }
 }    

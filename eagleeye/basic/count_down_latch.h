@@ -33,9 +33,9 @@ class CountDownLatch {
     if (spin_timeout_ > 0) {
       SpinWaitUntil(count_, 0, spin_timeout_);
     }
-    if (count_.load(std::memory_order_acquire) != 0) {
+    if (count_.load(std::memory_order_acquire) > 0) {
       std::unique_lock<std::mutex> m(mutex_);
-      while (count_.load(std::memory_order_acquire) != 0) {
+      while (count_.load(std::memory_order_acquire) > 0) {
         cond_.wait(m);
       }
     }
@@ -48,12 +48,18 @@ class CountDownLatch {
     }
   }
 
+  void ZeroDown(){
+      while (count_.fetch_sub(1, std::memory_order_release) != 1);
+      std::unique_lock<std::mutex> m(mutex_);
+      cond_.notify_all();
+  }
+
   void Reset(int count) {
     count_.store(count, std::memory_order_release);
   }
 
-  int count() const {
-    return count_;
+  int Count() const {
+    return count_.load(std::memory_order_acquire);
   }
 
  private:

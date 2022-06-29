@@ -18,12 +18,15 @@ int ElementwiseOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int ElementwiseOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
-    Tensor y = input[1];
+int ElementwiseOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
+    const Tensor y = input[1];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT || y.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x,y type only support float.");
+        return -1;
+    }
+    if(x_dim.size() == 0 || x_dim[0] == 0){
         return -1;
     }
 
@@ -69,7 +72,7 @@ int ElementwiseOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int ElementwiseOp::runOnGpu(std::vector<Tensor> input){
+int ElementwiseOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

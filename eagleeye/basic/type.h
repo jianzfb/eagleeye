@@ -7,6 +7,49 @@
 
 namespace eagleeye
 {
+class TypeInfo{
+public:
+    static inline int64_t getElemSize(EagleeyeType type){
+        int64_t elem_size = 0;
+        switch (type){
+        case EAGLEEYE_CHAR:
+        case EAGLEEYE_UCHAR:
+            elem_size = sizeof(unsigned char);
+            break;
+        case EAGLEEYE_FLOAT:
+            elem_size = sizeof(float);
+            break;
+        case EAGLEEYE_INT:
+        case EAGLEEYE_UINT:
+            elem_size = sizeof(int32_t);
+            break;
+        case EAGLEEYE_SHORT:
+        case EAGLEEYE_USHORT:
+            elem_size = sizeof(int16_t);
+            break;
+        case EAGLEEYE_DOUBLE:
+            elem_size = sizeof(double);
+            break;
+        case EAGLEEYE_RGB:
+            elem_size = sizeof(unsigned char)*3;
+            break;
+        case EAGLEEYE_RGBA:
+            elem_size = sizeof(unsigned char)*4;
+            break;            
+        case EAGLEEYE_BOOL:
+            elem_size = sizeof(bool);
+            break;
+        case EAGLEEYE_FLOAT4:
+            elem_size = sizeof(float)*4;
+            break;
+        default:
+            elem_size = 0;
+            break;
+        }
+        return elem_size;
+    }
+};
+
 /**
  *	@brief trait atomic type
  */
