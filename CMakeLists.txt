@@ -206,7 +206,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/pose_affine_op.cpp
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
-    eagleeye/processnode/ImageTransformNode
+    eagleeye/processnode/ImageTransformNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
     eagleeye/processnode/ImageSelect.cpp
     eagleeye/render/RenderContext.cpp)
@@ -358,7 +358,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/pose_affine_op.cpp
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
-    eagleeye/processnode/ImageTransformNode
+    eagleeye/processnode/ImageTransformNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
     eagleeye/processnode/ImageSelect.cpp)
 endif()
@@ -403,6 +403,13 @@ if(DEFINED ANDROID_ABI)
         )
 endif()
 
+FIND_PACKAGE(OpenMP REQUIRED)
+find_package(pnglib)
+if(pnglib_FOUND)
+    message(STATUS "message find pnglib")
+    include_directories(${pnglib_INCLUDE_DIRS})
+endif()
+
 add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 
 if(DEFINED PYTHON)
@@ -411,8 +418,6 @@ if(DEFINED PYTHON)
                         ${Boost_LIBRARIES})
 endif()
 
-
-FIND_PACKAGE(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -438,11 +443,8 @@ if(DEFINED FFMPEG AND DEFINED X264)
                             ${X264}/lib/libx264.163.so)
 endif()
 
-find_package(pnglib)
 if(pnglib_FOUND)
-    message(STATUS "message find pnglib")
-    include_directories(${pnglib_INCLUDE_DIRS})
-    target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+   target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
 endif()
 
 if(DEFINED ANDROID_ABI OR DEFINED OSX_ABI)

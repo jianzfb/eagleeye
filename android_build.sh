@@ -2,13 +2,20 @@ if [ -d "./build" ];
 then
   rm -rf build
 fi
+# 0.step 当前目录
+CRTDIR=$(pwd)
+
 # 1.step 编译
 mkdir build
 cd build
-# cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=/Users/zhangjian52/Documents/workspace/eagleeye/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DFFMPEG=/Users/zhangjian52/Documents/backup/其他/ffmpeg/arm64-v8a -DX264=/Users/zhangjian52/Documents/backup/其他/X264/arm64-v8a -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
-cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=/Users/jian/Downloads/workspace/mltalker/eagleeye/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
-# cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=/Users/zhangjian52/Documents/workspace/eagleeye/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DANDROID_ARM_NEON=ON -DANDROID_NATIVE_API_LEVEL=android-23 ..
-# cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=/Users/zhangjian52/Documents/workspace/eagleeye/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DNN_ENGINE=paddle -DPADDLE_PATH=/Users/zhangjian52/Downloads/inference_lite_lib.android.armv8.opencl/cxx -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
+# arm64编译
+cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=${CRTDIR}/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
+# arm32编译
+# cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=${CRTDIR}/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
+# 使用ffmpeg
+# cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=${CRTDIR}/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DFFMPEG=/Users/zhangjian52/Documents/backup/其他/ffmpeg/arm64-v8a -DX264=/Users/zhangjian52/Documents/backup/其他/X264/arm64-v8a -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
+# 使用paddlelite引擎
+# cmake -DCMAKE_BUILD_TYPE=Release -DOPENCL=${CRTDIR}/eagleeye/3rd/opencl -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DNN_ENGINE=paddle -DPADDLE_PATH=/Users/zhangjian52/Downloads/inference_lite_lib.android.armv8.opencl/cxx -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
 make
 cd ..
 
@@ -18,8 +25,16 @@ then
   rm -rf install
 fi
 mkdir include
-find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.hpp" -type f -exec rsync -R {} include/ \;
-find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.h" -type f -exec rsync -R {} include/ \;
+
+host_os=`uname  -a`
+if [[ $host_os == Darwin* ]];then
+  find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.hpp" -type f -exec rsync -R {} include/ \;
+  find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.h" -type f -exec rsync -R {} include/ \;
+else
+  find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.hpp" -type f -exec cp --parent -r {} include/ \;
+  find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.h" -type f -exec cp --parent -r {} include/ \;
+fi
+
 
 mkdir install
 cd install
