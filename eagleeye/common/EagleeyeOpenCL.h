@@ -401,23 +401,23 @@ public:
     virtual ~OpenCLObject(){};
 };
 
-// enum OpenCLMemStatus{
-//     EAGLEEYE_CL_MEM_READ,
-//     EAGLEEYE_CL_MEM_WRITE,
-//     EAGLEEYE_CL_MEM_READ_WRITE,
-//     EAGLEEYE_CL_MEM_READ_WRITE_PINNED,
-// };
+enum OpenCLMemStatus{
+    EAGLEEYE_CL_MEM_READ,
+    EAGLEEYE_CL_MEM_WRITE,
+    EAGLEEYE_CL_MEM_READ_WRITE,
+    EAGLEEYE_CL_MEM_READ_WRITE_PINNED,
+};
 
-// class OpenCLMem{
-// public:
-//     OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size){};
-//     virtual ~OpenCLMem(){};
-// };
-// class OpenCLImage{
-// public:
-//     OpenCLImage(OpenCLMemStatus mem_status,std::string name, unsigned int rows, unsigned int cols, unsigned int channels, EagleeyeType pixel_type){};
-//     virtual ~OpenCLImage(){};
-// };
+class OpenCLMem{
+public:
+    OpenCLMem(OpenCLMemStatus mem_status, std::string name, unsigned int size){};
+    virtual ~OpenCLMem(){};
+};
+class OpenCLImage{
+public:
+    OpenCLImage(OpenCLMemStatus mem_status,std::string name, unsigned int rows, unsigned int cols, unsigned int channels, EagleeyeType pixel_type){};
+    virtual ~OpenCLImage(){};
+};
 }
 #endif    
 #endif

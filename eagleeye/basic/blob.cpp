@@ -706,8 +706,10 @@ bool Blob::update(){
         if(gpu_ptr == NULL){
             return false;
         }
+#ifdef EAGLEEYE_OPENCL_OPTIMIZATION  
         OpenCLMem* ocl_mem = (OpenCLMem*)gpu_ptr;
         ocl_mem->copyToHost(this->cpu(true), true, this->m_offset, 0, this->numel()*this->m_elem_size);
+#endif
     }
     else{
         // CPU(发生更新)->GPU(主存储)
