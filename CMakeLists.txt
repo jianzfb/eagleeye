@@ -452,7 +452,7 @@ if(DEFINED ANDROID_ABI OR DEFINED OSX_ABI)
     target_link_libraries(eagleeye EGL)
 endif()
 
-if(DEFINED ANDROID_ABI OR DEFINED OSX_ABI)
+if(DEFINED ANDROID_ABI AND DEFINED OPENGL)
     # 仅针对ANDROID平台，引入opengl环境
     ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
     find_path(GLES3_INCLUDE_DIR GLES3/gl3.h HINTS ${ANDROID_NDK})              #找到opengl头文件路径

@@ -259,6 +259,7 @@ OpenCLImage::OpenCLImage(OpenCLMemStatus mem_status,
 }
 
 OpenCLImage::OpenCLImage(std::string name, unsigned int texture_id){
+#ifdef EAGLEEYE_OPENGL
     this->m_name = name;
     int err;
     m_image = 
@@ -286,6 +287,7 @@ OpenCLImage::OpenCLImage(std::string name, unsigned int texture_id){
     this->m_mem_status = EAGLEEYE_CL_MEM_READ;
     this->m_mapped_ptr = NULL;
     clGetImageInfo(m_image, CL_IMAGE_FORMAT, sizeof(cl_image_format), &this->m_image_format, NULL);
+#endif
 }
 
 OpenCLImage::~OpenCLImage(){
