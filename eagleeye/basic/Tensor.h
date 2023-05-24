@@ -24,14 +24,14 @@ public:
     /**
      * @brief create tensor
      */ 
-    Tensor(std::vector<int64_t> shape, 
+    Tensor(const std::vector<int64_t> shape, 
             EagleeyeType data_type, 
             DataFormat data_format,
             MemoryType memory_type,
             Aligned aligned=Aligned(64),
             std::vector<int64_t> image_shape=std::vector<int64_t>());
 
-    Tensor(std::vector<int64_t> shape, 
+    Tensor(const std::vector<int64_t> shape, 
             EagleeyeType data_type, 
             DataFormat data_format, 
             void* data);

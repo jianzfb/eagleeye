@@ -23,10 +23,6 @@ public:
     virtual int update(void* data, std::vector<int64_t> shape, int index=0);
 
 private:
-    int64_t m_b;
-    int64_t m_h;
-    int64_t m_w;
-    int64_t m_c;
     MemoryType m_memory_type;
     DataFormat m_data_format;
     EagleeyeType m_data_type;

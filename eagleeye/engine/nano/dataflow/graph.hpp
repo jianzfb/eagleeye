@@ -223,6 +223,13 @@ public:
     return n;
   }
 
+
+  void bind(std::string from_name, int from_i, std::string to_name, int to_i){
+    Node* from = this->find(from_name);
+    Node* to = this->find(to_name);
+    this->bind(from, from_i, to, to_i);
+  }
+
   void bind(Node* from, int from_i, Node* to, int to_i){
     assert(!from->findNext(to));  
     assert(!to->findPrev(from));

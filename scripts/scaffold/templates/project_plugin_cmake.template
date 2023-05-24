@@ -26,7 +26,8 @@ add_definitions(-DEAGLEEYE_ENABLE_LOG)
 
 # source code
 set({{project}}_SRC 
-    ./{{project}}_plugin.cpp)
+    ./{{project}}_plugin.cpp
+)
 
 # core sdk
 include_directories({{eagleeye}}/include/eagleeye/)

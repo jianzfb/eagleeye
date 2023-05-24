@@ -32,7 +32,23 @@ public:
 	virtual void executeNodeInfo();
 
     /**
-     * @brief 加载算子结构
+     * @brief 获得计算图，外部硬写入处理流水线
+     * 
+     */
+    dataflow::Graph* getOpGraph(){return this->m_g;};
+
+    /**
+     * @brief 分析计算图
+     */
+    void analyze(std::vector<std::string> in_ops, std::vector<std::string> out_ops);
+
+    /**
+     * @brief 得到计算图的输入
+     */
+    int getOpGraphIn();
+
+    /**
+     * @brief 自动加载算子结构
      * 
      * @param nn_info 
      * @return true 
@@ -55,6 +71,8 @@ private:
     dataflow::Graph* m_g;
     std::map<int, std::string> m_input_map;
     std::map<int, std::string> m_output_map;
+
+    bool m_is_init;
 };
 }
 #endif

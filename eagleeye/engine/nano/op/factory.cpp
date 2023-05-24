@@ -358,7 +358,7 @@ Node* build_node_op(Graph* g, std::string op_name, std::string op_cls, neb::CJso
         //     interpolate_type = INTERPOLATE_NEAREST;
         // }
 
-        Node* node = g->add(op_name, ImageResizeOp(out_size, scale, INTERPOLATE_BILINER), EagleeyeRuntime(EAGLEEYE_CPU));
+        Node* node = g->add(op_name, ResizeOp(out_size, scale, INTERPOLATE_BILINER), EagleeyeRuntime(EAGLEEYE_CPU));
         return node; 
     }
     else if(op_cls == "ImageResizeWithShapeOp"){
@@ -372,7 +372,7 @@ Node* build_node_op(Graph* g, std::string op_name, std::string op_cls, neb::CJso
         //     interpolate_type = INTERPOLATE_NEAREST;
         // }
 
-        Node* node = g->add(op_name, ImageResizeWithShapeOp(INTERPOLATE_BILINER), EagleeyeRuntime(EAGLEEYE_CPU));
+        Node* node = g->add(op_name, ResizeWithShapeOp(INTERPOLATE_BILINER), EagleeyeRuntime(EAGLEEYE_CPU));
         return node; 
     }
     else if(op_cls == "SliceOp"){

@@ -218,7 +218,7 @@ Blob::Blob(unsigned int texture_id)
 #endif
 }
 
-Blob::Blob(std::vector<int64_t> shape, 
+Blob::Blob(const std::vector<int64_t> shape, 
             EagleeyeType data_type, 
             MemoryType memory_type, 
             std::vector<int64_t> image_shape,

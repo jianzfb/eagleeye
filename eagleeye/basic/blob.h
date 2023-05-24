@@ -73,7 +73,7 @@ public:
     /**
      * @brief create blob for tensor
      */ 
-    Blob(std::vector<int64_t> shape, 
+    Blob(const std::vector<int64_t> shape, 
          EagleeyeType data_type, 
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,

@@ -5,6 +5,18 @@
 
 namespace eagleeye
 {
+class SnpeRun{
+public:
+	SnpeRun(){}
+	~SnpeRun(){}
+};
+
+class RknnRun{
+public:
+	RknnRun(){}
+	~RknnRun(){}
+};
+
 class PaddleRun{
 public:
 	PaddleRun(){}

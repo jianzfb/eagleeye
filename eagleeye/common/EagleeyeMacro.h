@@ -119,7 +119,7 @@ enum EagleeyeType{
 	EAGLEEYE_USHORT	   				= 3,		// uint16
 	EAGLEEYE_INT	   				= 4,		// int32
 	EAGLEEYE_UINT	   				= 5,		// uint32
-	EAGLEEYE_FLOAT	   				= 6,		// float16
+	EAGLEEYE_FLOAT	   				= 6,		// float32
 	EAGLEEYE_DOUBLE	   				= 7,
 	EAGLEEYE_RGB	   				= 8,
 	EAGLEEYE_RGBA	   				= 9,

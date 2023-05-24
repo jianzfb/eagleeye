@@ -29,24 +29,26 @@
 #include <stdio.h>
 #include <assert.h>
 namespace eagleeye{
-class SnpeRun: public ModelEngine{
+
+template<typename Enabled>
+class ModelRun<SnpeRun, Enabled>: public ModelEngine{
 public:
 	/**
 	 * [constructor: build snpe model]
 	 */
-	SnpeRun(std::string model_name, 
+	ModelRun(std::string model_name, 
 			 std::string device,
 			 std::vector<std::string> input_names=std::vector<std::string>(),
 		     std::vector<std::vector<int64_t>> input_shapes=std::vector<std::vector<int64_t>>(),
 			 std::vector<std::string> output_names=std::vector<std::string>(),
 		     std::vector<std::vector<int64_t>> output_shapes=std::vector<std::vector<int64_t>>(),
-		     int omp_num_threads=-1, 
-		     int cpu_affinity_policy=-1, 
+		     int num_threads = -1, 
+		     RunPower model_power = HIGH_POWER, 
 		     std::string writable_path="/data/local/tmp/");
 	/**
 	 * [destructor]
 	 */
-	virtual ~SnpeRun();
+	virtual ~ModelRun();
 
 	/**
 	 * [run neural network model]
@@ -62,13 +64,6 @@ public:
 	 * @return {boolean} true or false
 	 */
 	virtual bool initialize();
-
-	/**
-	 * @brief Set the Writable Path object
-	 * 
-	 * @param writable_path 
-	 */
-	virtual void setWritablePath(std::string writable_path);
 
 	/**
 	 * @brief Get the Input Ptr object
@@ -118,9 +113,10 @@ protected:
 	zdl::DlSystem::TensorMap m_output_tensormap;
 	zdl::DlSystem::TensorMap m_input_tensormap;
 	std::vector<std::unique_ptr<zdl::DlSystem::ITensor>> m_input_tensors;
-	std::string m_dlc_path;
 
+	std::string m_model_name;
 	std::vector<std::shared_ptr<float>> m_temp_ptrs;
+	bool m_is_init;
 };	
 }
 #include "eagleeye/engine/snpe_run.hpp"
