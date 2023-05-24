@@ -27,8 +27,8 @@ void NNNode::executeNodeInfo(){
         void* data = NULL;
         int data_size[4];
         int data_dims = 0;
-        int data_type = -1;
-        this->getInputPort(sig_i)->getSignalContent(data, data_size, data_dims, data_type);
+        int data_typegetSignalContent = -1;
+        this->getInputPort(sig_i)->(data, data_size, data_dims, data_type);
 
         std::cout<<">> 3"<<std::endl;
         std::string sig_i_name = this->m_input_map[sig_i];
