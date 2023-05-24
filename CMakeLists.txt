@@ -118,6 +118,7 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/StringSignal.cpp
     eagleeye/framework/pipeline/StateSignal.cpp
     eagleeye/framework/pipeline/LandmarkSignal.cpp
+    eagleeye/framework/pipeline/TensorSignal.cpp
     eagleeye/common/EagleeyeLog.cpp 
     eagleeye/engine/model_engine.cpp 
     eagleeye/common/EagleeyeStr.cpp 
@@ -256,6 +257,7 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/StringSignal.cpp
     eagleeye/framework/pipeline/StateSignal.cpp
     eagleeye/framework/pipeline/LandmarkSignal.cpp
+    eagleeye/framework/pipeline/TensorSignal.cpp
     eagleeye/common/EagleeyeLog.cpp 
     eagleeye/engine/model_engine.cpp 
     eagleeye/common/EagleeyeStr.cpp 

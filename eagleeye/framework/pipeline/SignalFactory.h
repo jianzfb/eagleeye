@@ -7,6 +7,7 @@
 #include "eagleeye/framework/pipeline/StringSignal.h"
 #include "eagleeye/framework/pipeline/StateSignal.h"
 #include "eagleeye/framework/pipeline/YUVSignal.h"
+#include "eagleeye/framework/pipeline/TensorSignal.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/type.h"

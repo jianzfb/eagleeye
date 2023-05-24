@@ -90,7 +90,7 @@ public:
    * 
    * @param model_path 
    */
-  void init(const char* model_path){
+  void init(const char* model_path=NULL){
     // 1.step load model path
     if(model_path != NULL){
       // 从模型文件加载模型结构
@@ -127,13 +127,13 @@ public:
   void run(std::map<std::string, 
                     std::pair<void*,std::vector<int64_t>>> inputs, 
            std::map<std::string, 
-                    std::pair<void*,std::vector<int64_t>>>& outputs){
+                    std::pair<void*,std::pair<std::vector<int64_t>, EagleeyeType>>>& outputs){
     // 1.step check
     if(outputs.size() == 0){
       EAGLEEYE_LOGD("Output node empty, skip run.");
       return;
     }
-    
+
     // 2.step reset inner parameter
     for(Node* n: m_nodes){
         n->count_ = 0;
@@ -150,7 +150,7 @@ public:
 
     // 4.step reset output flag
     std::map<std::string, bool> output_map;
-    std::map<std::string, std::pair<void*,std::vector<int64_t>>>::iterator out_iter,out_iend(outputs.end());
+    std::map<std::string, std::pair<void*,std::pair<std::vector<int64_t>, EagleeyeType>>>::iterator out_iter,out_iend(outputs.end());
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
       m_nodes_map[out_iter->first]->output_ = true;
     }
@@ -180,14 +180,16 @@ public:
     }
 
     // 7.step output
-    std::map<std::string, std::pair<void*, std::vector<int64_t>>> result;
+    std::map<std::string, std::pair<void*, std::pair<std::vector<int64_t>,EagleeyeType>>> result;
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
       void* data = NULL;
       std::vector<int64_t> shape;
+      EagleeyeType type;
       if(m_is_success){
-          m_nodes_map[out_iter->first]->fetch(data, shape, 0, true);
+          m_nodes_map[out_iter->first]->fetch(data, shape, type, 0, true);
       }
-      result[out_iter->first] = std::make_pair(data, shape);
+
+      result[out_iter->first] = std::make_pair(data, std::make_pair(shape, type));
     }
 
     outputs = result;

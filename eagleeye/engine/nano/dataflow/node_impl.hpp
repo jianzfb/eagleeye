@@ -88,9 +88,9 @@ public:
     return true;
   }
 
-  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=false){
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index=0, bool block=false){
     // block / no block
-    return (&m_handler)->fetch(data, shape, index, block);
+    return (&m_handler)->fetch(data, shape, type, index, block);
   }
 
   virtual void* getOutput(int index, int request_count=0){
