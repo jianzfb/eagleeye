@@ -35,6 +35,10 @@ include_directories({{eagleeye}}/include)
 link_directories({{eagleeye}}/libs/{{'${PROJECT_ABI}'}})
 add_library({{project}} SHARED {{'${'}}{{project}}_SRC{{'}'}})  
 
+
+# model engine
+
+
 {% if opencv != '' %}
 # link 3rd opencv
 set(OpenCV_DIR {{opencv}}}})

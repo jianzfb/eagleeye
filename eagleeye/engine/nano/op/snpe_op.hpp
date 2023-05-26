@@ -73,7 +73,7 @@ public:
         }
 
         if(params.find("num_threads") != params.end()){
-            this->m_num_threads = (int)(params["num_threads"]);
+            this->m_num_threads = (int)(params["num_threads"][0]);
         }
         this->m_model_power = HIGH_POWER;
         return 0;
@@ -89,9 +89,9 @@ public:
             this->m_input_shapes.resize(params["input_shapes"].size());
             for(int i=0; i<params["input_shapes"].size(); ++i){
                 for(int j=0; j<params["input_shapes"][i].size(); ++j){
-                    this->m_input_shapes[i].append(
+                    this->m_input_shapes[i].push_back(
                          (int64_t)(params["input_shapes"][i][j])
-                    )
+                    );
                 }
             }
         }
@@ -100,9 +100,9 @@ public:
             this->m_output_shapes.resize(params["output_shapes"].size());
             for(int i=0; i<params["output_shapes"].size(); ++i){
                 for(int j=0; j<params["output_shapes"][i].size(); ++j){
-                    this->m_output_shapes[i].append(
+                    this->m_output_shapes[i].push_back(
                          (int64_t)(params["output_shapes"][i][j])
-                    )
+                    );
                 }
             }
         }

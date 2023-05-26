@@ -103,7 +103,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type);
+	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
 
 	/**
 	 * @brief Get the Signal Value Type object
@@ -153,6 +153,7 @@ private:
     int m_width;
     int m_height;
     int m_release_count;
+	size_t m_data_size[3];
 	EagleeyeType m_yuv_format;
 };
 } // namespace eagleeye

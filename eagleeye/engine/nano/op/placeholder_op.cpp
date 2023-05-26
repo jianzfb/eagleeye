@@ -30,7 +30,6 @@ PlaceholderOp::PlaceholderOp(const PlaceholderOp& op)
 }
 
 PlaceholderOp::~PlaceholderOp(){
-
 }
 
 int PlaceholderOp::init(std::map<std::string, std::vector<float>> params){

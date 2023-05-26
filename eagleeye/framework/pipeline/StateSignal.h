@@ -100,12 +100,12 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type);
+	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
 
 private:
 	int m_state;	
     int m_ini_state;
-
+	size_t m_data_size[1];
 	int m_release_count;
 };
 }

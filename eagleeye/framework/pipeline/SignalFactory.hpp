@@ -261,13 +261,15 @@ void ImageSignal<T>::setData(void* data, MetaData meta){
 }
 
 template<class T>
-void ImageSignal<T>::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
+void ImageSignal<T>::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
 	this->m_tmp = this->getData();
 	data = (void*)this->m_tmp.dataptr();
+	this->m_data_size[0] = this->m_tmp.rows();
+	this->m_data_size[1] = this->m_tmp.cols();
+	this->m_data_size[2] = TypeTrait<T>::size;
+
+	data_size = this->m_data_size;
 	data_dims = 3;
-	data_size[0] = this->m_tmp.rows();
-	data_size[1] = this->m_tmp.cols();
-	data_size[2] = TypeTrait<T>::size;
 	data_type = TypeTrait<T>::type;
 }
 

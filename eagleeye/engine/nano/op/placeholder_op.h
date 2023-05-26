@@ -18,6 +18,9 @@ public:
     virtual ~PlaceholderOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){}
+
     virtual int runOnCpu(const std::vector<Tensor>& input);
     virtual int runOnGpu(const std::vector<Tensor>& input);
     virtual int update(void* data, std::vector<int64_t> shape, int index=0);

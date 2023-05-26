@@ -1,6 +1,7 @@
 #ifndef _SNPE_MODEL_RUN_H_
 #define _SNPE_MODEL_RUN_H_
 #include "eagleeye/engine/model_engine.h"
+#include "eagleeye/engine/model_run.h"
 #include "SNPE/SNPE.hpp"
 #include "SNPE/SNPEBuilder.hpp"
 #include "SNPE/SNPEFactory.hpp"

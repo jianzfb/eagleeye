@@ -74,7 +74,6 @@ public:
     for (Edge * e : m_edges) {
       delete e;
     }
-
     delete m_schedule;
   }
 

@@ -235,7 +235,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){};
+	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){};
 
 	/**
 	 * @brief whether content is prepared in the current signal 

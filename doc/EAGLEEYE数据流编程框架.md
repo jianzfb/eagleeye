@@ -81,10 +81,9 @@ void AnyNode::start(){
 * 张量信号TensorSignal
 
     ```c++
-    template<class T>
     class TensorSignal:public AnySignal{
     public:
-        typedef Tensor<T>       DataType;
+        typedef Tensor       DataType;
         // 获得张量信号承载的数据
         DataType getData();
         // 设置张量信号承载的数据
@@ -93,7 +92,7 @@ void AnyNode::start(){
         // 基于无格式方式设置数据（底层调用setData(...)）
         virtual void setSignalContent(void* data, const int* data_size, const int data_dims);
         // 基于无格式方式获取数据（底层调用getData(...)）
-        virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type);
+        virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
         ...
     }
     ```

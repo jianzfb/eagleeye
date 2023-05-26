@@ -70,16 +70,22 @@ public:
    * 
    * @param data 
    */
-  int init(std::map<std::string, std::vector<float>> data) noexcept override{
-    if(!this->init_){
+  virtual int init(std::map<std::string, std::vector<float>> data) noexcept{
       // 1.step initialize hanlder
       int result = (&m_handler)->init(data);
-
-      // 3.step reset flag
-      this->init_ = true;
       return result;
-    }
-    return 0;
+  }
+
+  virtual int init(std::map<std::string, std::vector<std::vector<float>>> data) noexcept{
+    // 1.step initialize hanlder
+    int result = (&m_handler)->init(data);
+    return result;
+  }
+
+  virtual int init(std::map<std::string, std::vector<std::string>> data) noexcept{
+    // 1.step initialize hanlder
+    int result = (&m_handler)->init(data);
+    return result;
   }
 
   virtual bool update(void* data, std::vector<int64_t> shape, int index=0){

@@ -18,7 +18,6 @@ ResizeOp::ResizeOp(const ResizeOp& op)
 }
 
 ResizeOp::~ResizeOp(){
-
 }
 
 int ResizeOp::init(std::map<std::string, std::vector<float>> params){
@@ -54,7 +53,6 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
         return -1;
     }
     else if(dimx.size() == 3){
-        std::cout<<"in image resize op hxwx3"<<std::endl;
         if(dimx[2] != 3){
             EAGLEEYE_LOGE("ResizeOp only support HxWx3");
             return -1;
@@ -93,7 +91,6 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
         out_width = (int)(dimx[w_dim_i]*scale + 0.5f);
     }
 
-    std::cout<<"out shape "<<out_height<<" "<<out_width<<std::endl;
     // do 
     if(this->m_outputs[0].numel() != input[0].numel()){
         Dim new_dimx = input[0].dims();
@@ -112,13 +109,10 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     int in_height = dimx[h_dim_i];
     int in_width = dimx[w_dim_i];
 
-    std::cout<<"count "<<count<<" "<<channels<<" "<<in_height<<" "<<in_width<<std::endl;
-
     unsigned char* x_ptr = (unsigned char*)x.cpu();
     unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
 #if defined(__ANDROID__) || defined(ANDROID)      
     if(channels == 3){
-        std::cout<<"dada "<<std::endl;
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_rgb_8u_3d_interp(

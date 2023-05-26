@@ -7,12 +7,9 @@ Tensor convert_cftensor_tensor(CFTensor* t){
     std::vector<int64_t> shape;
     for(int i=0; i<t->dim_size; ++i){
         shape.push_back(t->dims[i]);
-
-        std::cout<<"t dims "<<t->dims[i]<<std::endl;
     }
     Tensor data(shape, EAGLEEYE_FLOAT, DataFormat::AUTO, CPU_BUFFER);
     memcpy(data.cpu(), t->data, data.blobsize());
-    std::cout<<"in ->Tensor blobsize "<<data.blobsize()<<std::endl;
     return data;
 }
 
@@ -64,16 +61,11 @@ CITensor* convert_tensor_citensor(Tensor t){
 CUCTensor* convert_tensor_cuctensor(Tensor t){
     CUCTensor* cuctensor = new CUCTensor();
     cuctensor->dim_size = t.dims().size();
-    std::cout<<"in convert tensor cuctensor "<<cuctensor->dim_size<<std::endl;
     cuctensor->dims = new size_t[t.dims().size()];
     cuctensor->data = new unsigned char[t.dims().production()];
     cuctensor->is_assign_inner = true;
 
-    std::cout<<"dims "<<t.dims()[0]<<" "<<t.dims()[1]<<" "<<t.dims()[2]<<std::endl;
     memcpy(cuctensor->data, t.cpu(), t.blobsize());
-    std::cout<<"blobsize "<<t.blobsize()<<std::endl;
-    std::cout<<"t dims sizeof "<<sizeof(int64_t)<<std::endl;
-    std::cout<<"t dims sizeof "<<sizeof(size_t)<<std::endl;
     memcpy(cuctensor->dims, &t.dims().data()[0], sizeof(size_t)*t.dims().size());
     return cuctensor;
 }

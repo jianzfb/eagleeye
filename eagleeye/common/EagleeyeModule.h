@@ -145,7 +145,7 @@ bool eagleeye_pipeline_get_param(const char* pipeline_name,
 bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const char* node_name, 
                                  void* data, 
-                                 const int* data_size, 
+                                 const size_t* data_size, 
                                  const int data_dims,
                                  const int data_rotation,
                                  const int data_type);
@@ -196,7 +196,7 @@ bool eagleeye_pipeline_link(const char* target_pipeline_name,
 bool eagleeye_pipeline_get_node_output(const char* pipeline_name,
                                   const char* node_name, 
                                   void*& data, 
-                                  int* data_size, 
+                                  size_t*& data_size, 
                                   int& data_dims,
                                   int& data_type);
 
@@ -211,7 +211,7 @@ bool eagleeye_pipeline_get_node_output(const char* pipeline_name,
 bool eagleeye_pipeline_get_output(const char* pipeline_name,
                                   const char* node_name, 
                                   void*& data, 
-                                  int* data_size, 
+                                  size_t*& data_size, 
                                   int& data_dims,
                                   int& data_type);
 
@@ -401,13 +401,13 @@ extern "C" { \
     bool eagleeye_##pipeline##_get_param(const char* node_name, const char* param_name, void* value){ \
         return eagleeye_pipeline_get_param(#pipeline, node_name, param_name, value); \
     } \
-    bool eagleeye_##pipeline##_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type){ \
+    bool eagleeye_##pipeline##_set_input(const char* node_name, void* data, const size_t* data_size, const int data_dims, const int data_rotation, const int data_type){ \
         return eagleeye_pipeline_set_input(#pipeline, node_name, data, data_size, data_dims, data_rotation, data_type); \
     } \
     bool eagleeye_##pipeline##_set_input2(const char* node_name, void* data, EagleeyeMeta meta){ \
         return eagleeye_pipeline_set_input(#pipeline, node_name, data, meta); \
     } \
-    bool eagleeye_##pipeline##_get_output(const char* node_name, void*& data, int* data_size, int& data_dims,int& data_type){ \
+    bool eagleeye_##pipeline##_get_output(const char* node_name, void*& data, size_t*& data_size, int& data_dims,int& data_type){ \
         return eagleeye_pipeline_get_output(#pipeline, node_name, data, data_size, data_dims, data_type); \
     } \
     bool eagleeye_##pipeline##_load_config(const char* config_file){ \

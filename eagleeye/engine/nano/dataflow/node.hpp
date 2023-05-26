@@ -22,7 +22,7 @@ public:
   std::string name;
 
   Node(int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  :id_(id),init_(false),fixed_on_runtime_(false) {
+  :id_(id),fixed_on_runtime_(false) {
     if(fixed.type() != EAGLEEYE_UNKNOWN_RUNTIME){
       runtime_ = fixed;
       fixed_on_runtime_ = true;
@@ -69,6 +69,8 @@ public:
    * @brief initialize node
    */ 
   virtual int init(std::map<std::string, std::vector<float>> data) noexcept = 0;
+  virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){};
+  virtual int init(std::map<std::string, std::vector<std::string>> params){}
 
   /**
    * @brief transfer target runtime
@@ -150,7 +152,6 @@ protected:
   int id_;
   EagleeyeRuntime runtime_;
   bool fixed_on_runtime_;
-  bool init_;
 };
 
 }

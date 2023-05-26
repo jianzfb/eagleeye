@@ -678,7 +678,7 @@ void AnyPipeline::getParameter(const char* node_name,
 
 void AnyPipeline::setInput(const char* node_name, 
                            void* data, 
-                           const int* data_size, 
+                           const size_t* data_size, 
                            const int data_dims,
                            const int data_rotation,
                            const int data_type){
@@ -833,7 +833,7 @@ void AnyPipeline::setInput(const char* node_name, std::string from_register_node
 
 void AnyPipeline::getOutput(const char* node_name, 
                             void*& data, 
-                            int* data_size, 
+                            size_t*& data_size, 
                             int& data_dims,
                             int& data_type){
     if(node_name == NULL || strcmp(node_name, "") == 0){
@@ -857,7 +857,7 @@ void AnyPipeline::getOutput(const char* node_name,
     this->m_output_nodes[output_key]->getOutputPort(port)->getSignalContent(data, data_size, data_dims, data_type);
 }
 
-void AnyPipeline::getNodeOutput(const char* node_name, void*& data, int* data_size, int& data_dims, int& data_type){
+void AnyPipeline::getNodeOutput(const char* node_name, void*& data, size_t*& data_size, int& data_dims, int& data_type){
     if(node_name == NULL || strcmp(node_name, "") == 0){
         EAGLEEYE_LOGE("node name is empty");
         return;

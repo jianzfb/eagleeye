@@ -142,12 +142,12 @@ void YUVSignal::setData(void* data, MetaData meta){
     this->setData(blob, meta_data);
 }
 
-void YUVSignal::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
+void YUVSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
     data = this->getData().cpu();
     data_dims = 3;
-    data_size[0] = this->m_meta.rows;
-    data_size[1] = this->m_meta.cols;
-    data_size[2] = 3;
+    this->m_data_size[0] = this->m_meta.rows;
+    this->m_data_size[1] = this->m_meta.cols;
+    this->m_data_size[2] = 3;
     data_type = this->m_yuv_format;
 }
 

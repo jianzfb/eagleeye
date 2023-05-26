@@ -6,7 +6,7 @@ namespace eagleeye
 StateSignal::StateSignal(int ini_state){
     this->m_ini_state = ini_state;
     this->m_state = this->m_ini_state;
-
+    this->m_data_size[0] = 1;
     this->m_release_count = 1;
 }   
 
@@ -63,13 +63,10 @@ void StateSignal::copy(AnySignal* sig){
 	}
 }
 
-void StateSignal::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
+void StateSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
     data = (void*)(&(this->m_state));
-	data_dims = 3;
-	data_size[0] = 1;
-	data_size[1] = 1;
-	data_size[2] = 1;
-
+	data_dims = 1;
+    data_size = this->m_data_size;
     data_type = TypeTrait<int>::type;
 }
 

@@ -224,13 +224,14 @@ bool eagleeye_pipeline_release(const char* pipeline_name){
         EAGLEEYE_LOGD("Pipeline %s dont existed.", pipeline_name);
         return false;
     }
-    
+
     // 注销管线
     AnyPipeline::releasePipeline(pipeline_name);
+
     // 关闭动态库
     if(m_registed_plugins[std::string(pipeline_name)].first != NULL){
         // 关闭动态库
-        dlclose(m_registed_plugins[std::string(pipeline_name)].first);
+        dlclose(m_registed_plugins[std::string(pipeline_name)].first);      
     }
 
     // 删除注册记录
@@ -314,7 +315,7 @@ bool eagleeye_pipeline_get_param(const char* pipeline_name,
 bool eagleeye_pipeline_set_input(const char* pipeline_name,
                                  const char* node_name, 
                                  void* data, 
-                                 const int* data_size, 
+                                 const size_t* data_size, 
                                  const int data_dims,
                                  const int data_rotation,
                                  const int data_type){
@@ -369,7 +370,7 @@ bool eagleeye_pipeline_link(const char* target_pipeline_name,
 bool eagleeye_pipeline_get_node_output(const char* pipeline_name,
                                   const char* node_name, 
                                   void*& data, 
-                                  int* data_size, 
+                                  size_t*& data_size, 
                                   int& data_dims,
                                   int& data_type){
     EAGLEEYE_LOGD("%s pipeline get data from node %s", pipeline_name, node_name);
@@ -380,7 +381,7 @@ bool eagleeye_pipeline_get_node_output(const char* pipeline_name,
 bool eagleeye_pipeline_get_output(const char* pipeline_name,
                                   const char* node_name, 
                                   void*& data, 
-                                  int* data_size, 
+                                  size_t*& data_size, 
                                   int& data_dims,
                                   int& data_type){
     EAGLEEYE_LOGD("%s pipeline get data from node %s", pipeline_name, node_name);
@@ -559,7 +560,7 @@ void eagleeye_pipeline_set_input_py(const char* node_name, boost::python::object
 	        void *buf = pybuf.buf;
 	        Py_ssize_t *shape = pybuf.shape;
 	        int ndim = pybuf.ndim;
-            int data_size[3] = {0,0,0};
+            size_t data_size[3] = {0,0,0};
             switch(ndim){
                 case 1:
                     data_size[0] = shape[0];
