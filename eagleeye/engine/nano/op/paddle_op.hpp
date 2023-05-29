@@ -54,6 +54,8 @@ public:
         // init 可能与runOnCpu,runOnGpu不在同一个线程
         return 0;
     }
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
         if(!this->m_model_init){

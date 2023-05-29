@@ -60,6 +60,7 @@ public:
         // input_shapes, input_types, output_shapes, output_types, num_threads, model_power
         if(params.find("input_types") != params.end()){
             this->m_input_types.resize(params["input_types"].size());
+
             for(int i=0; i<params["input_types"].size(); ++i){
                 this->m_input_types[i] = (EagleeyeType)(params["input_types"][i]);
             }
@@ -67,6 +68,7 @@ public:
 
         if(params.find("output_types") != params.end()){
             this->m_output_types.resize(params["output_types"].size());
+
             for(int i=0; i<params["output_types"].size(); ++i){
                 this->m_output_types[i] = (EagleeyeType)(params["output_types"][i]);
             }
@@ -98,6 +100,7 @@ public:
 
         if(params.find("output_shapes") != params.end()){
             this->m_output_shapes.resize(params["output_shapes"].size());
+
             for(int i=0; i<params["output_shapes"].size(); ++i){
                 for(int j=0; j<params["output_shapes"][i].size(); ++j){
                     this->m_output_shapes[i].push_back(
@@ -125,6 +128,7 @@ public:
         if(params.find("input_names") != params.end()){
             this->m_input_names = params["input_names"];
         }
+
         if(params.find("output_names") != params.end()){
             this->m_output_names = params["output_names"];
         }
@@ -132,9 +136,14 @@ public:
             this->m_model_folder = params["model_folder"][0];
         }
         if(params.find("writable_path") != params.end()){
-            this->m_model_folder = params["writable_path"][0];
+            this->m_writable_path = params["writable_path"][0];
         }
-
+        if(params.find("alias_output_names") != params.end()){
+            for(int i=0; i<this->m_output_names.size(); ++i){
+                std::string alias_name = params["alias_output_names"][i];
+                this->m_alias_output_names[this->m_output_names[i]] = alias_name;
+            }
+        }
         return 0;
     }
 
@@ -153,6 +162,7 @@ public:
 
             this->m_model_run->setModelFolder(m_model_folder);
             this->m_model_init = this->m_model_run->initialize();
+            this->m_model_run->setOutputNameMap(this->m_alias_output_names);
         }
         if(!this->m_model_init){
             EAGLEEYE_LOGE("paddle model fail to initialize.");
@@ -221,6 +231,7 @@ private:
     std::vector<std::string> m_input_names;
 	std::vector<std::vector<int64_t>> m_input_shapes;
 	std::vector<std::string> m_output_names;
+    std::map<std::string, std::string> m_alias_output_names;
     std::vector<std::vector<int64_t>> m_output_shapes;
     std::vector<EagleeyeType> m_input_types;
     std::vector<EagleeyeType> m_output_types;

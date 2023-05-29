@@ -51,8 +51,8 @@ public:
      * @param data 
      */
     virtual int init(std::map<std::string, std::vector<float>> params)=0;
-    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){};
-    virtual int init(std::map<std::string, std::vector<std::string>> params){}
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params)=0;
+    virtual int init(std::map<std::string, std::vector<std::string>> params)=0;
 
     /**
      * @brief run on cpu

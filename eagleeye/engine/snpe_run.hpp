@@ -255,6 +255,7 @@ void ModelRun<SnpeRun, Enabled>::createInputTensors(){
 template<typename Enabled>
 bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, unsigned char*> inputs, 
 			  		std::map<std::string, unsigned char*>& outputs){
+	
 	// step 1. load input tensor
 	if(inputs.size() > 0){
 		zdl::DlSystem::StringList input_tensor_names = this->m_input_tensormap.getTensorNames();
@@ -288,7 +289,7 @@ bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, unsigned char*> inpu
         zdl::DlSystem::TensorShape shape = tensor_ptr->getShape();
 
        	std::string name = tensor_name;
-		name = name.substr(0, name.length()-2);
+		// name = name.substr(0, name.length()-2);
 
 		std::string transformed_name = name;
 		if(this->m_inv_output_name_map2.size() > 0){
@@ -296,15 +297,15 @@ bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, unsigned char*> inpu
 			transformed_name = this->m_inv_output_name_map2[name];
 		}
 		EAGLEEYE_LOGD("pair %s and %s",tensor_name, transformed_name.c_str());
-        outputs[transformed_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
+		outputs[transformed_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
 	});
 
 	return is_run_ok;
 }
 
 template<typename Enabled>
-void* ModelRun<SnpeRun, Enabled>:::getInputPtr(std::string input_name){
-	std::string tensor_name = input_name+":0";
+void* ModelRun<SnpeRun, Enabled>::getInputPtr(std::string input_name){
+	std::string tensor_name = input_name;
 	auto tensor_ptr = this->m_input_tensormap.getTensor(tensor_name.c_str());
 	return tensor_ptr->begin().dataPointer();
 }

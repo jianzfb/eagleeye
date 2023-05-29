@@ -19,6 +19,8 @@ void NNNode::executeNodeInfo(){
     // 1.step 输入绑定
     int signal_num = this->getNumberOfInputSignals();
     std::map<std::string, std::pair<void*, std::vector<int64_t>>> graph_input_map;
+    std::cout<<"NNNode 111"<<std::endl;
+    std::cout<<"signal_num "<<signal_num<<std::endl;
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
         void* data = NULL;
         size_t* data_size;

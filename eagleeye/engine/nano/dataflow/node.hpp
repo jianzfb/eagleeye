@@ -69,8 +69,8 @@ public:
    * @brief initialize node
    */ 
   virtual int init(std::map<std::string, std::vector<float>> data) noexcept = 0;
-  virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){};
-  virtual int init(std::map<std::string, std::vector<std::string>> params){}
+  virtual int init(std::map<std::string, std::vector<std::vector<float>>> params) noexcept =0;
+  virtual int init(std::map<std::string, std::vector<std::string>> params) noexcept = 0;
 
   /**
    * @brief transfer target runtime

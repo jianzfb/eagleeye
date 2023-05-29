@@ -21,6 +21,9 @@ public:
         m_gpu_process = func;
     }
     virtual int init(std::map<std::string, std::vector<float>> params);
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
+    
     virtual int runOnCpu(const std::vector<Tensor>& input);
     virtual int runOnGpu(const std::vector<Tensor>& input);
 
