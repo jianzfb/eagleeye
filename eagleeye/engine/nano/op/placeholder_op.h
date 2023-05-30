@@ -2,9 +2,7 @@
 #define _EAGLEEYE_PLACEHOLDER_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
-#include "eagleeye/engine/nano/util/opencl_util.h"
-#include<vector>
-#include "eagleeye/common/EagleeyeOpenCL.h"
+#include <vector>
 
 namespace eagleeye{
 namespace dataflow{
@@ -20,15 +18,14 @@ public:
     virtual ~PlaceholderOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input=std::vector<Tensor>{});
-    virtual int runOnGpu(std::vector<Tensor> input=std::vector<Tensor>{});
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
+
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
     virtual int update(void* data, std::vector<int64_t> shape, int index=0);
 
 private:
-    int64_t m_b;
-    int64_t m_h;
-    int64_t m_w;
-    int64_t m_c;
     MemoryType m_memory_type;
     DataFormat m_data_format;
     EagleeyeType m_data_type;

@@ -49,10 +49,11 @@ void YUVResizeNode::executeNodeInfo(){
     }
 
     // 输出yuv数据
-    Blob output_blob(sizeof(unsigned char)*(target_resize_h*target_resize_w + (target_resize_h/2)*(target_resize_w/2) + (target_resize_h/2)*(target_resize_w/2)),
-            Aligned(64), 
-            EagleeyeRuntime(EAGLEEYE_CPU));
-    unsigned char* output_ptr = (unsigned char*)(output_blob.cpu());
+    Blob output_blob((target_resize_h*target_resize_w + (target_resize_h/2)*(target_resize_w/2) + (target_resize_h/2)*(target_resize_w/2)),
+            TypeTrait<unsigned char>::type,
+            CPU_BUFFER,
+            Aligned(64));
+    unsigned char* output_ptr = output_blob.cpu<unsigned char>();
 
     if(input_sig->getValueType() == EAGLEEYE_YUV_I420){
         uint8_t* src_i420_y_data = (uint8_t*)input_ptr;

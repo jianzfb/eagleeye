@@ -116,6 +116,7 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
     config.set_model_from_file(nb_path);
 
 	if(this->m_device == "GPU"){
+#if defined(__ANDROID__) || defined(ANDROID)		
 		bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();		
 		if (!is_opencl_backend_valid) {
 			EAGLEEYE_LOGE("Unsupport opencl nb model.");
@@ -140,6 +141,7 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
 			}
 		}
 		// config.set_opencl_tune(true);
+#endif
 	}
 
     // NOTE: To load model transformed by model_optimize_tool before
@@ -162,6 +164,7 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
     EAGLEEYE_LOGD("PADDLELITE Create paddle predictor.");
     m_predictor = paddle::lite_api::CreatePaddlePredictor<paddle::lite_api::MobileConfig>(config);
     if(!m_predictor.get()){
+		EAGLEEYE_LOGD("PADDLELITE Fail get paddle predictor.");
         return false;
     }
 	std::string version = m_predictor->GetVersion();

@@ -76,8 +76,8 @@ void slice(const Dtype* input,
   }
 }
 
-int SliceOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int SliceOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x type only support float.");
@@ -105,7 +105,7 @@ int SliceOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int SliceOp::runOnGpu(std::vector<Tensor> input){
+int SliceOp::runOnGpu(const std::vector<Tensor>& input){
     return 0;
 }
 }    

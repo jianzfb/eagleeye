@@ -53,6 +53,7 @@ TARGET_LINK_LIBRARIES({{project}} libpaddlelite)
 {% if tnn != '' %}
 {% endif %}
 
+
 add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
 include_directories({{eagleeye}}/3rd/opencl/include)
 add_library(libOpenCL SHARED IMPORTED)

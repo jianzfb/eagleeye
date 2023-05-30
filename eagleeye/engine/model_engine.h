@@ -45,7 +45,7 @@ public:
 	 * @param  outputs [description]
 	 * @return         [description]
 	 */
-	virtual bool run(std::map<std::string, unsigned char*> inputs, 
+	virtual bool run(std::map<std::string, const unsigned char*> inputs, 
 					 std::map<std::string, unsigned char*>& outputs){};
 
 	/**
@@ -229,6 +229,9 @@ protected:
 	std::map<std::string, ConvertParam> m_input_convert_params;
 	std::map<std::string, int> m_input_map_index;
 	std::map<std::string, int> m_output_map_index;
+
+	std::vector<float> m_mean;
+	std::vector<float> m_std;
 };
 }
 

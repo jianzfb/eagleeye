@@ -2,10 +2,10 @@
 #define _EAGLEEYE_RUNTIME_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/runtime/cpu/cpu_runtime.h"
-#include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include <string>
 
 namespace eagleeye{
+class OpenCLRuntime;
 class EagleeyeRuntime{
 public:
     EagleeyeRuntime(EagleeyeRuntimeType runtime=EAGLEEYE_CPU)
@@ -59,19 +59,12 @@ private:
 
 class EagleeyeCPU:EagleeyeRuntime{
 public:
-    EagleeyeCPU():EagleeyeRuntime(EAGLEEYE_CPU){ 
-        m_cpu_runtime = NULL;
-    }
+    EagleeyeCPU();
     virtual ~EagleeyeCPU(){
         delete m_cpu_runtime;
     }
 
-    CPURuntime* getOrCreateRuntime(const int num_threads, CPUAffinityPolicy policy){
-        if(m_cpu_runtime == NULL)
-            m_cpu_runtime = new CPURuntime(num_threads, policy);
-    
-        return m_cpu_runtime;
-    }
+    CPURuntime* getOrCreateRuntime();
     
     CPURuntime* getRuntime(){
         return m_cpu_runtime;
@@ -83,12 +76,8 @@ private:
 
 class EagleeyeGPU:EagleeyeRuntime{
 public:
-    EagleeyeGPU():EagleeyeRuntime(EAGLEEYE_GPU){
-        m_gpu_runtime = OpenCLRuntime::getOpenCLEnv();
-    }
-    virtual ~EagleeyeGPU(){
-        delete m_gpu_runtime;
-    }
+    EagleeyeGPU();
+    virtual ~EagleeyeGPU(){};
 
     OpenCLRuntime* getRuntime(){
         return m_gpu_runtime;

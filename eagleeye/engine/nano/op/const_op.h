@@ -15,76 +15,58 @@ class ConstOp:public BaseOp<Tensor, 0, 1>{
 public:
     ConstOp(){}
 
-    ConstOp(T val, std::vector<int64_t> shape, std::string device="CPU"){
+    ConstOp(T val, std::vector<int64_t> shape, std::string device="CPU")
+        :m_shape(shape),
+         m_device(device),
+         m_vals(std::vector<T>{val}){
         m_type = TypeTrait<T>::type;
         if(!(m_type == EAGLEEYE_FLOAT || m_type == EAGLEEYE_INT)){
             EAGLEEYE_LOGE("Data type dont support.");
             return;
         }
-        m_dims.ConstructFrom(shape);
-        m_shape = shape;
-        m_device = device;
-        m_val = val;
     }
     
-    ConstOp(std::vector<T> value, std::vector<int64_t> shape, std::string device="CPU"){
+    ConstOp(std::vector<T> value, std::vector<int64_t> shape, std::string device="CPU")
+        :m_shape(shape),
+         m_device(device),
+         m_vals(value){
         m_type = TypeTrait<T>::type;
         if(!(m_type == EAGLEEYE_FLOAT || m_type == EAGLEEYE_INT)){
             EAGLEEYE_LOGE("Data type dont support.");
             return;
         }
-        m_dims.ConstructFrom(shape);
-        m_shape = shape;
-        m_device = device;
-        m_vals = value;
     }
     
     virtual ~ConstOp(){};
 
     virtual int init(std::map<std::string, std::vector<float>> params){
-        if(m_device == "CPU"){
-            // CPU
-            this->m_outputs[0] = Tensor(
-                    m_shape,
-                    m_type,
-                    DataFormat::NONE,
-                    CPU_BUFFER
-                );
+        this->m_outputs[0] = Tensor(
+            m_shape,
+            m_type,
+            DataFormat::AUTO,
+            CPU_BUFFER
+        );
 
-            if(m_vals.size() > 0){
-                memcpy(this->m_outputs[0].cpu(), m_vals.data(), sizeof(T)*m_dims.production());
-            }
-            else{
-                T* data_ptr = (T*)this->m_outputs[0].cpu();
-                for(int i=0; i<m_dims.production(); ++i){
-                    data_ptr[i] = m_val;
-                }
-            }
+        int64_t out_total = this->m_outputs[0].numel();
+        int64_t vals_num = m_vals.size();
+        T* data_ptr = (T*)this->m_outputs[0].cpu();
+        for(int i=0; i<out_total; ++i){
+            data_ptr[i] = m_vals[i%vals_num];
         }
-        else{
-            // GPU
-            this->m_outputs[0] = Tensor(
-                    m_shape,
-                    m_type,
-                    DataFormat::NONE,
-                    GPU_BUFFER
-                );
-            // 赋值
-        }
+        return 0;
+    }
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
 
+    virtual int runOnCpu(const std::vector<Tensor>& input){
         return 0;
     }
 
-    virtual int runOnCpu(std::vector<Tensor> input=std::vector<Tensor>()){
-        return 0;
-    }
-
-    virtual int runOnGpu(std::vector<Tensor> input=std::vector<Tensor>()){
+    virtual int runOnGpu(const std::vector<Tensor>& input){
         return 0;
     }
 
 protected:
-    Dim m_dims;
     std::vector<int64_t> m_shape;
     std::vector<T> m_vals;
     T m_val;

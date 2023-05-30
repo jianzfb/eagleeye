@@ -114,13 +114,11 @@ void StringSignal::setData(void* data, MetaData meta){
 	this->setData(str);
 }
 
-void StringSignal::getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type){
+void StringSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
 	this->m_tmp = this->getData();
 	data = &this->m_tmp;
-	data_size[0] = 1;
-	data_size[1] = this->m_tmp.size();
-	data_size[2] = 1;
-	data_dims = 3;
+	this->m_data_size[0] = this->m_tmp.size();
+	data_dims = 1;
 	data_type = int(EAGLEEYE_STRING);
 }
 } // namespace eagleeye

@@ -54,8 +54,10 @@ public:
         // init 可能与runOnCpu,runOnGpu不在同一个线程
         return 0;
     }
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
 
-    virtual int runOnCpu(std::vector<Tensor> input=std::vector<Tensor>()){
+    virtual int runOnCpu(const std::vector<Tensor>& input){
         if(!this->m_model_init){
             m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<PaddleRun>(
                         m_model_name,
@@ -76,45 +78,57 @@ public:
             return -1;
         }
 
-        // 输入数据
-        for(int input_i=0; input_i<m_input_names.size(); ++input_i){
-            // 检查数据格式
-            Tensor x = input[input_i];
-            if(x.type() != EAGLEEYE_FLOAT && x.type() != EAGLEEYE_UCHAR && x.type() != EAGLEEYE_CHAR && x.type() != EAGLEEYE_INT){
-                EAGLEEYE_LOGE("x type only support float/uchar/int.");
-                return -1;
-            }
-            // if(x.format() != DataFormat::NCHW){
-            //     EAGLEEYE_LOGE("x format only support NCHW");
-            //     return -1;
-            // }
-
-            void* preprocessed_data = this->m_model_run->getInputPtr(m_input_names[input_i]);
-            memcpy(preprocessed_data, x.cpu(), x.blobsize());
-        }
-
-        // 运行
-        std::map<std::string, unsigned char*> inputs;
-        std::map<std::string, unsigned char*> outputs;
+        int batch_size = input[0].dims()[0];
+        // 分配输出内存
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-            outputs[m_output_names[output_i]] = NULL;
-        }
-        this->m_model_run->run(inputs, outputs);
-
-        // 输出数据
-        for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-            // share memory
+            std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
+            output_shape[0] = batch_size;
             this->m_outputs[output_i] = Tensor(
-                this->m_output_shapes[output_i],
-                m_output_types[output_i],
-                DataFormat::AUTO,
-                outputs[m_output_names[output_i]]
-            );
+                        output_shape,
+                        m_output_types[output_i],
+                        DataFormat::AUTO,
+                        CPU_BUFFER
+                    );
         }
+
+        // 逐batch计算
+        for(int b_i = 0; b_i < batch_size; ++b_i){
+            // 输入数据
+            for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+                // 检查数据格式
+                const Tensor x = input[input_i];
+                int input_size = x.dims().count(1,x.dims().size());
+                const float* x_batch_data = x.cpu<float>() + b_i*input_size;
+
+                if(x.type() != EAGLEEYE_FLOAT && x.type() != EAGLEEYE_UCHAR && x.type() != EAGLEEYE_CHAR && x.type() != EAGLEEYE_INT){
+                    EAGLEEYE_LOGE("x type only support float/uchar/int.");
+                    return -1;
+                }
+                void* preprocessed_data = this->m_model_run->getInputPtr(m_input_names[input_i]);
+                memcpy(preprocessed_data, x_batch_data, input_size*sizeof(float));
+            }
+
+            // 运行
+            std::map<std::string, unsigned char*> inputs;
+            std::map<std::string, unsigned char*> outputs;
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                outputs[m_output_names[output_i]] = NULL;
+            }
+            this->m_model_run->run(inputs, outputs);
+
+            // 输出数据
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                Tensor output = this->m_outputs[output_i];
+                int output_size = output.dims().count(1,output.dims().size());
+                float* out_batch_data = output.cpu<float>() + b_i*output_size; 
+                memcpy(out_batch_data, outputs[m_output_names[output_i]], sizeof(float)*output_size);
+            }
+        }
+
         return 0;
     }
 
-    virtual int runOnGpu(std::vector<Tensor> input=std::vector<Tensor>()){
+    virtual int runOnGpu(const std::vector<Tensor>& input){
         EAGLEEYE_LOGE("Dont implement (GPU)");
         return 0;
     }

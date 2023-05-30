@@ -1,8 +1,8 @@
 #ifndef _BYTE_FLOW_GL_UTILS_H_
 #define _BYTE_FLOW_GL_UTILS_H_
 
-#include <GLES3/gl3.h>
 #include <string>
+#include <GLES3/gl3.h>
 #include "glm/glm.hpp"
 
 class GLUtils {

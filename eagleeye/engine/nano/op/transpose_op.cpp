@@ -1,6 +1,8 @@
 #include "eagleeye/engine/nano/op/transpose_op.h"
 #include <string>
+#if defined(__ANDROID__) || defined(ANDROID)  
 #include <arm_neon.h>
+#endif
 
 namespace eagleeye{
 namespace dataflow{
@@ -33,12 +35,13 @@ int TransposeOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-template <typename Dtype>
-void transpose_mat(const Dtype* din,
-                   Dtype* dout,
-                   const int num,
-                   const int width,
-                   const int height);
+// template <typename Dtype>
+// void transpose_mat(const Dtype* din,
+//                    Dtype* dout,
+//                    const int num,
+//                    const int width,
+//                    const int height);
+
 #define INIT_PTR_4(dtype, ptr_out, size_h)            \
   dtype* data_out_ptr = ptr_out + w * size_h + tmp_h; \
   const dtype* din0 = ptr_din_row;                    \
@@ -117,7 +120,8 @@ void TransposeCompute_(const std::vector<int64_t>& axis,
   }
 }
 
-void transpose_mat(const float* din,
+#if defined(__ANDROID__) || defined(ANDROID)  
+void arm_transpose_mat(const float* din,
                    float* dout,
                    const int num,
                    const int width,
@@ -202,9 +206,10 @@ void transpose_mat(const float* din,
     }
   }
 }
+#endif
 
 
-int TransposeOp::runOnCpu(std::vector<Tensor> input){
+int TransposeOp::runOnCpu(const std::vector<Tensor>& input){
     // 1.step 构建变换参数
     this->reInitWhenNeeded(input[0]);
 
@@ -240,7 +245,9 @@ int TransposeOp::runOnCpu(std::vector<Tensor> input){
     if(m_trans_mat){
         float* din = (float*)input[0].cpu();
         float* dout = (float*)this->m_outputs[0].cpu();
-        transpose_mat(din, dout, m_trans_num, m_trans_w, m_trans_h);
+#if defined(__ANDROID__) || defined(ANDROID)          
+        arm_transpose_mat(din, dout, m_trans_num, m_trans_w, m_trans_h);
+#endif
         return 0;
     }
 
@@ -248,7 +255,7 @@ int TransposeOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int TransposeOp::runOnGpu(std::vector<Tensor> input){
+int TransposeOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return 0;
 }

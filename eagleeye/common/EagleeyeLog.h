@@ -26,9 +26,9 @@ enum VERBOSITY_LEVEL{
 	L_VERBOSE
 };
 
-void _log_print_info(const char* tag, const char *format, ...);
-void _log_print_debug(const char* tag, const char *format, ...);
-void _log_print_error(const char* tag, const char *format, ...);
+void _log_print_info(const char* tag, const char* a, const int b, const char* c, const char *format, ...);
+void _log_print_debug(const char* tag, const char* a, const int b, const char* c, const char *format, ...);
+void _log_print_error(const char* tag, const char* a, const int b, const char* c, const char *format, ...);
 
 /** initialize verbosity level. */
 bool initVerbosityLevel ();
@@ -36,9 +36,9 @@ bool initVerbosityLevel ();
 /** is verbosity level enabled? */
 bool isVerbosityLevelEnabled (VERBOSITY_LEVEL severity);
 }
-#define EAGLEEYE_LOGI(...) eagleeye::_log_print_info(EAGLEEYE_LOG_TAG, __VA_ARGS__)
-#define EAGLEEYE_LOGD(...) eagleeye::_log_print_debug(EAGLEEYE_LOG_TAG, __VA_ARGS__)
-#define EAGLEEYE_LOGE(...) eagleeye::_log_print_error(EAGLEEYE_LOG_TAG,__VA_ARGS__)
+#define EAGLEEYE_LOGI(...) eagleeye::_log_print_info(EAGLEEYE_LOG_TAG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#define EAGLEEYE_LOGD(...) eagleeye::_log_print_debug(EAGLEEYE_LOG_TAG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#define EAGLEEYE_LOGE(...) eagleeye::_log_print_error(EAGLEEYE_LOG_TAG, __FILE__, __LINE__, __FUNCTION__,__VA_ARGS__)
 #endif
 #else
 	#define EAGLEEYE_LOGI(...) 

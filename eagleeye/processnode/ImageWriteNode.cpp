@@ -6,9 +6,7 @@
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/framework/pipeline/EmptySignal.h"
-#ifdef EAGLEEYE_PNG
 #include "eagleeye/3rd/pnglib/png.h"
-#endif
 
 namespace eagleeye
 {
@@ -129,7 +127,6 @@ void ImageWriteNode::executeNodeInfo(){
 }
 
 void ImageWriteNode::writePngFile(const char* file_path, unsigned char* data, int height, int width, int stride, int channel){
-#ifdef EAGLEEYE_PNG
     int y;
     FILE *fp = fopen(file_path, "wb");
     if(!fp) abort();
@@ -184,7 +181,6 @@ void ImageWriteNode::writePngFile(const char* file_path, unsigned char* data, in
     free(row_pointers);
     fclose(fp);
     png_destroy_write_struct(&png, &info);
-#endif
 }
 
 void ImageWriteNode::setWriteFolder(std::string folder){

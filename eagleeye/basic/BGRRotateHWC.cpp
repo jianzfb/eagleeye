@@ -5,7 +5,8 @@
 #include <string.h>
 #include <assert.h>
 #include <algorithm>
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined(__ANDROID__) || defined(ANDROID)
+// android 默认开启neon
 #include <arm_neon.h>
 #endif
 
@@ -29,6 +30,7 @@ void bgr_rotate_hwc(const unsigned char* src, unsigned char* dst, int w_in, int 
 
 }
 
+#if defined(__ANDROID__) || defined(ANDROID)
 /*
 bgr1 bgr2 bgr3
 bgr4 bgr5 bgr6
@@ -1325,5 +1327,7 @@ void rotate180_hwc(const unsigned char* src, unsigned char* dst, int w, int h_in
     }
 }
 #endif
-
+#elif __linux__
+#pragma message("x86 bgra bgrafilphwc")
+#endif
 } //namespace eagleeye

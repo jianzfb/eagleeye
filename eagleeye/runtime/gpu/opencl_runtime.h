@@ -144,6 +144,7 @@ private:
 
 }
 #else
+namespace eagleeye{
 class OpenCLRuntime{
 public:
     OpenCLRuntime(){};
@@ -151,5 +152,6 @@ public:
 
     static OpenCLRuntime* getOpenCLEnv();
 };
+}
 #endif
 #endif

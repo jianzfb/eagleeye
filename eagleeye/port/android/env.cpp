@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if defined(__ANDROID__) || defined(ANDROID)
 #include "eagleeye/port/android/env.h"
-
+#include "eagleeye/common/EagleeyeLog.h"
 #include <errno.h>
-// #include <unwind.h>
 #include <dlfcn.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -32,12 +32,6 @@
 #include <string>
 #include <vector>
 #include <utility>
-#include "eagleeye/common/EagleeyeLog.h"
-// #include "mace/port/android/malloc_logger.h"
-// #include "mace/port/posix/time.h"
-// #include "mace/utils/macros.h"
-// #include "mace/utils/memory.h"
-// #include "mace/utils/logging.h"
 
 namespace eagleeye {
 namespace port {
@@ -143,6 +137,6 @@ Env *Env::Default() {
   static AndroidEnv android_env;
   return &android_env;
 }
-
 }  // namespace port
 }  // namespace eagleeye
+#endif

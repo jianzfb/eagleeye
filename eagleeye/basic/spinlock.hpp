@@ -45,7 +45,7 @@ inline void SpinWaitUntil(const std::atomic<int> &variable,
                           const int value,
                           const int64_t spin_wait_max_time = -1) {
   auto start_time = std::chrono::high_resolution_clock::now();
-  for (size_t k = 1; variable.load(std::memory_order_acquire) != value; ++k) {
+  for (size_t k = 1; variable.load(std::memory_order_acquire) > value; ++k) {
     if (spin_wait_max_time > 0 && k % 1000 == 0) {
       auto end_time = std::chrono::high_resolution_clock::now();
       int64_t elapse =

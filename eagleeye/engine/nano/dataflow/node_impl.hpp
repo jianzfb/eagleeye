@@ -40,9 +40,8 @@ public:
    * @param runtime 
    * @return float 
    */
-  float fire(EagleeyeRuntime runtime=EAGLEEYE_CPU, void* data=NULL) noexcept override {
-    float time = fireImpl(typename F::INS(), runtime);
-    return time;
+  int fire(EagleeyeRuntime runtime, void* data, int32_t& elapsed_time) noexcept override {
+    return fireImpl(typename F::INS(), runtime, elapsed_time);
   }
 
   /**
@@ -71,16 +70,22 @@ public:
    * 
    * @param data 
    */
-  int init(std::map<std::string, std::vector<float>> data) noexcept override{
-    if(!this->init_){
+  virtual int init(std::map<std::string, std::vector<float>> data) noexcept{
       // 1.step initialize hanlder
       int result = (&m_handler)->init(data);
-
-      // 3.step reset flag
-      this->init_ = true;
       return result;
-    }
-    return 0;
+  }
+
+  virtual int init(std::map<std::string, std::vector<std::vector<float>>> data) noexcept{
+    // 1.step initialize hanlder
+    int result = (&m_handler)->init(data);
+    return result;
+  }
+
+  virtual int init(std::map<std::string, std::vector<std::string>> data) noexcept{
+    // 1.step initialize hanlder
+    int result = (&m_handler)->init(data);
+    return result;
   }
 
   virtual bool update(void* data, std::vector<int64_t> shape, int index=0){
@@ -89,50 +94,59 @@ public:
     return true;
   }
 
-  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=false){
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index=0, bool block=false){
     // block / no block
-    return (&m_handler)->fetch(data, shape, index, block);
+    return (&m_handler)->fetch(data, shape, type, index, block);
   }
 
+  virtual void* getOutput(int index, int request_count=0){
+    // get output
+    return &((&m_handler)->getOutput(index));
+  }
 private:
-  float fireImpl(index_sequence<>, EagleeyeRuntime runtime) {
+  int fireImpl(index_sequence<>, EagleeyeRuntime runtime, int32_t& elapsed_time) {
     long start_time = EagleeyeTime::getCurrentTime();
+    std::vector<typename F::Type> empty;
+    int rtn_code = -1;
     switch(runtime.type()){
       case EAGLEEYE_CPU:
-        (&m_handler)->runOnCpu();
+        rtn_code = (&m_handler)->runOnCpu(empty);
         break;
       case EAGLEEYE_GPU:
-        (&m_handler)->runOnGpu();
+        rtn_code = (&m_handler)->runOnGpu(empty);
         break;
       default:
-        (&m_handler)->runOnCpu();
+        rtn_code = (&m_handler)->runOnCpu(empty);
         break;
     }
     long end_time = EagleeyeTime::getCurrentTime();
     EAGLEEYE_LOGD("Run %s with %d us on %s.", name.c_str(), (end_time-start_time),runtime.device().c_str());
-    return float(end_time-start_time);
+    elapsed_time = (int32_t)(end_time-start_time);
+    return rtn_code;
   }
 
   template <std::size_t ... Is>
-  float fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime) {
-    std::vector<typename F::Type> unordered_input = {((NodeImpl<F, Args...>*)(data_[Is]))->m_handler.getOutput(index_[Is]) ...};
+  float fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime, int32_t& elapsed_time) {
+    std::vector<typename F::Type> unordered_input = {*((typename F::Type*)(data_[Is]->getOutput(index_[Is]))) ...};
     std::vector<typename F::Type> ordered_input = {unordered_input[inv_order_[Is]] ...};
 
     long start_time = EagleeyeTime::getCurrentTime();
+    int rtn_code = -1;
     switch(runtime.type()){
       case EAGLEEYE_CPU:
-        (&m_handler)->runOnCpu(ordered_input);
+        rtn_code = (&m_handler)->runOnCpu(ordered_input);
         break;
       case EAGLEEYE_GPU:
-        (&m_handler)->runOnGpu(ordered_input);
+        rtn_code = (&m_handler)->runOnGpu(ordered_input);
         break;
       default:
-        (&m_handler)->runOnCpu(ordered_input);
+        rtn_code = (&m_handler)->runOnCpu(ordered_input);
         break;
     }
     long end_time = EagleeyeTime::getCurrentTime();
     EAGLEEYE_LOGD("Run %s with %d us on %s.", name.c_str(), (end_time-start_time),runtime.device().c_str());
-    return float(end_time-start_time);
+    elapsed_time = (int32_t)(end_time-start_time);
+    return rtn_code;
   }
 
 private:

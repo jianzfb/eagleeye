@@ -1,5 +1,7 @@
 #include "eagleeye/engine/nano/op/pad2d_op.h"
+#if defined(__ANDROID__) || defined(ANDROID)  
 #include "eagleeye/engine/math/arm/pad2d.h"
+#endif
 namespace eagleeye{
 namespace dataflow{
 Pad2dOp::Pad2dOp(Pad2dOpType pad_type, std::vector<int64_t> pad_c, std::vector<int64_t> pad_h, std::vector<int64_t> pad_w, float pad_value){
@@ -30,8 +32,8 @@ int Pad2dOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int Pad2dOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int Pad2dOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x type only support float.");
@@ -72,7 +74,7 @@ int Pad2dOp::runOnCpu(std::vector<Tensor> input){
     int oc = out_dim[1];
     int oh = out_dim[2];
     int ow = out_dim[3];
-    
+#if defined(__ANDROID__) || defined(ANDROID)  
   if (m_pad_type == PAD2D_CONSTANT) {
     math::arm::pad_constant(din,
                  dout,
@@ -112,10 +114,12 @@ int Pad2dOp::runOnCpu(std::vector<Tensor> input){
   } else {
     EAGLEEYE_LOGE("Unkown pad mode.");
   }
+
+#endif
     return 0;
 }
 
-int Pad2dOp::runOnGpu(std::vector<Tensor> input){
+int Pad2dOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

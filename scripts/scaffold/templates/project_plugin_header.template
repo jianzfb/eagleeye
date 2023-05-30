@@ -93,7 +93,7 @@ extern "C"{
      * @return true 
      * @return false 
      */
-    bool eagleeye_{{project}}_set_input(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type);
+    bool eagleeye_{{project}}_set_input(const char* node_name, void* data, const size_t* data_size, const int data_dims, const int data_rotation, const int data_type);
     bool eagleeye_{{project}}_set_input2(const char* node_name, void* data, EagleeyeMeta meta);
 
     /**
@@ -107,7 +107,7 @@ extern "C"{
      * @return true 
      * @return false 
      */
-    bool eagleeye_{{project}}_get_output(const char* node_name, void*& data, int* data_size, int& data_dims,int& data_type);
+    bool eagleeye_{{project}}_get_output(const char* node_name, void*& data, size_t*& data_size, int& data_dims,int& data_type);
 
     /**
      * @brief replace node/port with placeholder(debug)

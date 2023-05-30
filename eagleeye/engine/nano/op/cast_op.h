@@ -10,14 +10,18 @@ namespace eagleeye{
 namespace dataflow{
 class CastOp:public BaseOp<Tensor, 1, 1>{
 public:
-    CastOp(){};
     CastOp(EagleeyeType data_type, float scale=1.0f);
     CastOp(const CastOp& op);
     virtual ~CastOp();
 
+    CastOp() = default;
+
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
+    
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
     EagleeyeType m_data_type;

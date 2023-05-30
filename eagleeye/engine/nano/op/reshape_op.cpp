@@ -23,9 +23,9 @@ int ReshapeOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int ReshapeOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
-    std::vector<int64_t> x_shape = x.shape();
+int ReshapeOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
+    std::vector<int64_t> x_shape = x.dims().data();
     int x_size = x.numel();
     
     // 确定输出形状
@@ -52,6 +52,7 @@ int ReshapeOp::runOnCpu(std::vector<Tensor> input){
             dynamic_pos += 1;
         }
     }
+
     if(dynamic_pos > 1){
         EAGLEEYE_LOGE("More than one place is -1.");
         return -1;
@@ -59,23 +60,20 @@ int ReshapeOp::runOnCpu(std::vector<Tensor> input){
 
     // 内存共享，仅修改形状数据
     if(m_in_place){
-        // 直接修改输入
-        x.reshape(out_shape);
-        x.setFormat(DataFormat::AUTO);
         this->m_outputs[0] = x;
+        this->m_outputs[0].reshape(out_shape);
     }
     else{
-        // 重新生成 Tensor
         if(this->m_outputs[0].numel() != x.numel()){
             this->m_outputs[0] =          
-                    Tensor(m_shape, x.type(), DataFormat::AUTO, CPU_BUFFER); 
+                    Tensor(out_shape, x.type(), DataFormat::AUTO, CPU_BUFFER); 
         }
         this->m_outputs[0].copy(x);
     }
     return 0;
 }
 
-int ReshapeOp::runOnGpu(std::vector<Tensor> input){
+int ReshapeOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

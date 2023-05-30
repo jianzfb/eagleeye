@@ -46,14 +46,10 @@ class Env {
   virtual EagleeyeError AdviseFree(void *addr, size_t length){};
   virtual EagleeyeError GetCPUMaxFreq(std::vector<float> *max_freqs){};
   virtual EagleeyeError SchedSetAffinity(const std::vector<size_t> &cpu_ids){};
-  // virtual FileSystem *GetFileSystem() = 0;
-  // virtual LogWriter *GetLogWriter() = 0;
-  // Return the current backtrace, will allocate memory inside the call
-  // which may fail
+  virtual int GetCPUCount(){return 0;};
+
   virtual std::vector<std::string> GetBackTraceUnsafe(int max_steps){};
-  // virtual std::unique_ptr<MallocLogger> NewMallocLogger(
-  //     std::ostringstream *oss,
-  //     const std::string &name);
+
 
   virtual EagleeyeCPU* GetCPUDevice(){return NULL;};
   virtual EagleeyeGPU* GetGPUDevice(){return NULL;};
@@ -77,9 +73,9 @@ inline EagleeyeError SchedSetAffinity(const std::vector<size_t> &cpu_ids) {
   return port::Env::Default()->SchedSetAffinity(cpu_ids);
 }
 
-// inline port::FileSystem *GetFileSystem() {
-//   return port::Env::Default()->GetFileSystem();
-// }
+inline int GetCPUCount() {
+  return port::Env::Default()->GetCPUCount();
+}
 
 inline EagleeyeError Memalign(void **memptr, size_t alignment, size_t size) {
 #ifdef _WIN32
@@ -140,4 +136,4 @@ inline EagleeyeError GetEnv(const char *name, std::string *value) {
 #endif
 }  // namespace eagleeye
 
-#endif  // MACE_PORT_ENV_H_
+#endif  // EAGLEEYE_PORT_ENV_H_

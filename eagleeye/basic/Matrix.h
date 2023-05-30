@@ -11,6 +11,7 @@
 #include <numeric>
 #include <functional>
 #include "eagleeye/common/EagleeyeMacro.h"
+#include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/basic/type.h"
 #include "eagleeye/basic/blob.h"
 
@@ -32,14 +33,14 @@ public:
 	 */ 
 	Matrix(unsigned int rows,
 			unsigned int cols, 
-			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			MemoryType memory_type=CPU_BUFFER,
 			Aligned aligned=Aligned(64));
 	
 	/**
 	 * @brief create matrix with shape
 	 */ 
 	Matrix(std::vector<int64_t> shape,
-			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			MemoryType memory_type=CPU_BUFFER,
 			Aligned aligned=Aligned(64));
 
 	/**
@@ -48,7 +49,7 @@ public:
 	Matrix(unsigned int rows,
 			unsigned int cols,
 			T val, 
-			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			MemoryType memory_type=CPU_BUFFER,
 			Aligned aligned=Aligned(64));
 
 	/**
@@ -59,7 +60,7 @@ public:
 			unsigned int cols,
 			void* data,
 			bool copy_flag = false, 
-			EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU),
+			MemoryType memory_type=CPU_BUFFER,
 			Aligned aligned=Aligned(64));
 
 	/**
@@ -104,12 +105,20 @@ public:
 	/**
 	 *	@brief get data at one specific pos(with offset)
 	 */
-	inline T& at(unsigned int r_index,unsigned int c_index) const;
-	inline T& at(unsigned int index) const;
+	inline T& at(unsigned int r_index,unsigned int c_index);
+	inline const T& at(unsigned int r_index,unsigned int c_index) const;
 
-	inline T& operator()(int r_index,int c_index) const;
-	inline T& operator()(int index) const;
-	inline T& operator[](int index) const;
+	inline T& at(unsigned int index);
+	inline const T& at(unsigned int index) const;	
+
+	inline T& operator()(int r_index,int c_index);
+	inline const T& operator()(int r_index,int c_index) const;
+
+	inline T& operator()(int index);
+	inline const T& operator()(int index) const;
+
+	inline T& operator[](int index);
+	inline const T& operator[](int index) const;
 
 	/**
 	 *	@brief get the row data pointer(with offset)

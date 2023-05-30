@@ -546,11 +546,11 @@ EagleeyeError OpenCLRuntime::getProgramSourceByName(const std::string &program_n
   return EAGLEEYE_NO_ERROR;
 }
 
-
-
 } // namespace eagleeye
 #else
+namespace eagleeye{
 OpenCLRuntime* OpenCLRuntime::getOpenCLEnv(){
   return NULL;
+}
 }
 #endif

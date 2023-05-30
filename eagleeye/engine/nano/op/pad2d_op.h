@@ -16,14 +16,17 @@ enum Pad2dOpType{
 
 class Pad2dOp:public BaseOp<Tensor, 1, 1>{
 public:
-    Pad2dOp(){}
     Pad2dOp(Pad2dOpType pad_type, std::vector<int64_t> pad_c, std::vector<int64_t> pad_h, std::vector<int64_t> pad_w, float pad_value=0.0f);
     Pad2dOp(const Pad2dOp& op);
     virtual ~Pad2dOp();
 
+    Pad2dOp() = default;
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
+    
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
     float m_pad_value;

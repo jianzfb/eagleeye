@@ -2,36 +2,40 @@
 #include "eagleeye/basic/MatrixMath.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
+#if defined(__ANDROID__) || defined(ANDROID)
 #include "eagleeye/engine/math/arm/interpolate.h"
+#endif
 #include <cmath>
 #include <math.h>       /* atan2 */
 namespace eagleeye{
-Matrix<Array<unsigned char, 3>> resize(const Matrix<Array<unsigned char, 3>> img,
-										int after_r,int after_c,
-										InterpMethod interp_method){
+Matrix<Array<unsigned char, 3>> resize(const Matrix<Array<unsigned char, 3>> img, int after_r,int after_c, InterpMethod interp_method){
     Matrix<Array<unsigned char, 3>> dst(after_r, after_c);
     Matrix<Array<unsigned char, 3>> img_cp = img;
 	unsigned int offset_r, offset_c;
 	img.offset(offset_r, offset_c);
 
     unsigned char* dst_ptr = (unsigned char*)dst.dataptr();
-
+#if defined(__ANDROID__) || defined(ANDROID)
     math::arm::bilinear_rgb_8u_3d_interp((unsigned char*)img.dataptr(), dst_ptr,img.cols(), img.rows(),offset_c,offset_r,img.stride(),after_c, after_r);
-
+#else
+	EAGLEEYE_LOGE("Dont support.");
+#endif
     return dst;
 }
 
-Matrix<unsigned char> resize(const Matrix<unsigned char>  img,
-										int after_r,int after_c,
-										InterpMethod interp_method){
+Matrix<unsigned char> resize(const Matrix<unsigned char>  img, int after_r,int after_c, InterpMethod interp_method){
     Matrix<unsigned char> dst(after_r, after_c);
 	unsigned int offset_r, offset_c;
 	img.offset(offset_r, offset_c);
 
     const unsigned char* img_ptr = img.dataptr();
     unsigned char* dst_ptr = dst.dataptr();
-
+#if defined(__ANDROID__) || defined(ANDROID)
     math::arm::bilinear_gray_8u_1d_interp(img_ptr, dst_ptr,img.cols(), img.rows(),offset_c,offset_r,img.stride(),after_c, after_r);  
+#else
+	EAGLEEYE_LOGE("Dont support.");
+
+#endif
     return dst;                                         
 }
 
@@ -44,7 +48,11 @@ Matrix<float> resize(const Matrix<float>  img,
 
     const float* img_ptr = img.dataptr();
     float* dst_ptr = dst.dataptr();
+#if defined(__ANDROID__) || defined(ANDROID)	
 	math::arm::bilinear_32f_c1_interp(img_ptr, dst_ptr, img.cols(), img.rows(),offset_c, offset_r, img.stride(), after_c, after_r);
+#else
+	EAGLEEYE_LOGE("Dont support.");
+#endif
     return dst;                                         
 }
 
@@ -59,9 +67,6 @@ Matrix<float> hanning(int size){
 }
 
 Matrix<float> outer(Matrix<float> a, Matrix<float> b){
-	assert(a.rows() == 1 || a.cols() == 1);
-	assert(b.rows() == 1 || b.cols() == 1);
-
 	int a_size = a.size();
 	int b_size = b.size();
 	Matrix<float> m(a_size, b_size);
@@ -111,6 +116,7 @@ void resize(const Matrix<Array<unsigned char, 3>> input,
 	int after_r = output.rows();
 
     unsigned char* dst_ptr = (unsigned char*)output.dataptr();
+#if defined(__ANDROID__) || defined(ANDROID)	
     math::arm::bilinear_rgb_8u_3d_interp((unsigned char*)input.dataptr(), 
 								dst_ptr,
 									input.cols(), 
@@ -120,6 +126,9 @@ void resize(const Matrix<Array<unsigned char, 3>> input,
 									input.stride(),
 									after_c, 
 									after_r);
+#else
+	EAGLEEYE_LOGE("Dont support.");
+#endif
 }
 
 void resize(const Matrix<Array<unsigned char, 3>> input,
@@ -131,6 +140,7 @@ void resize(const Matrix<Array<unsigned char, 3>> input,
 	unsigned int offset_r, offset_c;
 	input.offset(offset_r, offset_c);
 
+#if defined(__ANDROID__) || defined(ANDROID)
     math::arm::bilinear_rgb_8u_3d_interp((unsigned char*)input.dataptr(), 
 									output,
 									input.cols(), 
@@ -140,6 +150,9 @@ void resize(const Matrix<Array<unsigned char, 3>> input,
 									input.stride(),
 									output_c, 
 									output_r);
+#else
+	EAGLEEYE_LOGE("Dont support.");
+#endif
 }
 
 void resize(const Matrix<float> input,
@@ -152,6 +165,7 @@ void resize(const Matrix<float> input,
 
     const float* img_ptr = input.dataptr();
     float* dst_ptr = output.dataptr();
+#if defined(__ANDROID__) || defined(ANDROID)	
 	math::arm::bilinear_32f_c1_interp(img_ptr, 
 							dst_ptr, 
 							input.cols(), 
@@ -161,6 +175,9 @@ void resize(const Matrix<float> input,
 							input.stride(), 
 							after_c, 
 							after_r);
+#else
+	EAGLEEYE_LOGE("Dont support.");
+#endif
 }
 
 void resize(const Matrix<float> input,
@@ -172,6 +189,7 @@ void resize(const Matrix<float> input,
 	input.offset(offset_r, offset_c);
 
     const float* img_ptr = input.dataptr();
+#if defined(__ANDROID__) || defined(ANDROID)	
 	math::arm::bilinear_32f_c1_interp(img_ptr, 
 							output, 
 							input.cols(), 
@@ -181,6 +199,9 @@ void resize(const Matrix<float> input,
 							input.stride(), 
 							output_c, 
 							output_r);
+#else
+	EAGLEEYE_LOGE("Dont support.");
+#endif
 }
 
 void _rotation90right(unsigned char* src, int x_offset, int y_offset, int stride, unsigned char* dst, int srcW, int srcH, int channel){

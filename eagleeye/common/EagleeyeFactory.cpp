@@ -7,10 +7,6 @@
 #include "eagleeye/common/EagleeyeNodeManager.h"
 #include "eagleeye/processnode/YUVResizeNode.h"
 #include "eagleeye/processnode/YUVConvertNode.h"
-#include "eagleeye/render/ImageShow.h"
-#include "eagleeye/render/ImageBlend.h"
-#include "eagleeye/render/HighlightShow.h"
-#include "eagleeye/render/ShapeNode.h"
 #include "eagleeye/processnode/CropNode.h"
 #include "eagleeye/processnode/IdentityNode.h"
 #include "eagleeye/processnode/ImageResizeNode.h"
@@ -19,6 +15,12 @@
 #include "eagleeye/processnode/ImageSelect.h"
 #include "eagleeye/processnode/ImageReadNode.h"
 #include "eagleeye/processnode/ImageWriteNode.h"
+#ifdef EAGLEEYE_OPENGL
+#include "eagleeye/render/ImageShow.h"
+#include "eagleeye/render/ImageBlend.h"
+#include "eagleeye/render/HighlightShow.h"
+#include "eagleeye/render/ShapeNode.h"
+#endif
 
 namespace eagleeye
 {
@@ -154,11 +156,6 @@ AnyNode* __build_node(std::string node_name, std::string node_class, neb::CJsonO
         node->setUnitName(node_name.c_str());
         return node;
     }
-    else if(node_class == "ImageShow"){
-        ImageShow* node = new ImageShow();
-        node->setUnitName(node_name.c_str());
-        return node;
-    }
     else if(node_class == "ImageResizeNode"){
         std::string resize_type;    // 忽略
         node_param.Get("resize_type", resize_type);
@@ -200,21 +197,6 @@ AnyNode* __build_node(std::string node_name, std::string node_class, neb::CJsonO
         node->setUnitName(node_name.c_str());
         return node;
     }
-    else if(node_class == "ImageBlend"){
-        ImageBlend* node = new ImageBlend();
-        node->setUnitName(node_name.c_str());
-        return node;
-    }
-    else if(node_class == "HighlightShow"){
-        HighlightShow* node = new HighlightShow();
-        node->setUnitName(node_name.c_str());
-        return node;
-    }
-    else if(node_class == "ShapeNode"){
-        ShapeNode* node = new ShapeNode();
-        node->setUnitName(node_name.c_str());
-        return node;
-    }
     else if(node_class == "ImageSelect"){
         ImageSelect* node = new ImageSelect();
         node->setUnitName(node_name.c_str());
@@ -230,7 +212,28 @@ AnyNode* __build_node(std::string node_name, std::string node_class, neb::CJsonO
         node->setUnitName(node_name.c_str());
         return node;
     }
-
+#ifdef EAGLEEYE_OPENGL    
+    else if(node_class == "ImageShow"){
+        ImageShow* node = new ImageShow();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "ImageBlend"){
+        ImageBlend* node = new ImageBlend();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "HighlightShow"){
+        HighlightShow* node = new HighlightShow();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+    else if(node_class == "ShapeNode"){
+        ShapeNode* node = new ShapeNode();
+        node->setUnitName(node_name.c_str());
+        return node;
+    }
+#endif
     AnyNode* node = NodeManager::get()->build(node_class, node_param);
     if(node != NULL){
         node->setUnitName(node_name.c_str());

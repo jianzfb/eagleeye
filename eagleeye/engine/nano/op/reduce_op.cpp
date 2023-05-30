@@ -1,9 +1,11 @@
 #include "eagleeye/engine/nano/op/reduce_op.h"
+#if defined(__ANDROID__) || defined(ANDROID)  
 #include "eagleeye/engine/math/arm/reduce_max.h"
 #include "eagleeye/engine/math/arm/reduce_min.h"
 #include "eagleeye/engine/math/arm/reduce_mean.h"
 #include "eagleeye/engine/math/arm/reduce_sum.h"
 #include "eagleeye/engine/math/arm/reduce_prod.h"
+#endif
 
 namespace eagleeye{
 namespace dataflow{
@@ -85,8 +87,8 @@ int ReduceOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int ReduceOp::runOnCpu(std::vector<Tensor> input){
-    Tensor x = input[0];
+int ReduceOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
     // 合法性判断
     if(x.type() != EAGLEEYE_FLOAT){
         EAGLEEYE_LOGE("x type only support float.");
@@ -145,6 +147,7 @@ int ReduceOp::runOnCpu(std::vector<Tensor> input){
         x_h = x_dim[2]; x_w = x_dim[3];
     }
 
+#if defined(__ANDROID__) || defined(ANDROID)  
     if(this->m_reduce_n){
         switch (this->m_op_type){
         case REDUCE_MIN:
@@ -313,11 +316,11 @@ int ReduceOp::runOnCpu(std::vector<Tensor> input){
             break;
         }
     }
-
+#endif
     return 0;
 }
 
-int ReduceOp::runOnGpu(std::vector<Tensor> input){
+int ReduceOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

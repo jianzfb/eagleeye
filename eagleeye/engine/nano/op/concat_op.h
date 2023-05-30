@@ -10,14 +10,18 @@ namespace eagleeye{
 namespace dataflow{
 class ConcatOp:public BaseOp<Tensor, 2, 1>{
 public:
-    ConcatOp(){}
     ConcatOp(int aixs);
     ConcatOp(const ConcatOp& op);
     virtual ~ConcatOp();
 
+    ConcatOp() = default;
+
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
+    
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
     int m_aixs;

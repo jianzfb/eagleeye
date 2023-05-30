@@ -1,6 +1,5 @@
 #ifndef __EAGLEEYE_RENDER_CONTEXT_H_
 #define __EAGLEEYE_RENDER_CONTEXT_H_
-#include <GLES3/gl3.h>
 #include <functional>
 #include <vector>
 

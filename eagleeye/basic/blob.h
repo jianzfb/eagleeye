@@ -48,6 +48,10 @@ public:
      */ 
     Blob();
     
+    Blob(int64_t size, EagleeyeType data_type, MemoryType memory_type, Aligned aligned, 
+         void* data=NULL, 
+         bool copy=false);
+
     /**
      * @brief Construct a new Blob object (support heterogeneous device)
      * 
@@ -57,9 +61,7 @@ public:
      * @param data  data
      * @param copy  whether copy 
      */
-    Blob(size_t size, 
-         Aligned aligned, 
-         EagleeyeRuntime runtime=EagleeyeRuntime(EAGLEEYE_CPU), 
+    Blob(int64_t h, int64_t w, EagleeyeType data_type, MemoryType memory_type, Aligned aligned, 
          void* data=NULL, 
          bool copy=false);
     
@@ -71,7 +73,7 @@ public:
     /**
      * @brief create blob for tensor
      */ 
-    Blob(std::vector<int64_t> shape, 
+    Blob(const std::vector<int64_t> shape, 
          EagleeyeType data_type, 
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,
@@ -93,26 +95,36 @@ public:
     void transfer(EagleeyeRuntime runtime, bool asyn=true, std::vector<int64_t> image_shape=std::vector<int64_t>{}) const;
     
     /**
-     * @brief transfer data to device and reset
-     * 
-     * @param runtime 
-     */
-
-    void schedule(EagleeyeRuntime runtime, bool asyn=true, std::vector<int64_t> image_shape=std::vector<int64_t>{});
-
-    /**
      * @brief get pointer on GPU
      * 
      * @return void* 
      */
-    void* gpu(std::vector<int64_t> image_shape=std::vector<int64_t>{}) const;
+    void* gpu(std::vector<int64_t> image_shape=std::vector<int64_t>{}, bool is_offset=false) const;
+    
+    template<typename T>
+    const T* gpu(std::vector<int64_t> image_shape=std::vector<int64_t>{}, bool is_offset=false) const{
+        return static_cast<T*>(this->gpu(image_shape), is_offset);
+    }
+    template<typename T>
+    T* gpu(std::vector<int64_t> image_shape=std::vector<int64_t>{}, bool is_offset=false){
+        return static_cast<T*>(this->gpu(image_shape), is_offset);
+    }
 
     /**
      * @brief get pointer on CPU
      * 
      * @return void* 
      */
-    void* cpu() const;
+    void* cpu(bool is_offset=false) const;
+
+    template<typename T>
+    const T* cpu(bool is_offset=false) const {
+        return static_cast<T*>(this->cpu(is_offset));
+    }
+    template<typename T>
+    T* cpu(bool is_offset=false){
+        return static_cast<T*>(this->cpu(is_offset));
+    }
 
     /**
      * @brief get blob size
@@ -120,6 +132,13 @@ public:
      * @return size_t 
      */
     size_t blobsize() const;
+
+    /**
+     * @brief get blob offset
+     * 
+     * @return size_t 
+     */
+    size_t bloboffset() const;
 
     /**
      * @brief get data type
@@ -168,9 +187,15 @@ public:
      * @return true 
      * @return false 
      */
-    bool update(void* data=NULL, 
-                MemoryType mem_type=CPU_BUFFER,
-                std::string option="");
+    bool update(void* data,  MemoryType mem_type=CPU_BUFFER, std::string option="");
+
+    /**
+     * @brief update 
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool update();
 
     /**
      * @brief Get the Image Shape object (GPU_IMAGE)
@@ -189,7 +214,8 @@ public:
      * 
      * @param s 
      */
-    void reshape(std::vector<int64_t> s);
+    void reshape(std::vector<int64_t> shape);
+    void reshape(Dim dim);
 
     /**
      * @brief get blob dims
@@ -204,7 +230,7 @@ public:
      * @return int64_t 
      */
     int64_t numel() const { return m_dims.production(); }
-
+    
 protected:
     /**
      * @brief sync memory between device
@@ -219,29 +245,10 @@ protected:
     void _reset() const;
 
     /**
-     * @brief buffer size
-     * 
-     * @return size_t 
-     */
-    virtual size_t buffersize() const;
-
-    /**
-     * @brief blob shape
-     * 
-     */
-    std::vector<int64_t> m_shape;
-
-    /**
      * @brief blob dims
      * 
      */
     Dim m_dims;
-
-    /**
-     * @brief blob range
-     * 
-     */
-	std::vector<Range> m_range;
 
     /**
      * @brief data type
@@ -251,12 +258,12 @@ protected:
     /**
      * @brief memory type
      */ 
-    mutable MemoryType m_memory_type;
+    mutable MemoryType m_memory_type;               // 初始化后不能更改主存储位置
 
     /**
      * @brief runtime 
      */ 
-    mutable EagleeyeRuntime m_runtime;
+    mutable EagleeyeRuntime m_runtime;              // 初始化后不能更改运行平台
 
     /**
      * @brief image shape (for GPU_IMAGE)
@@ -264,11 +271,13 @@ protected:
     std::vector<int64_t> m_image_shape;
     
 protected:
-    size_t m_size;
+    mutable size_t m_size;
+    mutable size_t m_offset;    
     Aligned m_aligned;
+    int64_t m_elem_size;
 
-    mutable bool m_waiting_reset_runtime;
-    mutable EagleeyeRuntime m_waiting_runtime;
+    mutable bool m_waiting_reset_runtime;           // ignore
+    mutable EagleeyeRuntime m_waiting_runtime;      // ignore
 
     mutable std::shared_ptr<unsigned char> m_cpu_data;
     mutable std::shared_ptr<OpenCLObject> m_gpu_data;
@@ -277,7 +286,7 @@ protected:
     mutable bool m_is_cpu_ready;
     mutable bool m_is_gpu_waiting_from_cpu;
     mutable bool m_is_gpu_ready;
-    mutable std::shared_ptr<spinlock> m_lock;
+    mutable std::shared_ptr<spinlock> m_lock;   // lock
 };    
 }
 #endif

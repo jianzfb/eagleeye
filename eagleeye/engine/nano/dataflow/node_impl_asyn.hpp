@@ -102,23 +102,27 @@ public:
   /**
    * @brief initialize node
    * 
-   * @param runtime 
    * @param data 
    */
-  int init(std::map<std::string, std::vector<float>> data) noexcept override{
-    if(!this->init_){
+  virtual int init(std::map<std::string, std::vector<float>> data) noexcept{
       // 1.step initialize hanlder
-      int result = false;
-      for(int i=0; i<m_processers.size(); ++i){
-        result &= m_processers[i].init(data);
-      }
-
-      // 3.step reset flag
-      this->init_ = true;
+      int result = (&m_handler)->init(data);
       return result;
-    }
   }
 
+  virtual int init(std::map<std::string, std::vector<std::vector<float>>> data) noexcept{
+    // 1.step initialize hanlder
+    // int result = (&m_handler)->init(data);
+    // return result;
+    return 0;
+  }
+
+  virtual int init(std::map<std::string, std::vector<std::string>> data) noexcept{
+    // 1.step initialize hanlder
+    // int result = (&m_handler)->init(data);
+    // return result;
+    return 0;
+  }
   virtual bool update(void* data, int index=0){return false;}
 
   /**
@@ -130,7 +134,7 @@ public:
    * @return true 
    * @return false 
    */
-  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=true){
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index=0, bool block=true){
     if(m_response_count <= m_request_count){
       m_lock.lock();
       typename std::map<int, std::pair<int, std::vector<typename F::Type>>>::iterator iter = m_outputs.find(m_response_count);
@@ -159,8 +163,8 @@ public:
     return false;
   }
 
-protected:
-  typename F::Type getOutput(int index, int request_count){
+  virtual void* getOutput(int index, int request_count=0){
+    // get output
     m_lock.lock();
     typename std::map<int, std::pair<int, std::vector<typename F::Type>>>::iterator iter = m_outputs.find(request_count);
     while (iter == m_outputs.end()){
@@ -177,8 +181,29 @@ protected:
     }
 
     m_lock.unlock();
-    return data_on_port;
+    return &data_on_port;
+
   }
+
+  virtual void clearOutput(int index, int request_count){
+    // clear output
+    m_lock.lock();
+    typename std::map<int, std::pair<int, std::vector<typename F::Type>>>::iterator iter = m_outputs.find(request_count);
+    while (iter == m_outputs.end()){
+      m_lock.unlock();
+      std::this_thread::sleep_for(std::chrono::microseconds(100));    // 0.1ms
+      m_lock.lock();
+      iter = m_outputs.find(request_count);
+    }
+      
+    iter->second.first -= 1;
+    if(iter->second.first == 0){
+      m_outputs.erase(iter);
+    }
+
+    m_lock.unlock();
+  }
+
 
 private:
   float fireImpl(index_sequence<>, EagleeyeRuntime runtime, void* data=NULL) {
@@ -231,20 +256,23 @@ private:
       // 获取依赖数据
       std::vector<typename F::Type> ordered_input(this->index_.size());
       for(int port_i = 0; port_i < this->index_.size(); ++port_i){
-        ordered_input[order_[port_i]] = ((AsynNodeImpl<F, Args...>*)(data_[port_i]))->getOutput(this->index_[port_i], request_count);
+        // ordered_input[order_[port_i]] = ((AsynNodeImpl<F, Args...>*)(data_[port_i]))->getOutput(this->index_[port_i], request_count);
+        ordered_input[order_[port_i]] = *((typename F::Type*)(data_[port_i]->getOutput(index_[port_i], request_count)));
+        data_[port_i]->clearOutput(index_[port_i], request_count);
       }      
 
       if(this->index_.size() == 0){
         // 无输入数据
+        std::vector<typename F::Type> empty;
         switch(runtime.type()){
           case EAGLEEYE_CPU:
-            (&m_processers[thread_id])->runOnCpu();
+            (&m_processers[thread_id])->runOnCpu(empty);
             break;
           case EAGLEEYE_GPU:
-            (&m_processers[thread_id])->runOnGpu();
+            (&m_processers[thread_id])->runOnGpu(empty);
             break;
           default:
-            (&m_processers[thread_id])->runOnCpu();
+            (&m_processers[thread_id])->runOnCpu(empty);
             break;
         }
       }

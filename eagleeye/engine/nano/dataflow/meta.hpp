@@ -17,7 +17,6 @@ template <std::size_t ... Is>
 struct make_index_sequence<0, Is ...> {
   using type = index_sequence<Is ...>;
 };
-
 }
 
 template <std::size_t N>

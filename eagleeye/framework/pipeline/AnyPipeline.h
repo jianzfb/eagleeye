@@ -251,7 +251,7 @@ public:
      * @param data_rotation
      * @param data_type
      */
-    void setInput(const char* node_name, void* data, const int* data_size, const int data_dims, const int data_rotation, const int data_type);
+    void setInput(const char* node_name, void* data, const size_t* data_size, const int data_dims, const int data_rotation, const int data_type);
     
     /**
      * @brief Set the Pipeline Input
@@ -281,7 +281,7 @@ public:
      * @param data_dims 
      * @param data_type 
      */
-    void getNodeOutput(const char* node_name, void*& data, int* data_size, int& data_dims, int& data_type);
+    void getNodeOutput(const char* node_name, void*& data, size_t*& data_size, int& data_dims, int& data_type);
 
     /**
      * @brief Get the Pipeline Output
@@ -292,7 +292,7 @@ public:
      * @param data_dims 
      * @param data_type
      */
-    void getOutput(const char* node_name, void*& data, int* data_size, int& data_dims, int& data_type);
+    void getOutput(const char* node_name, void*& data, size_t*& data_size, int& data_dims, int& data_type);
 
     /**
      * @brief Get the Pipeline Inputs

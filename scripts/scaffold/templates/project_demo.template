@@ -24,7 +24,7 @@ int main(int argc, char** argv){
 
     // 3.step set input data 
     void* data = NULL; // YOUR IMAGE DATA POINTER;
-    int data_size[] = {0,0,0}; // {IMAGE HEIGHT, IMAGE WIDTH, IMAGE CHANNEL}; 
+    size_t data_size[] = {0,0,0}; // {IMAGE HEIGHT, IMAGE WIDTH, IMAGE CHANNEL}; 
     int data_type = 6;   // float
     is_ok = eagleeye_{{project}}_set_input("INPUT NODE", data, data_size, 3, 0, data_type);
     if(is_ok){
@@ -39,7 +39,7 @@ int main(int argc, char** argv){
 
     // 5.step get output data of {{project}} module
     void* out_data;         // RESULT DATA POINTER
-    int out_data_size[3];   // RESULT DATA SHAPE (IMAGE HEIGHT, IMAGE WIDTH, IMAGE CHANNEL)
+    size_t* out_data_size;   // RESULT DATA SHAPE (IMAGE HEIGHT, IMAGE WIDTH, IMAGE CHANNEL)
     int out_data_dims=0;    // 3
     int out_data_type=0;    // RESULT DATA TYPE 
     is_ok = eagleeye_{{project}}_get_output("OUTPUT NODE/OUTPUT PORT",out_data, out_data_size, out_data_dims, out_data_type);   

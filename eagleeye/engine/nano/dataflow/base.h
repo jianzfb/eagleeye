@@ -51,6 +51,8 @@ public:
      * @param data 
      */
     virtual int init(std::map<std::string, std::vector<float>> params)=0;
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params)=0;
+    virtual int init(std::map<std::string, std::vector<std::string>> params)=0;
 
     /**
      * @brief run on cpu
@@ -58,7 +60,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual int runOnCpu(std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnCpu(const std::vector<T>& input)=0;
 
     /**
      * @brief run on gpu
@@ -66,7 +68,7 @@ public:
      * @param output 
      * @param input 
      */
-    virtual int runOnGpu(std::vector<T> input=std::vector<T>{})=0;
+    virtual int runOnGpu(const std::vector<T>& input)=0;
 
     /**
      * @brief check whether support implementation
@@ -144,14 +146,15 @@ public:
     /**
      * @brief get cpu data, from 
      */
-    virtual int fetch(void*& data, std::vector<int64_t>& shape, int index, bool block){
+    virtual int fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index, bool block){
         if(!block){
             this->getOutput(index).transfer(EagleeyeRuntime(EAGLEEYE_CPU));
             return -1;
         }
         else{
             data = this->getOutput(index).cpu();
-            shape = this->getOutput(index).shape();
+            shape = this->getOutput(index).dims().data();
+            type = this->getOutput(index).type();
             return 0;
         }        
     }

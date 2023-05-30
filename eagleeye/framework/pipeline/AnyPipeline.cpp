@@ -9,8 +9,10 @@
 #include "eagleeye/processnode/Placeholder.h"
 #include "eagleeye/common/EagleeyeIni.h"
 #include "eagleeye/common/EagleeyeGraph.h"
-#include "eagleeye/common/EagleeyeShader.h"
 #include "eagleeye/processnode/GroupNode.h"
+#ifdef EAGLEEYE_OPENGL
+#include "eagleeye/common/EagleeyeShader.h"
+#endif
 #include <string>
 
 
@@ -676,7 +678,7 @@ void AnyPipeline::getParameter(const char* node_name,
 
 void AnyPipeline::setInput(const char* node_name, 
                            void* data, 
-                           const int* data_size, 
+                           const size_t* data_size, 
                            const int data_dims,
                            const int data_rotation,
                            const int data_type){
@@ -831,7 +833,7 @@ void AnyPipeline::setInput(const char* node_name, std::string from_register_node
 
 void AnyPipeline::getOutput(const char* node_name, 
                             void*& data, 
-                            int* data_size, 
+                            size_t*& data_size, 
                             int& data_dims,
                             int& data_type){
     if(node_name == NULL || strcmp(node_name, "") == 0){
@@ -855,7 +857,7 @@ void AnyPipeline::getOutput(const char* node_name,
     this->m_output_nodes[output_key]->getOutputPort(port)->getSignalContent(data, data_size, data_dims, data_type);
 }
 
-void AnyPipeline::getNodeOutput(const char* node_name, void*& data, int* data_size, int& data_dims, int& data_type){
+void AnyPipeline::getNodeOutput(const char* node_name, void*& data, size_t*& data_size, int& data_dims, int& data_type){
     if(node_name == NULL || strcmp(node_name, "") == 0){
         EAGLEEYE_LOGE("node name is empty");
         return;
@@ -1103,7 +1105,9 @@ void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> 
         EAGLEEYE_LOGD("Input node name %s.", input_iter->first.c_str());
     }
 
-    std::string configure_file_path = resource_folder + this->m_name + ".pipeline";
+
+    std::string configure_file_path = resource_folder_s + this->m_name + ".pipeline";
+    EAGLEEYE_LOGD("Pipeline %s try to load config from %s.", this->m_name.c_str(), configure_file_path.c_str());
     if(isfileexist(configure_file_path.c_str())){
         this->loadConfigure(configure_file_path);
         EAGLEEYE_LOGD("Finish config file loading.");
@@ -1288,10 +1292,11 @@ void AnyPipeline::onRenderSurfaceCreate(){
                                 [](RenderContext* ptr){delete ptr;});
     }
 
+#ifdef EAGLEEYE_OPENGL
     // 清空shader环境
     // shader/opengl 环境与工作线程有关
     ShaderManager::getInstance()->clear();
-
+#endif
     // 渲染上下文清空
     AnyPipeline::m_render_context->onCreated();
 }

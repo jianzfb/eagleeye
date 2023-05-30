@@ -51,7 +51,7 @@ void concat_func(const std::vector<Tensor>& input, const int axis, Tensor output
   }
 }
 
-int ConcatOp::runOnCpu(std::vector<Tensor> input){
+int ConcatOp::runOnCpu(const std::vector<Tensor>& input){
     int num = input.size();
     if(num != 2){
       EAGLEEYE_LOGE("ConcatOp only support 2 input.");
@@ -59,6 +59,9 @@ int ConcatOp::runOnCpu(std::vector<Tensor> input){
     }
     if(input[0].type() != EAGLEEYE_FLOAT && input[0].type() != EAGLEEYE_UCHAR && input[0].type() != EAGLEEYE_INT){
       EAGLEEYE_LOGE("ConcatOp dont support type %d", ((int)(input[0].type())));
+      return -1;
+    }
+    if(input[0].dims().size() == 0 || input[0].dims()[0] == 0){
       return -1;
     }
 
@@ -105,7 +108,7 @@ int ConcatOp::runOnCpu(std::vector<Tensor> input){
     return 0;
 }
 
-int ConcatOp::runOnGpu(std::vector<Tensor> input){
+int ConcatOp::runOnGpu(const std::vector<Tensor>& input){
     return -1;
 }
 }   

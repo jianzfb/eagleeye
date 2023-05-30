@@ -3,6 +3,7 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include <eagleeye/engine/nano/dataflow/edge.hpp>
 #include "eagleeye/common/EagleeyeRuntime.h"
+#include <map>
 #include <atomic>
 #include <mutex>
 #include <memory>
@@ -21,7 +22,7 @@ public:
   std::string name;
 
   Node(int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  :id_(id),init_(false),fixed_on_runtime_(false) {
+  :id_(id),fixed_on_runtime_(false) {
     if(fixed.type() != EAGLEEYE_UNKNOWN_RUNTIME){
       runtime_ = fixed;
       fixed_on_runtime_ = true;
@@ -57,7 +58,7 @@ public:
   /**
    * @brief run on runtime 
    */ 
-  virtual float fire(EagleeyeRuntime d=EagleeyeRuntime(EAGLEEYE_CPU), void* data=NULL) noexcept = 0;
+  virtual int fire(EagleeyeRuntime d, void* data, int32_t& elapsed_time) noexcept = 0;
 
   /**
    * @brief get buffer size of node output
@@ -68,6 +69,8 @@ public:
    * @brief initialize node
    */ 
   virtual int init(std::map<std::string, std::vector<float>> data) noexcept = 0;
+  virtual int init(std::map<std::string, std::vector<std::vector<float>>> params) noexcept =0;
+  virtual int init(std::map<std::string, std::vector<std::string>> params) noexcept = 0;
 
   /**
    * @brief transfer target runtime
@@ -117,16 +120,23 @@ public:
   /**
    * @brief get node data
    */ 
-  virtual bool fetch(void*& data, std::vector<int64_t>& shape, int index=0, bool block=false)=0;
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index=0, bool block=false)=0;
 
   /**
    * @brief Get the Dependent Num
    * 
    * @return int 
    */
-  int getDependentNum(){
-    return data_.size();
-  }
+  int getDependentNum(){return data_.size();}
+
+  /**
+   * @brief Get the Output object
+   * 
+   * @param index 
+   * @param request_count 
+   * @return void* 
+   */
+  virtual void* getOutput(int index, int request_count=0){return NULL;};
 
 protected:
   std::atomic_uint count_;
@@ -142,7 +152,6 @@ protected:
   int id_;
   EagleeyeRuntime runtime_;
   bool fixed_on_runtime_;
-  bool init_;
 };
 
 }

@@ -16,7 +16,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
 #include "eagleeye/common/EagleeyeStr.h"
-#include <errno.h>
+
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/mman.h>
@@ -26,18 +26,17 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <errno.h>
 
 namespace eagleeye {
 namespace port {
 
-namespace {
-
-int GetCPUCount() {
+int LinuxBaseEnv::GetCPUCount() {
   int cpu_count = 0;
   std::string cpu_sys_conf = "/proc/cpuinfo";
   std::ifstream f(cpu_sys_conf);
   if (!f.is_open()) {
-    EAGLEEYE_LOGE("failed to open %s", cpu_sys_conf.c_str());
+    EAGLEEYE_LOGE("Failed to open %s.", cpu_sys_conf.c_str());
     return -1;
   }
   std::string line;
@@ -49,17 +48,14 @@ int GetCPUCount() {
     }
   }
   if (f.bad()) {
-    EAGLEEYE_LOGE("failed to read %s", cpu_sys_conf.c_str());
+    EAGLEEYE_LOGE("Failed to read %s.", cpu_sys_conf.c_str());
   }
   if (!f.eof()) {
-    EAGLEEYE_LOGE("failed to read end of %s", cpu_sys_conf.c_str());
+    EAGLEEYE_LOGE("Failed to read end of %s.", cpu_sys_conf.c_str());
   }
   f.close();
-  EAGLEEYE_LOGD("CPU cores: %d", cpu_count);
   return cpu_count;
 }
-
-}  // namespace
 
 LinuxBaseEnv::LinuxBaseEnv(){
   m_cpu_device = new EagleeyeCPU();
@@ -86,8 +82,9 @@ EagleeyeGPU* LinuxBaseEnv::GetGPUDevice() {
 }
 
 EagleeyeError LinuxBaseEnv::GetCPUMaxFreq(std::vector<float> *max_freqs) {
+  // 获得CPU频率
   EAGLEEYE_CHECK_NOTNULL(max_freqs);
-  int cpu_count = GetCPUCount();
+  int cpu_count = this->GetCPUCount();
   if (cpu_count < 0) {
     return EagleeyeError::EAGLEEYE_RUNTIME_ERROR;
   }
@@ -98,7 +95,7 @@ EagleeyeError LinuxBaseEnv::GetCPUMaxFreq(std::vector<float> *max_freqs) {
         "/cpufreq/cpuinfo_max_freq");
     std::ifstream f(cpuinfo_max_freq_sys_conf);
     if (!f.is_open()) {
-      EAGLEEYE_LOGE( "failed to open %s",cpuinfo_max_freq_sys_conf.c_str());
+      EAGLEEYE_LOGE( "Failed to open %s.",cpuinfo_max_freq_sys_conf.c_str());
       return EagleeyeError::EAGLEEYE_RUNTIME_ERROR;
     }
     std::string line;
@@ -107,27 +104,26 @@ EagleeyeError LinuxBaseEnv::GetCPUMaxFreq(std::vector<float> *max_freqs) {
       max_freqs->push_back(freq);
     }
     if (f.bad()) {
-      EAGLEEYE_LOGE("failed to read %s",cpuinfo_max_freq_sys_conf.c_str());
+      EAGLEEYE_LOGE("Failed to read %s.",cpuinfo_max_freq_sys_conf.c_str());
     }
     f.close();
   }
-
-  EAGLEEYE_LOGD("CPU freq: %s", makeString(*max_freqs).c_str());
 
   return EagleeyeError::EAGLEEYE_NO_ERROR;
 }
 
 EagleeyeError LinuxBaseEnv::SchedSetAffinity(const std::vector<size_t> &cpu_ids) {
+  // 设置线程亲和性
   cpu_set_t mask;
   CPU_ZERO(&mask);
   for (auto cpu_id : cpu_ids) {
     CPU_SET(cpu_id, &mask);
   }
 
-  pid_t pid = syscall(SYS_gettid);
+  pid_t pid = syscall(SYS_gettid);  // thread id
   int err = sched_setaffinity(pid, sizeof(mask), &mask);
   if (err) {
-    EAGLEEYE_LOGD("SchedSetAffinity failed: %s",strerror(errno));
+    EAGLEEYE_LOGE("Fail to Set affinity.");
     return EagleeyeError::EAGLEEYE_ARG_ERROR;
   }
 
@@ -135,6 +131,7 @@ EagleeyeError LinuxBaseEnv::SchedSetAffinity(const std::vector<size_t> &cpu_ids)
 }
 
 EagleeyeError LinuxBaseEnv::AdviseFree(void *addr, size_t length) {
+  // 它就通过系统接口madvice和MADV_DONTNEED标志告诉内核，刚刚分配出去的内存在近期内不会使用，内核可以该内存对应的物理页回收。
   int page_size = sysconf(_SC_PAGESIZE);
   void *addr_aligned =
       reinterpret_cast<void *>(
@@ -147,13 +144,18 @@ EagleeyeError LinuxBaseEnv::AdviseFree(void *addr, size_t length) {
     size_t len_aligned = (length - delta) & (~(page_size - 1));
     int error = madvise(addr_aligned, len_aligned, MADV_DONTNEED);
     if (error != 0) {
-      EAGLEEYE_LOGE("Advise free failed: %s",strerror(errno));
+      EAGLEEYE_LOGE("Fail to Advise free.");
       return EagleeyeError::EAGLEEYE_RUNTIME_ERROR;
     }
   }
   return EagleeyeError::EAGLEEYE_NO_ERROR;
 }
 
-
+#if defined(__linux__) && (!defined(__ANDROID__) || !defined(ANDROID))
+Env *Env::Default() {
+  static LinuxBaseEnv linux_env;
+  return &linux_env;
+}
+#endif
 }  // namespace port
 }  // namespace eagleeye

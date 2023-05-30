@@ -52,6 +52,7 @@ public:
   EagleeyeError SchedSetAffinity(const std::vector<size_t> &cpu_ids) override;
   virtual EagleeyeCPU* GetCPUDevice() override;
   virtual EagleeyeGPU* GetGPUDevice() override;
+  virtual int GetCPUCount() override;
 
 protected:
   // PosixFileSystem posix_file_system_;

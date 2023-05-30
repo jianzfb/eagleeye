@@ -10,29 +10,19 @@ namespace eagleeye{
 namespace dataflow{
 class PreprocessOp:public BaseOp<Tensor, 1, 1>{
 public:
-    PreprocessOp(){}
     PreprocessOp(std::vector<float> mean_v, std::vector<float> scale_v, bool reverse_channel);
     PreprocessOp(const PreprocessOp& op);
     virtual ~PreprocessOp();
 
+    PreprocessOp() = default;
     virtual int init(std::map<std::string, std::vector<float>> params);
-    virtual int runOnCpu(std::vector<Tensor> input={});
-    virtual int runOnGpu(std::vector<Tensor> input={});
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
+    
+    virtual int runOnCpu(const std::vector<Tensor>& input);
+    virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
-    void bgrToTensorCHW(const uint8_t* src,
-                       float* output,
-                       int width,
-                       int height,
-                       float* means,
-                       float* scales);
-    void bgrToRgbTensorCHW(const uint8_t* src,
-                       float* output,
-                       int width,
-                       int height,
-                       float* means,
-                       float* scales);
-
     std::vector<float> m_mean_v;
     std::vector<float> m_scale_v;
 

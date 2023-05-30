@@ -109,7 +109,7 @@ public:
 	 * @param data_size 
 	 * @param data_dims 
 	 */
-	virtual void getSignalContent(void*& data, int* data_size, int& data_dims, int& data_type);
+	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
 
 	/**
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
@@ -127,6 +127,7 @@ private:
 	std::mutex m_mu;
 	std::condition_variable m_cond;
 
+	size_t m_data_size[1];
 	std::string m_ini_str;
 	int m_release_count;
 };

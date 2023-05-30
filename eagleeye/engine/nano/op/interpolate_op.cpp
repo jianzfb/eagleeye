@@ -1,6 +1,9 @@
 #include "eagleeye/engine/nano/op/interpolate_op.h"
-#include "eagleeye/engine/math/arm/interpolate.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#if defined(__ANDROID__) || defined(ANDROID)
+#include "eagleeye/engine/math/arm/interpolate.h"
+#endif
+
 
 namespace eagleeye{
 namespace dataflow{
@@ -32,9 +35,9 @@ int InterpolateOp::init(std::map<std::string, std::vector<float>> params){
     return 0;
 }
 
-int InterpolateOp::runOnCpu(std::vector<Tensor> input){
+int InterpolateOp::runOnCpu(const std::vector<Tensor>& input){
     // 0: x
-    Tensor x = input[0];
+    const Tensor x = input[0];
     if(x.dims().size() != 4){
         EAGLEEYE_LOGE("InterpolateOp only support NCHW.");
         return -1;
@@ -87,6 +90,7 @@ int InterpolateOp::runOnCpu(std::vector<Tensor> input){
     int spatial_in = in_h * in_w;
     int spatial_out = out_h * out_w;
 
+#if defined(__ANDROID__) || defined(ANDROID)
     if (m_op_type == INTERPOLATE_BILINER) {
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
@@ -115,10 +119,11 @@ int InterpolateOp::runOnCpu(std::vector<Tensor> input){
                         m_with_align);
         }
     }
+#endif
     return 0;
 }
 
-int InterpolateOp::runOnGpu(std::vector<Tensor> input){
+int InterpolateOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }
@@ -143,9 +148,9 @@ int InterpolateWithShapeOp::init(std::map<std::string, std::vector<float>> param
     return 0;
 }
 
-int InterpolateWithShapeOp::runOnCpu(std::vector<Tensor> input){
+int InterpolateWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
     // 0: x
-    Tensor x = input[0];
+    const Tensor x = input[0];
     Dim dimx = x.dims();
     if(dimx.size() != 4){
         EAGLEEYE_LOGE("InterpolateWithShapeOp only support NCHW.");
@@ -188,7 +193,7 @@ int InterpolateWithShapeOp::runOnCpu(std::vector<Tensor> input){
     int out_w = out.dims()[3];
     int spatial_in = in_h * in_w;
     int spatial_out = out_h * out_w;
-
+#if defined(__ANDROID__) || defined(ANDROID)
     if (m_op_type == INTERPOLATE_BILINER) {
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
@@ -217,10 +222,11 @@ int InterpolateWithShapeOp::runOnCpu(std::vector<Tensor> input){
                         m_with_align);
         }
     }
+#endif
     return 0;
 }
 
-int InterpolateWithShapeOp::runOnGpu(std::vector<Tensor> input){
+int InterpolateWithShapeOp::runOnGpu(const std::vector<Tensor>& input){
     EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }

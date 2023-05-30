@@ -24,15 +24,17 @@ public:
     /**
      * @brief create tensor
      */ 
-    Tensor(std::vector<int64_t> shape, 
+    Tensor(const std::vector<int64_t> shape, 
             EagleeyeType data_type, 
             DataFormat data_format,
             MemoryType memory_type,
-            std::vector<int64_t> image_shape=std::vector<int64_t>(),
-            Aligned aligned=Aligned(64));
+            Aligned aligned=Aligned(64),
+            std::vector<int64_t> image_shape=std::vector<int64_t>());
 
-    Tensor(std::vector<int64_t> shape, 
-            EagleeyeType data_type, DataFormat data_format, void* data);
+    Tensor(const std::vector<int64_t> shape, 
+            EagleeyeType data_type, 
+            DataFormat data_format, 
+            void* data);
 
     /**
      * @brief null tensor
@@ -50,16 +52,10 @@ public:
     DataFormat format() const;
 
     /**
-     * @brief reset tensor format
-     * 
-     */
-    void setFormat(DataFormat data_format);
-
-    /**
      * @brief clone blob
      * 
      */
-    virtual Tensor clone() const;
+    virtual Tensor clone();
 
     /**
      * @brief copy from t
@@ -67,6 +63,31 @@ public:
      * @param t 
      */
     void copy(const Tensor& t);
+
+    /**
+     * @brief 
+     * 
+     * @param start 
+     * @param end 
+     * @return Tensor 
+     */
+    Tensor slice(int64_t start, int64_t end) const;
+
+    /**
+     * @brief squeeze shape in axis
+     * 
+     * @param axis 
+     * @return Tensor 
+     */
+    Tensor squeeze(int64_t axis);
+
+    /**
+     * @brief unsqueeze shape in axis
+     * 
+     * @param axis 
+     * @return Tensor 
+     */
+    Tensor unsqueeze(int64_t axis);
 
 protected:
     DataFormat m_format;

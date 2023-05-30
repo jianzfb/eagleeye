@@ -1,12 +1,13 @@
 namespace eagleeye{
-SnpeRun::SnpeRun(std::string model_name, 
+template<typename Enabled>
+ModelRun<SnpeRun, Enabled>::ModelRun(std::string model_name, 
 			   std::string device,
 			   std::vector<std::string> input_names,
 			   std::vector<std::vector<int64_t>> input_shapes,
 			   std::vector<std::string> output_names,
 			   std::vector<std::vector<int64_t>> output_shapes,
-			   int omp_num_threads, 
-			   int cpu_affinity_policy, 
+			   int num_threads, 
+			   RunPower model_power, 
 			   std::string writable_path)
 	:ModelEngine(model_name,
 				 device,
@@ -14,42 +15,33 @@ SnpeRun::SnpeRun(std::string model_name,
 				 input_shapes,
 				 output_names,
 				 output_shapes,
-				 omp_num_threads,
-				 cpu_affinity_policy,
+				 num_threads,
+				 model_power,
 				 writable_path){
 	// dlc file path
-	this->m_dlc_path = model_name;
+	this->m_model_name = model_name;
 	if(!endswith(model_name, ".dlc")){
-		this->m_dlc_path = this->m_dlc_path+".dlc";
+		this->m_model_name = this->m_model_name+".dlc";
 	}
-	if(writable_path.length() == 0){
-		if(!ispath(this->m_dlc_path)){
-			this->m_dlc_path = this->getModelRoot() + std::string("/")+this->m_dlc_path;
-		}
-	}
-	else{
-		if(endswith(writable_path, "/")){
-			this->m_dlc_path = writable_path +this->m_dlc_path;
-		}
-		else{
-			this->m_dlc_path = writable_path + std::string("/")+this->m_dlc_path;
-		}
-	}
-	EAGLEEYE_LOGD("snpe dlc %s", this->m_dlc_path.c_str());
+	this->m_is_init = false;
 }
 
-SnpeRun::~SnpeRun(){
+template<typename Enabled>
+ModelRun<SnpeRun, Enabled>::~ModelRun(){
+	// do nothing
 }
 
-bool SnpeRun::run(std::map<std::string, unsigned char*> inputs, 
-				   std::map<std::string, unsigned char*>& outputs){	
+template<typename Enabled>
+bool ModelRun<SnpeRun, Enabled>::run(
+	std::map<std::string, const unsigned char*> inputs, 
+	std::map<std::string, unsigned char*>& outputs){	
 	bool is_run_ok = false;
 	if(this->isDynamicInputShape()){
 		// for dynamic input, only support slice_num is not fixed
 		int slice_num = this->m_input_shapes[0][0];
 
 		// slice inputs
-		std::vector<std::map<std::string, unsigned char*>> slice_inputs;
+		std::vector<std::map<std::string, const unsigned char*>> slice_inputs;
 		slice_inputs.resize(slice_num);
 
 		for(int index=0; index<this->m_input_names.size(); ++index){
@@ -73,7 +65,7 @@ bool SnpeRun::run(std::map<std::string, unsigned char*> inputs,
 
 			// set slice_inputs
 			for(int s_i=0; s_i<slice_num; ++s_i){
-				slice_inputs[s_i][input_name] = (unsigned char*)(((float*)inputs[input_name])+s_i*slice_input_size);
+				slice_inputs[s_i][input_name] = (const unsigned char*)(((float*)inputs[input_name])+s_i*slice_input_size);
 			}
 		}
 
@@ -112,17 +104,38 @@ bool SnpeRun::run(std::map<std::string, unsigned char*> inputs,
 	return is_run_ok;
 }
 
-bool SnpeRun::initialize(){
+template<typename Enabled>
+bool ModelRun<SnpeRun, Enabled>::initialize(){
+    if(this->m_is_init){
+        EAGLEEYE_LOGD("SNPE Has been finished model initialize.");
+        return true;
+    }
+    this->m_is_init = true;
+
+    std::string model_folder = this->getModelFolder();
+    if(model_folder == ""){
+        EAGLEEYE_LOGD("SNPE Dont set model folder.");
+        return false;
+    }
+
+	std::string dlc_path = "";
+	if(endswith(model_folder, "/")){
+		dlc_path = model_folder +this->m_model_name;
+	}
+	else{
+		dlc_path = model_folder + std::string("/")+this->m_model_name;
+	}
+
 	// step 1. set runtime
 	zdl::DlSystem::Runtime_t runtime = this->checkRuntime();
 	// step 2. load dlc
-	EAGLEEYE_LOGD("start load dlc %s", this->m_dlc_path.c_str());
-	this->m_container = loadContainerFromFile(this->m_dlc_path);
+	EAGLEEYE_LOGD("start load dlc %s", dlc_path.c_str());
+	this->m_container = loadContainerFromFile(dlc_path);
 	if(this->m_container.get() == NULL){
-		EAGLEEYE_LOGE("fail to load dlc %s", this->m_dlc_path.c_str());
+		EAGLEEYE_LOGE("fail to load dlc %s", dlc_path.c_str());
 		return false;
 	}
-	EAGLEEYE_LOGD("success to load dlc %s", this->m_dlc_path.c_str());
+	EAGLEEYE_LOGD("success to load dlc %s", dlc_path.c_str());
 
 	// step 3. prepare SNPE
 	EAGLEEYE_LOGD("build snpe engine");
@@ -135,11 +148,11 @@ bool SnpeRun::initialize(){
 	// step 4. prepare tensors
 	EAGLEEYE_LOGD("create dlc input tensor");
 	this->createInputTensors();
-	EAGLEEYE_LOGD("success to model initialize");
 	return true;
 }
 
-zdl::DlSystem::Runtime_t SnpeRun::checkRuntime(){
+template<typename Enabled>
+zdl::DlSystem::Runtime_t ModelRun<SnpeRun, Enabled>::checkRuntime(){
     zdl::DlSystem::Runtime_t runtime;
 	static bool flag = true;
 	if(flag){
@@ -178,13 +191,16 @@ zdl::DlSystem::Runtime_t SnpeRun::checkRuntime(){
     return runtime;
 }
 
-std::unique_ptr<zdl::DlContainer::IDlContainer> SnpeRun::loadContainerFromFile(std::string containerPath){
+
+template<typename Enabled>
+std::unique_ptr<zdl::DlContainer::IDlContainer> ModelRun<SnpeRun, Enabled>::loadContainerFromFile(std::string containerPath){
 	std::unique_ptr<zdl::DlContainer::IDlContainer> container;
     container = zdl::DlContainer::IDlContainer::open(zdl::DlSystem::String(containerPath.c_str()));
     return std::move(container);
 }
 
-bool SnpeRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>& container,
+template<typename Enabled>
+bool ModelRun<SnpeRun, Enabled>::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>& container,
                                                    zdl::DlSystem::Runtime_t runtime,
                                                    bool useUserSuppliedBuffers,
 						   						   zdl::DlSystem::PlatformConfig platformConfig){
@@ -202,7 +218,6 @@ bool SnpeRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>&
 
     zdl::DlSystem::UDLBundle udlBundle;
     zdl::SNPE::SNPEBuilder snpeBuilder(container.get());
-	//
     this->m_snpe = snpeBuilder.setOutputLayers(snpe_output_names)
 								.setRuntimeProcessor(runtime)
 								.setUdlBundle(udlBundle)
@@ -217,12 +232,13 @@ bool SnpeRun::setBuilderOptions(std::unique_ptr<zdl::DlContainer::IDlContainer>&
 	return true;
 }
 
-void SnpeRun::createInputTensors(){
+
+template<typename Enabled>
+void ModelRun<SnpeRun, Enabled>::createInputTensors(){
     const auto &strlist_name = this->m_snpe->getInputTensorNames();
     if (!strlist_name) throw std::runtime_error("Error obtaining Input tensor names");
 
 	EAGLEEYE_LOGD("create input tensors number %d",(*strlist_name).size());
-
     for(int index=0; index<(*strlist_name).size(); ++index){
     	std::string name = (*strlist_name).at(index);
 		EAGLEEYE_LOGD("create input tensor %s",name.c_str());
@@ -235,8 +251,11 @@ void SnpeRun::createInputTensors(){
     }
 }
 
-bool SnpeRun::_run(std::map<std::string, unsigned char*> inputs, 
+
+template<typename Enabled>
+bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, const unsigned char*> inputs, 
 			  		std::map<std::string, unsigned char*>& outputs){
+	
 	// step 1. load input tensor
 	if(inputs.size() > 0){
 		zdl::DlSystem::StringList input_tensor_names = this->m_input_tensormap.getTensorNames();
@@ -248,10 +267,7 @@ bool SnpeRun::_run(std::map<std::string, unsigned char*> inputs,
 			for(int i=0; i<shape.rank(); ++i){
 				shape_size *= shape[i];
 			}
-
-			std::string name = tensor_name;
-			name = name.substr(0, name.length()-2);
-			memcpy(tensor_ptr->begin().dataPointer(), inputs[name], sizeof(float)* shape_size);
+			memcpy(tensor_ptr->begin().dataPointer(), inputs[tensor_name], sizeof(float)* shape_size);
 		});
 	}
 
@@ -270,7 +286,7 @@ bool SnpeRun::_run(std::map<std::string, unsigned char*> inputs,
         zdl::DlSystem::TensorShape shape = tensor_ptr->getShape();
 
        	std::string name = tensor_name;
-		name = name.substr(0, name.length()-2);
+		// name = name.substr(0, name.length()-2);
 
 		std::string transformed_name = name;
 		if(this->m_inv_output_name_map2.size() > 0){
@@ -278,32 +294,15 @@ bool SnpeRun::_run(std::map<std::string, unsigned char*> inputs,
 			transformed_name = this->m_inv_output_name_map2[name];
 		}
 		EAGLEEYE_LOGD("pair %s and %s",tensor_name, transformed_name.c_str());
-        outputs[transformed_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
+		outputs[transformed_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
 	});
 
 	return is_run_ok;
 }
 
-void SnpeRun::setWritablePath(std::string writable_path){
-	ModelEngine::setWritablePath(writable_path);
-
-	this->m_dlc_path = this->m_model_name;
-	if(!endswith(this->m_model_name, ".dlc")){
-		this->m_dlc_path = this->m_dlc_path+".dlc";
-	}
-	
-	if(endswith(writable_path, "/")){
-		this->m_dlc_path = writable_path +this->m_dlc_path;
-	}
-	else{
-		this->m_dlc_path = writable_path + std::string("/")+this->m_dlc_path;
-	}
-
-	EAGLEEYE_LOGD("dlc path %s", this->m_dlc_path.c_str());
-}
-
-void* SnpeRun::getInputPtr(std::string input_name){
-	std::string tensor_name = input_name+":0";
+template<typename Enabled>
+void* ModelRun<SnpeRun, Enabled>::getInputPtr(std::string input_name){
+	std::string tensor_name = input_name;
 	auto tensor_ptr = this->m_input_tensormap.getTensor(tensor_name.c_str());
 	return tensor_ptr->begin().dataPointer();
 }
