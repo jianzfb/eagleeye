@@ -45,6 +45,7 @@ public:
         m_model_power = model_power;
         m_model_folder = model_folder;
         m_writable_path = writable_path;
+        m_rgb2bgr = false;
         m_model_init = false;
     };
     
@@ -72,6 +73,16 @@ public:
             for(int i=0; i<params["output_types"].size(); ++i){
                 this->m_output_types[i] = (EagleeyeType)(params["output_types"][i]);
             }
+        }
+
+        if(params.find("mean") != params.end()){
+            this->m_mean = params["mean"];
+        }
+        if(params.find("std") != params.end()){
+            this->m_std = params["std"];
+        }
+        if(params.find("rgb2bgr") != params.end()){
+            this->m_rgb2bgr = bool(params["rgb2bgr"][0]);
         }
 
         if(params.find("num_threads") != params.end()){
@@ -160,62 +171,117 @@ public:
                         m_model_power,
                         m_writable_path), [](ModelEngine* d) {delete d;});
 
+            // 设置模型根目录，（将在此目录下寻找模型文件）
             this->m_model_run->setModelFolder(m_model_folder);
+            // 初始化模型
             this->m_model_init = this->m_model_run->initialize();
+            // alias output names
             this->m_model_run->setOutputNameMap(this->m_alias_output_names);
         }
         if(!this->m_model_init){
-            EAGLEEYE_LOGE("paddle model fail to initialize.");
+            EAGLEEYE_LOGE("snpe model fail to initialize.");
             return -1;
         }
 
-        int batch_size = input[0].dims()[0];
-        // 分配输出内存
+        // 输入数据
+        for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+            // 检查数据格式
+            const Tensor x = input[input_i];
+            if(x.type() != EAGLEEYE_FLOAT && x.type() != EAGLEEYE_UCHAR && x.type() != EAGLEEYE_CHAR && x.type() != EAGLEEYE_INT){
+                EAGLEEYE_LOGE("x type only support float/uchar/int.");
+                return -1;
+            }
+
+            // 获得模型引擎分配的内部空间
+            float* preprocessed_data = (float*)(this->m_model_run->getInputPtr(m_input_names[input_i]));
+
+            Dim x_dims = x.dims();
+            if(x.type() == EAGLEEYE_UCHAR || x.type() == EAGLEEYE_CHAR){
+                // 需要进行预处理流程
+                // NxHxWx3 或 HxWx3 格式
+                if(x_dims.size() == 4){
+                    // NxHxWx3
+                    int batch_size = x_dims[0];
+                    int offset_size = x_dims[1] * x_dims[2] * x_dims[3];
+                    int x_width = x_dims[2];
+                    int x_height = x_dims[1];
+
+                    for(int b_i=0; b_i<batch_size; ++b_i){
+                        if(this->m_rgb2bgr){
+                            this->m_model_run->bgrToRgbTensorCHW(
+                                x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
+                                preprocessed_data + b_i * x_width * x_height * 3, 
+                                x_width, 
+                                x_height, 
+                                &(this->m_mean[0]),
+                                &(this->m_std[0])
+                            );
+                        }
+                        else{
+                            this->m_model_run->bgrToTensorCHW(
+                                x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
+                                preprocessed_data + b_i * x_width * x_height * 3, 
+                                x_width, 
+                                x_height, 
+                                &(this->m_mean[0]), 
+                                &(this->m_std[0])
+                            );
+                        }     
+                    }
+                }
+                else{
+                    // HxWx3
+                    int x_width = x_dims[1];
+                    int x_height = x_dims[0];
+                    if(this->m_rgb2bgr){
+                        this->m_model_run->bgrToRgbTensorCHW(
+                            x.cpu<unsigned char>(), 
+                            preprocessed_data, 
+                            x_width, 
+                            x_height, 
+                            &(this->m_mean[0]), 
+                            &(this->m_std[0])
+                        );
+                    }
+                    else{
+                        this->m_model_run->bgrToTensorCHW(
+                            x.cpu<unsigned char>(), 
+                            preprocessed_data, 
+                            x_width, 
+                            x_height, 
+                            &(this->m_mean[0]), 
+                            &(this->m_std[0])
+                        );
+                    }                       
+                }
+
+                continue;
+            }
+
+            // 输入数据直接是浮点数据
+            memcpy(preprocessed_data, x.cpu(), x.blobsize());
+        }
+
+        // 运行
+        std::map<std::string, const unsigned char*> inputs;
+        std::map<std::string, unsigned char*> outputs;
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-            std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
-            output_shape[0] = batch_size;
+            outputs[m_output_names[output_i]] = NULL;
+        }
+        this->m_model_run->run(inputs, outputs);
+
+        // 输出数据
+        for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+            std::string output_name = this->m_output_names[output_i];
+
             this->m_outputs[output_i] = Tensor(
-                        output_shape,
+                        m_output_shapes[output_i],
                         m_output_types[output_i],
                         DataFormat::AUTO,
-                        CPU_BUFFER
+                        outputs[output_name]
                     );
         }
-
-        // 逐batch计算
-        for(int b_i = 0; b_i < batch_size; ++b_i){
-            // 输入数据
-            for(int input_i=0; input_i<m_input_names.size(); ++input_i){
-                // 检查数据格式
-                const Tensor x = input[input_i];
-                int input_size = x.dims().count(1,x.dims().size());
-                const float* x_batch_data = x.cpu<float>() + b_i*input_size;
-
-                if(x.type() != EAGLEEYE_FLOAT && x.type() != EAGLEEYE_UCHAR && x.type() != EAGLEEYE_CHAR && x.type() != EAGLEEYE_INT){
-                    EAGLEEYE_LOGE("x type only support float/uchar/int.");
-                    return -1;
-                }
-                void* preprocessed_data = this->m_model_run->getInputPtr(m_input_names[input_i]);
-                memcpy(preprocessed_data, x_batch_data, input_size*sizeof(float));
-            }
-
-            // 运行
-            std::map<std::string, unsigned char*> inputs;
-            std::map<std::string, unsigned char*> outputs;
-            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-                outputs[m_output_names[output_i]] = NULL;
-            }
-            this->m_model_run->run(inputs, outputs);
-
-            // 输出数据
-            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-                Tensor output = this->m_outputs[output_i];
-                int output_size = output.dims().count(1,output.dims().size());
-                float* out_batch_data = output.cpu<float>() + b_i*output_size; 
-                memcpy(out_batch_data, outputs[m_output_names[output_i]], sizeof(float)*output_size);
-            }
-        }
-
+    
         return 0;
     }
 
@@ -235,6 +301,10 @@ private:
     std::vector<std::vector<int64_t>> m_output_shapes;
     std::vector<EagleeyeType> m_input_types;
     std::vector<EagleeyeType> m_output_types;
+
+    std::vector<float> m_mean;
+    std::vector<float> m_std;
+    bool m_rgb2bgr;
 	int m_num_threads;
 	RunPower m_model_power;
     std::string m_model_folder;

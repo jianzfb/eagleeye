@@ -10,20 +10,14 @@
 #include <map>
 #include <memory> 
 #include <iostream>
-#include "tnn/core/common.h"
-#include "tnn/core/macro.h"
-#include "tnn/core/tnn.h"
-#include "tnn/utils/blob_converter.h"
-#include "tnn/utils/cpu_utils.h"
-#include "tnn/utils/mat_utils.h"
 #include "rknn_api.h"
 
 namespace eagleeye
 {
 template<typename Enabled>
-class ModelRun<TNNRun, Enabled>:public ModelEngine{
+class ModelRun<RknnRun, Enabled>:public ModelEngine{
 public:
-    typedef TNNRun                   ModelEngineType;
+    typedef RknnRun                   ModelEngineType;
 
     /**
 	 * [constructor: build snpe model]
@@ -49,7 +43,7 @@ public:
 	 * @param  outputs {map} <name, data> pair
 	 * @return         {boolean} true or false
 	 */
-	virtual bool run(std::map<std::string, unsigned char*> inputs, 
+	virtual bool run(std::map<std::string, const unsigned char*> inputs, 
 					 std::map<std::string, unsigned char*>& outputs);
 
     /**
@@ -76,5 +70,5 @@ private:
 };
 } // namespace eagleeye
 
-#include "eagleeye/engine/tnn_run.hpp"
+#include "eagleeye/engine/rknn_run.hpp"
 #endif

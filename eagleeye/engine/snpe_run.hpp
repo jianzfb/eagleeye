@@ -33,7 +33,7 @@ ModelRun<SnpeRun, Enabled>::~ModelRun(){
 
 template<typename Enabled>
 bool ModelRun<SnpeRun, Enabled>::run(
-	std::map<std::string, unsigned char*> inputs, 
+	std::map<std::string, const unsigned char*> inputs, 
 	std::map<std::string, unsigned char*>& outputs){	
 	bool is_run_ok = false;
 	if(this->isDynamicInputShape()){
@@ -41,7 +41,7 @@ bool ModelRun<SnpeRun, Enabled>::run(
 		int slice_num = this->m_input_shapes[0][0];
 
 		// slice inputs
-		std::vector<std::map<std::string, unsigned char*>> slice_inputs;
+		std::vector<std::map<std::string, const unsigned char*>> slice_inputs;
 		slice_inputs.resize(slice_num);
 
 		for(int index=0; index<this->m_input_names.size(); ++index){
@@ -65,7 +65,7 @@ bool ModelRun<SnpeRun, Enabled>::run(
 
 			// set slice_inputs
 			for(int s_i=0; s_i<slice_num; ++s_i){
-				slice_inputs[s_i][input_name] = (unsigned char*)(((float*)inputs[input_name])+s_i*slice_input_size);
+				slice_inputs[s_i][input_name] = (const unsigned char*)(((float*)inputs[input_name])+s_i*slice_input_size);
 			}
 		}
 
@@ -253,7 +253,7 @@ void ModelRun<SnpeRun, Enabled>::createInputTensors(){
 
 
 template<typename Enabled>
-bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, unsigned char*> inputs, 
+bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, const unsigned char*> inputs, 
 			  		std::map<std::string, unsigned char*>& outputs){
 	
 	// step 1. load input tensor
@@ -267,10 +267,7 @@ bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, unsigned char*> inpu
 			for(int i=0; i<shape.rank(); ++i){
 				shape_size *= shape[i];
 			}
-
-			std::string name = tensor_name;
-			name = name.substr(0, name.length()-2);
-			memcpy(tensor_ptr->begin().dataPointer(), inputs[name], sizeof(float)* shape_size);
+			memcpy(tensor_ptr->begin().dataPointer(), inputs[tensor_name], sizeof(float)* shape_size);
 		});
 	}
 

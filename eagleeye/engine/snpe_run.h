@@ -57,7 +57,7 @@ public:
 	 * @param  outputs {map} <name, data> pair
 	 * @return         {boolean} true or false
 	 */
-	virtual bool run(std::map<std::string, unsigned char*> inputs, 
+	virtual bool run(std::map<std::string, const unsigned char*> inputs, 
 					 std::map<std::string, unsigned char*>& outputs);
 
 	/**
@@ -105,7 +105,7 @@ protected:
 	 * @param inputs  [description]
 	 * @param outputs [description]
 	 */
-	bool _run(std::map<std::string, unsigned char*> inputs, 
+	bool _run(std::map<std::string, const unsigned char*> inputs, 
 			  std::map<std::string, unsigned char*>& outputs);
 
 	std::unique_ptr<zdl::DlContainer::IDlContainer> m_container;

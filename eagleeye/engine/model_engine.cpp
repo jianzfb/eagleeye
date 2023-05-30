@@ -28,12 +28,12 @@ ModelEngine::ModelEngine(std::string model_name,
 	this->m_input_names = input_names;
 	this->m_output_names = output_names;
 
-  for(int index=0; index < input_names.size(); ++index){
-    m_input_map_index[input_names[index]] = index;
-  }
-  for(int index=0; index < output_names.size(); ++index){
-    m_output_map_index[output_names[index]] = index;
-  }
+	for(int index=0; index < input_names.size(); ++index){
+		m_input_map_index[input_names[index]] = index;
+	}
+	for(int index=0; index < output_names.size(); ++index){
+		m_output_map_index[output_names[index]] = index;
+	}
 
 	this->m_is_dynamic_input_shape = false;
 	this->m_is_dynamic_output_shape = false;

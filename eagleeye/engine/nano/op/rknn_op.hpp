@@ -1,10 +1,10 @@
-#ifndef _EAGLEEYE_PADDLE_OP_H_
-#define _EAGLEEYE_PADDLE_OP_H_
+#ifndef _EAGLEEYE_RKNN_OP_H_
+#define _EAGLEEYE_RKNN_OP_H_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/Dim.h"
 #include "eagleeye/basic/type.h"
-#include "eagleeye/engine/paddle_run.h"
+#include "eagleeye/engine/rknn_run.h"
 #include "eagleeye/common/EagleeyeTime.h"
 #include <string>
 #include <vector>
@@ -47,19 +47,95 @@ public:
         m_writable_path = writable_path;
         m_model_init = false;
     };
+    RknnOp()=default;
     virtual ~RknnOp(){
     };
 
     virtual int init(std::map<std::string, std::vector<float>> params){
         // init 可能与runOnCpu,runOnGpu不在同一个线程
+        if(params.size() == 0){
+            return 0;
+        }
+
+        // input_shapes, input_types, output_shapes, output_types, num_threads, model_power
+        if(params.find("input_types") != params.end()){
+            this->m_input_types.resize(params["input_types"].size());
+
+            for(int i=0; i<params["input_types"].size(); ++i){
+                this->m_input_types[i] = (EagleeyeType)(params["input_types"][i]);
+            }
+        }
+
+        if(params.find("output_types") != params.end()){
+            this->m_output_types.resize(params["output_types"].size());
+
+            for(int i=0; i<params["output_types"].size(); ++i){
+                this->m_output_types[i] = (EagleeyeType)(params["output_types"][i]);
+            }
+        }        
+        if(params.find("num_threads") != params.end()){
+            this->m_num_threads = (int)(params["num_threads"][0]);
+        }
+        this->m_model_power = HIGH_POWER;
+                
         return 0;
     }
-    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
-    virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){
+        if(params.size() == 0){
+            return 0;
+        }
+
+        if(params.find("input_shapes") != params.end()){
+            this->m_input_shapes.resize(params["input_shapes"].size());
+            for(int i=0; i<params["input_shapes"].size(); ++i){
+                for(int j=0; j<params["input_shapes"][i].size(); ++j){
+                    this->m_input_shapes[i].push_back(
+                         (int64_t)(params["input_shapes"][i][j])
+                    );
+                }
+            }
+        }
+
+        if(params.find("output_shapes") != params.end()){
+            this->m_output_shapes.resize(params["output_shapes"].size());
+
+            for(int i=0; i<params["output_shapes"].size(); ++i){
+                for(int j=0; j<params["output_shapes"][i].size(); ++j){
+                    this->m_output_shapes[i].push_back(
+                         (int64_t)(params["output_shapes"][i][j])
+                    );
+                }
+            }
+        }   
+        return 0;
+    };
+    virtual int init(std::map<std::string, std::vector<std::string>> params){
+        // init 可能与runOnCpu,runOnGpu不在同一个线程
+        if(params.size() == 0){
+            return 0;
+        }
+        if(params.find("model_name") != params.end()){
+            this->m_model_name = params["model_name"][0];
+        }
+        if(params.find("input_names") != params.end()){
+            this->m_input_names = params["input_names"];
+        }
+
+        if(params.find("output_names") != params.end()){
+            this->m_output_names = params["output_names"];
+        }
+        if(params.find("model_folder") != params.end()){
+            this->m_model_folder = params["model_folder"][0];
+        }
+        if(params.find("writable_path") != params.end()){
+            this->m_writable_path = params["writable_path"][0];
+        }        
+        return 0;
+    }
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
         if(!this->m_model_init){
-            m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<PaddleRun>(
+            m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<RknnRun>(
                         m_model_name,
                         m_device, 
                         m_input_names,
@@ -74,57 +150,37 @@ public:
             this->m_model_init = this->m_model_run->initialize();
         }
         if(!this->m_model_init){
-            EAGLEEYE_LOGE("paddle model fail to initialize.");
+            EAGLEEYE_LOGE("rknn model fail to initialize.");
             return -1;
         }
 
-        int batch_size = input[0].dims()[0];
-        // 分配输出内存
+        // 运行
+        std::map<std::string, const unsigned char*> inputs;
+        std::map<std::string, unsigned char*> outputs;
+
+        // 输入
+        for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+            inputs[m_input_names[input_i]] = input[input_i].cpu<unsigned char>();
+        }
+
+        // 输出
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+            outputs[m_output_names[output_i]] = NULL;
+        }
+        this->m_model_run->run(inputs, outputs);
+
+        // 倒出
+        for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+            std::string output_name = this->m_output_names[output_i];
             std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
-            output_shape[0] = batch_size;
+
             this->m_outputs[output_i] = Tensor(
                         output_shape,
                         m_output_types[output_i],
                         DataFormat::AUTO,
-                        CPU_BUFFER
+                        outputs[output_name]
                     );
         }
-
-        // 逐batch计算
-        for(int b_i = 0; b_i < batch_size; ++b_i){
-            // 输入数据
-            for(int input_i=0; input_i<m_input_names.size(); ++input_i){
-                // 检查数据格式
-                const Tensor x = input[input_i];
-                int input_size = x.dims().count(1,x.dims().size());
-                const float* x_batch_data = x.cpu<float>() + b_i*input_size;
-
-                if(x.type() != EAGLEEYE_FLOAT && x.type() != EAGLEEYE_UCHAR && x.type() != EAGLEEYE_CHAR && x.type() != EAGLEEYE_INT){
-                    EAGLEEYE_LOGE("x type only support float/uchar/int.");
-                    return -1;
-                }
-                void* preprocessed_data = this->m_model_run->getInputPtr(m_input_names[input_i]);
-                memcpy(preprocessed_data, x_batch_data, input_size*sizeof(float));
-            }
-
-            // 运行
-            std::map<std::string, unsigned char*> inputs;
-            std::map<std::string, unsigned char*> outputs;
-            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-                outputs[m_output_names[output_i]] = NULL;
-            }
-            this->m_model_run->run(inputs, outputs);
-
-            // 输出数据
-            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-                Tensor output = this->m_outputs[output_i];
-                int output_size = output.dims().count(1,output.dims().size());
-                float* out_batch_data = output.cpu<float>() + b_i*output_size; 
-                memcpy(out_batch_data, outputs[m_output_names[output_i]], sizeof(float)*output_size);
-            }
-        }
-
         return 0;
     }
 

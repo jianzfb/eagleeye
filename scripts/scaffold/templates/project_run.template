@@ -3,6 +3,7 @@ adb shell "if [ ! -d '/data/local/tmp/{{project}}' ]; then mkdir /data/local/tmp
 adb push {{eagleeye}}/libs/{{abi}}/* /data/local/tmp/{{project}}/
 adb push {{eagleeye}}/3rd/opencv/lib/{{abi}}/* /data/local/tmp/{{project}}/
 adb push ./bin/{{abi}}/* /data/local/tmp/{{project}}/
+adb push ./3rd/{{abi}}/* /data/local/tmp/{{project}}/
 {% if paddlelite != '' %}
 adb push {{paddlelite}}/{{abi}}/lib/* /data/local/tmp/{{project}}/
 {% endif %}
