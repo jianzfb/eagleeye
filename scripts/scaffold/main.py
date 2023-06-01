@@ -271,6 +271,11 @@ def main():
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "CMakeLists.txt"),'w') as fp:
         fp.write(output)
 
+      # 生成cmake文件夹
+      os.makedirs(os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake'))
+      shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'ccache.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'ccache.cmake'))
+      shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'FindTensorRT.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'FindTensorRT.cmake'))
+
       # 拷贝头文件
       shutil.copyfile(os.path.join(FLAGS.eagleeye(), "include", "eagleeye", "common", "EagleeyeModule.h"),
                       os.path.join("%s_plugin"%project_name, "EagleeyeModule.h"))

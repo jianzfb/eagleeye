@@ -17,6 +17,12 @@ public:
 	~RknnRun(){}
 };
 
+class TensorrtRun{
+public:
+	TensorrtRun(){}
+	~TensorrtRun(){}
+};
+
 class PaddleRun{
 public:
 	PaddleRun(){}

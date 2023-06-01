@@ -1,11 +1,11 @@
-#ifndef _EAGLEEYE_SNPE_OP_H_
-#define _EAGLEEYE_SNPE_OP_H_
+#ifndef _EAGLEEYE_TENSORRT_OP_H_
+#define _EAGLEEYE_TENSORRT_OP_H_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/Dim.h"
 #include "eagleeye/basic/type.h"
 #include "eagleeye/common/EagleeyeTime.h"
-#include "eagleeye/engine/snpe_run.h"
+#include "eagleeye/engine/tensorrt_run.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -13,9 +13,9 @@ namespace eagleeye{
 namespace dataflow{
 
 template<std::size_t IN, std::size_t OUT>
-class SnpeOp: public BaseOp<Tensor, IN, OUT>{
+class TensorrtOp: public BaseOp<Tensor, IN, OUT>{
 public:
-    SnpeOp(std::string model_name, 
+    TensorrtOp(std::string model_name, 
 			   std::string device,
 			   std::vector<std::string> input_names,
 			   std::vector<std::vector<int64_t>> input_shapes,
@@ -47,10 +47,12 @@ public:
         m_writable_path = writable_path;
         m_rgb2bgr = false;
         m_model_init = false;
+
+        m_preprocess_tensors.resize(input_names.size());
     };
     
-    SnpeOp()=default;
-    virtual ~SnpeOp(){};
+    TensorrtOp()=default;
+    virtual ~TensorrtOp(){};
 
     virtual int init(std::map<std::string, std::vector<float>> params){
         // init 可能与runOnCpu,runOnGpu不在同一个线程
@@ -152,18 +154,14 @@ public:
         if(params.find("writable_path") != params.end()){
             this->m_writable_path = params["writable_path"][0];
         }
-        if(params.find("alias_output_names") != params.end()){
-            for(int i=0; i<this->m_output_names.size(); ++i){
-                std::string alias_name = params["alias_output_names"][i];
-                this->m_alias_output_names[this->m_output_names[i]] = alias_name;
-            }
-        }
+
+        m_preprocess_tensors.resize(this->m_input_names.size());
         return 0;
     }
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
         if(!this->m_model_init){
-            m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<SnpeRun>(
+            m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<TensorrtRun>(
                         m_model_name,
                         m_device, 
                         m_input_names,
@@ -178,11 +176,9 @@ public:
             this->m_model_run->setModelFolder(m_model_folder);
             // 初始化模型
             this->m_model_init = this->m_model_run->initialize();
-            // alias output names
-            this->m_model_run->setOutputNameMap(this->m_alias_output_names);
         }
         if(!this->m_model_init){
-            EAGLEEYE_LOGE("snpe model fail to initialize.");
+            EAGLEEYE_LOGE("tensor model fail to initialize.");
             return -1;
         }
 
@@ -196,8 +192,16 @@ public:
             }
 
             // 获得模型引擎分配的内部空间
-            float* preprocessed_data = (float*)(this->m_model_run->getInputPtr(m_input_names[input_i]));
+            if(m_preprocess_tensors[input_i].empty() || m_preprocess_tensors[input_i].dims().production() != x.dims().production()){
+                m_preprocess_tensors[input_i] = Tensor(
+                        x.dims().data(),
+                        EAGLEEYE_FLOAT,
+                        DataFormat::AUTO,
+                        MemoryType::CPU_BUFFER
+                    );
+            }
 
+            float* preprocessed_data = m_preprocess_tensors[input_i].cpu<float>();
             Dim x_dims = x.dims();
             if(x.type() == EAGLEEYE_UCHAR || x.type() == EAGLEEYE_CHAR){
                 // 需要进行预处理流程
@@ -262,11 +266,15 @@ public:
             }
 
             // 输入数据直接是浮点数据
-            memcpy(preprocessed_data, x.cpu(), x.blobsize());
+            m_preprocess_tensors[input_i] = x;
         }
 
         // 运行
         std::map<std::string, const unsigned char*> inputs;
+        for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+            inputs[m_input_names[input_i]] = m_preprocess_tensors[input_i].cpu<unsigned char>();
+        }
+
         std::map<std::string, unsigned char*> outputs;
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
             outputs[m_output_names[output_i]] = NULL;
@@ -305,6 +313,7 @@ private:
     std::vector<EagleeyeType> m_input_types;
     std::vector<EagleeyeType> m_output_types;
 
+    std::vector<Tensor> m_preprocess_tensors;
     std::vector<float> m_mean;
     std::vector<float> m_std;
     bool m_rgb2bgr;

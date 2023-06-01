@@ -1,7 +1,8 @@
+#include <stdint.h>
+
 namespace eagleeye{
 namespace math{
 namespace x86{
-
 void bgrToTensorCHW(const uint8_t* src,
                        float* output,
                        int width,

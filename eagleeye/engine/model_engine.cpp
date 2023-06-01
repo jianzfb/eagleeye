@@ -2,6 +2,9 @@
 #if defined(__ANDROID__) || defined(ANDROID)
 #pragma message( "IN ANDROID arm" )
 #include "eagleeye/engine/math/arm/preprocess.h"
+#else
+#pragma message( "IN X86")
+#include "eagleeye/engine/math/x86/preprocess.h"
 #endif
 #include <iostream>
 #include <dlfcn.h>
@@ -163,6 +166,8 @@ void ModelEngine::bgrToTensorCHW(const uint8_t* src,
                        float* scales) {
 #if defined(__ANDROID__) || defined(ANDROID)                         
   math::arm::bgrToTensorCHW(src, output, width, height, means, scales);
+#else
+  math::x86::bgrToTensorCHW(src, output, width, height, means, scales);
 #endif
 }
 
@@ -174,6 +179,8 @@ void ModelEngine::bgrToRgbTensorCHW(const uint8_t* src,
                        float* scales) {
 #if defined(__ANDROID__) || defined(ANDROID)                            
   math::arm::bgrToRgbTensorCHW(src, output, width, height, means, scales);
+#else
+  math::x86::bgrToTensorCHW(src, output, width, height, means, scales);
 #endif
 }
 }
