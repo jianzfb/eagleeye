@@ -1,1 +1,2 @@
 recursive-include scaffold/templates/ *
+recursive-include scaffold/cmake/ *

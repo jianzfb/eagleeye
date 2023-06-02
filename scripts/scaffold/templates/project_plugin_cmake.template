@@ -1,6 +1,8 @@
 PROJECT({{project}})
 
 cmake_minimum_required(VERSION 3.5)
+
+include(cmake/ccache.cmake)
 add_definitions(-std=c++11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
@@ -12,7 +14,7 @@ add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)
 add_definitions(-DEAGLEEYE_ANDROID_APP)
 else()
 # for other (X86,X86-64)
-set(PROJECT_ABI ${ABI})
+set(PROJECT_ABI ${X86_ABI})
 endif()
 
 # set cmake core parameter

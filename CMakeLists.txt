@@ -3,6 +3,8 @@ PROJECT(eagleeye)
 cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -pie -Wl,--gc-sections -fpermissive")
 
+# Use ccache to speed up rebuilds
+include(cmake/ccache.cmake)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
 SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
@@ -383,6 +385,9 @@ set(EAGLEEYE_SRC
     eagleeye/engine/math/arm/clip.cc)
 elseif(DEFINED X86_ABI)
     # X86_ABI
+    set(EAGLEEYE_SRC 
+    ${EAGLEEYE_SRC} 
+    eagleeye/engine/math/x86/preprocess.cc)
 else()
     # OSX_ABI
 endif()
