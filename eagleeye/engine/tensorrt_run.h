@@ -25,7 +25,7 @@ enum class Precision {
 
 // Options for the network
 struct Options {
-    bool doesSupportDynamicBatchSize = true;
+    bool doesSupportDynamicBatchSize = false;
     // Precision to use for GPU inference. 16 bit is faster but may reduce accuracy.
     Precision precision = Precision::FP16;
     // The batch size which should be optimized for.
@@ -46,10 +46,7 @@ class NvInferLoggerC : public nvinfer1::ILogger {
     // Would advise using a proper logging utility such as https://github.com/gabime/spdlog
     // For the sake of this tutorial, will just log to the console.
 
-    // Only log Warnings or more important.
-    if (severity <= Severity::kWARNING) {
-        std::cout << msg << std::endl;
-    }
+    std::cout << msg << std::endl;
 }
 };
 
@@ -109,6 +106,7 @@ protected:
     NvInferLoggerC m_logger;
     std::string m_engineName;
 
+    std::map<int32_t, std::string> m_engine_binds_to_name_map;
 private:
 	bool m_is_init;
 };

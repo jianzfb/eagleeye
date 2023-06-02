@@ -104,7 +104,7 @@ bool ModelRun<TensorrtRun, Enabled>::run(
         // Copy the output
         checkCudaErrorCode(cudaMemcpyAsync(output.data(), static_cast<char*>(m_buffers[outputBinding]), batch_size * outputLenFloat * sizeof(float), cudaMemcpyDeviceToHost, inferenceCudaStream));
 
-        std::string node_name = this->m_output_names[outputBinding - num_inputs];
+        std::string node_name = this->m_engine_binds_to_name_map[outputBinding];
         outputs[node_name] = (unsigned char*)(output.data());
         m_featureVectors.emplace_back(std::move(output));
     }
@@ -251,6 +251,7 @@ bool ModelRun<TensorrtRun, Enabled>::loadNetwork() {
             }
 
             m_outputLengthsFloat.push_back(outputLenFloat);
+            m_engine_binds_to_name_map[i] = m_engine->getBindingName(i);
             // Now size the output buffer appropriately, taking into account the max possible batch size (although we could actually end up using less memory)
             checkCudaErrorCode(cudaMallocAsync(&m_buffers[i], outputLenFloat * m_options.maxBatchSize * sizeof(float), stream));
         }

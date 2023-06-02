@@ -202,6 +202,7 @@ public:
             }
 
             float* preprocessed_data = m_preprocess_tensors[input_i].cpu<float>();
+            // continue;
             Dim x_dims = x.dims();
             if(x.type() == EAGLEEYE_UCHAR || x.type() == EAGLEEYE_CHAR){
                 // 需要进行预处理流程

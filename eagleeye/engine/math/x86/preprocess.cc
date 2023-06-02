@@ -37,7 +37,7 @@ void bgrToRgbTensorCHW(const uint8_t* src,
         for(int c=0; c<3; ++c){
             float* b_c_output_ptr = b_output_ptr + c*hw;
             for(int p=0; p<hw; ++p){
-                b_c_output_ptr[p] = ((float)(src[b_i*offset + p*3 + (3-c)]) - means[3-c]) * scales[3-c];
+                b_c_output_ptr[p] = ((float)(src[b_i*offset + p*3 + (2-c)]) - means[2-c]) * scales[2-c];
             }
         }
     }

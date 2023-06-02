@@ -180,7 +180,7 @@ void ModelEngine::bgrToRgbTensorCHW(const uint8_t* src,
 #if defined(__ANDROID__) || defined(ANDROID)                            
   math::arm::bgrToRgbTensorCHW(src, output, width, height, means, scales);
 #else
-  math::x86::bgrToTensorCHW(src, output, width, height, means, scales);
+  math::x86::bgrToRgbTensorCHW(src, output, width, height, means, scales);
 #endif
 }
 }
