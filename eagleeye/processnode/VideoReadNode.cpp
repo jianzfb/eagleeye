@@ -164,13 +164,13 @@ void VideoReadNode::executeNodeInfo(){
         AVDictionaryEntry *tag = NULL;
         tag = av_dict_get(m_avf_cxt->streams[m_stream_index]->metadata,"rotate", tag, 0);
         if (tag==NULL){
-            m_rotate_degree = 0;
+            m_rotate_degree = 0;
         }
         else{
-            int angle = atoi(tag->value);
+            int angle = atoi(tag->value);
             angle %= 360;
             m_rotate_degree = angle;
-        }
+        }
     }
 
     EAGLEEYE_LOGD("video direction %d", m_rotate_degree);
