@@ -2,13 +2,14 @@
 #define _EAGLEEYE_POSE_DECODER_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 
 namespace eagleeye{
 namespace dataflow{
-class PoseDecoderOp:public BaseOp<Tensor, 2, 1>{
+class PoseDecoderOp:public BaseOp<2, 1>,DynamicCreator<PoseDecoderOp>{
 public:
     PoseDecoderOp() = default;
     PoseDecoderOp(float score_thre);

@@ -2,6 +2,7 @@
 #define _EAGLEEYE_LAMBDA_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
@@ -9,7 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 
 template<std::size_t IN, std::size_t OUT>
-class LambdaOp:public BaseOp<Tensor, IN, OUT>{
+class LambdaOp:public BaseOp<IN, OUT>{
 public:
     LambdaOp() = default;
     virtual ~LambdaOp()=default;

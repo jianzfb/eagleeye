@@ -2,6 +2,7 @@
 #define _EAGLEEYE_ANCHOR_FREE_DECODER_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
@@ -11,7 +12,7 @@ enum AnchorFreeDecoderType{
     ANCHORFREE_LTRB = 0
 };
 
-class AnchorFreeDecoderOp: public BaseOp<Tensor, 2, 1>{
+class AnchorFreeDecoderOp: public BaseOp<2, 1>, DynamicCreator<AnchorFreeDecoderOp>{
 public:
     AnchorFreeDecoderOp(){};
     AnchorFreeDecoderOp(AnchorFreeDecoderType decoder_type, int max_per, float x_scale, float y_scale, float x_scale_ext=1.0f, float y_scale_ext=1.0f);

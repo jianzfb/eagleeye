@@ -2,6 +2,7 @@
 #define _EAGLEEYE_PAD2D_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
@@ -14,7 +15,7 @@ enum Pad2dOpType{
     PAD2D_REFLECT   = 3
 };
 
-class Pad2dOp:public BaseOp<Tensor, 1, 1>{
+class Pad2dOp:public BaseOp<1, 1>,DynamicCreator<Pad2dOp>{
 public:
     Pad2dOp(Pad2dOpType pad_type, std::vector<int64_t> pad_c, std::vector<int64_t> pad_h, std::vector<int64_t> pad_w, float pad_value=0.0f);
     Pad2dOp(const Pad2dOp& op);

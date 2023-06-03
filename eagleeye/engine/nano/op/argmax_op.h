@@ -2,12 +2,13 @@
 #define _EAGLEEYE_ARGMAX_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class ArgmaxOp:public BaseOp<Tensor, 1, 1>{
+class ArgmaxOp:public BaseOp<1, 1>,DynamicCreator<ArgmaxOp>{
 public:
     ArgmaxOp(int64_t axis);
     virtual ~ArgmaxOp();

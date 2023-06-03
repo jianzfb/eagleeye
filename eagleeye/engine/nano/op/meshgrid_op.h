@@ -2,12 +2,13 @@
 #define _EAGLEEYE_MESHGRID_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class MeshgridOp: public BaseOp<Tensor, 2, 2>{
+class MeshgridOp: public BaseOp<2, 2>,DynamicCreator<MeshgridOp>{
 public:
     MeshgridOp() = default;
     virtual ~MeshgridOp(){};

@@ -2,6 +2,7 @@
 #define _EAGLEEYE_MAXPOOL2D_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
@@ -12,7 +13,7 @@ enum Pool2dType{
     AVGPool2D
 };
 
-class Pool2dOp:public BaseOp<Tensor, 1,1>{
+class Pool2dOp:public BaseOp<1,1>, DynamicCreator<Pool2dOp>{
 public:
     Pool2dOp(Pool2dType pool_type, int ksize_h, int ksize_w, int stride_h, int stride_w, int padding_h, int padding_w);
     Pool2dOp(const Pool2dOp& op);

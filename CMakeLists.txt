@@ -145,7 +145,6 @@ set(EAGLEEYE_SRC
     eagleeye/port/linux_base/env.cpp
     eagleeye/port/android/env.cpp
     eagleeye/runtime/cpu/cpu_runtime.cpp
-    eagleeye/engine/nano/op/placeholder_op.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/common/EagleeyeYUV.cpp
     eagleeye/common/EagleeyeGraph.cpp
@@ -173,6 +172,8 @@ set(EAGLEEYE_SRC
     eagleeye/basic/BGRFlipHWC.cpp
     eagleeye/basic/Dim.cpp
     eagleeye/engine/nano/op/factory.cpp
+    eagleeye/engine/nano/op/placeholder_op.cpp
+    eagleeye/engine/nano/op/pool2d_op
     eagleeye/engine/nano/op/cast_op.cpp
     eagleeye/engine/nano/op/clip_op.cpp
     eagleeye/engine/nano/op/concat_op.cpp
@@ -195,8 +196,6 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/roi_align_op.cpp
     eagleeye/engine/nano/op/warp_affine_op.cpp
     eagleeye/engine/nano/op/pool2d_op.cpp
-    eagleeye/engine/math/common/pixel_affine.cpp
-    eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/nano/op/argmax_op.cpp
     eagleeye/engine/nano/op/compare_op.cpp
     eagleeye/engine/nano/op/identity_op.cpp
@@ -206,7 +205,9 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/select_op.cpp
     eagleeye/engine/nano/op/select_by_thres_op.cpp
     eagleeye/engine/nano/op/pose_decoder_op.cpp
-    eagleeye/engine/nano/op/pose_affine_op.cpp
+    eagleeye/engine/nano/op/pose_affine_op.cpp    
+    eagleeye/engine/math/common/pixel_affine.cpp
+    eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp

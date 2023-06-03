@@ -2,6 +2,7 @@
 #define _EAGLEEYE_WARPAFFINE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
@@ -13,7 +14,7 @@ enum AffineParamMode{
     TMMode          = 2
 };
 
-class WarpAffineOp:public BaseOp<Tensor, 2, 3>{
+class WarpAffineOp:public BaseOp<2, 3>,DynamicCreator<WarpAffineOp>{
 public:
     WarpAffineOp(AffineParamMode mode, int64_t out_h, int64_t out_w, int fill_type=-233, unsigned int v=0);
     virtual ~WarpAffineOp();

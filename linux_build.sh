@@ -6,6 +6,7 @@ fi
 CRTDIR=$(pwd)
 
 # 1.step 编译
+git submodule foreach git pull
 mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON ..

@@ -2,15 +2,16 @@
 #define _EAGLEEYE_SHAPE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
 
-class ShapeOp:public BaseOp<Tensor, 1, 1>{
+class ShapeOp:public BaseOp<1, 1>,DynamicCreator<ShapeOp>{
 public:
-    ShapeOp(int64_t start=-1, int64_t stop=-1, EagleeyeType data_type=EAGLEEYE_INT);
+    ShapeOp(int64_t start, int64_t stop, EagleeyeType data_type=EAGLEEYE_INT);
     ShapeOp(const ShapeOp& op);
     virtual ~ShapeOp();
 

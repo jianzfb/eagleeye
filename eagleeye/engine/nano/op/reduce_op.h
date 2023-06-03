@@ -2,6 +2,7 @@
 #define _EAGLEEYE_REDUCE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
@@ -15,7 +16,7 @@ enum ReduceOpType{
     REDUCE_PROD =   4
 };
 
-class ReduceOp:public BaseOp<Tensor, 1, 1>{
+class ReduceOp:public BaseOp<1, 1>,DynamicCreator<ReduceOp>{
 public:
     ReduceOp(){}
     ReduceOp(ReduceOpType op_type, std::vector<int64_t> axis, bool keep_axis);

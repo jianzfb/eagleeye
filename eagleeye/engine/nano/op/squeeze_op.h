@@ -3,13 +3,14 @@
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/engine/nano/op/interpolate_op.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
 
-class SqueezeOp: public BaseOp<Tensor, 1, 1>{
+class SqueezeOp: public BaseOp<1, 1>,DynamicCreator<SqueezeOp>{
 public:
     SqueezeOp() = default;
     SqueezeOp(size_t axis);
@@ -27,7 +28,7 @@ private:
     size_t m_axis;
 }; 
 
-class UnSqueezeOp: public BaseOp<Tensor, 1, 1>{
+class UnSqueezeOp: public BaseOp<1, 1>,DynamicCreator<UnSqueezeOp>{
 public:
     UnSqueezeOp() = default;
     UnSqueezeOp(size_t axis);

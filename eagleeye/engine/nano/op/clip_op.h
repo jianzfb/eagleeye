@@ -3,14 +3,15 @@
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class ClipOp:public BaseOp<Tensor, 1, 1>{
+class ClipOp:public BaseOp<1, 1>, DynamicCreator<ClipOp>{
 public:
-    ClipOp(float min_v=0.0f, float max_v=1.0f);
+    ClipOp(float min_v, float max_v);
     ClipOp(const ClipOp& op);
     virtual ~ClipOp();
 

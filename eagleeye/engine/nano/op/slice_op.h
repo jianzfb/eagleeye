@@ -3,14 +3,15 @@
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class SliceOp:public BaseOp<Tensor, 1, 1>{
+class SliceOp:public BaseOp<1, 1>,DynamicCreator<SliceOp>{
 public:
-    SliceOp(std::vector<int> axes={}, std::vector<int> starts={}, std::vector<int> ends={});
+    SliceOp(std::vector<int> axes, std::vector<int> starts, std::vector<int> ends);
     SliceOp(const SliceOp& op);
     virtual ~SliceOp();
 

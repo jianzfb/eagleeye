@@ -2,12 +2,13 @@
 #define _EAGLEEYE_ARANGE_OP_H_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class ArangeOp: public BaseOp<Tensor, 0, 1>{
+class ArangeOp: public BaseOp<0, 1>,DynamicCreator<ArangeOp>{
 public:
     ArangeOp() = default;
     ArangeOp(int64_t start, int64_t stop, int64_t step, EagleeyeType data_type);

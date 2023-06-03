@@ -2,12 +2,13 @@
 #define _EAGLEEYE_SPLIT_OP_H_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class Split2DOp:public BaseOp<Tensor, 1, 2>{
+class Split2DOp:public BaseOp<1, 2>,DynamicCreator<Split2DOp>{
 public:
     Split2DOp(int axis);
     Split2DOp(const Split2DOp& op);

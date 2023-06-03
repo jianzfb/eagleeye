@@ -2,12 +2,13 @@
 #define _EAGLEEYE_ROIALIGN_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class RoiAlignOp:public BaseOp<Tensor, 3, 1>{
+class RoiAlignOp:public BaseOp<3, 1>,DynamicCreator<RoiAlignOp>{
 public:
     RoiAlignOp(int64_t pooled_h, int64_t pooled_w, float spatial_scale, bool align);
     virtual ~RoiAlignOp();
