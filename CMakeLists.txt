@@ -434,7 +434,11 @@ endif()
 
 FIND_PACKAGE(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE OpenMP::OpenMP_CXX)
+    else()
+        target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
+    endif()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
@@ -442,32 +446,52 @@ endif()
 
 
 if(DEFINED FFMPEG AND DEFINED X264)
-    message("use FFMPEG")
     add_definitions(-DEAGLEEYE_FFMPEG)
     include_directories(${FFMPEG}/include/)
     include_directories(${X264}/include/)
 
-    target_link_libraries(eagleeye 
-                            ${FFMPEG}/lib/libavdevice.so
-                            ${FFMPEG}/lib/libavutil.so
-                            ${FFMPEG}/lib/libswresample.so
-                            ${FFMPEG}/lib/libswscale.so
-                            ${FFMPEG}/lib/libavcodec.so
-                            ${FFMPEG}/lib/libavformat.so
-                            ${FFMPEG}/lib/libavfilter.so
-                            ${FFMPEG}/lib/libpostproc.so
-                            ${X264}/lib/libx264.163.so)
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE
+                                ${FFMPEG}/lib/libavdevice.so
+                                ${FFMPEG}/lib/libavutil.so
+                                ${FFMPEG}/lib/libswresample.so
+                                ${FFMPEG}/lib/libswscale.so
+                                ${FFMPEG}/lib/libavcodec.so
+                                ${FFMPEG}/lib/libavformat.so
+                                ${FFMPEG}/lib/libavfilter.so
+                                ${FFMPEG}/lib/libpostproc.so
+                                ${X264}/lib/libx264.163.so)    
+    else()
+        target_link_libraries(eagleeye 
+                                ${FFMPEG}/lib/libavdevice.so
+                                ${FFMPEG}/lib/libavutil.so
+                                ${FFMPEG}/lib/libswresample.so
+                                ${FFMPEG}/lib/libswscale.so
+                                ${FFMPEG}/lib/libavcodec.so
+                                ${FFMPEG}/lib/libavformat.so
+                                ${FFMPEG}/lib/libavfilter.so
+                                ${FFMPEG}/lib/libpostproc.so
+                                ${X264}/lib/libx264.163.so)
+    endif()
 endif()
 
 if(pnglib_FOUND)
-   target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    else()
+       target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    endif()
 endif()
 
 if(WITH_OPENCL)
     if(DEFINED ANDROID_ABI)
         target_link_libraries(eagleeye libOpenCL)
     else()
-        target_link_libraries(eagleeye ${OpenCL_LIBRARY})
+        if(BUILD_PYTHON_MODULE)
+            target_link_libraries(eagleeye PRIVATE ${OpenCL_LIBRARY})
+        else()
+            target_link_libraries(eagleeye ${OpenCL_LIBRARY})
+        endif()
     endif()
 endif()
 
@@ -498,10 +522,15 @@ endif()
 add_library(libyuv SHARED IMPORTED)
 set_target_properties(libyuv PROPERTIES IMPORTED_LOCATION ${LIBYUV_SDK_LIB_PATH})
 include_directories(${LIBYUV_SDK_INCLUDE_PATH})
-target_link_libraries(eagleeye libyuv)
 
+if(BUILD_PYTHON_MODULE)
+    target_link_libraries(eagleeye PRIVATE libyuv)
+else()
+    target_link_libraries(eagleeye libyuv)
+endif()
 
 if(DEFINED ANDROID_ABI)
+    # android, dont support build_python_module
     target_link_libraries(eagleeye log)
 endif()
 

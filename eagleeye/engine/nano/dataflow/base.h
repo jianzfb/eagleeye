@@ -62,6 +62,14 @@ public:
      * @return int 
      */
     virtual int getInputNum()=0;
+
+    /**
+     * @brief Get the Output Tensor object
+     * 
+     * @param index 
+     * @return Tensor& 
+     */
+    virtual Tensor& getOutput(int index)=0;
 };
 
 
