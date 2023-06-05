@@ -81,7 +81,13 @@
         "utility": "cpp",
         "variant": "cpp",
         "__functional_03": "cpp",
-        "memory_resource": "cpp"
+        "memory_resource": "cpp",
+        "__bits": "cpp",
+        "clocale": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "forward_list": "cpp",
+        "valarray": "cpp"
     },
     "python.pythonPath": "/usr/bin/python3",
     "cmake.configureOnOpen": true

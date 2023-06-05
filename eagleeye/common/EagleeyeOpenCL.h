@@ -9,8 +9,13 @@
 #include <set>
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+#ifdef __APPLE__
+#include <OpenCL/opencl.h>
+#include <OpenCL/cl.h>
+#else
 #include <CL/opencl.h>
 #include <CL/cl.h>
+#endif
 namespace eagleeye{
 enum OpenCLMemStatus{
     EAGLEEYE_CL_MEM_READ,

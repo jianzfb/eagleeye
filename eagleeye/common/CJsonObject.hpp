@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <errno.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <limits.h>
 #include <math.h>
 #include <string>

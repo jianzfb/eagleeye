@@ -44,7 +44,7 @@ mkdir 3rd
 cp -r ../eagleeye/3rd/Eigen 3rd/
 
 # 第三方依赖.so
-cp -r  ../eagleeye/3rd/libyuv/lib/X86-64/* libs/X86-64/
+cp -r  ../eagleeye/3rd/libyuv/lib/linux/X86-64/* libs/X86-64/
 cd ..
 
 # 4.step 脚本工具

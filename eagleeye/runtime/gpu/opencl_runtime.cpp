@@ -4,12 +4,19 @@
 #include "eagleeye/codegen/opencl/encrypt_opencl_kernel.h"
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+#ifdef __APPLE__
+#include <OpenCL/opencl.h>
+#include <OpenCL/cl.h>
+#include <OpenCL/cl_gl.h>
+#else
 #include <CL/opencl.h>
 #include <CL/cl.h>
 #include <CL/cl_gl.h>
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-#include <EGL/eglplatform.h>
+#endif
+
+// #include <EGL/egl.h>
+// #include <EGL/eglext.h>
+// #include <EGL/eglplatform.h>
 
 namespace eagleeye
 {

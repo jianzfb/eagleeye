@@ -114,6 +114,10 @@ EagleeyeError LinuxBaseEnv::GetCPUMaxFreq(std::vector<float> *max_freqs) {
 
 EagleeyeError LinuxBaseEnv::SchedSetAffinity(const std::vector<size_t> &cpu_ids) {
   // 设置线程亲和性
+#ifdef __APPLE__
+  // macos 
+#else
+  // linux and other
   cpu_set_t mask;
   CPU_ZERO(&mask);
   for (auto cpu_id : cpu_ids) {
@@ -126,7 +130,7 @@ EagleeyeError LinuxBaseEnv::SchedSetAffinity(const std::vector<size_t> &cpu_ids)
     EAGLEEYE_LOGE("Fail to Set affinity.");
     return EagleeyeError::EAGLEEYE_ARG_ERROR;
   }
-
+#endif
   return EagleeyeError::EAGLEEYE_NO_ERROR;
 }
 
@@ -151,7 +155,7 @@ EagleeyeError LinuxBaseEnv::AdviseFree(void *addr, size_t length) {
   return EagleeyeError::EAGLEEYE_NO_ERROR;
 }
 
-#if defined(__linux__) && (!defined(__ANDROID__) || !defined(ANDROID))
+#if (defined(__linux__) || defined(__APPLE__)) && (!defined(__ANDROID__) || !defined(ANDROID))
 Env *Env::Default() {
   static LinuxBaseEnv linux_env;
   return &linux_env;
