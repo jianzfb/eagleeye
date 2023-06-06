@@ -6,10 +6,15 @@ fi
 CRTDIR=$(pwd)
 
 # 1.step 编译
-git submodule foreach git pull
+git submodule init
+git submodule update
 mkdir build
 cd build
+if [[ $1 == BUILD_PYTHON_MODULE ]];then
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON ..
+else
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON ..
+fi
 make
 cd ..
 

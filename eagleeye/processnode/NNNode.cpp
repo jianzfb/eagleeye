@@ -37,27 +37,27 @@ void NNNode::executeNodeInfo(){
     }
 
     // 2.step 运行网络
-    std::map<std::string, std::pair<void*, std::pair<std::vector<int64_t>, EagleeyeType>>> graph_output_map;
+    std::map<std::string, std::tuple<void*, std::vector<int64_t>, EagleeyeType>> graph_output_map;
     signal_num = this->getNumberOfOutputSignals();
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
-        graph_output_map[m_output_map[sig_i]] = std::pair<void*, std::pair<std::vector<int64_t>, EagleeyeType>>(NULL, {{}, EAGLEEYE_UNDEFINED});
-    }
+        graph_output_map[m_output_map[sig_i].first] = std::tuple<void*, std::vector<int64_t>, EagleeyeType>(NULL, {}, EAGLEEYE_UNDEFINED);
+    }    
     m_g->run(graph_input_map, graph_output_map);
 
     // 3.step 输出绑定
-    for(int sig_i=0; sig_i<signal_num; ++sig_i){
-        std::string sig_i_name = this->m_output_map[sig_i];
-        std::pair<void*, std::pair<std::vector<int64_t>, EagleeyeType>> p = graph_output_map[sig_i_name];
+    for(int sig_i=0; sig_i<this->getNumberOfOutputSignals(); ++sig_i){
+        std::pair<std::string, int> sig_info = this->m_output_map[sig_i];
+        std::tuple<void*, std::vector<int64_t>, EagleeyeType> p;
+        m_g->get(sig_info.first, sig_info.second, p);
 
         SignalType tt = this->getOutputPort(sig_i)->getSignalType();
         if(tt == EAGLEEYE_SIGNAL_IMAGE || tt == EAGLEEYE_SIGNAL_RGB_IMAGE || tt == EAGLEEYE_SIGNAL_BGR_IMAGE){
             // 需要保证 NNGraph输出 HxWx3
             ImageSignal<Array<unsigned char, 3>>* image_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getOutputPort(sig_i));
             Matrix<Array<unsigned char, 3>> image = image_sig->getData();
-
-            if(image.rows() != p.second.first[0] || image.cols() != p.second.first[1]){
-                image = Matrix<Array<unsigned char, 3>>(p.second.first[0], p.second.first[1]);
-                memcpy(image.dataptr(), p.first, sizeof(unsigned char)*p.second.first[0]*p.second.first[1]*3);
+            if(image.rows() != std::get<1>(p)[0]|| image.cols() != std::get<1>(p)[1]){
+                image = Matrix<Array<unsigned char, 3>>(std::get<1>(p)[0], std::get<1>(p)[1]);
+                memcpy(image.dataptr(), std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]*3);
             }
 
             image_sig->setData(image);
@@ -67,9 +67,9 @@ void NNNode::executeNodeInfo(){
             ImageSignal<Array<unsigned char, 4>>* image_sig = (ImageSignal<Array<unsigned char, 4>>*)(this->getOutputPort(sig_i));
             Matrix<Array<unsigned char, 4>> image = image_sig->getData();
             
-            if(image.rows() != p.second.first[0] || image.cols() != p.second.first[1]){
-                image = Matrix<Array<unsigned char, 4>>(p.second.first[0], p.second.first[1]);
-                memcpy(image.dataptr(), p.first, sizeof(unsigned char)*p.second.first[0]*p.second.first[1]*4);
+            if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
+                image = Matrix<Array<unsigned char, 4>>(std::get<1>(p)[0], std::get<1>(p)[1]);
+                memcpy(image.dataptr(), std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]*4);
             }
 
             image_sig->setData(image);
@@ -79,9 +79,9 @@ void NNNode::executeNodeInfo(){
             ImageSignal<unsigned char>* image_sig = (ImageSignal<unsigned char>*)(this->getOutputPort(sig_i));
             Matrix<unsigned char> image = image_sig->getData();
             
-            if(image.rows() != p.second.first[0] || image.cols() != p.second.first[1]){
-                image = Matrix<unsigned char>(p.second.first[0], p.second.first[1]);
-                memcpy(image.dataptr(), p.first, sizeof(unsigned char)*p.second.first[0]*p.second.first[1]);
+            if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
+                image = Matrix<unsigned char>(std::get<1>(p)[0], std::get<1>(p)[1]);
+                memcpy(image.dataptr(),std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
             image_sig->setData(image);
@@ -89,16 +89,16 @@ void NNNode::executeNodeInfo(){
         else if(tt == EAGLEEYE_SIGNAL_SWITCH){
             // 需要保证 输出 1
             BooleanSignal* boolean_sig = (BooleanSignal*)(this->getOutputPort(sig_i));
-            int* data = ((int*)p.first);
+            int* data = ((int*)std::get<0>(p));
             bool is_true = (*data) > 0 ? true : false;
             boolean_sig->setData(is_true);
         }
         else if(tt == EAGLEEYE_SIGNAL_CLS || tt == EAGLEEYE_SIGNAL_STATE){
             ImageSignal<int>* image_sig = (ImageSignal<int>*)(this->getOutputPort(sig_i));
             Matrix<int> image = image_sig->getData();
-            if(image.rows() != p.second.first[0] || image.cols() != p.second.first[1]){
-                image = Matrix<int>(p.second.first[0], p.second.first[1]);
-                memcpy(image.dataptr(), p.first, sizeof(int)*p.second.first[0]*p.second.first[1]);
+            if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
+                image = Matrix<int>(std::get<1>(p)[0], std::get<1>(p)[1]);
+                memcpy(image.dataptr(),std::get<0>(p), sizeof(int)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
             image_sig->setData(image);
@@ -106,9 +106,9 @@ void NNNode::executeNodeInfo(){
         else if(tt == EAGLEEYE_SIGNAL_DET || tt == EAGLEEYE_SIGNAL_DET_EXT || tt == EAGLEEYE_SIGNAL_POS_2D || tt == EAGLEEYE_SIGNAL_POS_3D){
             ImageSignal<float>* image_sig = (ImageSignal<float>*)(this->getOutputPort(sig_i));
             Matrix<float> image = image_sig->getData();
-            if(image.rows() != p.second.first[0] || image.cols() != p.second.first[1]){
-                image = Matrix<float>(p.second.first[0], p.second.first[1]);
-                memcpy(image.dataptr(), p.first, sizeof(float)*p.second.first[0]*p.second.first[1]);
+            if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
+                image = Matrix<float>(std::get<1>(p)[0], std::get<1>(p)[1]);
+                memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
             image_sig->setData(image);
@@ -116,9 +116,9 @@ void NNNode::executeNodeInfo(){
         else if(tt == EAGLEEYE_SIGNAL_RECT || tt == EAGLEEYE_SIGNAL_LINE || tt == EAGLEEYE_SIGNAL_POINT){
             ImageSignal<float>* image_sig = (ImageSignal<float>*)(this->getOutputPort(sig_i));
             Matrix<float> image = image_sig->getData();
-            if(image.rows() != p.second.first[0] || image.cols() != p.second.first[1]){
-                image = Matrix<float>(p.second.first[0], p.second.first[1]);
-                memcpy(image.dataptr(), p.first, sizeof(float)*p.second.first[0]*p.second.first[1]);
+            if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
+                image = Matrix<float>(std::get<1>(p)[0], std::get<1>(p)[1]);
+                memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
             image_sig->setData(image);
@@ -126,7 +126,7 @@ void NNNode::executeNodeInfo(){
         else{
             // Tensor
             TensorSignal* tensor_sig = (TensorSignal*)(this->getOutputPort(sig_i));
-            tensor_sig->setData(Tensor(p.second.first, p.second.second, DataFormat::AUTO, p.first));
+            tensor_sig->setData(Tensor(std::get<1>(p), std::get<2>(p), DataFormat::AUTO, std::get<0>(p)));
         }
     }
 }
@@ -240,7 +240,7 @@ bool NNNode::load(neb::CJsonObject nn_config, OpBFuncType op_builder, std::strin
 
             if(startswith(to_node_name, "output")){
                 // 记录外层输出与内层的关联
-                m_output_map[to_node_port] = node_name;
+                m_output_map[to_node_port] = std::pair<std::string, int>(node_name,0);
             }
             else{
                 // 创建算子间的链接关系                
@@ -271,7 +271,7 @@ int NNNode::getOpGraphIn(){
     return this->m_g->getEntryNodes().size();
 }
 
-void NNNode::analyze(std::vector<std::string> in_ops, std::vector<std::string> out_ops){
+void NNNode::analyze(std::vector<std::string> in_ops, std::vector<std::pair<std::string, int>> out_ops){
     // 创建输入信号
     int input_signal_num = in_ops.size();
     this->setNumberOfInputSignals(input_signal_num);

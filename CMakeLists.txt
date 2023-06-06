@@ -2,7 +2,9 @@ PROJECT(eagleeye)
 
 cmake_minimum_required(VERSION 3.5)
 # --gc-sections -pie
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -Wl, -fpermissive")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -Wl, -fpermissive")
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -Wall -fPIC -pie -Wl,--gc-sections -fpermissive")
+
 
 # Use ccache to speed up rebuilds
 # include(ccache.cmake)
@@ -10,7 +12,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -Wl, -fpermissive
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
 # set(LIBCXX_LINK_FLAGS "-rtlib=compiler-rt")
-# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
+# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lz")
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
@@ -35,6 +37,8 @@ elseif(DEFINED X86_ABI)
         include(FindPythonByEnv)
         add_subdirectory(${eagleeye_SOURCE_DIR}/eagleeye/3rd/pybind11)
     endif()
+
+    link_libraries(-lz)
 else()
     # OSX
     message(STATUS "CONFIGURE OSX")
@@ -415,6 +419,7 @@ endif()
 
 
 if(DEFINED OSX_ABI)
+    message("why")
     set(CMAKE_C_COMPILER clang)
     set(CMAKE_CXX_COMPILER clang++)
 

@@ -51,11 +51,7 @@ bool OpFactory<Targs...>::Regist(const std::string& strTypeName, std::function<B
 
 template<typename ...Targs>
 Base* OpFactory<Targs...>::Create(const std::string& strTypeName, Targs&&... args){
-    std::cout<<"all ops num "<<m_mapCreateFunction.size()<<std::endl;
     typename std::unordered_map<std::string, std::function<Base*(Targs&&...)>>::iterator ii,jj(m_mapCreateFunction.end());
-    for(ii=m_mapCreateFunction.begin(); ii != jj; ++ii){
-        std::cout<<ii->first<<std::endl;
-    }
 
     auto iter = m_mapCreateFunction.find(std::string("eagleeye::dataflow::")+strTypeName);
     if (iter == m_mapCreateFunction.end()){

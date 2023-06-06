@@ -9,7 +9,7 @@ adb push {{paddlelite}}/{{abi}}/lib/* /data/local/tmp/{{project}}/
 {% endif %}
 
 
-adb shell "cd /data/local/tmp/{{project}}; export LD_LIBRARY_PATH=.; ./{{project}}_demo $*;"
+adb shell "cd /data/local/tmp/{{project}}; export LD_LIBRARY_PATH=.; ./{{project}}_demo $*"
 {% else %}
 cp -r {{eagleeye}}/libs/{{abi}}/* bin/{{abi}}/
 cp -r ./3rd/{{abi}}/* bin/{{abi}}/
