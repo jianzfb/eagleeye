@@ -2,13 +2,14 @@
 #define _EAGLEEYE_NMS_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
 // [(label, confidence, xmin, ymin, xmax, ymax), ()]
-class NmsOp:public BaseOp<Tensor, 2, 2>{
+class NmsOp:public BaseOp<2, 2>,DynamicCreator<NmsOp>{
 public:
     NmsOp(float score_threshold, 
             int nms_top_k, 

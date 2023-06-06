@@ -19,10 +19,64 @@ namespace eagleeye{
 namespace dataflow{
 typedef	int64_t 	index_t;
 
-template<typename T, std::size_t IN, std::size_t OUT>
-class BaseOp{
+class Base{
 public:
-    typedef T                           Type;
+    Base(){}
+    virtual ~Base(){}
+
+    /**
+     * @brief init
+     * 
+     * @param data 
+     */
+    virtual int init(std::map<std::string, std::vector<float>> params)=0;
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params)=0;
+    virtual int init(std::map<std::string, std::vector<std::string>> params)=0;
+
+    /**
+     * @brief run on cpu
+     * 
+     * @param output 
+     * @param input 
+     */
+    virtual int runOnCpu(const std::vector<Tensor>& input)=0;
+
+    /**
+     * @brief run on gpu
+     * 
+     * @param output 
+     * @param input 
+     */
+    virtual int runOnGpu(const std::vector<Tensor>& input)=0;
+
+    /**
+     * @brief Get the Output Num object
+     * 
+     * @return int 
+     */
+    virtual int getOutputNum()=0;
+
+    /**
+     * @brief Get the Input Num object
+     * 
+     * @return int 
+     */
+    virtual int getInputNum()=0;
+
+    /**
+     * @brief Get the Output Tensor object
+     * 
+     * @param index 
+     * @return Tensor& 
+     */
+    virtual Tensor& getOutput(int index)=0;
+};
+
+
+template<std::size_t IN, std::size_t OUT>
+class BaseOp:public Base{
+public:
+    typedef Tensor                      Type;
     typedef make_index_sequence<IN>     INS;
     typedef make_index_sequence<OUT>    OUTS;
 
@@ -46,31 +100,6 @@ public:
     virtual ~BaseOp(){};
 
     /**
-     * @brief init
-     * 
-     * @param data 
-     */
-    virtual int init(std::map<std::string, std::vector<float>> params)=0;
-    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params)=0;
-    virtual int init(std::map<std::string, std::vector<std::string>> params)=0;
-
-    /**
-     * @brief run on cpu
-     * 
-     * @param output 
-     * @param input 
-     */
-    virtual int runOnCpu(const std::vector<T>& input)=0;
-
-    /**
-     * @brief run on gpu
-     * 
-     * @param output 
-     * @param input 
-     */
-    virtual int runOnGpu(const std::vector<T>& input)=0;
-
-    /**
      * @brief check whether support implementation
      * 
      * @return true 
@@ -84,7 +113,7 @@ public:
      * 
      * @return int 
      */
-    int getOutputNum(){
+    virtual int getOutputNum(){
         return this->m_output_num;
     }
 
@@ -93,9 +122,9 @@ public:
      * 
      * @return int 
      */
-    int getInputNum(){
+    virtual int getInputNum(){
         return this->m_input_num;
-    }    
+    }
 
     /**
      * @brief Get the Output Shape object
@@ -121,9 +150,9 @@ public:
      * @brief Get the Output Tensor object
      * 
      * @param index 
-     * @return T& 
+     * @return Tensor& 
      */
-    virtual T& getOutput(int index){
+    virtual Tensor& getOutput(int index){
         return this->m_outputs[index];
     }
 
@@ -136,7 +165,7 @@ public:
         return this->m_outputs[index].blobsize();
     }
 
-    virtual int update(T data, int index){return -1;}
+    virtual int update(Tensor data, int index){return -1;}
 
     /**
      * @brief use cpu data, update
@@ -156,7 +185,7 @@ public:
             shape = this->getOutput(index).dims().data();
             type = this->getOutput(index).type();
             return 0;
-        }        
+        }
     }
 
     /**
@@ -171,7 +200,7 @@ protected:
 
     std::vector<std::vector<int64_t>> m_output_shape;
     std::vector<std::vector<int64_t>> m_input_shape;
-    std::vector<T> m_outputs;
+    std::vector<Tensor> m_outputs;
 
     bool m_support_cpu;
     bool m_support_gpu;

@@ -6,9 +6,15 @@ fi
 CRTDIR=$(pwd)
 
 # 1.step 编译
+git submodule init
+git submodule update
 mkdir build
 cd build
+if [[ $1 == BUILD_PYTHON_MODULE ]];then
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON ..
+else
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON ..
+fi
 make
 cd ..
 
@@ -43,7 +49,7 @@ mkdir 3rd
 cp -r ../eagleeye/3rd/Eigen 3rd/
 
 # 第三方依赖.so
-cp -r  ../eagleeye/3rd/libyuv/lib/X86-64/* libs/X86-64/
+cp -r  ../eagleeye/3rd/libyuv/lib/linux/X86-64/* libs/X86-64/
 cd ..
 
 # 4.step 脚本工具

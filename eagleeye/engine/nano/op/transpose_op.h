@@ -2,6 +2,7 @@
 #define _EAGLEEYE_TRANSPOSE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include "eagleeye/basic/Dim.h"
 #include <string>
 #include <vector>
@@ -9,7 +10,7 @@
 namespace eagleeye{
 namespace dataflow{
 
-class TransposeOp:public BaseOp<Tensor, 1, 1>{
+class TransposeOp:public BaseOp<1, 1>,DynamicCreator<TransposeOp>{
 public:
     TransposeOp(){};
     TransposeOp(std::vector<int64_t> axis);

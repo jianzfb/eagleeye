@@ -2,12 +2,13 @@
 #define _EAGLEEYE_TOPK_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class TopKOp: public BaseOp<Tensor, 1, 2>{
+class TopKOp: public BaseOp<1, 2>,DynamicCreator<TopKOp>{
 public:
     TopKOp():m_k(-1),m_axis(-1){}
     TopKOp(int axis, int k);

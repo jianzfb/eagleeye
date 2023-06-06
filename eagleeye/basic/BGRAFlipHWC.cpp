@@ -1028,7 +1028,19 @@ void flip_xy_hwc_bgra(const unsigned char* src, unsigned char* dst, int w, int h
     }
 }
 #endif
-#elif __linux__
-#pragma message("x86 bgra bgrafilphwc")
+#elif __linux__ || __APPLE__
+#pragma message("x86 bgra flip_x/y/xy_hwc_bgra")
+void flip_x_hwc_bgra(const unsigned char* src, unsigned char* dst, int w_in, int h_in){
+
+}
+
+void flip_y_hwc_bgra(const unsigned char* src, unsigned char* dst, int w_in, int h_in){
+
+}
+
+void flip_xy_hwc_bgra(const unsigned char* src, unsigned char* dst, int w_in, int h_in){
+
+}
+
 #endif
 } //namespace easy_mobile_util

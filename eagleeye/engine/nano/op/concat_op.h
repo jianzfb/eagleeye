@@ -3,12 +3,13 @@
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class ConcatOp:public BaseOp<Tensor, 2, 1>{
+class ConcatOp:public BaseOp<2, 1>,DynamicCreator<ConcatOp>{
 public:
     ConcatOp(int aixs);
     ConcatOp(const ConcatOp& op);

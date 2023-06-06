@@ -8,7 +8,11 @@ CRTDIR=$(pwd)
 # 1.step 编译
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DOSX_ABI=X86-64 ..
+if [[ $1 == BUILD_PYTHON_MODULE ]];then
+cmake -DCMAKE_BUILD_TYPE=Release -DOSX_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON -DWITH_OPENCL:BOOL=ON ..
+else
+cmake -DCMAKE_BUILD_TYPE=Release -DOSX_ABI=X86-64 -DLITE=ON -DWITH_OPENCL:BOOL=ON ..
+fi
 make
 cd ..
 
@@ -44,7 +48,7 @@ mkdir 3rd
 cp -r ../eagleeye/3rd/Eigen 3rd/
 
 # 第三方依赖.so
-cp -r  ../eagleeye/3rd/libyuv/lib/X86-64/* libs/X86-64/
+cp -r  ../eagleeye/3rd/libyuv/lib/osx/X86-64/* libs/X86-64/
 cd ..
 
 # 4.step 脚本工具

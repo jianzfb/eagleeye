@@ -3,12 +3,13 @@
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class CastOp:public BaseOp<Tensor, 1, 1>{
+class CastOp:public BaseOp<1, 1>,DynamicCreator<CastOp>{
 public:
     CastOp(EagleeyeType data_type, float scale=1.0f);
     CastOp(const CastOp& op);

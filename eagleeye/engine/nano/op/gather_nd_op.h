@@ -2,12 +2,13 @@
 #define _EAGLEEYE_GATHER_ND_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class GatherNdOp:public BaseOp<Tensor, 2, 1>{
+class GatherNdOp:public BaseOp<2, 1>,DynamicCreator<GatherNdOp>{
 public:
     GatherNdOp(const GatherNdOp& op);
 

@@ -2,12 +2,13 @@
 #define _EAGLEEYE_WHERE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class WhereOp: public BaseOp<Tensor, 3, 1>{
+class WhereOp: public BaseOp<3, 1>,DynamicCreator<WhereOp>{
 public:
     WhereOp();
     WhereOp(const WhereOp& op);

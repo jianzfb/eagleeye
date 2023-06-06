@@ -13,7 +13,7 @@ namespace eagleeye{
 namespace dataflow{
 
 template<std::size_t IN, std::size_t OUT>
-class RknnOp: public BaseOp<Tensor, IN, OUT>{
+class RknnOp: public BaseOp<IN, OUT>{
 public:
     RknnOp(std::string model_name, 
 			   std::string device,

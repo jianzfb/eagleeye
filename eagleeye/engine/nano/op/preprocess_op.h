@@ -3,12 +3,13 @@
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class PreprocessOp:public BaseOp<Tensor, 1, 1>{
+class PreprocessOp:public BaseOp<1, 1>,DynamicCreator<PreprocessOp>{
 public:
     PreprocessOp(std::vector<float> mean_v, std::vector<float> scale_v, bool reverse_channel);
     PreprocessOp(const PreprocessOp& op);

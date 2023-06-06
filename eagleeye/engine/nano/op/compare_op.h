@@ -2,6 +2,7 @@
 #define _EAGLEEYE_COMPARE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
@@ -16,7 +17,7 @@ enum CompareOpType{
     GREATER_EQUAL_COMPARE
 };
 
-class CompareOp:public BaseOp<Tensor, 2, 1>{
+class CompareOp:public BaseOp<2, 1>,DynamicCreator<CompareOp>{
 public:
     CompareOp(CompareOpType compare_op_type);
     virtual ~CompareOp();

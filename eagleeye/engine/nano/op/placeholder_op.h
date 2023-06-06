@@ -2,6 +2,7 @@
 #define _EAGLEEYE_PLACEHOLDER_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <vector>
 
 namespace eagleeye{
@@ -10,7 +11,7 @@ namespace dataflow{
  * @brief placeholder op
  * 
  */
-class PlaceholderOp:public BaseOp<Tensor, 0, 1>{
+class PlaceholderOp:public BaseOp<0, 1>, DynamicCreator<PlaceholderOp>{
 public:
     PlaceholderOp();    // default constructor
     PlaceholderOp(int64_t b, int64_t h, int64_t w, int64_t c, DataFormat format, EagleeyeType type, MemoryType memory_type=CPU_BUFFER);

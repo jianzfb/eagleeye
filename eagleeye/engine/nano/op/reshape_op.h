@@ -2,13 +2,14 @@
 #define _EAGLEEYE_RESHPAE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
 
-class ReshapeOp:public BaseOp<Tensor, 1, 1>{
+class ReshapeOp:public BaseOp<1, 1>,DynamicCreator<ReshapeOp>{
 public:
     ReshapeOp(){}
     ReshapeOp(std::vector<int64_t> shape, bool in_place);

@@ -3,13 +3,14 @@
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/engine/nano/op/interpolate_op.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
 
-class ResizeOp: public BaseOp<Tensor, 1, 1>{
+class ResizeOp: public BaseOp<1, 1>,DynamicCreator<ResizeOp>{
 public:
     ResizeOp() = default;
     ResizeOp(std::vector<int64_t> out_size, float scale, InterpolateOpType op_type);
@@ -29,7 +30,7 @@ private:
     InterpolateOpType m_op_type;
 };
 
-class ResizeWithShapeOp: public BaseOp<Tensor, 2, 1>{
+class ResizeWithShapeOp: public BaseOp<2, 1>,DynamicCreator<ResizeWithShapeOp>{
 public:
     ResizeWithShapeOp() = default;
     ResizeWithShapeOp(InterpolateOpType op_type);

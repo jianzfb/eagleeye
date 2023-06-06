@@ -1327,7 +1327,18 @@ void rotate180_hwc(const unsigned char* src, unsigned char* dst, int w, int h_in
     }
 }
 #endif
-#elif __linux__
-#pragma message("x86 bgra bgrafilphwc")
+#elif __linux__ || __APPLE__
+#pragma message("x86 bgr rotate90/270/180_hwc")
+void rotate90_hwc(const unsigned char* src, unsigned char* dst, int w_in, int h_in){
+    // TODO support
+}
+
+void rotate270_hwc(const unsigned char* src, unsigned char* dst, int w_in, int h_in){
+    // TODO support
+}
+
+void rotate180_hwc(const unsigned char* src, unsigned char* dst, int w_in, int h_in){
+    // TODO support
+}
 #endif
 } //namespace eagleeye

@@ -123,14 +123,14 @@ public:
    * @brief start worker thread
    * 
    */
-  void run(std::map<std::string, 
+  bool run(std::map<std::string, 
                     std::pair<void*,std::vector<int64_t>>> inputs, 
            std::map<std::string, 
-                    std::pair<void*,std::pair<std::vector<int64_t>, EagleeyeType>>>& outputs){
+                    std::tuple<void*,std::vector<int64_t>, EagleeyeType>>& outputs){
     // 1.step check
     if(outputs.size() == 0){
       EAGLEEYE_LOGD("Output node empty, skip run.");
-      return;
+      return false;
     }
 
     // 2.step reset inner parameter
@@ -149,7 +149,7 @@ public:
 
     // 4.step reset output flag
     std::map<std::string, bool> output_map;
-    std::map<std::string, std::pair<void*,std::pair<std::vector<int64_t>, EagleeyeType>>>::iterator out_iter,out_iend(outputs.end());
+    std::map<std::string, std::tuple<void*,std::vector<int64_t>, EagleeyeType>>::iterator out_iter,out_iend(outputs.end());
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
       m_nodes_map[out_iter->first]->output_ = true;
     }
@@ -178,20 +178,25 @@ public:
       this->work(0);
     }
 
-    // 7.step output
-    std::map<std::string, std::pair<void*, std::pair<std::vector<int64_t>,EagleeyeType>>> result;
+    // output
+    std::map<std::string, std::tuple<void*, std::vector<int64_t>, EagleeyeType>> result;
     for(out_iter = outputs.begin(); out_iter != out_iend; ++out_iter){
-      void* data = NULL;
-      std::vector<int64_t> shape;
-      EagleeyeType type;
+      void* data = NULL; std::vector<int64_t> shape; EagleeyeType type;
       if(m_is_success){
           m_nodes_map[out_iter->first]->fetch(data, shape, type, 0, true);
       }
 
-      result[out_iter->first] = std::make_pair(data, std::make_pair(shape, type));
+      result[out_iter->first] = std::make_tuple(data, shape, type);
     }
 
     outputs = result;
+    return true;
+  }
+
+  void get(std::string name, int port, std::tuple<void*, std::vector<int64_t>, EagleeyeType>& out){
+    void* data = NULL; std::vector<int64_t> shape; EagleeyeType type;
+    m_nodes_map[name]->fetch(data, shape, type, port, true);
+    out = std::make_tuple(data, shape, type);
   }
 
   template <class F, class ... Args>

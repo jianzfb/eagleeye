@@ -11,7 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 
 template<typename T>
-class ConstOp:public BaseOp<Tensor, 0, 1>{
+class ConstOp:public BaseOp<0, 1>{
 public:
     ConstOp(){}
 

@@ -40,7 +40,7 @@ public:
     /**
      * @brief 分析计算图
      */
-    void analyze(std::vector<std::string> in_ops, std::vector<std::string> out_ops);
+    void analyze(std::vector<std::string> in_ops, std::vector<std::pair<std::string, int>> out_ops);
 
     /**
      * @brief 得到计算图的输入
@@ -70,7 +70,7 @@ private:
 
     dataflow::Graph* m_g;
     std::map<int, std::string> m_input_map;
-    std::map<int, std::string> m_output_map;
+    std::map<int, std::pair<std::string, int>> m_output_map;
 
     bool m_is_init;
 };

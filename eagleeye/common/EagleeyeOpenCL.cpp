@@ -3,8 +3,13 @@
 #include <iostream>
 
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+#ifdef __APPLE__
+#include <OpenCL/opencl.h>
+#include <OpenCL/cl.h>
+#else
 #include <CL/opencl.h>
-#include <GLES3/gl3.h>
+#include <CL/cl.h>
+#endif
 
 namespace eagleeye{
 template<>

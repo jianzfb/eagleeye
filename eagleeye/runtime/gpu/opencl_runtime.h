@@ -5,7 +5,11 @@
 #include <map>
 #include <string>
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
+#ifdef __APPLE__
+#include <OpenCL/opencl.h>
+#else
 #include <CL/opencl.h>
+#endif
 namespace eagleeye{
 
 // Max execution time of OpenCL kernel for tuning to prevent UI stuck.

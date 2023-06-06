@@ -3,12 +3,13 @@
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
-class RepeatOp:public BaseOp<Tensor, 1, 1>{
+class RepeatOp:public BaseOp<1, 1>,DynamicCreator<RepeatOp>{
 public:
     RepeatOp(){};
     RepeatOp(int repeat_times, int axis);

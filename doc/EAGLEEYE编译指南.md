@@ -12,9 +12,6 @@ EAGLEEYE核心库的工程配置在eagleeye/CmakeLists.txt中定义。主要包�
     add_definitions(-DEAGLEEYE_ANDROID_APP)
     注：在未定义EAGLEEYE_ANDROID_APP时，后台将采用标注输出流进行日志输出
 
-* 神经网络推断框架SNPE
-    构建时外部指定 -DNN_ENGINE=snpe -DSNPE_PATH=/your folder/snpe-1.35.0.698/
-
 * OPENCL加速开启\关闭
     构建时外部指定 -DOPENCL=OPENCL_PATH。将会添加EAGLEEYE_OPENCL_OPTIMIZATION宏定义。所有存在OPENCL加速的模块，将启动OPENCL计算。
 

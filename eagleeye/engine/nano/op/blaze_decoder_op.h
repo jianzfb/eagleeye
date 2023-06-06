@@ -2,6 +2,7 @@
 #define _EAGLEEYE_BLAZE_DECODER_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include "eagleeye/basic/Matrix.h"
 #include <string>
 #include <vector>
@@ -10,7 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 
 template<std::size_t IN>
-class BlazeDecoderOp: public BaseOp<Tensor, IN, 1>{
+class BlazeDecoderOp: public BaseOp<IN, 1>, DynamicCreator<BlazeDecoderOp>{
 public:
     BlazeDecoderOp() = default;
     BlazeDecoderOp(Matrix<float> anchors, int landmark_num);

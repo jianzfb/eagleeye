@@ -1,16 +1,18 @@
 PROJECT(eagleeye)
 
 cmake_minimum_required(VERSION 3.5)
-set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -pie -Wl,--gc-sections -fpermissive")
+# --gc-sections -pie
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -Wl, -fpermissive")
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -Wall -fPIC -pie -Wl,--gc-sections -fpermissive")
+
 
 # Use ccache to speed up rebuilds
-include(cmake/ccache.cmake)
+# include(ccache.cmake)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake) 
-SET(NN_ENGINE "" CACHE STRING "Some user-specified option")
 # set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
 # set(LIBCXX_LINK_FLAGS "-rtlib=compiler-rt")
-# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -latomic -pthread -llog -lz")
+# set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lz")
 
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
@@ -30,6 +32,13 @@ elseif(DEFINED X86_ABI)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${X86_ABI})
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${X86_ABI})
     set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${X86_ABI})
+
+    if(BUILD_PYTHON_MODULE)
+        include(FindPythonByEnv)
+        add_subdirectory(${eagleeye_SOURCE_DIR}/eagleeye/3rd/pybind11)
+    endif()
+
+    link_libraries(-lz)
 else()
     # OSX
     message(STATUS "CONFIGURE OSX")
@@ -37,38 +46,13 @@ else()
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${OSX_ABI})
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${OSX_ABI})
     set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${OSX_ABI})
+
+    if(BUILD_PYTHON_MODULE)
+        include(FindPythonByEnv)
+        add_subdirectory(${eagleeye_SOURCE_DIR}/eagleeye/3rd/pybind11)
+    endif()
 endif()
 
-
-if(DEFINED PYTHON)
-# #   support python interface
-# add_definitions(-DSUPPORT_BOOST_PYTHON)
-
-# #
-# #	python libs
-# #
-# find_package(PythonLibs 3.6 REQUIRED)
-# include_directories(${PYTHON_INCLUDE_DIRS})
-
-# #
-# #	numpy libs
-# #
-# find_package(NumPy)
-# include_directories(${NUMPY_INCLUDE_DIRS})
-
-# #
-# # boost libs
-# #
-# # find_package(Boost COMPONENTS python REQUIRED)
-# find_package(Boost COMPONENTS python3.7 REQUIRED)
-# include_directories(${Boost_INCLUDE_DIR})
-
-# message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
-# message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
-# message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
-# message(STATUS "NUMPY_INCLUDE_DIRS = ${NUMPY_INCLUDE_DIRS}")
-# message(STATUS "Boost_LIBRARIES = ${Boost_LIBRARIES}")
-endif()
 
 include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
@@ -145,7 +129,6 @@ set(EAGLEEYE_SRC
     eagleeye/port/linux_base/env.cpp
     eagleeye/port/android/env.cpp
     eagleeye/runtime/cpu/cpu_runtime.cpp
-    eagleeye/engine/nano/op/placeholder_op.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/common/EagleeyeYUV.cpp
     eagleeye/common/EagleeyeGraph.cpp
@@ -173,6 +156,8 @@ set(EAGLEEYE_SRC
     eagleeye/basic/BGRFlipHWC.cpp
     eagleeye/basic/Dim.cpp
     eagleeye/engine/nano/op/factory.cpp
+    eagleeye/engine/nano/op/placeholder_op.cpp
+    eagleeye/engine/nano/op/pool2d_op
     eagleeye/engine/nano/op/cast_op.cpp
     eagleeye/engine/nano/op/clip_op.cpp
     eagleeye/engine/nano/op/concat_op.cpp
@@ -195,8 +180,6 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/roi_align_op.cpp
     eagleeye/engine/nano/op/warp_affine_op.cpp
     eagleeye/engine/nano/op/pool2d_op.cpp
-    eagleeye/engine/math/common/pixel_affine.cpp
-    eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/nano/op/argmax_op.cpp
     eagleeye/engine/nano/op/compare_op.cpp
     eagleeye/engine/nano/op/identity_op.cpp
@@ -206,7 +189,9 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/select_op.cpp
     eagleeye/engine/nano/op/select_by_thres_op.cpp
     eagleeye/engine/nano/op/pose_decoder_op.cpp
-    eagleeye/engine/nano/op/pose_affine_op.cpp
+    eagleeye/engine/nano/op/pose_affine_op.cpp    
+    eagleeye/engine/math/common/pixel_affine.cpp
+    eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
@@ -369,103 +354,161 @@ endif()
 
 # code related with arm
 if(DEFINED ANDROID_ABI)
-set(EAGLEEYE_SRC 
-    ${EAGLEEYE_SRC} 
-    eagleeye/engine/math/arm/elementwise.cc
-    eagleeye/engine/math/arm/interpolate.cc
-    eagleeye/engine/math/arm/pad2d.cc
-    eagleeye/engine/math/arm/reduce_max.cc
-    eagleeye/engine/math/arm/reduce_mean.cc
-    eagleeye/engine/math/arm/reduce_min.cc
-    eagleeye/engine/math/arm/reduce_prod.cc
-    eagleeye/engine/math/arm/reduce_sum.cc
-    eagleeye/engine/math/arm/preprocess.cc
-    eagleeye/engine/math/arm/type_trans.cc
-    eagleeye/engine/math/arm/pooling.cc
-    eagleeye/engine/math/arm/clip.cc)
-elseif(DEFINED X86_ABI)
-    # X86_ABI
     set(EAGLEEYE_SRC 
-    ${EAGLEEYE_SRC} 
-    eagleeye/engine/math/x86/preprocess.cc)
+        ${EAGLEEYE_SRC} 
+        eagleeye/engine/math/arm/elementwise.cc
+        eagleeye/engine/math/arm/interpolate.cc
+        eagleeye/engine/math/arm/pad2d.cc
+        eagleeye/engine/math/arm/reduce_max.cc
+        eagleeye/engine/math/arm/reduce_mean.cc
+        eagleeye/engine/math/arm/reduce_min.cc
+        eagleeye/engine/math/arm/reduce_prod.cc
+        eagleeye/engine/math/arm/reduce_sum.cc
+        eagleeye/engine/math/arm/preprocess.cc
+        eagleeye/engine/math/arm/type_trans.cc
+        eagleeye/engine/math/arm/pooling.cc
+        eagleeye/engine/math/arm/clip.cc)
 else()
-    # OSX_ABI
+    # OSX_ABI/X86_ABI
+    set(EAGLEEYE_SRC 
+        ${EAGLEEYE_SRC} 
+        eagleeye/engine/math/x86/preprocess.cc)
 endif()
 
 # opencl
-if(DEFINED ANDROID_ABI)
-    message(STATUS "OPENCL PATH "${OPENCL})
-    add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
-    include_directories(${OPENCL}/include)
-    add_library(libOpenCL SHARED IMPORTED)
-    set_target_properties(
-        libOpenCL
-        PROPERTIES IMPORTED_LOCATION 
-        ${OPENCL}/lib/${ANDROID_ABI}/libOpenCL.so
-    )
-
+if(WITH_OPENCL)
     set(EAGLEEYE_SRC 
         ${EAGLEEYE_SRC} 
         eagleeye/engine/nano/util/opencl_util.cpp
+    )
+
+    if(DEFINED ANDROID_ABI)
+        add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
+        include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/opencl/include)
+        add_library(libOpenCL SHARED IMPORTED)
+        set_target_properties(
+            libOpenCL
+            PROPERTIES IMPORTED_LOCATION 
+            ${eagleeye_SOURCE_DIR}/eagleeye/3rd/opencl/lib/${ANDROID_ABI}/libOpenCL.so
         )
+    else()
+        find_package (OpenCL)
+        if(OpenCL_FOUND)
+            add_definitions(-DEAGLEEYE_OPENCL_OPTIMIZATION)
+            include_directories(${OpenCL_INCLUDE_DIR})
+        endif()
+    endif()
 endif()
 
-FIND_PACKAGE(OpenMP REQUIRED)
+
 find_package(pnglib)
 if(pnglib_FOUND)
     message(STATUS "message find pnglib")
     include_directories(${pnglib_INCLUDE_DIRS})
 endif()
 
-add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 
-if(DEFINED PYTHON)
-    target_link_libraries(eagleeye 
-                        ${PYTHON_LIBRARIES} 
-                        ${Boost_LIBRARIES})
+if(BUILD_PYTHON_MODULE)
+    set(EAGLEEYE_SRC 
+        ${EAGLEEYE_SRC} 
+        eagleeye/engine/py_interface.cpp)
+    pybind11_add_module(eagleeye ${EAGLEEYE_SRC})
+else()
+    add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 endif()
 
+
+if(DEFINED OSX_ABI)
+    message("why")
+    set(CMAKE_C_COMPILER clang)
+    set(CMAKE_CXX_COMPILER clang++)
+
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang\$")
+        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_C_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY omp)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang\$")
+        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
+        set(OpenMP_CXX_LIB_NAMES "omp")
+        set(OpenMP_omp_LIBRARY omp)
+    endif()
+
+endif()
+
+FIND_PACKAGE(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE OpenMP::OpenMP_CXX)
+    else()
+        target_link_libraries(eagleeye OpenMP::OpenMP_CXX)
+    endif()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
 
+
 if(DEFINED FFMPEG AND DEFINED X264)
-    message("use FFMPEG")
     add_definitions(-DEAGLEEYE_FFMPEG)
     include_directories(${FFMPEG}/include/)
     include_directories(${X264}/include/)
 
-    target_link_libraries(eagleeye 
-                            ${FFMPEG}/lib/libavdevice.so
-                            ${FFMPEG}/lib/libavutil.so
-                            ${FFMPEG}/lib/libswresample.so
-                            ${FFMPEG}/lib/libswscale.so
-                            ${FFMPEG}/lib/libavcodec.so
-                            ${FFMPEG}/lib/libavformat.so
-                            ${FFMPEG}/lib/libavfilter.so
-                            ${FFMPEG}/lib/libpostproc.so
-                            ${X264}/lib/libx264.163.so)
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE
+                                ${FFMPEG}/lib/libavdevice.so
+                                ${FFMPEG}/lib/libavutil.so
+                                ${FFMPEG}/lib/libswresample.so
+                                ${FFMPEG}/lib/libswscale.so
+                                ${FFMPEG}/lib/libavcodec.so
+                                ${FFMPEG}/lib/libavformat.so
+                                ${FFMPEG}/lib/libavfilter.so
+                                ${FFMPEG}/lib/libpostproc.so
+                                ${X264}/lib/libx264.163.so)    
+    else()
+        target_link_libraries(eagleeye 
+                                ${FFMPEG}/lib/libavdevice.so
+                                ${FFMPEG}/lib/libavutil.so
+                                ${FFMPEG}/lib/libswresample.so
+                                ${FFMPEG}/lib/libswscale.so
+                                ${FFMPEG}/lib/libavcodec.so
+                                ${FFMPEG}/lib/libavformat.so
+                                ${FFMPEG}/lib/libavfilter.so
+                                ${FFMPEG}/lib/libpostproc.so
+                                ${X264}/lib/libx264.163.so)
+    endif()
 endif()
 
 if(pnglib_FOUND)
-   target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    else()
+       target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    endif()
 endif()
 
-if(DEFINED ANDROID_ABI OR DEFINED OSX_ABI)
-    target_link_libraries(eagleeye libOpenCL)
-    target_link_libraries(eagleeye EGL)
+if(WITH_OPENCL)
+    if(DEFINED ANDROID_ABI)
+        target_link_libraries(eagleeye libOpenCL)
+    else()
+        if(BUILD_PYTHON_MODULE)
+            target_link_libraries(eagleeye PRIVATE ${OpenCL_LIBRARY})
+        else()
+            target_link_libraries(eagleeye ${OpenCL_LIBRARY})
+        endif()
+    endif()
 endif()
 
-if(DEFINED ANDROID_ABI AND DEFINED OPENGL)
+
+if(DEFINED ANDROID_ABI AND DEFINED WITH_OPENGL)
     # 仅针对ANDROID平台，引入opengl环境
     ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
     find_path(GLES3_INCLUDE_DIR GLES3/gl3.h HINTS ${ANDROID_NDK})              #找到opengl头文件路径
     find_library(GLES3_LIBRARY libGLESv3.so HINTS ${GLES3_INCLUDE_DIR}/../lib) #找到opengl库文件路径
     include_directories(${GLES3_INCLUDE_DIR})
     target_link_libraries(eagleeye ${GLES3_LIBRARY})
+    target_link_libraries(eagleeye EGL)
     add_definitions(-DEAGLEEYE_OPENGL)
 endif()
 
@@ -473,10 +516,10 @@ if(DEFINED ANDROID_ABI)
     set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${ANDROID_ABI}/libyuv.so)
     set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
 elseif(DEFINED X86_ABI)
-    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${X86_ABI}/libyuv.so)
+    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/linux/${X86_ABI}/libyuv.so)
     set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
 else()
-    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${OSX_ABI}/libyuv.dlib)
+    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/osx/${OSX_ABI}/libyuv.dylib)
     set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
 endif()
 
@@ -484,10 +527,15 @@ endif()
 add_library(libyuv SHARED IMPORTED)
 set_target_properties(libyuv PROPERTIES IMPORTED_LOCATION ${LIBYUV_SDK_LIB_PATH})
 include_directories(${LIBYUV_SDK_INCLUDE_PATH})
-target_link_libraries(eagleeye libyuv)
 
+if(BUILD_PYTHON_MODULE)
+    target_link_libraries(eagleeye PRIVATE libyuv)
+else()
+    target_link_libraries(eagleeye libyuv)
+endif()
 
 if(DEFINED ANDROID_ABI)
+    # android, dont support build_python_module
     target_link_libraries(eagleeye log)
 endif()
 

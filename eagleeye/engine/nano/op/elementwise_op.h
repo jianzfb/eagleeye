@@ -2,6 +2,7 @@
 #define _EAGLEEYE_ELEMENTWISE_OP_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
+#include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <vector>
 
 namespace eagleeye{
@@ -13,7 +14,7 @@ enum ElementwiseOpType{
     ELEMENTWISE_DIV = 3,
     ELEMENTWISE_POW = 4
 }; 
-class ElementwiseOp:public BaseOp<Tensor, 2, 1>{
+class ElementwiseOp:public BaseOp<2, 1>,DynamicCreator<ElementwiseOp>{
 public:
     ElementwiseOp();
     ElementwiseOp(const ElementwiseOp& op);

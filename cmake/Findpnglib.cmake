@@ -8,7 +8,12 @@ add_library(pnglib SHARED ${LIB_PNG_SRC})
 
 # set(CMAKE_PREFIX_PATH ../bin/arm64-v8a)
 # find_library(pnglib_LIBRARY NAMES libpnglib.a PATHS ${CMAKE_PREFIX_PATH})
+if(APPLE)
+set(pnglib_LIBRARY libpnglib.dylib)
+else()
 set(pnglib_LIBRARY libpnglib.so)
+endif()
+
 set(pnglib_FOUND TRUE)
 set(pnglib_INCLUDE_DIRS ${pnglib_INCLUDE_DIR})
 set(pnglib_LIBRARIES ${pnglib_LIBRARY})
