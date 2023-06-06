@@ -93,20 +93,20 @@ bool ModelRun<TensorrtRun, Enabled>::run(
     }
 
     // Copy the outputs back to CPU
-    m_featureVectors.clear();
     std::vector<std::vector<float>> batchOutputs{};
     for (int32_t outputBinding = num_inputs; outputBinding < m_engine->getNbBindings(); ++outputBinding) {
         // We start at index m_inputDims.size() to account for the inputs in our m_buffers
-        std::vector<float> output;
-        auto outputLenFloat = m_outputLengthsFloat[outputBinding - num_inputs];
-        output.resize(batch_size * outputLenFloat);
+        int local_output_i = outputBinding - num_inputs;
+        auto outputLenFloat = m_outputLengthsFloat[local_output_i];
+        if(m_featureVectors[local_output_i].size() != batch_size * outputLenFloat){
+            m_featureVectors[local_output_i].resize(batch_size * outputLenFloat);
+        }
 
         // Copy the output
-        checkCudaErrorCode(cudaMemcpyAsync(output.data(), static_cast<char*>(m_buffers[outputBinding]), batch_size * outputLenFloat * sizeof(float), cudaMemcpyDeviceToHost, inferenceCudaStream));
+        checkCudaErrorCode(cudaMemcpyAsync(m_featureVectors[local_output_i].data(), static_cast<char*>(m_buffers[outputBinding]), batch_size * outputLenFloat * sizeof(float), cudaMemcpyDeviceToHost, inferenceCudaStream));
 
         std::string node_name = this->m_engine_binds_to_name_map[outputBinding];
-        outputs[node_name] = (unsigned char*)(output.data());
-        m_featureVectors.emplace_back(std::move(output));
+        outputs[node_name] = (unsigned char*)(m_featureVectors[local_output_i].data());
     }
     // Synchronize the cuda stream
     checkCudaErrorCode(cudaStreamSynchronize(inferenceCudaStream));
@@ -256,6 +256,9 @@ bool ModelRun<TensorrtRun, Enabled>::loadNetwork() {
             checkCudaErrorCode(cudaMallocAsync(&m_buffers[i], outputLenFloat * m_options.maxBatchSize * sizeof(float), stream));
         }
     }
+
+    // 设置模型预测后结果保存位置
+    m_featureVectors.resize(m_outputLengthsFloat.size());
 
     // Synchronize and destroy the cuda stream
     checkCudaErrorCode(cudaStreamSynchronize(stream));
