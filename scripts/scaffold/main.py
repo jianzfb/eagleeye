@@ -343,6 +343,11 @@ def main():
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "run.sh"), 'w') as fp:
         fp.write(output)
 
+      # 生成数据文件夹 data
+      os.makedirs(os.path.join(os.curdir, 'data'), exist_ok=True)
+      # 生成模型文件夹 model
+      os.makedirs(os.path.join(os.curdir, 'model'), exist_ok=True)
+
       # 生成说明文档
 
       # 生成插件包目录

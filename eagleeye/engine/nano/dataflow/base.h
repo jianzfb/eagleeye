@@ -175,7 +175,7 @@ public:
     /**
      * @brief get cpu data, from 
      */
-    virtual int fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index, bool block){
+    virtual int fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType& type, int index, bool block){
         if(!block){
             this->getOutput(index).transfer(EagleeyeRuntime(EAGLEEYE_CPU));
             return -1;

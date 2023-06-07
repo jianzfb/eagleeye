@@ -120,7 +120,7 @@ public:
   /**
    * @brief get node data
    */ 
-  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index=0, bool block=false)=0;
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType& type, int index=0, bool block=false)=0;
 
   /**
    * @brief Get the Dependent Num

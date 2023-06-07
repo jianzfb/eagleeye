@@ -134,7 +134,7 @@ public:
    * @return true 
    * @return false 
    */
-  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType type, int index=0, bool block=true){
+  virtual bool fetch(void*& data, std::vector<int64_t>& shape, EagleeyeType& type, int index=0, bool block=true){
     if(m_response_count <= m_request_count){
       m_lock.lock();
       typename std::map<int, std::pair<int, std::vector<typename F::Type>>>::iterator iter = m_outputs.find(m_response_count);
