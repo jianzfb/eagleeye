@@ -2,6 +2,7 @@
 #define _EAGLEEYE_OPENCL_UTIL_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include <vector>
+#include <cstdint>
 
 namespace eagleeye{
 

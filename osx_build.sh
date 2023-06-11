@@ -6,12 +6,14 @@ fi
 CRTDIR=$(pwd)
 
 # 1.step 编译
+git submodule init
+git submodule update
 mkdir build
 cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
-cmake -DCMAKE_BUILD_TYPE=Release -DOSX_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON -DWITH_OPENCL:BOOL=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DOSX_ABI=X86-64 -DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-13 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON -DWITH_OPENCL:BOOL=ON ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DOSX_ABI=X86-64 -DLITE=ON -DWITH_OPENCL:BOOL=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DOSX_ABI=X86-64 -DCMAKE_C_COMPILER=/usr/local/bin/gcc-13 -DCMAKE_CXX_COMPILER=/usr/local/bin/g++-13 -DLITE=ON -DWITH_OPENCL:BOOL=ON ..
 fi
 make
 cd ..

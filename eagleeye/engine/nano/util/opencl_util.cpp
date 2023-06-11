@@ -3,6 +3,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include <vector>
 #include <utility>
+#include <cstdint>
 
 
 namespace eagleeye{
