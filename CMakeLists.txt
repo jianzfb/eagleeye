@@ -56,6 +56,7 @@ endif()
 
 include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
+include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/eigen)
 
 
 if(DEFINED LITE)
