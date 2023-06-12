@@ -47,7 +47,7 @@ rm -rf bin
 cd install
 # 第三方代码库
 mkdir 3rd
-cp -r ../eagleeye/3rd/Eigen 3rd/
+cp -r ../eagleeye/3rd/eigen 3rd/
 
 # 第三方依赖.so
 cp -r  ../eagleeye/3rd/libyuv/lib/osx/X86-64/* libs/X86-64/

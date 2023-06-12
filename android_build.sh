@@ -48,7 +48,7 @@ rm -rf bin
 cd install
 mkdir 3rd
 cp -r ../eagleeye/3rd/opencl 3rd/
-cp -r ../eagleeye/3rd/Eigen 3rd/
+cp -r ../eagleeye/3rd/eigen 3rd/
 cp -r ../eagleeye/3rd/opencv 3rd/
 cd ..
 

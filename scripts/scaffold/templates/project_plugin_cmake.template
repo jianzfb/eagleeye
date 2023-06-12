@@ -69,10 +69,14 @@ if(OpenCV_DIR STREQUAL "")
     message(STATUS "no opencv support")
 else()
     message(STATUS "using standard opencv 3.4")
-    find_package(OpenCV REQUIRED)
-    include_directories(${OpenCV_INCLUDE_DIRS}) 
-    link_directories(${OpenCV_LIBRARY_DIRS})
-    target_link_libraries({{project}}  ${OpenCV_LIBS})
+    include_directories(${OpenCV_DIR}/include) 
+    target_link_libraries({{project}} 
+                            ${OpenCV_DIR}/lib/libopencv_calib3d.so 
+                            ${OpenCV_DIR}/lib/libopencv_core.so 
+                            ${OpenCV_DIR}/lib/libopencv_highgui.so 
+                            ${OpenCV_DIR}/lib/libopencv_imgproc.so 
+                            ${OpenCV_DIR}/lib/libopencv_imgcodecs.so)
+
 endif()
 endif()
 {% endif %}
