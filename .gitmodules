@@ -1,3 +1,7 @@
 [submodule "eagleeye/3rd/pybind11"]
 	path = eagleeye/3rd/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "eagleeye/3rd/eigen"]
+	path = eagleeye/3rd/eigen
+	url = https://gitlab.com/libeigen/eigen.git
+	branch = 3.3

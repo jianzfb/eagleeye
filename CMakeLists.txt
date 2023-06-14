@@ -1,6 +1,6 @@
 PROJECT(eagleeye)
-
 cmake_minimum_required(VERSION 3.5)
+
 # --gc-sections -pie
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -Wl, -fpermissive")
 set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -Wall -fPIC -pie -Wl,--gc-sections -fpermissive")
@@ -56,6 +56,7 @@ endif()
 
 include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
+include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/eigen)
 
 
 if(DEFINED LITE)
@@ -415,26 +416,6 @@ if(BUILD_PYTHON_MODULE)
     pybind11_add_module(eagleeye ${EAGLEEYE_SRC})
 else()
     add_library(eagleeye SHARED ${EAGLEEYE_SRC})
-endif()
-
-
-if(DEFINED OSX_ABI)
-    message("why")
-    set(CMAKE_C_COMPILER clang)
-    set(CMAKE_CXX_COMPILER clang++)
-
-    if(CMAKE_C_COMPILER_ID MATCHES "Clang\$")
-        set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp")
-        set(OpenMP_C_LIB_NAMES "omp")
-        set(OpenMP_omp_LIBRARY omp)
-    endif()
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang\$")
-        set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp")
-        set(OpenMP_CXX_LIB_NAMES "omp")
-        set(OpenMP_omp_LIBRARY omp)
-    endif()
-
 endif()
 
 FIND_PACKAGE(OpenMP REQUIRED)

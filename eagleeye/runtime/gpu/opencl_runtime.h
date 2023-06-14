@@ -4,6 +4,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include <map>
 #include <string>
+#include <memory>
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
