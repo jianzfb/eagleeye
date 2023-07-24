@@ -389,7 +389,7 @@ bool eagleeye_pipeline_get_output(const char* pipeline_name,
     return true;
 }
 
-bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix){
+bool eagleeye_pipeline_run(const char* pipeline_name, const char* node_name, const char* ignore_prefix){
     std::string s_pipeline_name = pipeline_name;
     if(s_pipeline_name.find("/") != std::string::npos){
         std::vector<std::string> kterms = split(s_pipeline_name, "/");
@@ -407,7 +407,7 @@ bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix)
     if(AnyPipeline::getInstance(pipeline_name) == NULL){
         return false;
     }
-    bool result = AnyPipeline::getInstance(pipeline_name)->start(NULL, ignore_prefix);
+    bool result = AnyPipeline::getInstance(pipeline_name)->start(node_name, ignore_prefix);
     return result;
 }
 
