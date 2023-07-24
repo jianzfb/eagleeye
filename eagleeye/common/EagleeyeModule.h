@@ -254,7 +254,7 @@ bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
  * @brief pipeline run
  * 
  */
-bool eagleeye_pipeline_run(const char* pipeline_name, const char* ignore_prefix=NULL);
+bool eagleeye_pipeline_run(const char* pipeline_name, const char* node_name=NULL, const char* ignore_prefix=NULL);
 
 /**
  * @brief pipeline wait
@@ -383,8 +383,8 @@ extern "C" { \
     bool eagleeye_##pipeline##_release(){ \
         return eagleeye_pipeline_release(#pipeline); \
     } \
-    bool eagleeye_##pipeline##_run(){ \
-        return eagleeye_pipeline_run(#pipeline); \
+    bool eagleeye_##pipeline##_run(const char* node_name=NULL, const char* ignore_prefix=NULL){ \
+        return eagleeye_pipeline_run(#pipeline, node_name, ignore_prefix); \
     } \
     bool eagleeye_##pipeline##_wait(){ \
         return eagleeye_pipeline_wait(#pipeline); \

@@ -41,7 +41,7 @@ extern "C"{
      * @return true 
      * @return false 
      */
-    bool eagleeye_{{project}}_run();
+    bool eagleeye_{{project}}_run(const char* node_name=NULL, const char* ignore_prefix=NULL);
 
     /**
      * @brief get {{project}} pipeline version
