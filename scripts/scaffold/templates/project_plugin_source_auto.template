@@ -190,5 +190,5 @@ if(!endswith(resource_folder, "/")){
 }
 std::string pipeline_config_json = resource_folder + "{{project}}.json";
 eagleeye_build_pipeline_from_json({{project}}, pipeline_config_json.c_str(), node_builder);
-EAGLEEYE_END_PIPELINE_INITIALIZE
+EAGLEEYE_END_PIPELINE_INITIALIZE({{project}})
 }
