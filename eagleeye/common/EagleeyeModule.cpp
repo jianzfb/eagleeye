@@ -398,7 +398,7 @@ bool eagleeye_pipeline_run(const char* pipeline_name, const char* node_name, con
         if(AnyPipeline::getInstance(pn.c_str()) == NULL){
             return false;
         }
-        
+
         AnyPipeline::getInstance(pn.c_str())->refresh();
         bool r = AnyPipeline::getInstance(pn.c_str())->start(nn.c_str());
         return r;

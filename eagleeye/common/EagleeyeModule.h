@@ -338,7 +338,7 @@ bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag);
 // 注册插件函数类型
 typedef const char* (*REGISTER_PLUGIN_FUNC)();
 // 初始化插件函数类型
-typedef void (*INITIALIZE_PLUGIN_FUNC)();
+typedef void* (*INITIALIZE_PLUGIN_FUNC)(bool);
 /**
  * @brief add custom pipeline
  * 
@@ -365,7 +365,7 @@ extern "C" { \
             return NULL; \
         } \
     } \
-    void eagleeye_##pipeline##_pipeline_initialize(); \
+    void* eagleeye_##pipeline##_pipeline_initialize(bool); \
     bool eagleeye_##pipeline##_initialize(const char* config_folder){ \
         bool is_ok = eagleeye_custom_add_pipeline(#pipeline, eagleeye_##pipeline##_register_plugin_pipeline, eagleeye_##pipeline##_pipeline_initialize); \
         if(!is_ok){ \
@@ -426,10 +426,17 @@ extern "C" { \
 
 #define EAGLEEYE_BEGIN_PIPELINE_INITIALIZE(pipeline) \
 extern "C" { \
-	void eagleeye_##pipeline##_pipeline_initialize() { \
-        AnyPipeline* pipeline = AnyPipeline::getInstance(#pipeline);
+	void* eagleeye_##pipeline##_pipeline_initialize(bool register_in_system=true) { \
+        AnyPipeline* pipeline = NULL; \
+        if(register_in_system){ \
+            pipeline =  AnyPipeline::getInstance(#pipeline); \
+        } \
+        else{ \
+            pipeline = new AnyPipeline(); \
+        }
 
-#define EAGLEEYE_END_PIPELINE_INITIALIZE }}
-
+#define EAGLEEYE_END_PIPELINE_INITIALIZE(pipeline) \
+    return pipeline; \
+}}
 }
 #endif

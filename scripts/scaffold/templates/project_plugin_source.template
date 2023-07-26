@@ -38,5 +38,5 @@ placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_IMAGE);
 // for example:
 // {{project}}->bind("placeholder",0,"instance_person_seg_node",0);
 
-EAGLEEYE_END_PIPELINE_INITIALIZE
+EAGLEEYE_END_PIPELINE_INITIALIZE({{project}})
 }

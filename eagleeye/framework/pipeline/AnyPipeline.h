@@ -10,7 +10,7 @@
 
 namespace eagleeye{
 
-typedef void (*INITIALIZE_PLUGIN_PIPELINE_FUNC)();
+typedef void* (*INITIALIZE_PLUGIN_PIPELINE_FUNC)(bool);
 
 class EAGLEEYE_API AnyPipeline{
 public:
@@ -153,12 +153,7 @@ public:
      * @brief analyze pieline structure
      * 
      */
-    void initialize(const char* configure_folder, std::function<bool()> init_func=nullptr, bool ignore=false);
-
-    /**
-     * @brief check is initialize
-     */ 
-    bool isInitialized();
+    void initialize(const char* configure_folder, std::function<bool()> init_func=nullptr, bool ignore_version_check=false);
 
     /**
      * @brief create render context
@@ -354,6 +349,13 @@ public:
     void restoreAt(std::string node_name, int port);
 
     /**
+     * @brief Construct a new Any Pipeline object
+     * 
+     * @param pipeline_name 
+     */
+    AnyPipeline(const char* pipeline_name="");
+  
+    /**
      * @brief Destroy the Any Pipeline object
      * 
      */
@@ -377,15 +379,7 @@ public:
      * @param folder 
      */
     void setResoruceFolder(std::string folder);
-
-protected:
-    /**
-     * @brief Construct a new Any Pipeline object
-     * 
-     * @param pipeline_name 
-     */
-    AnyPipeline(const char* pipeline_name="");
-    
+  
 private:
     std::map<std::string, AnyMonitor*> m_monitor_params;
     std::map<std::string, AnyNode*> m_input_nodes;

@@ -726,9 +726,11 @@ void AnyPipeline::setInput(const char* node_name,
         return;
     }
     
-    if(data_size[0] == 0 || data_size[1] == 0 || data_size[2] == 0){
-        EAGLEEYE_LOGE("Data size abnormal %d %d %d.", data_size[0], data_size[1], data_size[2]);
-        return;
+    for(int d=0; d<data_dims; ++d){
+        if(data_size[d] == 0){
+            EAGLEEYE_LOGE("Data size abnormal data_size[%d]=0", d);
+            return;
+        }
     }
 
     MetaData meta = this->m_input_nodes[input_key]->getOutputPort(port)->meta();
@@ -945,8 +947,8 @@ void AnyPipeline::getPipelineMonitors(std::vector<std::string>& monitor_names,
     }
 }
 
-void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> init_func, bool ignore){    
-    if(!ignore){
+void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> init_func, bool ignore_version_check){    
+    if(!ignore_version_check){
         // 设置基本信息
         if(AnyPipeline::m_pipeline_version.find(this->m_name) == AnyPipeline::m_pipeline_version.end()){
             EAGLEEYE_LOGD("Pipeline %s version not be register.", this->m_name.c_str());
@@ -969,14 +971,15 @@ void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> 
     }
 
     // 初始化管线
-    if(init_func == nullptr){
+    if(init_func == nullptr && m_init_func != nullptr){
         // 初始化管道结构
         EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());
-        m_init_func();
+        m_init_func(true);
     }
-    else{
+    else if(init_func != nullptr){
+        EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());
         init_func();
-    }   
+    }
 
     std::string resource_folder_s = this->resourceFolder();
     if(!isdirexist(resource_folder_s.c_str())){
