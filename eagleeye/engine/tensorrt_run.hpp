@@ -287,6 +287,18 @@ bool ModelRun<TensorrtRun, Enabled>::initialize(){
     else{
         onnx_model_path = model_folder + std::string("/") + this->m_model_name;
     }
+    // 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(onnx_model_path.c_str())){
+        std::string so_folder = this->getModelRoot();
+        if(endswith(so_folder, "/")){
+            onnx_model_path = so_folder + this->m_model_name;
+        }
+        else{
+            onnx_model_path = so_folder + std::string("/") + this->m_model_name;
+        }
+    }
+
+    EAGLEEYE_LOGD("Load TENSORRT model from %s", onnx_model_path.c_str());
 
     // Only regenerate the engine file if it has not already been generated for the specified options
     m_engineName = serializeEngineOptions(m_options, onnx_model_path);

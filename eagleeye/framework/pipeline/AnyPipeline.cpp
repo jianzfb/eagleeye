@@ -840,6 +840,10 @@ void AnyPipeline::getOutput(const char* node_name,
                             int& data_type){
     if(node_name == NULL || strcmp(node_name, "") == 0){
         EAGLEEYE_LOGE("node name is empty");
+        data = NULL;
+        data_size = NULL;
+        data_dims = 0;
+        data_type = -1;
         return;
     }
 
@@ -855,13 +859,17 @@ void AnyPipeline::getOutput(const char* node_name,
         EAGLEEYE_LOGE("%s is not output node", node_name);
         return;
     }
-    
+
     this->m_output_nodes[output_key]->getOutputPort(port)->getSignalContent(data, data_size, data_dims, data_type);
 }
 
 void AnyPipeline::getNodeOutput(const char* node_name, void*& data, size_t*& data_size, int& data_dims, int& data_type){
     if(node_name == NULL || strcmp(node_name, "") == 0){
         EAGLEEYE_LOGE("node name is empty");
+        data = NULL;
+        data_size = NULL;
+        data_dims = 0;
+        data_type = -1;        
         return;
     }
     
@@ -974,7 +982,7 @@ void AnyPipeline::initialize(const char* resource_folder, std::function<bool()> 
     if(init_func == nullptr && m_init_func != nullptr){
         // 初始化管道结构
         EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());
-        m_init_func(true);
+        m_init_func(NULL);
     }
     else if(init_func != nullptr){
         EAGLEEYE_LOGD("Build pipeline %s structure.", this->m_name.c_str());

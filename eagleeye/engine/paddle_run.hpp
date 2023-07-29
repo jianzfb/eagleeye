@@ -112,6 +112,19 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
     else{
         nb_path = model_folder + "/" + this->m_nb_name;
     }
+
+    // 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(nb_path.c_str())){
+        std::string so_folder = this->getModelRoot();
+        if(endswith(so_folder, "/")){
+            nb_path = so_folder + this->m_nb_name;
+        }
+        else{
+            nb_path = so_folder + std::string("/") + this->m_nb_name;
+        }
+    }
+    EAGLEEYE_LOGD("Load PADDLE model from %s", nb_path.c_str());
+
     EAGLEEYE_LOGD("PADDLELITE Set paddle model file %s", nb_path.c_str());
     config.set_model_from_file(nb_path);
 

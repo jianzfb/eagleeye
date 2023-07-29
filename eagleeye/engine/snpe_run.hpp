@@ -126,6 +126,19 @@ bool ModelRun<SnpeRun, Enabled>::initialize(){
 		dlc_path = model_folder + std::string("/")+this->m_model_name;
 	}
 
+    // 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(dlc_path.c_str())){
+        std::string so_folder = this->getModelRoot();
+        if(endswith(so_folder, "/")){
+            dlc_path = so_folder + this->m_model_name;
+        }
+        else{
+            dlc_path = so_folder + std::string("/") + this->m_model_name;
+        }
+    }
+
+    EAGLEEYE_LOGD("Load SNPE model from %s", dlc_path.c_str());
+
 	// step 1. set runtime
 	zdl::DlSystem::Runtime_t runtime = this->checkRuntime();
 	// step 2. load dlc

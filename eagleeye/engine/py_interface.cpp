@@ -8,11 +8,6 @@ namespace py = pybind11;
 using namespace py::literals;
 using namespace eagleeye;
 using namespace eagleeye::dataflow;
-// define func 
-int add(int i = 1, int j = 2) {
-    return i + j;
-}
-
 std::map<std::string, std::shared_ptr<Base>> op_pools;
 
 py::list execute(py::str exe_name, py::str op_name, py::dict param_1, py::dict param_2, py::dict param_3, py::list input_tensors){
@@ -159,10 +154,8 @@ py::list execute(py::str exe_name, py::str op_name, py::dict param_1, py::dict p
     return output_tensors;
 }
 
-PYBIND11_MODULE(eagleeye, m) {
-    m.doc() = "pybind11 example-1 plugin"; // optional module docstring
 
-    m.def("add", &add, "A function which adds two numbers",
-        py::arg("i") = 1, py::arg("j") = 2)
-    .def("execute", &execute);
+PYBIND11_MODULE(eagleeye, m) {
+    m.doc() = "pybind11 op ext"; // optional module docstring
+    m.def("execute", &execute);
 }

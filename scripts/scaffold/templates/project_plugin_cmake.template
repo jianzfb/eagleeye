@@ -31,13 +31,27 @@ set({{project}}_SRC
     ./{{project}}_plugin.cpp
 )
 
+if(BUILD_PYTHON_MODULE)
+    add_definitions(-DBUILD_PYTHON_MODULE)
+    include(FindPythonByEnv)
+    add_subdirectory({{eagleeye}}/3rd/pybind11 ./pybind11)
+endif()
+
 # core sdk
 include_directories({{eagleeye}}/include/eagleeye/)
 include_directories({{eagleeye}}/include)
 include_directories({{eagleeye}}/3rd/eigen)
 link_directories({{eagleeye}}/libs/{{'${PROJECT_ABI}'}})
-add_library({{project}} SHARED {{'${'}}{{project}}_SRC{{'}'}})  
 
+if(BUILD_PYTHON_MODULE)
+    set({{project}}_SRC 
+        {{'${'}}{{project}}_SRC{{'}'}}
+        ./PyPipelineModel.cpp
+    )
+    pybind11_add_module({{project}} {{'${'}}{{project}}_SRC{{'}'}})
+else()
+    add_library({{project}} SHARED {{'${'}}{{project}}_SRC{{'}'}})  
+endif()
 
 # model engine
 
@@ -70,13 +84,21 @@ if(OpenCV_DIR STREQUAL "")
 else()
     message(STATUS "using standard opencv 3.4")
     include_directories(${OpenCV_DIR}/include) 
-    target_link_libraries({{project}} 
-                            ${OpenCV_DIR}/lib/libopencv_calib3d.so 
-                            ${OpenCV_DIR}/lib/libopencv_core.so 
-                            ${OpenCV_DIR}/lib/libopencv_highgui.so 
-                            ${OpenCV_DIR}/lib/libopencv_imgproc.so 
-                            ${OpenCV_DIR}/lib/libopencv_imgcodecs.so)
-
+    if(BUILD_PYTHON_MODULE)    
+        target_link_libraries({{project}} PRIVATE
+                                ${OpenCV_DIR}/lib/libopencv_calib3d.so 
+                                ${OpenCV_DIR}/lib/libopencv_core.so 
+                                ${OpenCV_DIR}/lib/libopencv_highgui.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgproc.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgcodecs.so)    
+    else()
+        target_link_libraries({{project}} 
+                                ${OpenCV_DIR}/lib/libopencv_calib3d.so 
+                                ${OpenCV_DIR}/lib/libopencv_core.so 
+                                ${OpenCV_DIR}/lib/libopencv_highgui.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgproc.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgcodecs.so)
+    endif()
 endif()
 endif()
 {% endif %}
@@ -111,7 +133,11 @@ TARGET_LINK_LIBRARIES({{project}} lib{{model}})
 {% endfor %}
 
 # link core so
-TARGET_LINK_LIBRARIES({{project}} libeagleeye.so)
+if(BUILD_PYTHON_MODULE)   
+    TARGET_LINK_LIBRARIES({{project}} PRIVATE libeagleeye.so)
+else()
+    TARGET_LINK_LIBRARIES({{project}} libeagleeye.so)
+endif()
 
 if(DEFINED ANDROID_ABI)
 # link android log so
@@ -120,23 +146,21 @@ endif()
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
-    target_link_libraries({{project}} OpenMP::OpenMP_CXX)
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries({{project}} PRIVATE OpenMP::OpenMP_CXX)
+    else()
+        target_link_libraries({{project}} OpenMP::OpenMP_CXX)
+    endif()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+if(NOT BUILD_PYTHON_MODULE)   
 message("build {{project}} executable demo")
 set({{project}}_demo_SRC 
     ./{{project}}_demo.cpp)
 add_executable({{project}}_demo {{'${'}}{{project}}_demo_SRC{{'}'}}) 
 target_link_libraries({{project}}_demo {{project}})
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
-
-# set_target_properties(pipeline PROPERTIES PREFIX "")        # no 'lib' prefix
-# set_target_properties(pipeline PROPERTIES SUFFIX ".so")     # must be .so (not .dylib)
-# set_target_properties(pipeline PROPERTIES LINK_FLAGS "-all_load")
-# TARGET_LINK_LIBRARIES(pipeline 
-#                       libeagleeye.a
-#                       ${PYTHON_LIBRARIES}
-#                       ${Boost_LIBRARIES})
+endif()
 

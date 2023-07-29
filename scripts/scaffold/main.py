@@ -275,6 +275,7 @@ def main():
       os.makedirs(os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake'))
       shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'ccache.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'ccache.cmake'))
       shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'FindTensorRT.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'FindTensorRT.cmake'))
+      shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'FindPythonByEnv.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'FindPythonByEnv.cmake'))
 
       # 拷贝头文件
       shutil.copyfile(os.path.join(FLAGS.eagleeye(), "include", "eagleeye", "common", "EagleeyeModule.h"),
