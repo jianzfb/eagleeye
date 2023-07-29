@@ -16,6 +16,7 @@
 #include "DlSystem/TensorShape.hpp"
 #include "DlSystem/ITensorFactory.hpp"
 #include "DlContainer/IDlContainer.hpp"
+#include "eagleeye/common/EagleeyeFile.h"
 #include <vector>
 #include <fstream>
 #include <sstream>

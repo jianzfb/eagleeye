@@ -3,7 +3,11 @@
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/framework/pipeline/AnyPipeline.h"
 #include "eagleeye/processnode/Placeholder.h"
+#ifdef BUILD_PYTHON_MODULE
+#include "eagleeye/framework/pipeline/DynamicPipelineCreater.h"
+#endif
 #include "{{project}}_plugin.h"
+
 
 namespace eagleeye{
 

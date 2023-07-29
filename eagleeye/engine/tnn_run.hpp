@@ -134,6 +134,18 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
     else{
         model_path = model_folder + "/" + this->m_tnnmodel;
     }
+    // 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(model_path.c_str())){
+        std::string so_folder = this->getModelRoot();
+        if(endswith(so_folder, "/")){
+            model_path = so_folder + this->m_tnnmodel;
+        }
+        else{
+            model_path = so_folder + std::string("/") + this->m_tnnmodel;
+        }
+    }
+
+    EAGLEEYE_LOGD("Load TNN model from %s", model_path.c_str());
 
     // 读取model文件
     FILE* model_fp = fopen(model_path.c_str(), "rb");

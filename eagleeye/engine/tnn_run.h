@@ -16,6 +16,7 @@
 #include "tnn/utils/blob_converter.h"
 #include "tnn/utils/cpu_utils.h"
 #include "tnn/utils/mat_utils.h"
+#include "eagleeye/common/EagleeyeFile.h"
 
 namespace eagleeye
 {

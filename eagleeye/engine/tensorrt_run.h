@@ -14,6 +14,7 @@
 #include <memory> 
 #include "NvInfer.h"
 #include "NvOnnxParser.h"
+#include "eagleeye/common/EagleeyeFile.h"
 
 namespace eagleeye{
 

@@ -10,7 +10,7 @@
 
 namespace eagleeye{
 
-typedef void* (*INITIALIZE_PLUGIN_PIPELINE_FUNC)(bool);
+typedef void* (*INITIALIZE_PLUGIN_PIPELINE_FUNC)(void*);
 
 class EAGLEEYE_API AnyPipeline{
 public:

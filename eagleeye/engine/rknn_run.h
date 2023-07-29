@@ -11,6 +11,8 @@
 #include <memory> 
 #include <iostream>
 #include "rknn_api.h"
+#include "eagleeye/common/EagleeyeFile.h"
+
 
 namespace eagleeye
 {
