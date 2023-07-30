@@ -1,6 +1,8 @@
 #include "eagleeye/engine/nano/op/image_resize_op.h"
 #if defined(__ANDROID__) || defined(ANDROID)  
 #include "eagleeye/engine/math/arm/interpolate.h"
+#else
+#include "eagleeye/engine/math/x86/interpolate.h"
 #endif
 #include "eagleeye/common/EagleeyeLog.h"
 
@@ -113,6 +115,7 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
 #if defined(__ANDROID__) || defined(ANDROID)      
     if(channels == 3){
+        // 三通道图
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_rgb_8u_3d_interp(
@@ -128,9 +131,43 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
         }
     }
     else{
+        // 灰度图
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_gray_8u_1d_interp(
+                x_ptr+i*in_width*in_height,
+                y_ptr+i*out_width*out_height,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                out_width,
+                out_height
+            );
+        } 
+    }
+#else
+    if(channels == 3){
+        // 三通道图
+#pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::x86::bilinear_rgb_8u_3d_interp(
+                x_ptr+i*in_width*in_height*3,
+                y_ptr+i*out_width*out_height*3,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                out_width,
+                out_height
+            );
+        }
+    }
+    else{
+        // 灰度图
+#pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::x86::bilinear_gray_8u_1d_interp(
                 x_ptr+i*in_width*in_height,
                 y_ptr+i*out_width*out_height,
                 in_width,
@@ -257,6 +294,37 @@ int ResizeWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_gray_8u_1d_interp(
+                x_ptr+i*in_width*in_height,
+                y_ptr+i*out_width*out_height,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                out_width,
+                out_height
+            );
+        } 
+    }
+#else
+    if(channels == 3){
+#pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::x86::bilinear_rgb_8u_3d_interp(
+                x_ptr+i*in_width*in_height*3,
+                y_ptr+i*out_width*out_height*3,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                out_width,
+                out_height
+            );
+        }
+    }
+    else{
+#pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::x86::bilinear_gray_8u_1d_interp(
                 x_ptr+i*in_width*in_height,
                 y_ptr+i*out_width*out_height,
                 in_width,
