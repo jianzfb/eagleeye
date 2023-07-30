@@ -377,7 +377,8 @@ else()
     # OSX_ABI/X86_ABI
     set(EAGLEEYE_SRC 
         ${EAGLEEYE_SRC} 
-        eagleeye/engine/math/x86/preprocess.cc)
+        eagleeye/engine/math/x86/preprocess.cc
+        eagleeye/engine/math/x86/interpolate.cc)
 endif()
 
 # opencl

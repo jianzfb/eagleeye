@@ -1,5 +1,5 @@
-#ifndef _EAGLEEYE_INTERPOLATE_H_
-#define _EAGLEEYE_INTERPOLATE_H_
+#ifndef _EAGLEEYE_ARM_INTERPOLATE_H_
+#define _EAGLEEYE_ARM_INTERPOLATE_H_
 #include <string>
 #include <vector>
 #include <arm_neon.h>
@@ -73,8 +73,8 @@ void bilinear_32f_c1_interp(
 //                  int align_mode,
 //                  std::string interpolate_type);
 
-} /* namespace math */
 } /* namespace arm */
-} /* namespace paddle */
+} /* namespace math */
+} /* namespace eagleeye */
 
 #endif
