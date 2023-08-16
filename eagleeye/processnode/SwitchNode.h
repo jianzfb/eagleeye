@@ -3,17 +3,18 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include <vector>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class SwitchNode:public AnyNode{
+class SwitchNode:public AnyNode, DynamicNodeCreator<SwitchNode>{
 public:
     typedef SwitchNode              Self;
     typedef AnyNode             Superclass;    
 
     EAGLEEYE_CLASSIDENTITY(SwitchNode);
 
-    SwitchNode(std::vector<AnyNode*> candidates);
+    SwitchNode(std::vector<AnyNode*> candidates=std::vector<AnyNode*>());
     virtual ~SwitchNode();
 
     /**

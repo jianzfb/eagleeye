@@ -3,10 +3,11 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include <string>
 
 namespace eagleeye{
-class ImageWriteNode:public AnyNode{
+class ImageWriteNode:public AnyNode, DynamicNodeCreator<ImageWriteNode>{
 public:
     typedef ImageWriteNode      Self;
     typedef AnyNode             Superclass;

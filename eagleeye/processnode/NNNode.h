@@ -10,13 +10,17 @@
 #include "eagleeye/engine/nano/dataflow/graph.hpp"
 #include "eagleeye/common/CJsonObject.hpp"
 #include<functional>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
 
 typedef std::function<bool(dataflow::Graph* g, std::string op_name, std::string op_cls, neb::CJsonObject op_config, dataflow::Node*&, std::string resource_folder)> OpBFuncType;
-class NNNode:public AnyNode{
+class NNNode:public AnyNode, DynamicNodeCreator<NNNode>{
 public:    
+    typedef NNNode                  Self;
+    typedef AnyNode                 Superclass;
+
     NNNode();
     virtual ~NNNode();
 
@@ -63,6 +67,12 @@ public:
      * @param type 
      */
     void makeOutputSignal(int port, std::string type_str);
+
+    void setModelFolder(const std::string model_folder);
+    void getModelFolder(std::string& model_folder);
+
+    void setWritableFolder(const std::string writable_folder);
+    void getWritableFolder(std::string& writable_folder);
 
 private:
     NNNode(const NNNode&);

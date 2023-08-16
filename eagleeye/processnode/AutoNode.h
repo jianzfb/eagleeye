@@ -6,16 +6,17 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
-class AutoNode:public AnyNode{
+class AutoNode:public AnyNode, DynamicNodeCreator<AutoNode>{
 public:
     typedef AutoNode                Self;
     typedef AnyNode                 Superclass;
     EAGLEEYE_CLASSIDENTITY(AutoNode);
 
-    AutoNode(std::function<AnyNode*()> generator);
+    AutoNode(std::function<AnyNode*()> generator=nullptr);
     virtual ~AutoNode();
 
     /**

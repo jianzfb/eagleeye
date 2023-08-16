@@ -11,10 +11,11 @@
 #include "eagleeye/basic/spinlock.hpp"
 #include <functional>
 #include <memory>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
-class ThreadNode:public AnyNode{
+class ThreadNode:public AnyNode, DynamicNodeCreator<ThreadNode>{
 public:
     typedef ThreadNode                  Self;
     typedef AnyNode                     Superclass;
@@ -25,7 +26,7 @@ public:
      * @brief Construct a new Parallel Node object
      * 
      */
-    ThreadNode(std::function<AnyNode*()> generator);
+    ThreadNode(std::function<AnyNode*()> generator=nullptr);
     
     /**
      * @brief Destroy the Parallel Node object

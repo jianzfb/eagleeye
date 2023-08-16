@@ -4,14 +4,16 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include <map>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
-class State2BooleanNode:public AnyNode{
+class State2BooleanNode:public AnyNode, DynamicNodeCreator<State2BooleanNode>{
 public:
     typedef State2BooleanNode                       Self;
     typedef AnyNode                                 Superclass;
 
-    State2BooleanNode(std::map<int,bool> state_2_bool);
+    State2BooleanNode(std::map<int,bool> state_2_bool=std::map<int,bool>());
     virtual ~State2BooleanNode();
 
     /**

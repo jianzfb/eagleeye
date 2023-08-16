@@ -4,10 +4,11 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class ClassicalFilter:public AnyNode{
+class ClassicalFilter:public AnyNode, DynamicNodeCreator<ClassicalFilter>{
 public:
     typedef ClassicalFilter                 Self;
     typedef AnyNode                         Superclass;

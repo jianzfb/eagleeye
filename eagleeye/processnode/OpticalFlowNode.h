@@ -5,12 +5,14 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
 /**
  * @brief compute optical flow(pre(x,y) = next(x+\Delta x, y+\Delta y))
  */
-class OpticalFlowNode:public AnyNode{
+class OpticalFlowNode:public AnyNode, DynamicNodeCreator<OpticalFlowNode>{
 public:
     typedef OpticalFlowNode                         Self;
     typedef AnyNode                                 Superclass;

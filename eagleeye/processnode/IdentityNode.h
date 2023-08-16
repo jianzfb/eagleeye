@@ -3,10 +3,11 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class IdentityNode:public AnyNode{
+class IdentityNode:public AnyNode, DynamicNodeCreator<IdentityNode>{
 public:
     typedef IdentityNode               Self;
     typedef AnyNode             Superclass;

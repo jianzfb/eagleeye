@@ -4,10 +4,11 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/common/EagleeyeSerial.h"
 #include <string>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
-class SerialWriteNode:public AnyNode{
+class SerialWriteNode:public AnyNode, DynamicNodeCreator<SerialWriteNode>{
 public:
     typedef SerialWriteNode              Self;
     typedef AnyNode                     Superclass;

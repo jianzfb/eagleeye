@@ -126,9 +126,11 @@ public:
         }
         if(params.find("model_folder") != params.end()){
             this->m_model_folder = params["model_folder"][0];
+            EAGLEEYE_LOGD("Set RKNN model folder %s", this->m_model_folder.c_str());
         }
         if(params.find("writable_path") != params.end()){
             this->m_writable_path = params["writable_path"][0];
+            EAGLEEYE_LOGD("Set RKNN Writable folder %s", this->m_writable_path.c_str());
         }        
         return 0;
     }

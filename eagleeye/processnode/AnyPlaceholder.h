@@ -4,10 +4,11 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class AnyPlaceholder: public AnyNode{
+class AnyPlaceholder: public AnyNode, DynamicNodeCreator<AnyPlaceholder>{
 public:
     typedef AnyPlaceholder                  Self;
     typedef AnyNode                         Superclass;

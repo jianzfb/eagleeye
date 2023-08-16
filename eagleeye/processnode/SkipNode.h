@@ -2,8 +2,11 @@
 #define _EAGLEEYE_SKIPNODE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
+
 namespace eagleeye{
-class SkipNode:public AnyNode{
+class SkipNode:public AnyNode, DynamicNodeCreator<SkipNode>{
 public:
 	/**
 	 *	@brief define some basic type
@@ -12,7 +15,7 @@ public:
 	typedef SkipNode								Self;
 	typedef AnyNode								    Superclass;
 
-    SkipNode(std::function<AnyNode*()> generator);
+    SkipNode(std::function<AnyNode*()> generator=nullptr);
     virtual ~SkipNode();
 
     /**

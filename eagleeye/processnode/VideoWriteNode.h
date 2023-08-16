@@ -8,6 +8,8 @@
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/MetaOperation.h"
 #include <string>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 class AVFormatContext;
 class AVCodecContext;
@@ -16,7 +18,7 @@ class AVStream;
 class AVPacket;
 class AVFrame;
 namespace eagleeye{
-class VideoWriteNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>{
+class VideoWriteNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>, DynamicNodeCreator<VideoWriteNode>{
 public:
     typedef VideoWriteNode                                           Self;
     typedef ImageIONode<ImageSignal<Array<unsigned char, 3>>>       Superclass;

@@ -7,12 +7,13 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/MetaOperation.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 class AVFormatContext;
 class AVCodecContext;
 namespace eagleeye{
-class VideoReadNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>{
+class VideoReadNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>, DynamicNodeCreator<VideoReadNode>{
 public:
     typedef VideoReadNode                                           Self;
     typedef ImageIONode<ImageSignal<Array<unsigned char, 3>>>       Superclass;

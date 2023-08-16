@@ -4,10 +4,11 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class ImageRotateNode:public AnyNode{
+class ImageRotateNode:public AnyNode, DynamicNodeCreator<ImageRotateNode>{
 public:
     ImageRotateNode(float default_rot_deg=0.0f);
     virtual ~ImageRotateNode();

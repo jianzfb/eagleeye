@@ -5,10 +5,11 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
-class HistogramEqualizationNode:public AnyNode{
+class HistogramEqualizationNode:public AnyNode, DynamicNodeCreator<HistogramEqualizationNode>{
 public:
     typedef HistogramEqualizationNode           Self;
     typedef AnyNode                             Superclass;

@@ -2,10 +2,11 @@
 #define _EAGLEEYE_ORNODE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class OrNode: public AnyNode{
+class OrNode: public AnyNode, DynamicNodeCreator<OrNode>{
 public:
     typedef OrNode              Self;
     typedef AnyNode             Superclass;    

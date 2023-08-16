@@ -12,6 +12,7 @@
 #include "eagleeye/basic/spinlock.hpp"
 #include <functional>
 #include <memory>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
 
@@ -21,7 +22,7 @@ struct AsynMetaData{
     int round;
 };
 
-class AsynNode:public AnyNode{
+class AsynNode:public AnyNode, DynamicNodeCreator<AsynNode>{
 public:
     typedef AsynNode                Self;
     typedef AnyNode                 Superclass;
@@ -32,7 +33,7 @@ public:
      * @brief Construct a new Parallel Node object
      * 
      */
-    AsynNode(int thread_num, std::function<AnyNode*()> generator, int input_queue_size=1, int output_queue_size=1);
+    AsynNode(int thread_num=1, std::function<AnyNode*()> generator=nullptr, int input_queue_size=1, int output_queue_size=1);
     
     /**
      * @brief Destroy the Parallel Node object

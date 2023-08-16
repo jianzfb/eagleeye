@@ -623,7 +623,7 @@ void AnyPipeline::setParameter(const char* node_name,
         EAGLEEYE_LOGE("param name is empty");
         return;
     }
-    
+
     // node_name/{}/param_name
     bool issuccess=false;
     std::map<std::string, AnyMonitor*>::iterator iter, iend(this->m_monitor_params.end());

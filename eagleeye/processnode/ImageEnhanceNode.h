@@ -2,10 +2,12 @@
 #define _EAGLEEYE_ENHANCENODE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye
 {
-class EnhanceNode:public AnyNode{
+class EnhanceNode:public AnyNode, DynamicNodeCreator<EnhanceNode>{
 public:
     typedef EnhanceNode             Self;
     typedef AnyNode                 Superclass;

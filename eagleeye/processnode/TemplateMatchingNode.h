@@ -5,6 +5,7 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
@@ -13,7 +14,7 @@ enum TMMode{
     TM_SQDIFF_NORMED
 };
 
-class TemplateMatchingNode:public AnyNode{
+class TemplateMatchingNode:public AnyNode, DynamicNodeCreator<TemplateMatchingNode>{
 public:
     typedef TemplateMatchingNode            Self;
     typedef AnyNode                         Superclass;

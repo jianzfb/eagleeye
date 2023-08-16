@@ -5,9 +5,12 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
+
 namespace eagleeye
 {
-class MosaicNode: public AnyNode{
+class MosaicNode: public AnyNode, DynamicNodeCreator<MosaicNode>{
 public:
     typedef MosaicNode              Self;
     typedef AnyNode                 Superclass;    

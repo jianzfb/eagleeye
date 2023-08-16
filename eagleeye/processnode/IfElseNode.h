@@ -4,13 +4,15 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/framework/pipeline/BooleanSignal.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
 /**
  * @brief if ... else ... control node
  */ 
 
-class IfElseNode:public AnyNode{
+class IfElseNode:public AnyNode, DynamicNodeCreator<IfElseNode>{
 public:
     /**
 	 *	@brief define some basic type
@@ -19,7 +21,7 @@ public:
 	typedef IfElseNode								    Self;
 	typedef AnyNode								        Superclass;
 
-    IfElseNode(AnyNode* x, AnyNode* y);
+    IfElseNode(AnyNode* x=NULL, AnyNode* y=NULL);
     virtual ~IfElseNode();
 
     /**

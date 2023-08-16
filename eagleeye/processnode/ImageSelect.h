@@ -7,9 +7,11 @@
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/Array.h"
 #include <vector>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
-class ImageSelect:public ImageReadNode{
+class ImageSelect:public ImageReadNode, DynamicNodeCreator<ImageSelect>{
 public:
     typedef ImageSelect           Self;
     typedef ImageReadNode                Superclass;

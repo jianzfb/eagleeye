@@ -124,7 +124,6 @@ Blob::Blob(int64_t h, int64_t w, EagleeyeType data_type, MemoryType memory_type,
         EAGLEEYE_LOGE("Dont support GPU_IMAGE.");
         return;
     }
-
     if(m_memory_type == CPU_BUFFER){
         m_runtime = EagleeyeRuntime(EAGLEEYE_CPU);
     }
@@ -611,9 +610,6 @@ bool Blob::update(void* data, MemoryType mem_type, std::string option){
 #ifdef EAGLEEYE_OPENCL_OPTIMIZATION
         if(this->m_memory_type == GPU_BUFFER || (this->m_memory_type == GPU_IMAGE && option == "")){
             // GPU BUFFER
-            std::cout<<"in blob update "<<std::endl;
-            std::cout<<this->numel()<<std::endl;
-            std::cout<<this->m_elem_size<<std::endl;
             OpenCLMem* ocl_mem = (OpenCLMem*)this->gpu();
             ocl_mem->copyToDevice(data, CL_TRUE, 0, this->m_offset, this->numel()*this->m_elem_size);
         }

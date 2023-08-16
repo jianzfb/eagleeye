@@ -10,6 +10,7 @@
 #include "eagleeye/basic/spinlock.hpp"
 #include <functional>
 #include <memory>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
 
@@ -20,7 +21,7 @@ struct ParallelPriorityComp
         return a.second > b.second; 
     }
 };    
-class ParallelNode:public AnyNode{
+class ParallelNode:public AnyNode, DynamicNodeCreator<ParallelNode>{
 public:
     typedef ParallelNode            Self;
     typedef AnyNode                 Superclass;
@@ -31,8 +32,8 @@ public:
      * @brief Construct a new Parallel Node object
      * 
      */
-    ParallelNode(int thread_num, std::function<AnyNode*()> generator);
-    
+    ParallelNode(int thread_num=1, std::function<AnyNode*()> generator=nullptr);
+
     /**
      * @brief Destroy the Parallel Node object
      * 

@@ -4,9 +4,10 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include <vector>
 #include <queue>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
-class QueueNode:public AnyNode{
+class QueueNode:public AnyNode, DynamicNodeCreator<QueueNode>{
 public:
     typedef QueueNode               Self;
     typedef AnyNode                 Superclass;
