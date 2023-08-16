@@ -5,9 +5,10 @@
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/algorithm/homographymodel.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
-class MovingDetNode:public ImageProcessNode<ImageSignal<Array<unsigned char,3>>,ImageSignal<float>>{
+class MovingDetNode:public ImageProcessNode<ImageSignal<Array<unsigned char,3>>,ImageSignal<float>>, DynamicNodeCreator<MovingDetNode>{
 public:
     typedef MovingDetNode       Self;
     typedef ImageProcessNode<ImageSignal<Array<unsigned char,3>>,ImageSignal<float>> Superclass;

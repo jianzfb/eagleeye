@@ -4,6 +4,7 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye
@@ -18,7 +19,7 @@ enum YUVConvertType{
 };
 
 
-class YUVConvertNode: public AnyNode{
+class YUVConvertNode: public AnyNode, DynamicNodeCreator<YUVConvertNode>{
 public:
     typedef YUVConvertNode                      Self;
     typedef AnyNode                             Superclass;

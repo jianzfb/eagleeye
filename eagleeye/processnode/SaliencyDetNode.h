@@ -6,9 +6,11 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
-class SaliencyDetNode:public ImageProcessNode<ImageSignal<Array<unsigned char, 3>>, ImageSignal<float>>{
+class SaliencyDetNode:public ImageProcessNode<ImageSignal<Array<unsigned char, 3>>, ImageSignal<float>>, DynamicNodeCreator<SaliencyDetNode>{
 public:
     /**
      * @brief define basic info

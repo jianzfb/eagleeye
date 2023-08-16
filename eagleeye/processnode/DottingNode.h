@@ -3,11 +3,12 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include <string>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye
 {
-class DottingNode: public AnyNode{
+class DottingNode: public AnyNode, DynamicNodeCreator<DottingNode>{
 public:
     typedef DottingNode             Self;
     typedef AnyNode             Superclass;

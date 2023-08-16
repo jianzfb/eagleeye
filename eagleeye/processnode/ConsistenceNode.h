@@ -4,9 +4,10 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
-class ConsistenceNode:public AnyNode{
+class ConsistenceNode:public AnyNode, DynamicNodeCreator<ConsistenceNode>{
 public:
     typedef ConsistenceNode         Self;
     typedef AnyNode                 Superclass;

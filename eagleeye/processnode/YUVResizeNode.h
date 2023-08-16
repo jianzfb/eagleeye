@@ -4,10 +4,11 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class YUVResizeNode: public AnyNode{
+class YUVResizeNode: public AnyNode, DynamicNodeCreator<YUVResizeNode>{
     typedef YUVResizeNode                       Self;
     typedef AnyNode                             Superclass;
 

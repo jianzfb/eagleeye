@@ -5,9 +5,11 @@
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/Array.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
-class DelayFetch:public AnyNode{
+class DelayFetch:public AnyNode, DynamicNodeCreator<DelayFetch>{
 public:
     typedef DelayFetch          Self;
     typedef AnyNode             Superclass;

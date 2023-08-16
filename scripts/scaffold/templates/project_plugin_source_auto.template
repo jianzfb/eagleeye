@@ -7,9 +7,7 @@
 #include "eagleeye/processnode/IdentityNode.h"
 #include "eagleeye/common/EagleeyeFactory.h"
 #include "eagleeye/common/EagleeyeStr.h"
-#ifdef BUILD_PYTHON_MODULE
 #include "eagleeye/framework/pipeline/DynamicPipelineCreater.h"
-#endif
 
 {% if custom_paddle_ops|length > 0 %}
 #include "eagleeye/engine/nano/op/paddle_op.hpp"

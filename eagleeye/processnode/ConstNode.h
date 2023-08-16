@@ -3,11 +3,12 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye
 {
-class ConstNode:public AnyNode{
+class ConstNode:public AnyNode, DynamicNodeCreator<ConstNode>{
 public:
     typedef ConstNode               Self;
     typedef AnyNode             Superclass;
@@ -20,7 +21,7 @@ public:
     /**
      *  @brief constructor/destructor
      */
-    ConstNode(int input_port_num, std::vector<AnySignal*> output_const_sigs);
+    ConstNode(int input_port_num=0, std::vector<AnySignal*> output_const_sigs=std::vector<AnySignal*>());
     virtual ~ConstNode();
 
     virtual void executeNodeInfo();

@@ -3,9 +3,11 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include <string>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
-class ImageReadNode:public AnyNode{
+class ImageReadNode:public AnyNode, DynamicNodeCreator<ImageReadNode>{
 public:
     typedef ImageReadNode           Self;
     typedef AnyNode                 Superclass;

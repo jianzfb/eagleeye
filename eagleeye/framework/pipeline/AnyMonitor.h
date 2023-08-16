@@ -131,7 +131,7 @@ public:
 	virtual ~VarMonitor(){};
 
 	virtual void setVar(const void* var)
-	{
+	{	
 		if(this->prefix_func){
 			this->prefix_func();
 		}

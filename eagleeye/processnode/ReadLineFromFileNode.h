@@ -4,9 +4,10 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include <string>
 #include <vector>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
-class ReadLineFromFileNode:public AnyNode{
+class ReadLineFromFileNode:public AnyNode, DynamicNodeCreator<ReadLineFromFileNode>{
 public:
     typedef ReadLineFromFileNode                Self;
     typedef AnyNode                             Superclass;

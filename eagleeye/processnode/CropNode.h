@@ -2,17 +2,17 @@
 #define _EAGLEEYE_CROPNODE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
-
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
-class CropNode:public AnyNode{
+class CropNode:public AnyNode, DynamicNodeCreator<CropNode>{
 public:
     typedef CropNode                Self;
     typedef AnyNode                 Superclass;
 
     EAGLEEYE_CLASSIDENTITY(CropNode);
 
-    CropNode(std::vector<float> region);
+    CropNode(std::vector<float> region=std::vector<float>());
     virtual ~CropNode();
 
     /**

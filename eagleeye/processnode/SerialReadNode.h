@@ -4,10 +4,11 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/common/EagleeyeSerial.h"
 #include <string>
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
-class SerialReadNode:public AnyNode{
+class SerialReadNode:public AnyNode, DynamicNodeCreator<SerialReadNode>{
 public:
     typedef SerialReadNode              Self;
     typedef AnyNode                     Superclass;
@@ -18,7 +19,7 @@ public:
      * @brief Construct a new Serial Read Node object
      * 
      */
-    SerialReadNode(EagleeyeType data_type);
+    SerialReadNode(EagleeyeType data_type=EAGLEEYE_UCHAR);
     virtual ~SerialReadNode();
 
     /**

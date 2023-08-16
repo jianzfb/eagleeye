@@ -2,9 +2,10 @@
 #define _EAGLEEYE_COPYNODE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
-class CopyNode:public AnyNode{
+class CopyNode:public AnyNode, DynamicNodeCreator<CopyNode>{
 public:
     typedef CopyNode                Self;
     typedef AnyNode                 Superclass;

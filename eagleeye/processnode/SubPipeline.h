@@ -3,6 +3,7 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/AnyPipeline.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -14,7 +15,7 @@ enum SubPipelineNode{
     OTHER_NODE  = 2
 };
 
-class SubPipeline:public AnyNode{
+class SubPipeline:public AnyNode, DynamicNodeCreator<SubPipeline>{
 public:
     typedef SubPipeline                     Self;
     typedef AnyNode                         Superclass;

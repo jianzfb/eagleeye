@@ -1,10 +1,11 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye
 {
-class IsUpdateNode: public AnyNode{
+class IsUpdateNode: public AnyNode, DynamicNodeCreator<IsUpdateNode>{
 public:
     typedef IsUpdateNode                Self;
     typedef AnyNode                     Superclass;    

@@ -4,10 +4,12 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye
 {
-class ImageResizeNode: public AnyNode{
+class ImageResizeNode: public AnyNode, DynamicNodeCreator<ImageResizeNode>{
     typedef ImageResizeNode                       Self;
     typedef AnyNode                             Superclass;
 

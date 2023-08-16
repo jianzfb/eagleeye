@@ -3,6 +3,7 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye{
 enum LogicalType{
@@ -10,12 +11,12 @@ enum LogicalType{
     LOGICAL_OR = 1
 };
 
-class LogicalNode:public AnyNode{
+class LogicalNode:public AnyNode, DynamicNodeCreator<LogicalNode>{
 public:
     typedef LogicalNode                 Self;
     typedef AnyNode                     Superclass;
 
-    LogicalNode(LogicalType logical_type);
+    LogicalNode(LogicalType logical_type=LOGICAL_AND);
     virtual ~LogicalNode();
 
     /**

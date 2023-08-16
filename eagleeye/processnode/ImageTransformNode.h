@@ -6,9 +6,11 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
+
 
 namespace eagleeye{
-class ImageTransformNode:public ImageProcessNode<ImageSignal<Array<unsigned char, 3>>, ImageSignal<Array<unsigned char, 3>>>{
+class ImageTransformNode:public ImageProcessNode<ImageSignal<Array<unsigned char, 3>>, ImageSignal<Array<unsigned char, 3>>>, DynamicNodeCreator<ImageTransformNode>{
 public:
     typedef ImageTransformNode                                  Self;
     typedef ImageProcessNode<ImageSignal<Array<unsigned char, 3>>, ImageSignal<Array<unsigned char, 3>>>      Superclass;
@@ -19,7 +21,7 @@ public:
 	 *	@brief execute ImageTransformNode algorithm
      *  @note user must finish this function
 	 */
-    ImageTransformNode(std::vector<float> region, std::vector<int> size);
+    ImageTransformNode(std::vector<float> region=std::vector<float>(), std::vector<int> size=std::vector<int>());
     virtual ~ImageTransformNode();
 
     /**

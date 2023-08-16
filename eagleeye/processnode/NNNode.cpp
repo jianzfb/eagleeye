@@ -3,13 +3,16 @@
 #include "eagleeye/engine/nano/op/factory.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
-
+#include "eagleeye/framework/pipeline/AnyMonitor.h"
 
 namespace eagleeye
 {
 NNNode::NNNode(){
     m_g = new dataflow::Graph(std::vector<EagleeyeRuntime>(), 1);
     m_is_init = false;
+
+	EAGLEEYE_MONITOR_VAR(std::string, setModelFolder, getModelFolder, "model_folder", "", "");
+    EAGLEEYE_MONITOR_VAR(std::string, setWritableFolder, getWritableFolder, "writable_path", "", "");
 }   
 NNNode::~NNNode(){
     delete m_g;
@@ -384,4 +387,29 @@ void NNNode::makeOutputSignal(int port,  std::string type_str){
         EAGLEEYE_LOGE("Dont support signal type %s.", type_str.c_str());
     }
 }
+
+void NNNode::setModelFolder(const std::string model_folder){
+    std::map<std::string, std::vector<std::string>> info;
+    info["model_folder"].push_back(model_folder);
+    std::vector<dataflow::Node*> nodes = this->m_g->getNodes();
+    for(int i=0; i<nodes.size(); ++i){
+        nodes[i]->init(info);
+    }
+}
+void NNNode::getModelFolder(std::string& model_folder){
+    // do nothing
+}
+
+void NNNode::setWritableFolder(const std::string writable_folder){
+    std::map<std::string, std::vector<std::string>> info;
+    info["writable_path"].push_back(writable_folder);
+    std::vector<dataflow::Node*> nodes = this->m_g->getNodes();
+    for(int i=0; i<nodes.size(); ++i){
+        nodes[i]->init(info);
+    }
+}
+void NNNode::getWritableFolder(std::string& writable_folder){
+    // do nothing
+}
+
 } // namespace eagleeye

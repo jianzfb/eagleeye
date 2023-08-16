@@ -417,7 +417,7 @@ endif()
 if(BUILD_PYTHON_MODULE)
     set(EAGLEEYE_SRC 
         ${EAGLEEYE_SRC} 
-        eagleeye/engine/py_interface.cpp)
+        eagleeye/common/EagleeyePy.cpp)
     pybind11_add_module(eagleeye ${EAGLEEYE_SRC})
 else()
     add_library(eagleeye SHARED ${EAGLEEYE_SRC})
