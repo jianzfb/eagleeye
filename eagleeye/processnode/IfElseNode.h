@@ -29,6 +29,11 @@ public:
 	 */
 	EAGLEEYE_CLASSIDENTITY(IfElseNode);
 
+	/**
+	 * @brief create control node 
+	 */
+	virtual void config(std::function<std::vector<AnyNode*>()> generator);
+
     /**
 	 * @brief execute control
 	 * 
@@ -79,8 +84,6 @@ private:
 
     AnyNode* m_x;
     AnyNode* m_y;
-
-	std::vector<AnySignal*> m_placeholders;
 };    
 }
 #endif

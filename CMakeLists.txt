@@ -17,9 +17,12 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # support pipeline plugin
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
 if(DEFINED ANDROID_ABI)
+    # ANDROID
     message(STATUS "CONFIGURE ANDROID")
     add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)       # 默认对于arm都采用neon加速
-    # add_definitions(-DEAGLEEYE_ANDROID_APP)
+    if(DEFINED ANDROID_APP)
+        add_definitions(-DEAGLEEYE_ANDROID_APP)
+    endif()
 
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})
     set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ANDROID_ABI})

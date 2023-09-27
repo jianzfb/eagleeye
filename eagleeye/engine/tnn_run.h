@@ -36,7 +36,8 @@ public:
 		     std::vector<std::vector<int64_t>> output_shapes=std::vector<std::vector<int64_t>>(),
 		     int num_threads = -1, 
 		     RunPower model_power = HIGH_POWER, 
-		     std::string writable_path="/data/local/tmp/");
+		     std::string writable_path="/data/local/tmp/",
+			 bool inner_preprocess=false);
 
     /**
 	 * [destructor]
@@ -49,7 +50,7 @@ public:
 	 * @param  outputs {map} <name, data> pair
 	 * @return         {boolean} true or false
 	 */
-	virtual bool run(std::map<std::string, unsigned char*> inputs, 
+	virtual bool run(std::map<std::string, const unsigned char*> inputs, 
 					 std::map<std::string, unsigned char*>& outputs);
 
     /**
@@ -113,6 +114,7 @@ private:
 
 	std::map<std::string, std::shared_ptr<TNN_NS::Mat>> m_input_map;
 	bool m_is_init;
+	bool m_inner_preprocess;
 };
 } // namespace eagleeye
 

@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iostream>
 
+
 namespace eagleeye{
 bool copyfile(const char* src_file,const char* target_file){
 	FILE* from_fd = NULL;
@@ -45,6 +46,50 @@ bool deletefile(const char* file_path){
 	else
 		return false;
 }
+
+bool deletedir(const char *path) {
+    DIR *dir = opendir(path);
+    if (dir == nullptr) {
+        // 打开目录失败
+        return false;
+    }
+
+    dirent *entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+            // 跳过当前目录和父目录
+            continue;
+        }
+
+        // 构造文件/文件夹的完整路径
+        std::string fullPath = std::string(path) + "/" + entry->d_name;
+
+        if (entry->d_type == DT_DIR) {
+            // 如果是文件夹，递归删除
+            if (!deletedir(fullPath.c_str())) {
+                closedir(dir);
+                return false;
+            }
+        } else {
+            // 如果是文件，直接删除
+            if (remove(fullPath.c_str()) != 0) {
+                closedir(dir);
+                return false;
+            }
+        }
+    }
+
+    // 关闭目录流
+    closedir(dir);
+
+    // 删除当前目录
+    if (rmdir(path) != 0) {
+        return false;
+    }
+
+    return true;
+}
+
 
 bool renamefile(const char* old_file_name,const char* new_file_name){
 	if (rename(old_file_name,new_file_name))

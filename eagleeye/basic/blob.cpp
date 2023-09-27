@@ -352,6 +352,9 @@ void Blob::_sync() const{
 }
 
 void Blob::transfer(EagleeyeRuntime runtime, bool asyn, std::vector<int64_t> image_shape) const{
+    if(this->empty()){
+        return;
+    }
     // cpu_buffer -> gpu_buffer
     // cpu_buffer -> gpu_image (需要指定image大小)
     // gpu_buffer -> cpu_buffer
@@ -600,6 +603,10 @@ bool Blob::update(void* data, MemoryType mem_type, std::string option){
     if(data == NULL){
         return false;
     }
+    if(this->empty()){
+        // 如果为空，直接返回
+        return NULL;
+    }
 
     // copy
     if(mem_type == CPU_BUFFER){
@@ -691,6 +698,11 @@ bool Blob::update(void* data, MemoryType mem_type, std::string option){
 }
 
 bool Blob::update(){
+    if(this->empty()){
+        // 如果为空，直接返回
+        return true;
+    }
+
     if(this->m_memory_type == GPU_IMAGE){
         EAGLEEYE_LOGE("Dont support GPU_IMAGE.");
         return false;

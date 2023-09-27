@@ -36,6 +36,11 @@ public:
 	EAGLEEYE_CLASSIDENTITY(AnyNode);
 
 	/**
+	* @brief create basic info
+	*/
+	virtual void config(std::function<std::vector<AnyNode*>()> generator){};
+
+	/**
 	 *	@brief start pipeline run
 	 */
 	bool start();

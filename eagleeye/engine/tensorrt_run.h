@@ -62,7 +62,8 @@ public:
 		     std::vector<std::vector<int64_t>> output_shapes=std::vector<std::vector<int64_t>>(),
 		     int num_threads = -1, 
 		     RunPower model_power = HIGH_POWER, 
-		     std::string writable_path="/data/local/tmp/");
+		     std::string writable_path="/data/local/tmp/", 
+             bool inner_preprocess=false);
 
     virtual ~ModelRun();
 
@@ -110,6 +111,7 @@ protected:
     std::map<int32_t, std::string> m_engine_binds_to_name_map;
 private:
 	bool m_is_init;
+    bool m_inner_preprocess;
 };
 } // namespace eagleeye
 

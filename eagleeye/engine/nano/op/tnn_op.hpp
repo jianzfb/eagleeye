@@ -1,10 +1,10 @@
-#ifndef _EAGLEEYE_RKNN_OP_H_
-#define _EAGLEEYE_RKNN_OP_H_
+#ifndef _EAGLEEYE_TNN_OP_H_
+#define _EAGLEEYE_TNN_OP_H_
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/Dim.h"
 #include "eagleeye/basic/type.h"
-#include "eagleeye/engine/rknn_run.h"
+#include "eagleeye/engine/tnn_run.h"
 #include "eagleeye/common/EagleeyeTime.h"
 #include <string>
 #include <vector>
@@ -13,9 +13,9 @@ namespace eagleeye{
 namespace dataflow{
 
 template<std::size_t IN, std::size_t OUT>
-class RknnOp: public BaseOp<IN, OUT>{
+class TnnOp: public BaseOp<IN, OUT>{
 public:
-    RknnOp(std::string model_name, 
+    TnnOp(std::string model_name, 
 			   std::string device,
 			   std::vector<std::string> input_names,
 			   std::vector<std::vector<int64_t>> input_shapes,
@@ -46,9 +46,10 @@ public:
         m_model_folder = model_folder;
         m_writable_path = writable_path;
         m_model_init = false;
+        m_reverse_channel = false;
     };
-    RknnOp()=default;
-    virtual ~RknnOp(){
+    TnnOp()=default;
+    virtual ~TnnOp(){
     };
 
     virtual int init(std::map<std::string, std::vector<float>> params){
@@ -77,7 +78,7 @@ public:
             this->m_num_threads = (int)(params["num_threads"][0]);
         }
         this->m_model_power = HIGH_POWER;
-     
+        
         if(params.find("mean") != params.end()){
             this->m_mean = params["mean"];
         }
@@ -85,11 +86,8 @@ public:
             this->m_std = params["std"];
         }
         if(params.find("reverse_channel") != params.end()){
-            bool reverse_channel = (bool)(int(params["reverse_channel"][0]));
-            if(reverse_channel){
-                EAGLEEYE_LOGE("rknn engine dont support reverse_channel=true");
-            }
-        }        
+            this->m_reverse_channel = (bool)(int(params["reverse_channel"][0]));
+        }
         return 0;
     }
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){
@@ -118,7 +116,7 @@ public:
                     );
                 }
             }
-        }   
+        }
         return 0;
     };
     virtual int init(std::map<std::string, std::vector<std::string>> params){
@@ -132,18 +130,20 @@ public:
         if(params.find("input_names") != params.end()){
             this->m_input_names = params["input_names"];
         }
-
+        if(params.find("device") != params.end()){
+            this->m_device = params["device"][0];
+        }
         if(params.find("output_names") != params.end()){
             this->m_output_names = params["output_names"];
         }
         if(params.find("model_folder") != params.end()){
             this->m_model_folder = params["model_folder"][0];
-            EAGLEEYE_LOGD("Set RKNN model folder %s", this->m_model_folder.c_str());
+            EAGLEEYE_LOGD("Set TNN model folder %s", this->m_model_folder.c_str());
         }
         if(params.find("writable_path") != params.end()){
             this->m_writable_path = params["writable_path"][0];
-            EAGLEEYE_LOGD("Set RKNN Writable folder %s", this->m_writable_path.c_str());
-        }        
+            EAGLEEYE_LOGD("Set TNN Writable folder %s", this->m_writable_path.c_str());
+        }
         return 0;
     }
 
@@ -153,7 +153,7 @@ public:
             if(this->m_mean.size() > 0 && this->m_std.size() > 0){
                 is_inner_preprocess = true;
             }
-            m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<RknnRun>(
+            m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<TNNRun>(
                         m_model_name,
                         m_device, 
                         m_input_names,
@@ -162,14 +162,27 @@ public:
                         m_output_shapes,
                         m_num_threads,
                         m_model_power,
-                        m_writable_path,
-                        is_inner_preprocess), [](ModelEngine* d) {delete d;});
-            
+                        m_writable_path, is_inner_preprocess), [](ModelEngine* d) {delete d;});
+
+            if(is_inner_preprocess){
+                ConvertParam cp;
+                for(int i=0; i<this->m_std.size(); ++i){
+                    cp.scale[i] = 1.0f/this->m_std[i];
+                    cp.bias[i] = -(this->m_mean[i]/this->m_std[i]);
+                }
+
+                cp.reverse_channel = this->m_reverse_channel;
+                m_model_run->setInputConvertParam(
+                    this->m_input_names[0],
+                    cp
+                );
+            }
+
             this->m_model_run->setModelFolder(m_model_folder);
             this->m_model_init = this->m_model_run->initialize();
         }
         if(!this->m_model_init){
-            EAGLEEYE_LOGE("rknn model fail to initialize.");
+            EAGLEEYE_LOGE("tnn model fail to initialize.");
             return -1;
         }
 
@@ -178,14 +191,35 @@ public:
         std::map<std::string, unsigned char*> outputs;
 
         // 输入
+        bool input_is_ready = true;
         for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+            if(input[input_i].empty()){
+                input_is_ready = false;
+                break;
+            }
+
             inputs[m_input_names[input_i]] = input[input_i].cpu<unsigned char>();
+        }
+        if(!input_is_ready){
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
+                output_shape[0] = 0;
+                this->m_outputs[output_i] = Tensor(
+                            output_shape,
+                            m_output_types[output_i],
+                            DataFormat::AUTO,
+                            NULL
+                        );
+            }
+            return 0;
         }
 
         // 输出
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
             outputs[m_output_names[output_i]] = NULL;
         }
+
+        // 运行
         this->m_model_run->run(inputs, outputs);
 
         // 导出
@@ -200,6 +234,7 @@ public:
                         outputs[output_name]
                     );
         }
+               
         return 0;
     }
 
@@ -218,14 +253,16 @@ private:
     std::vector<std::vector<int64_t>> m_output_shapes;
     std::vector<EagleeyeType> m_input_types;
     std::vector<EagleeyeType> m_output_types;
+
+    std::vector<float> m_mean;
+    std::vector<float> m_std;
+    bool m_reverse_channel;
+
 	int m_num_threads;
 	RunPower m_model_power;
     std::string m_model_folder;
 	std::string m_writable_path;
     bool m_model_init;
-
-    std::vector<float> m_mean;
-    std::vector<float> m_std;    
 };    
 
 } // namespace dataflow

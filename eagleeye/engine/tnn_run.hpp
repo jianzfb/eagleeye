@@ -9,7 +9,7 @@ ModelRun<TNNRun, Enabled>::ModelRun(std::string model_name,
 		     std::vector<std::vector<int64_t>> output_shapes,
 		     int num_threads, 
 		     RunPower model_power, 
-		     std::string writable_path)
+		     std::string writable_path, bool inner_preprocess)
     	:ModelEngine(model_name,
 				 device,
 				 input_names,
@@ -22,6 +22,7 @@ ModelRun<TNNRun, Enabled>::ModelRun(std::string model_name,
     this->m_tnnproto = model_name + ".tnnproto";
     this->m_tnnmodel = model_name + ".tnnmodel";
     this->m_is_init = false;
+    this->m_inner_preprocess = inner_preprocess;
 }
 
 template<typename Enabled>
@@ -31,7 +32,7 @@ ModelRun<TNNRun, Enabled>::~ModelRun(){
 
 
 template<typename Enabled>
-bool ModelRun<TNNRun, Enabled>::run(std::map<std::string, unsigned char*> inputs, 
+bool ModelRun<TNNRun, Enabled>::run(std::map<std::string, const unsigned char*> inputs, 
 				   std::map<std::string, unsigned char*>& outputs){	
     // ignore outside inputs
     if(!this->m_predictor.get()){
@@ -56,10 +57,9 @@ bool ModelRun<TNNRun, Enabled>::run(std::map<std::string, unsigned char*> inputs
         dims[3] = node_shape[3];
 
         // 输入节点数据
-        unsigned char* node_data = inputs[node_name];
-
-        // 预处理参数 (仅支持3通道图像数据)
-        if(node_shape[1] == 3 && (this->m_input_convert_params.find(node_name) != this->m_input_convert_params.end())){
+        unsigned char* node_data = const_cast<unsigned char*>(inputs[node_name]);
+        if(this->m_inner_preprocess && this->m_input_convert_params.find(node_name) != this->m_input_convert_params.end()){
+            // 需要内部预处理，输入的数据为uchar
             ConvertParam convert_param = this->m_input_convert_params[node_name];
             TNN_NS::MatConvertParam tnn_cvt_param;
             tnn_cvt_param.scale = convert_param.scale;
@@ -70,6 +70,25 @@ bool ModelRun<TNNRun, Enabled>::run(std::map<std::string, unsigned char*> inputs
             auto frame_mat = 
                 std::make_shared<TNN_NS::Mat>(TNN_NS::DEVICE_ARM, TNN_NS::N8UC3, dims, (uint8_t *) node_data);
             this->m_predictor->SetInputMat(frame_mat, tnn_cvt_param, node_name);
+        }
+        else{
+            // 需要外部预处理，输入的数据为float
+            TNN_NS::MatConvertParam input_cvt_param;
+            input_cvt_param.scale = {1.0,1.0,1.0,1.0};//std
+            input_cvt_param.bias  = {0.0,0.0,0.0,0.0};//mean/std
+
+            std::vector<int64_t> shape = m_input_shapes[this->m_input_map_index[node_name]];
+            TNN_NS::DimsVector target_dims;
+            target_dims.resize(shape.size());
+            std::transform(shape.begin(),shape.end(),target_dims.begin(), [](int64_t d){return (int)d;});
+            
+            std::shared_ptr<TNN_NS::Mat> target_mat = 
+                    std::make_shared<TNN_NS::Mat>(TNN_NS::DEVICE_ARM, TNN_NS::NCHW_FLOAT, target_dims, node_data);  
+                    
+            TNN_NS::Status stats = 
+                this->m_predictor->SetInputMat(target_mat, 
+                                                input_cvt_param, 
+                                                node_name);                
         }
     }
 
@@ -179,6 +198,9 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
     
     network_config.network_type = TNN_NS::NETWORK_TYPE_AUTO;
     if(this->getWritablePath() != ""){
+        if(!isdirexist(this->getWritablePath().c_str())){
+            createdirectory(this->getWritablePath().c_str());
+        }
         network_config.cache_path = this->getWritablePath();
     }
 
@@ -194,34 +216,8 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
 
 template<typename Enabled>
 void* ModelRun<TNNRun, Enabled>::getInputPtr(std::string input_name){
-    if(this->m_input_map.find(input_name) == this->m_input_map.end()){
-        // 形状
-        std::vector<int64_t> shape = m_input_shapes[this->m_input_map_index[input_name]];
-        TNN_NS::DimsVector target_dims;
-        target_dims.resize(shape.size());
-        std::transform(shape.begin(),shape.end(),target_dims.begin(), [](int64_t d){return (int)d;});
-        if(target_dims[0] < 0){
-            EAGLEEYE_LOGE("TNN dynamic shape, please use resize.");
-            return NULL;
-        }
-
-        // 创建
-        std::shared_ptr<TNN_NS::Mat> target_mat = 
-                std::make_shared<TNN_NS::Mat>(TNN_NS::DEVICE_ARM, TNN_NS::NCHW_FLOAT, target_dims);  
-        this->m_input_map[input_name] = target_mat;
-        
-        // 设置输入
-        TNN_NS::Status stats = 
-            this->m_predictor->SetInputMat(target_mat, 
-                                            TNN_NS::MatConvertParam(), 
-                                            input_name);
-        if(stats != TNN_NS::TNN_OK){
-            EAGLEEYE_LOGE("TNN set input %s error", input_name.c_str());
-        }
-    }
-
-    std::shared_ptr<TNN_NS::Mat> target_mat = this->m_input_map[input_name];
-    return target_mat->GetData();
+    EAGLEEYE_LOGE("dont support getInputPtr");
+    return NULL;
 }
 
 template<typename Enabled>
@@ -234,47 +230,12 @@ const void* ModelRun<TNNRun, Enabled>::getOutputPtr(std::string output_name){
 
 template<typename Enabled>
 void ModelRun<TNNRun, Enabled>::resize(std::string input_name, std::vector<int64_t> shape){
-    // 形状
-    std::vector<int64_t> input_shape = shape;
-    TNN_NS::DimsVector target_dims;
-    target_dims.resize(input_shape.size());
-    std::transform(input_shape.begin(),input_shape.end(),target_dims.begin(), [](int64_t d){return (int)d;});
-    
-    // 创建
-    std::shared_ptr<TNN_NS::Mat> target_mat = 
-            std::make_shared<TNN_NS::Mat>(TNN_NS::DEVICE_ARM, TNN_NS::NCHW_FLOAT, target_dims);  
-    this->m_input_map[input_name] = target_mat;
+    EAGLEEYE_LOGE("dont support resize");
 }
 
 template<typename Enabled>
 void ModelRun<TNNRun, Enabled>::getInput(std::string input_name, void*& input_ptr, std::vector<int64_t>& shape){
-    if(this->m_input_map.find(input_name) == this->m_input_map.end()){
-        // 形状
-        std::vector<int64_t> input_shape = m_input_shapes[this->m_input_map_index[input_name]];
-        TNN_NS::DimsVector target_dims;
-        target_dims.resize(input_shape.size());
-        std::transform(input_shape.begin(),input_shape.end(),target_dims.begin(), [](int64_t d){return (int)d;});
-        if(target_dims[0] < 0){
-            EAGLEEYE_LOGE("TNN dynamic shape, please use resize.");
-            return;
-        }
-
-        // 创建
-        std::shared_ptr<TNN_NS::Mat> target_mat = 
-                std::make_shared<TNN_NS::Mat>(TNN_NS::DEVICE_ARM, TNN_NS::NCHW_FLOAT, target_dims);  
-        this->m_input_map[input_name] = target_mat;
-        
-        // 设置输入
-        this->m_predictor->SetInputMat(target_mat, TNN_NS::MatConvertParam(), input_name);
-    }
-
-    // 数据指针
-    input_ptr = (void*)(this->m_input_map[input_name]->GetData());
-
-    // 形状
-    TNN_NS::DimsVector dims_vec = this->m_input_map[input_name]->GetDims();
-    shape.resize(dims_vec.size());
-    std::transform(dims_vec.begin(),dims_vec.end(),shape.begin(), [](int d){return (int64_t)d;});
+    EAGLEEYE_LOGE("dont support getInput");
 }
 
 template<typename Enabled>
@@ -293,9 +254,6 @@ void ModelRun<TNNRun, Enabled>::getOutput(std::string output_name, void*& output
 
 template<typename Enabled>
 void ModelRun<TNNRun, Enabled>::refresh(){
-    std::map<std::string, std::shared_ptr<TNN_NS::Mat>>::iterator iter, iend(m_input_map.end());
-    for(iter = m_input_map.begin(); iter != iend; ++iter){
-        this->m_predictor->SetInputMat(iter->second, TNN_NS::MatConvertParam(), iter->first);
-    }
+    EAGLEEYE_LOGE("dont support refresh");
 }
 } // namespace eagleeye

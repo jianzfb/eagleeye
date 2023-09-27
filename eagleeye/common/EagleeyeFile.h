@@ -14,6 +14,11 @@ bool copyfile(const char* src_file,const char* target_file);
 bool deletefile(const char* file_path);
 
 /**
+ * @brief remove dir
+ */
+ bool deletedir(const char* dir_path);
+
+/**
  * @brief rename file name
  */ 
 bool renamefile(const char* old_file_name,const char* new_file_name);

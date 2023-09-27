@@ -9,7 +9,8 @@ ModelRun<RknnRun, Enabled>::ModelRun(std::string model_name,
 		     std::vector<std::vector<int64_t>> output_shapes,
 		     int num_threads, 
 		     RunPower model_power, 
-		     std::string writable_path)
+		     std::string writable_path,
+             bool inner_preprocess)
     	:ModelEngine(model_name,
 				 device,
 				 input_names,
@@ -22,13 +23,16 @@ ModelRun<RknnRun, Enabled>::ModelRun(std::string model_name,
     this->m_model_name = model_name + ".rknn";
     this->m_is_init = false;
     this->m_ctx = -1;
+    this->m_inner_preprocess = inner_preprocess;
 }
 
 template<typename Enabled>
 ModelRun<RknnRun, Enabled>::~ModelRun(){
 	// do nothing
     // Destroy rknn memory
-    rknn_destroy_mem(m_ctx, this->m_input_mems[0]);
+    for(uint32_t i = 0; i < this->m_io_num.n_input; ++i){
+        rknn_destroy_mem(this->m_ctx, this->m_input_mems[i]);
+    }
     for (uint32_t i = 0; i < this->m_io_num.n_output; ++i) {
         rknn_destroy_mem(this->m_ctx, this->m_output_mems[i]);
     }
@@ -61,24 +65,31 @@ bool ModelRun<RknnRun, Enabled>::run(std::map<std::string, const unsigned char*>
 		}
 
         const unsigned char* input_data = inputs[node_name];
-        int width  = this->m_input_attrs[index].dims[2];
-        int stride = m_input_attrs[index].w_stride;
-        if (width == stride) {
-            memcpy(this->m_input_mems[0]->virt_addr, input_data, width * m_input_attrs[0].dims[1] * m_input_attrs[0].dims[3]);
-        } else {
-            int height  = m_input_attrs[0].dims[1];
-            int channel = m_input_attrs[0].dims[3];
-            // copy from src to dst with stride
-            const uint8_t* src_ptr = input_data;
-            uint8_t* dst_ptr = (uint8_t*)this->m_input_mems[0]->virt_addr;
-            // width-channel elements
-            int src_wc_elems = width * channel;
-            int dst_wc_elems = stride * channel;
-            for (int h = 0; h < height; ++h) {
-                memcpy(dst_ptr, src_ptr, src_wc_elems);
-                src_ptr += src_wc_elems;
-                dst_ptr += dst_wc_elems;
+        if(this->m_inner_preprocess){
+            // 输入数据为NHWC IMAGE TENSOR
+            int width  = this->m_input_attrs[index].dims[2];
+            int stride = m_input_attrs[index].w_stride;
+            if (width == stride) {
+                memcpy(this->m_input_mems[index]->virt_addr, input_data, width * m_input_attrs[index].dims[1] * m_input_attrs[index].dims[3]);
+            } else {
+                int height  = m_input_attrs[index].dims[1];
+                int channel = m_input_attrs[index].dims[3];
+                // copy from src to dst with stride
+                const uint8_t* src_ptr = input_data;
+                uint8_t* dst_ptr = (uint8_t*)this->m_input_mems[index]->virt_addr;
+                // width-channel elements
+                int src_wc_elems = width * channel;
+                int dst_wc_elems = stride * channel;
+                for (int h = 0; h < height; ++h) {
+                    memcpy(dst_ptr, src_ptr, src_wc_elems);
+                    src_ptr += src_wc_elems;
+                    dst_ptr += dst_wc_elems;
+                }
             }
+        }
+        else{
+            // 输入数据为NCHW FLOAT TENSOR
+            memcpy(this->m_input_mems[index]->virt_addr, input_data, m_input_attrs[index].dims[1]*m_input_attrs[index].dims[2]*m_input_attrs[index].dims[3]*sizeof(float));
         }
     }
 
@@ -120,7 +131,7 @@ bool ModelRun<RknnRun, Enabled>::initialize(){
     else{
         model_path = model_folder + std::string("/") + this->m_model_name;
     }
-    
+
     EAGLEEYE_LOGD("Try Load RKNN model from %s", model_path.c_str());
 
     // 检查文件是否存在，否则更换查找位置
@@ -191,13 +202,22 @@ bool ModelRun<RknnRun, Enabled>::initialize(){
     }
 
     // Create input tensor memory
-    this->m_input_mems = new rknn_tensor_mem*[1];
-    // default input type is int8 (normalize and quantize need compute in outside)
-    // if set uint8, will fuse normalize and quantize to npu
-    this->m_input_attrs[0].type = RKNN_TENSOR_UINT8;
-    // default fmt is NHWC, npu only support NHWC in zero copy mode
-    this->m_input_attrs[0].fmt = RKNN_TENSOR_NHWC;
-    m_input_mems[0] = rknn_create_mem(m_ctx, m_input_attrs[0].size_with_stride);
+    this->m_input_mems = new rknn_tensor_mem*[m_io_num.n_input];
+    for(uint32_t i = 0; i < m_io_num.n_input; ++i){
+        if(m_inner_preprocess){
+            // default input type is int8 (normalize and quantize need compute in outside)
+            // if set uint8, will fuse normalize and quantize to npu
+            this->m_input_attrs[i].type = RKNN_TENSOR_UINT8;
+            // default fmt is NHWC, npu only support NHWC in zero copy mode
+            this->m_input_attrs[i].fmt = RKNN_TENSOR_NHWC;
+            m_input_mems[i] = rknn_create_mem(m_ctx, m_input_attrs[i].size_with_stride);
+        }
+        else{
+            this->m_input_attrs[i].type = RKNN_TENSOR_FLOAT32;
+            this->m_input_attrs[i].fmt = RKNN_TENSOR_NCHW;
+            m_input_mems[i] = rknn_create_mem(m_ctx, m_input_attrs[i].n_elems * sizeof(float));
+        }
+    }
 
     // Create output tensor memory
     this->m_output_mems = new rknn_tensor_mem*[m_io_num.n_output];
@@ -209,10 +229,12 @@ bool ModelRun<RknnRun, Enabled>::initialize(){
     }
 
     // Set input tensor memory
-    ret = rknn_set_io_mem(m_ctx, m_input_mems[0], &m_input_attrs[0]);
-    if (ret < 0) {
-        EAGLEEYE_LOGD("rknn_set_io_mem fail! ret=%d\n", ret);
-        return false;
+    for(uint32_t i = 0; i < m_io_num.n_input; ++i){
+        ret = rknn_set_io_mem(m_ctx, m_input_mems[i], &m_input_attrs[i]);
+        if (ret < 0) {
+            EAGLEEYE_LOGD("input %d, rknn_set_io_mem fail! ret=%d\n", i, ret);
+            return false;
+        }
     }
 
     // Set output tensor memory
