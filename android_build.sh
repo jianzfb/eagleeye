@@ -9,7 +9,11 @@ CRTDIR=$(pwd)
 mkdir build
 cd build
 # arm64编译
+if [ "$1"x = "app"x ]; then
+cmake -DCMAKE_BUILD_TYPE=Release -DLITE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 -DANDROID_APP=ON ..
+else
 cmake -DCMAKE_BUILD_TYPE=Release -DLITE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
+fi
 # arm32编译
 # cmake -DCMAKE_BUILD_TYPE=Release -DLITE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=armeabi-v7a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 ..
 # 使用ffmpeg

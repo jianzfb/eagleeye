@@ -9,7 +9,8 @@ ModelRun<TensorrtRun, Enabled>::ModelRun(std::string model_name,
             std::vector<std::vector<int64_t>> output_shapes,
 			int num_threads, 
 		    RunPower model_power, 
-            std::string writable_path)
+            std::string writable_path,
+            bool inner_preprocess)
 	:ModelEngine(model_name,
 				 device,
 				 input_names,
@@ -24,6 +25,7 @@ ModelRun<TensorrtRun, Enabled>::ModelRun(std::string model_name,
 		this->m_model_name = this->m_model_name+".onnx";
 	}    
 	this->m_is_init = false;    
+    this->m_inner_preprocess = inner_preprocess;
 }
 
 template<typename Enabled>

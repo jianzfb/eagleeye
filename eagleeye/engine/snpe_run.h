@@ -46,7 +46,8 @@ public:
 		     std::vector<std::vector<int64_t>> output_shapes=std::vector<std::vector<int64_t>>(),
 		     int num_threads = -1, 
 		     RunPower model_power = HIGH_POWER, 
-		     std::string writable_path="/data/local/tmp/");
+		     std::string writable_path="/data/local/tmp/",
+			 bool inner_preprocess=false);
 	/**
 	 * [destructor]
 	 */
@@ -119,6 +120,7 @@ protected:
 	std::string m_model_name;
 	std::vector<std::shared_ptr<float>> m_temp_ptrs;
 	bool m_is_init;
+	bool m_inner_preprocess;
 };	
 }
 #include "eagleeye/engine/snpe_run.hpp"

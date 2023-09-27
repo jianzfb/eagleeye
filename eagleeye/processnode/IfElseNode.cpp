@@ -3,6 +3,13 @@
 namespace eagleeye{
 IfElseNode::IfElseNode(AnyNode* x, AnyNode* y)
     :AnyNode("ifelse"){
+    this->setNumberOfInputSignals(1);
+    this->m_x = NULL;
+    this->m_y = NULL;
+    if(x == NULL || y == NULL){
+        return;
+    }
+
     // set output port
     int x_output_signal_num = x->getNumberOfOutputSignals();
     this->setNumberOfOutputSignals(x_output_signal_num);
@@ -34,19 +41,29 @@ IfElseNode::~IfElseNode(){
     }
 }
 
+void IfElseNode::config(std::function<std::vector<AnyNode*>()> generator){
+    // set input port number
+    // 0 - conditon signal
+    // 1 - data signal
+    // 2 - data signal
+    // ...
+    std::vector<AnyNode*> upper_nodes = generator();
+    this->m_x = upper_nodes[0];
+    this->m_y = upper_nodes[1];
+
+    int x_output_signal_num = this->m_x->getNumberOfOutputSignals();
+    this->setNumberOfOutputSignals(x_output_signal_num);
+    for(int i=0; i<x_output_signal_num; ++i){
+        this->setOutputPort(this->m_x->getOutputPort(i)->make(), i);
+    }
+
+    std::string x_name =this->m_x->getUnitName();
+    this->m_x->setUnitName((x_name+":TRUE").c_str());
+    std::string y_name =this->m_y->getUnitName();
+    this->m_y->setUnitName((y_name+":FALSE").c_str());
+}
+
 void IfElseNode::executeNodeInfo(){
-    if(m_placeholders.size() == 0){
-        int input_sig_num = this->getNumberOfInputSignals();
-        for(int i=1; i<input_sig_num; ++i){  
-            m_placeholders.push_back(this->getInputPort(i)->make());
-        }
-    }
-
-    int input_sig_num = this->getNumberOfInputSignals();
-    for(int i=1; i<input_sig_num; ++i){  
-        m_placeholders[i-1]->copy(this->getInputPort(i));
-    }
-
     // get input / output signal
     // 1.step 条件信号
     BooleanSignal* condition_sig = (BooleanSignal*)(this->getInputPort(0));
@@ -54,10 +71,6 @@ void IfElseNode::executeNodeInfo(){
         // 执行X
         // 赋值所有输入信号到X
         EAGLEEYE_LOGD("true branch in IFELSE");
-        for(int i=0; i<m_placeholders.size(); ++i){  
-            this->m_x->setInputPort(m_placeholders[i], i);
-        }
-
         this->m_x->start();
 
         int output_sig_num = this->getNumberOfOutputSignals();
@@ -68,12 +81,7 @@ void IfElseNode::executeNodeInfo(){
     else{
         // 执行Y
         EAGLEEYE_LOGD("false branch in IFELSE");
-        for(int i=0; i<m_placeholders.size(); ++i){  
-            this->m_y->setInputPort(m_placeholders[i], i);
-        }
-
         this->m_y->start();
-
         int output_sig_num = this->getNumberOfOutputSignals();
         for(int i=0; i<output_sig_num; ++i){
             this->getOutputPort(i)->copy(this->m_y->getOutputPort(i));

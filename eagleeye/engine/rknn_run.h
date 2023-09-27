@@ -32,7 +32,8 @@ public:
 		     std::vector<std::vector<int64_t>> output_shapes=std::vector<std::vector<int64_t>>(),
 		     int num_threads = -1, 
 		     RunPower model_power = HIGH_POWER, 
-		     std::string writable_path="/data/local/tmp/");
+		     std::string writable_path="/data/local/tmp/",
+			 bool inner_preprocess=true);
 
     /**
 	 * [destructor]
@@ -69,6 +70,7 @@ private:
 
     std::string m_model_name;
     rknn_input_output_num m_io_num;
+	bool m_inner_preprocess;
 };
 } // namespace eagleeye
 

@@ -143,9 +143,11 @@ private:
         rtn_code = (&m_handler)->runOnCpu(ordered_input);
         break;
     }
+
     long end_time = EagleeyeTime::getCurrentTime();
     EAGLEEYE_LOGD("Run %s with %d us on %s.", name.c_str(), (end_time-start_time),runtime.device().c_str());
     elapsed_time = (int32_t)(end_time-start_time);
+    
     return rtn_code;
   }
 

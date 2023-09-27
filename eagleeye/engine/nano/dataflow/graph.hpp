@@ -12,6 +12,7 @@
 #include "eagleeye/basic/count_down_latch.h"
 // #include "eagleeye/engine/nano/dataflow/heft.h"
 #include "eagleeye/common/EagleeyeStr.h"
+#include "eagleeye/common/EagleeyeRuntime.h"
 #include <atomic>
 #include <iostream>
 #include <memory>
@@ -59,8 +60,9 @@ public:
         break;
     }  
 
-    // // 3.step others
-    // m_waiting_stop_count = 0;
+    // 3.step performance adjust
+    m_is_performance_set = false;
+    m_performance = CPUAffinityPolicy::AFFINITY_BIG_ONLY;
   }
 
   /**
@@ -131,6 +133,12 @@ public:
     if(outputs.size() == 0){
       EAGLEEYE_LOGD("Output node empty, skip run.");
       return false;
+    }
+
+    if(!m_is_performance_set){
+      EagleeyeCPU cpu_info;
+      cpu_info.getRuntime()->SchedSetAffinity(m_performance);
+      m_is_performance_set = true;
     }
 
     // 2.step reset inner parameter
@@ -287,6 +295,8 @@ private:
   Schedule*                                 m_schedule;
   bool                                      m_is_success;
   CountDownLatch                            m_count_down_latch;
+  bool                                      m_is_performance_set;
+  CPUAffinityPolicy                         m_performance;
 
   void work(std::size_t id) {
     while (m_count_down_latch.Count() > 0) {
@@ -338,9 +348,9 @@ private:
 
       // 5.2.step transfer data asynchronous
       Node* next_node = &next->next();
+
       EagleeyeRuntime target_runtime = this->m_schedule->getRuntime(next_node);
       node->transfer(next->pre_slot(), target_runtime, true);
-
       // 5.3.step check, whether all dependents have been finish
       if (next->next().prev_.size() == (n + 1)){
         m_queue[i % numWorker()].push(next_node);
