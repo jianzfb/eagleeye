@@ -45,7 +45,7 @@ public:
         m_model_power = model_power;
         m_model_folder = model_folder;
         m_writable_path = writable_path;
-        m_rgb2bgr = false;
+        m_reverse_channel = false;
         m_model_init = false;
     };
     
@@ -84,8 +84,8 @@ public:
                 this->m_std[i] = 1.0f/this->m_std[i];
             }
         }
-        if(params.find("rgb2bgr") != params.end()){
-            this->m_rgb2bgr = bool(params["rgb2bgr"][0]);
+        if(params.find("reverse_channel") != params.end()){
+            this->m_reverse_channel = (bool)(int(params["reverse_channel"][0]));
         }
 
         if(params.find("num_threads") != params.end()){
@@ -186,6 +186,11 @@ public:
             return -1;
         }
 
+        bool is_inner_preprocess = false;
+        if(this->m_mean.size() > 0 && this->m_std.size() > 0){
+            is_inner_preprocess = true;
+        }
+
         // 输入数据
         for(int input_i=0; input_i<m_input_names.size(); ++input_i){
             // 检查数据格式
@@ -199,7 +204,7 @@ public:
             float* preprocessed_data = (float*)(this->m_model_run->getInputPtr(m_input_names[input_i]));
 
             Dim x_dims = x.dims();
-            if(x.type() == EAGLEEYE_UCHAR || x.type() == EAGLEEYE_CHAR){
+            if(is_inner_preprocess){
                 // 需要进行预处理流程
                 // NxHxWx3 或 HxWx3 格式
                 if(x_dims.size() == 4){
@@ -210,7 +215,7 @@ public:
                     int x_height = x_dims[1];
 
                     for(int b_i=0; b_i<batch_size; ++b_i){
-                        if(this->m_rgb2bgr){
+                        if(this->m_reverse_channel){
                             this->m_model_run->bgrToRgbTensorCHW(
                                 x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
                                 preprocessed_data + b_i * x_width * x_height * 3, 
@@ -236,7 +241,7 @@ public:
                     // HxWx3
                     int x_width = x_dims[1];
                     int x_height = x_dims[0];
-                    if(this->m_rgb2bgr){
+                    if(this->m_reverse_channel){
                         this->m_model_run->bgrToRgbTensorCHW(
                             x.cpu<unsigned char>(), 
                             preprocessed_data, 
@@ -307,7 +312,7 @@ private:
 
     std::vector<float> m_mean;
     std::vector<float> m_std;
-    bool m_rgb2bgr;
+    bool m_reverse_channel;
 	int m_num_threads;
 	RunPower m_model_power;
     std::string m_model_folder;
