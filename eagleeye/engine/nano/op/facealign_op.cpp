@@ -1,6 +1,8 @@
 #include "eagleeye/engine/nano/op/facealign_op.h"
 #if defined(__ANDROID__) || defined(ANDROID)  
 #include "eagleeye/engine/math/arm/interpolate.h"
+#else
+#include "eagleeye/engine/math/x86/interpolate.h"
 #endif
 #include "eagleeye/common/EagleeyeLog.h"
 #include <fstream>
@@ -83,6 +85,16 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
             this->m_target_w,
             this->m_target_h
         );
+#else
+        math::x86::bilinear_rgb_8u_3d_interp(
+            image_ptr,
+            output_ptr,
+            x1-x0,
+            y1-y0,
+            x0, y0, image_w,
+            this->m_target_w,
+            this->m_target_h
+        );
 #endif
     }
     else{
@@ -96,6 +108,16 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
 
 #if defined(__ANDROID__) || defined(ANDROID)    
         math::arm::bilinear_gray_8u_1d_interp(
+            image_ptr,
+            output_ptr,
+            image_w,
+            image_h,
+            x0,y0,image_w,
+            this->m_target_w,
+            this->m_target_h
+        );
+#else
+        math::x86::bilinear_gray_8u_1d_interp(
             image_ptr,
             output_ptr,
             image_w,
