@@ -50,19 +50,14 @@ public:
     }
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
-        std::cout<<"1"<<std::endl;
         const bool* condition_ptr = input[0].cpu<bool>();
-        std::cout<<"2"<<std::endl;
-        std::cout<<"input size "<<input.size()<<std::endl;
         if(condition_ptr[0]){
-            std::cout<<"3"<<std::endl;
             this->m_true_func->runOnCpu(std::vector<Tensor>(input.begin() + 1, input.end()));
             for(int output_i=0; output_i<this->getOutputNum(); ++output_i){
                 this->m_outputs[output_i] = this->m_true_func->getOutput(output_i);
             }
         }
         else{
-            std::cout<<"4"<<std::endl;
             this->m_false_func->runOnCpu(std::vector<Tensor>(input.begin() + 1, input.end()));
             for(int output_i=0; output_i<this->getOutputNum(); ++output_i){
                 this->m_outputs[output_i] = this->m_false_func->getOutput(output_i);

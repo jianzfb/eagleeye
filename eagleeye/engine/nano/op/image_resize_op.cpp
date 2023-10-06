@@ -28,6 +28,7 @@ int ResizeOp::init(std::map<std::string, std::vector<float>> params){
     }
 
     // vector, scalar
+    this->m_scale = 0.0f;
     if(params.find("out_size") != params.end()){
         this->m_out_size.resize(2);
         this->m_out_size[0] = int64_t(params["out_size"][0]);       // width
@@ -84,9 +85,9 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
         h_dim_i = 1; w_dim_i = 2; // N,H,W,3
     }
 
-    int out_width = m_out_size[0];
-    int out_height = m_out_size[1];
-    float scale = m_scale;
+    int out_width = this->m_out_size[0];
+    int out_height = this->m_out_size[1];
+    float scale = this->m_scale;
     if(scale > 0.0f){
         // 如果设置scale,则使用scale
         out_height = (int)(dimx[h_dim_i]*scale + 0.5f);

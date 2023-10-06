@@ -144,6 +144,7 @@ public:
 
     // 2.step reset inner parameter
     for(Node* n: m_nodes){
+        n->count_ = 0;
         n->output_ = false;
         n->ready_.resize(n->prev_.size());
         for(unsigned int i=0; i<n->prev_.size(); ++i){
@@ -324,6 +325,9 @@ private:
   }
 
   void __fire(std::size_t id, Node* node) {
+    // 1.step reset
+    node->count_ = 0;
+
     // 2.step schedule 
     EagleeyeRuntime runtime = this->m_schedule->getRuntime(node);
 
@@ -345,22 +349,24 @@ private:
     // 4.step active succeed nodes
     int i = id;
     for (Edge* next: node->next_){
-      // 4.1.step transfer data asynchronous
+      // 4.1.step increment 1, for succeed node
+      unsigned n = next->next().count_.fetch_add(1);
+
+      // 4.2.step transfer data asynchronous
       Node* next_node = &next->next();
       EagleeyeRuntime target_runtime = this->m_schedule->getRuntime(next_node);
       node->transfer(next->pre_slot(), target_runtime, true);
       if(next_node->isCircle()){
         continue;
       }
-
-      // 4.2.step check, whether all dependents have been finish
+      // 4.3.step check, whether all dependents have been finish
       int ready_num = 0;
       if(next_node->ready_.size() > 0){
         next_node->ready_[next->next_slot()] = 1;
         ready_num = std::accumulate(next_node->ready_.begin(), next_node->ready_.end(), 0); 
       }
 
-      if (next_node->prev_.size() == ready_num){
+      if (next_node->prev_.size() == ready_num && next_node->prev_.size() == (n + 1)){
         m_queue[i % numWorker()].push(next_node);
         ++i;
       }

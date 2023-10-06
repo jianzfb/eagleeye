@@ -28,6 +28,7 @@ public:
       fixed_on_runtime_ = true;
     }
 
+    count_ = 0;
     output_ = false;
   }
   virtual ~Node () noexcept = default;
@@ -144,6 +145,7 @@ public:
 
 protected:
   bool output_;
+  std::atomic_uint count_;
 
   std::vector<Edge *> next_;
   std::vector<Edge *> prev_;

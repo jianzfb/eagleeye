@@ -133,6 +133,7 @@ private:
   template <std::size_t ... Is>
   int fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime, int32_t& elapsed_time) {
     std::vector<typename F::Type> ordered_input;
+
     if(data_.size() > 0){
       std::vector<typename F::Type> unordered_input = {*((typename F::Type*)(data_[Is]->getOutput(index_[Is]))) ...};
       ordered_input = std::vector<typename F::Type>{unordered_input[inv_order_[Is]] ...};
