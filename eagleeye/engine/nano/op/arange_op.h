@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class ArangeOp: public BaseOp<0, 1>,DynamicCreator<ArangeOp>{
 public:
+    using BaseOp<0, 1>::init;
     ArangeOp() = default;
     ArangeOp(int64_t start, int64_t stop, int64_t step, EagleeyeType data_type);
     ArangeOp(const ArangeOp& op);

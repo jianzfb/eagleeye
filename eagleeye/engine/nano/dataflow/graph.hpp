@@ -92,17 +92,20 @@ public:
    * @param model_path 
    */
   void init(const char* model_path=NULL){
-    // 1.step load model path
-    if(model_path != NULL){
-      // 从模型文件加载模型结构
-      // 加载模型DAG，和参数
-    }
-
-    // 2.step 分析节点结构
+    // 1.step 分析节点结构
     for(Node* n: m_nodes){
-      if(n->getDependentNum() == 0){
+      if(n->getDependentNum() == 0 || n->isCircle()){
+        // 无依赖或者循环节点
         m_entry_nodes.push_back(n);
       }
+    }
+
+    // 2.step load model path
+    if(model_path == NULL){
+      // 从模型文件加载模型结构
+      // 加载模型DAG，和参数
+      EAGLEEYE_LOGE("No model file.");
+      return;
     }
 
     // 3.step init node
@@ -125,10 +128,8 @@ public:
    * @brief start worker thread
    * 
    */
-  bool run(std::map<std::string, 
-                    std::pair<void*,std::vector<int64_t>>> inputs, 
-           std::map<std::string, 
-                    std::tuple<void*,std::vector<int64_t>, EagleeyeType>>& outputs){
+  bool run(std::map<std::string, std::pair<void*,std::vector<int64_t>>> inputs, 
+           std::map<std::string, std::tuple<void*,std::vector<int64_t>, EagleeyeType>>& outputs){
     // 1.step check
     if(outputs.size() == 0){
       EAGLEEYE_LOGD("Output node empty, skip run.");
@@ -145,6 +146,14 @@ public:
     for(Node* n: m_nodes){
         n->count_ = 0;
         n->output_ = false;
+        n->ready_.resize(n->prev_.size());
+        for(unsigned int i=0; i<n->prev_.size(); ++i){
+          int next_slot = n->prev_[i]->next_slot();
+          n->ready_[next_slot] = 0;
+          if(n->prev_[i]->prev().isCircle()){
+            n->ready_[next_slot] = 1;
+          }
+        }
     }
 
     // 3.step update input data
@@ -208,9 +217,7 @@ public:
   }
 
   template <class F, class ... Args>
-  deduce_node_type<F, Args...>* add(std::string name, 
-                                    F f, 
-                                    EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME)) {
+  deduce_node_type<F, Args...>* add(std::string name, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME), bool is_circle=false) {
     // 1.step assign name
     if(name == ""){
       name = "node";
@@ -230,13 +237,12 @@ public:
     }
 
     // 2.step build node
-    auto * n = makeNode<F, Args...>(f, m_nodes.size(), fixed);
+    auto * n = makeNode<F, Args...>(m_nodes.size(), fixed, is_circle);
     n->name = name;
     m_nodes.push_back(n);
     m_nodes_map[name] = n;
     return n;
   }
-
 
   void bind(std::string from_name, int from_i, std::string to_name, int to_i){
     Node* from = this->find(from_name);
@@ -245,7 +251,7 @@ public:
   }
 
   void bind(Node* from, int from_i, Node* to, int to_i){
-    assert(!from->findNext(to));  
+    assert(!from->findNext(to));
     assert(!to->findPrev(from));
     Edge * e = new Edge(*from, from_i, *to, to_i);
     m_edges.push_back(e);
@@ -321,7 +327,7 @@ private:
   void __fire(std::size_t id, Node* node) {
     // 1.step reset
     node->count_ = 0;
-    
+
     // 2.step schedule 
     EagleeyeRuntime runtime = this->m_schedule->getRuntime(node);
 
@@ -340,19 +346,27 @@ private:
       m_count_down_latch.CountDown();
     }
 
-    // 5.step active succeed nodes
+    // 4.step active succeed nodes
     int i = id;
     for (Edge* next: node->next_){
-      // 5.1.step increment 1, for succeed node
+      // 4.1.step increment 1, for succeed node
       unsigned n = next->next().count_.fetch_add(1);
 
-      // 5.2.step transfer data asynchronous
+      // 4.2.step transfer data asynchronous
       Node* next_node = &next->next();
-
       EagleeyeRuntime target_runtime = this->m_schedule->getRuntime(next_node);
       node->transfer(next->pre_slot(), target_runtime, true);
-      // 5.3.step check, whether all dependents have been finish
-      if (next->next().prev_.size() == (n + 1)){
+      if(next_node->isCircle()){
+        continue;
+      }
+      // 4.3.step check, whether all dependents have been finish
+      int ready_num = 0;
+      if(next_node->ready_.size() > 0){
+        next_node->ready_[next->next_slot()] = 1;
+        ready_num = std::accumulate(next_node->ready_.begin(), next_node->ready_.end(), 0); 
+      }
+
+      if (next_node->prev_.size() == ready_num && next_node->prev_.size() == (n + 1)){
         m_queue[i % numWorker()].push(next_node);
         ++i;
       }

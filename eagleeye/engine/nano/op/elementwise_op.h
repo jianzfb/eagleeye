@@ -16,6 +16,7 @@ enum ElementwiseOpType{
 }; 
 class ElementwiseOp:public BaseOp<2, 1>,DynamicCreator<ElementwiseOp>{
 public:
+    using BaseOp<2, 1>::init;
     ElementwiseOp();
     ElementwiseOp(const ElementwiseOp& op);
     virtual ~ElementwiseOp();

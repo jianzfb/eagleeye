@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class SelectByThresOp: public BaseOp<1, 2>,DynamicCreator<SelectByThresOp>{
 public:
+    using BaseOp<1, 2>::init;
     SelectByThresOp() = default;
     SelectByThresOp(std::vector<float> thres, int64_t index, bool attach_index=false, bool exclusive=false);  
     SelectByThresOp(const SelectByThresOp& op);

@@ -32,6 +32,7 @@ public:
     virtual int init(std::map<std::string, std::vector<float>> params)=0;
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params)=0;
     virtual int init(std::map<std::string, std::vector<std::string>> params)=0;
+    virtual int init(std::map<std::string, void*> params){return 0;}
 
     /**
      * @brief run on cpu
@@ -54,65 +55,6 @@ public:
      * 
      * @return int 
      */
-    virtual int getOutputNum()=0;
-
-    /**
-     * @brief Get the Input Num object
-     * 
-     * @return int 
-     */
-    virtual int getInputNum()=0;
-
-    /**
-     * @brief Get the Output Tensor object
-     * 
-     * @param index 
-     * @return Tensor& 
-     */
-    virtual Tensor& getOutput(int index)=0;
-};
-
-
-template<std::size_t IN, std::size_t OUT>
-class BaseOp:public Base{
-public:
-    typedef Tensor                      Type;
-    typedef make_index_sequence<IN>     INS;
-    typedef make_index_sequence<OUT>    OUTS;
-
-    /**
-     * @brief Construct a new Base Op object
-     * 
-     */
-    BaseOp()
-        :m_input_num(IN),m_output_num(OUT){
-            this->m_input_shape.resize(m_input_num);
-            this->m_output_shape.resize(m_output_num);
-            this->m_support_cpu = false;
-            this->m_support_gpu = false;
-            this->m_outputs.resize(OUT);
-        };
-
-    /**
-     * @brief Destroy the Base Op object
-     * 
-     */
-    virtual ~BaseOp(){};
-
-    /**
-     * @brief check whether support implementation
-     * 
-     * @return true 
-     * @return false 
-     */
-    bool isSupportCPU(){return m_support_cpu;}
-    bool isSupportGPU(){return m_support_gpu;}
-
-    /**
-     * @brief Get the Output Num object
-     * 
-     * @return int 
-     */
     virtual int getOutputNum(){
         return this->m_output_num;
     }
@@ -125,6 +67,15 @@ public:
     virtual int getInputNum(){
         return this->m_input_num;
     }
+
+    /**
+     * @brief check whether support implementation
+     * 
+     * @return true 
+     * @return false 
+     */
+    bool isSupportCPU(){return m_support_cpu;}
+    bool isSupportGPU(){return m_support_gpu;}
 
     /**
      * @brief Get the Output Shape object
@@ -194,16 +145,45 @@ public:
      */
     virtual void clear(){}
 
-protected:
+public:
+    bool m_support_cpu;
+    bool m_support_gpu;
+
     int m_input_num;
     int m_output_num;
 
     std::vector<std::vector<int64_t>> m_output_shape;
     std::vector<std::vector<int64_t>> m_input_shape;
     std::vector<Tensor> m_outputs;
+};
 
-    bool m_support_cpu;
-    bool m_support_gpu;
+
+template<std::size_t IN, std::size_t OUT>
+class BaseOp:public Base{
+public:
+    typedef Tensor                      Type;
+    typedef make_index_sequence<IN>     INS;
+    typedef make_index_sequence<OUT>    OUTS;
+
+    /**
+     * @brief Construct a new Base Op object
+     * 
+     */
+    BaseOp(){
+            m_input_num = IN;
+            m_output_num = OUT;
+            this->m_input_shape.resize(m_input_num);
+            this->m_output_shape.resize(m_output_num);
+            this->m_support_cpu = false;
+            this->m_support_gpu = false;
+            this->m_outputs.resize(OUT);
+        };
+
+    /**
+     * @brief Destroy the Base Op object
+     * 
+     */
+    virtual ~BaseOp(){};
 };
 }
 }

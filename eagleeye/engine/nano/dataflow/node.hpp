@@ -21,8 +21,8 @@ public:
   friend class AsynGraph;
   std::string name;
 
-  Node(int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  :id_(id),fixed_on_runtime_(false) {
+  Node(int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME), bool is_circle=false)
+  :id_(id),fixed_on_runtime_(false),is_circle_(is_circle) {
     if(fixed.type() != EAGLEEYE_UNKNOWN_RUNTIME){
       runtime_ = fixed;
       fixed_on_runtime_ = true;
@@ -71,6 +71,7 @@ public:
   virtual int init(std::map<std::string, std::vector<float>> data) noexcept = 0;
   virtual int init(std::map<std::string, std::vector<std::vector<float>>> params) noexcept =0;
   virtual int init(std::map<std::string, std::vector<std::string>> params) noexcept = 0;
+  virtual int init(std::map<std::string, void*> params) noexcept = 0;
 
   /**
    * @brief transfer target runtime
@@ -88,6 +89,10 @@ public:
 
   int getId(){
     return id_;
+  }
+
+  bool isCircle(){
+    return is_circle_;
   }
 
   /**
@@ -139,8 +144,8 @@ public:
   virtual void* getOutput(int index, int request_count=0){return NULL;};
 
 protected:
-  std::atomic_uint count_;
   bool output_;
+  std::atomic_uint count_;
 
   std::vector<Edge *> next_;
   std::vector<Edge *> prev_;
@@ -148,8 +153,10 @@ protected:
   std::vector<int>    index_;
   std::vector<int>    order_;
   std::vector<int>    inv_order_;
+  std::vector<int>    ready_;
 
   int id_;
+  bool is_circle_;
   EagleeyeRuntime runtime_;
   bool fixed_on_runtime_;
 };

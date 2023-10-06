@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class Split2DOp:public BaseOp<1, 2>,DynamicCreator<Split2DOp>{
 public:
+    using BaseOp<1, 2>::init;
     Split2DOp(int axis);
     Split2DOp(const Split2DOp& op);
 

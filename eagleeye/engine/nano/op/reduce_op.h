@@ -18,6 +18,7 @@ enum ReduceOpType{
 
 class ReduceOp:public BaseOp<1, 1>,DynamicCreator<ReduceOp>{
 public:
+    using BaseOp<1, 1>::init;
     ReduceOp(){}
     ReduceOp(ReduceOpType op_type, std::vector<int64_t> axis, bool keep_axis);
     ReduceOp(const ReduceOp& op);

@@ -11,6 +11,7 @@ namespace dataflow{
 
 class ShapeOp:public BaseOp<1, 1>,DynamicCreator<ShapeOp>{
 public:
+    using BaseOp<1, 1>::init;
     ShapeOp(int64_t start, int64_t stop, EagleeyeType data_type=EAGLEEYE_INT);
     ShapeOp(const ShapeOp& op);
     virtual ~ShapeOp();

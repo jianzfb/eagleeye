@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class TopKOp: public BaseOp<1, 2>,DynamicCreator<TopKOp>{
 public:
+    using BaseOp<1, 2>::init;
     TopKOp():m_k(-1),m_axis(-1){}
     TopKOp(int axis, int k);
     TopKOp(const TopKOp& op);

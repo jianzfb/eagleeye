@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class ArgmaxOp:public BaseOp<1, 1>,DynamicCreator<ArgmaxOp>{
 public:
+    using BaseOp<1, 1>::init;
     ArgmaxOp(int64_t axis);
     virtual ~ArgmaxOp();
     

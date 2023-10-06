@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class RepeatOp:public BaseOp<1, 1>,DynamicCreator<RepeatOp>{
 public:
+    using BaseOp<1, 1>::init;
     RepeatOp(){};
     RepeatOp(int repeat_times, int axis);
     RepeatOp(const RepeatOp& op);

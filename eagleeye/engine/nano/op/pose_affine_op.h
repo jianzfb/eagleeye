@@ -11,6 +11,7 @@ namespace dataflow{
 
 class PoseAffineOp:public BaseOp<2, 1>, DynamicCreator<PoseAffineOp>{
 public:
+    using BaseOp<2, 1>::init;
     PoseAffineOp() = default;
     PoseAffineOp(float x_scale, float y_scale, float x_offset, float y_offset);
     virtual ~PoseAffineOp() = default;

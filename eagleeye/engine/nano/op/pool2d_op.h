@@ -15,6 +15,7 @@ enum Pool2dType{
 
 class Pool2dOp:public BaseOp<1,1>, DynamicCreator<Pool2dOp>{
 public:
+    using BaseOp<1, 1>::init;
     Pool2dOp(Pool2dType pool_type, int ksize_h, int ksize_w, int stride_h, int stride_w, int padding_h, int padding_w);
     Pool2dOp(const Pool2dOp& op);
 

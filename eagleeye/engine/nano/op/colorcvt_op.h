@@ -15,6 +15,7 @@ enum ColorCvtMode{
 
 class ColorCvtOp:public BaseOp<1, 1>, DynamicCreator<ColorCvtOp>{
 public:
+    using BaseOp<1, 1>::init;
     ColorCvtOp();
     ColorCvtOp(ColorCvtMode mode);
     ColorCvtOp(const ColorCvtOp& op);

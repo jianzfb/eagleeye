@@ -15,6 +15,7 @@ enum InterpolateOpType{
 
 class InterpolateOp:public BaseOp<1, 1>,DynamicCreator<InterpolateOp>{
 public:
+    using BaseOp<1, 1>::init;
     InterpolateOp(std::vector<int64_t> out_size, float scale, bool align_corner, InterpolateOpType op_type);
     InterpolateOp(const InterpolateOp& op);
     virtual ~InterpolateOp();
@@ -56,6 +57,7 @@ public:
 
 class InterpolateWithShapeOp: public BaseOp<2, 1>,DynamicCreator<InterpolateWithShapeOp>{
 public:
+    using BaseOp<2, 1>::init;
     InterpolateWithShapeOp(bool align_corner, InterpolateOpType op_type);
     InterpolateWithShapeOp(const InterpolateWithShapeOp& op);
     virtual ~InterpolateWithShapeOp();

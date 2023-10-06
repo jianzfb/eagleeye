@@ -19,6 +19,7 @@ enum CompareOpType{
 
 class CompareOp:public BaseOp<2, 1>,DynamicCreator<CompareOp>{
 public:
+    using BaseOp<2, 1>::init;
     CompareOp(CompareOpType compare_op_type);
     virtual ~CompareOp();
 

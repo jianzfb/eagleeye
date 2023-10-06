@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class PoseDecoderOp:public BaseOp<2, 1>,DynamicCreator<PoseDecoderOp>{
 public:
+    using BaseOp<2, 1>::init;
     PoseDecoderOp() = default;
     PoseDecoderOp(float score_thre);
     PoseDecoderOp(const PoseDecoderOp& op);

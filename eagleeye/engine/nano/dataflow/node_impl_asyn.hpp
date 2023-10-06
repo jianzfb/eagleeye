@@ -28,8 +28,8 @@ public:
    * @param id 
    * @param fixed 
    */
-  AsynNodeImpl(F f, int process_num, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  : Node(id, fixed),m_thread_queues(process_num){
+  AsynNodeImpl(int process_num, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME), bool is_circle=false)
+  : Node(id, fixed, is_circle),m_thread_queues(process_num){
       this->m_robin_round     = 0;
       this->m_response_count  = 0;
       this->m_request_count   = 0;
@@ -37,10 +37,10 @@ public:
       // 处理单元
       for(int i = 0; i < process_num; ++i){
         if(i == 0){
-          this->m_processers.push_back(f);
+          this->m_processers.push_back(F());
         }
         else{
-          this->m_processers.push_back(F(f));
+          this->m_processers.push_back(F());
         }
       }
 
@@ -71,11 +71,11 @@ public:
    * @brief run op
    * 
    * @param runtime 
-   * @return float 
+   * @return int 
    */
-  virtual float fire(EagleeyeRuntime runtime=EAGLEEYE_CPU, void* data=NULL) noexcept override{
-    float time = fireImpl(typename F::INS(), runtime, data);
-    return time;
+  virtual int fire(EagleeyeRuntime runtime=EAGLEEYE_CPU, void* data=NULL) noexcept override{
+    int rnt_code = fireImpl(typename F::INS(), runtime, data);
+    return rnt_code;
   }
 
   /**
@@ -111,18 +111,17 @@ public:
   }
 
   virtual int init(std::map<std::string, std::vector<std::vector<float>>> data) noexcept{
-    // 1.step initialize hanlder
-    // int result = (&m_handler)->init(data);
-    // return result;
     return 0;
   }
 
   virtual int init(std::map<std::string, std::vector<std::string>> data) noexcept{
-    // 1.step initialize hanlder
-    // int result = (&m_handler)->init(data);
-    // return result;
     return 0;
   }
+
+  virtual int init(std::map<std::string, void*> data) noexcept{
+    return 0;
+  }
+
   virtual bool update(void* data, int index=0){return false;}
 
   /**
@@ -206,19 +205,19 @@ public:
 
 
 private:
-  float fireImpl(index_sequence<>, EagleeyeRuntime runtime, void* data=NULL) {
+  int fireImpl(index_sequence<>, EagleeyeRuntime runtime, void* data=NULL) {
     m_thread_queues[m_robin_round].push(std::pair<int, void*>(m_request_count, data));
     m_request_count += 1;
     m_robin_round = (m_robin_round+1)%m_processers.size();
-    return 0.0f;
+    return 0;
   }
 
   template <std::size_t ... Is>
-  float fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime, void* data=NULL) {
+  int fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime, void* data=NULL) {
     m_thread_queues[m_robin_round].push(std::pair<int, void*>(m_request_count, data));
     m_request_count += 1;
     m_robin_round = (m_robin_round+1)%m_processers.size();
-    return 0.0f;
+    return 0;
   }
 
   void execute(int thread_id, EagleeyeRuntime runtime){
@@ -326,9 +325,9 @@ template <class F, class ... Args>
 using deduce_asyn_node_type = typename impl::AsynDeducenodeType<F, Args...>::type;
 
 template <class F, class ... Args>
-deduce_asyn_node_type<F, Args...> * makeAsynNode(F f, int process_num, int id, EagleeyeRuntime fixed) {
+deduce_asyn_node_type<F, Args...> * makeAsynNode(int process_num, int id, EagleeyeRuntime fixed, bool is_circle) {
   using asyn_node_type = deduce_asyn_node_type<F, Args...>;
-  return new asyn_node_type(f, process_num, id, fixed);
+  return new asyn_node_type(process_num, id, fixed, is_circle);
 }
 
 }

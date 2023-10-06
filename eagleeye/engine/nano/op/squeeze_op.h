@@ -12,6 +12,7 @@ namespace dataflow{
 
 class SqueezeOp: public BaseOp<1, 1>,DynamicCreator<SqueezeOp>{
 public:
+    using BaseOp<1, 1>::init;
     SqueezeOp() = default;
     SqueezeOp(size_t axis);
     SqueezeOp(const SqueezeOp& op);

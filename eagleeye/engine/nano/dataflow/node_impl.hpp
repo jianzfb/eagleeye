@@ -24,8 +24,8 @@ public:
    * @param id 
    * @param fixed 
    */
-  NodeImpl(F handler, int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME))
-  : Node(id, fixed),m_handler(handler){}
+  NodeImpl(int id, EagleeyeRuntime fixed=EagleeyeRuntime(EAGLEEYE_UNKNOWN_RUNTIME), bool is_circle=false)
+  : Node(id, fixed, is_circle){}
 
   /**
    * @brief Destroy the Node Impl object
@@ -38,7 +38,7 @@ public:
    * @brief run op
    * 
    * @param runtime 
-   * @return float 
+   * @return int 
    */
   int fire(EagleeyeRuntime runtime, void* data, int32_t& elapsed_time) noexcept override {
     return fireImpl(typename F::INS(), runtime, elapsed_time);
@@ -88,6 +88,11 @@ public:
     return result;
   }
 
+  virtual int init(std::map<std::string, void*> data) noexcept{
+    int result = (&m_handler)->init(data);
+    return result;
+  }
+
   virtual bool update(void* data, std::vector<int64_t> shape, int index=0){
     // block
     (&m_handler)->update(data, shape, index);
@@ -126,9 +131,13 @@ private:
   }
 
   template <std::size_t ... Is>
-  float fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime, int32_t& elapsed_time) {
-    std::vector<typename F::Type> unordered_input = {*((typename F::Type*)(data_[Is]->getOutput(index_[Is]))) ...};
-    std::vector<typename F::Type> ordered_input = {unordered_input[inv_order_[Is]] ...};
+  int fireImpl(index_sequence<Is ...>, EagleeyeRuntime runtime, int32_t& elapsed_time) {
+    std::vector<typename F::Type> ordered_input;
+
+    if(data_.size() > 0){
+      std::vector<typename F::Type> unordered_input = {*((typename F::Type*)(data_[Is]->getOutput(index_[Is]))) ...};
+      ordered_input = std::vector<typename F::Type>{unordered_input[inv_order_[Is]] ...};
+    }
 
     long start_time = EagleeyeTime::getCurrentTime();
     int rtn_code = -1;
@@ -166,9 +175,9 @@ template <class F, class ... Args>
 using deduce_node_type = typename impl::Deducenode_type<F, Args...>::type;
 
 template <class F, class ... Args>
-deduce_node_type<F, Args...> * makeNode(F f, int id, EagleeyeRuntime fixed) {
+deduce_node_type<F, Args...> * makeNode(int id, EagleeyeRuntime fixed, bool is_circle) {
   using node_type = deduce_node_type<F, Args...>;
-  return new node_type(f, id, fixed);
+  return new node_type(id, fixed, is_circle);
 }
 
 }

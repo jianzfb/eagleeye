@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class WhereOp: public BaseOp<3, 1>,DynamicCreator<WhereOp>{
 public:
+    using BaseOp<3, 1>::init;
     WhereOp();
     WhereOp(const WhereOp& op);
 

@@ -61,6 +61,18 @@ inline CITensor* convert_tensor_citensor(Tensor t){
     return citensor;
 }
 
+inline CBTensor* convert_tensor_cbtensor(Tensor t){
+    CBTensor* cbtensor = new CBTensor();
+    cbtensor->dim_size = t.dims().size();
+    cbtensor->dims = new int64_t[t.dims().size()];
+    cbtensor->data = new bool[t.dims().production()];
+    cbtensor->is_assign_inner = true;
+
+    memcpy(cbtensor->data, t.cpu(), t.blobsize());
+    memcpy(cbtensor->dims, &t.dims().data()[0], sizeof(int64_t)*t.dims().size());
+    return cbtensor;
+}
+
 inline CUCTensor* convert_tensor_cuctensor(Tensor t){
     CUCTensor* cuctensor = new CUCTensor();
     cuctensor->dim_size = t.dims().size();
@@ -84,7 +96,7 @@ inline CFTensor* init_cftensor(std::vector<float> data, std::vector<int64_t> sha
         cftensor->dims[i] = shape[i];
     }
     cftensor->data = new float[num];
-    memcpy(cftensor->data, &data[0], sizeof(float)*num);
+    memcpy(cftensor->data, data.data(), sizeof(float)*num);
     cftensor->is_assign_inner = true;    
     return cftensor;
 }
@@ -101,8 +113,24 @@ inline CITensor* init_citensor(std::vector<int> data, std::vector<int64_t> shape
     citensor->data = new int[num];
     citensor->is_assign_inner = true;
 
-    memcpy(citensor->data, &data[0], sizeof(int)*num);
+    memcpy(citensor->data, data.data(), sizeof(int)*num);
     return citensor;
+}
+
+inline CBTensor* init_cbtensor(std::vector<bool> data, std::vector<int64_t> shape){
+    CBTensor* cbtensor = new CBTensor();
+    cbtensor->dim_size = shape.size();
+    cbtensor->dims = new int64_t[shape.size()];
+    int64_t num = 1;
+    for(int i=0; i<shape.size(); ++i){
+        num *= shape[i];
+        cbtensor->dims[i] = shape[i];
+    }
+    cbtensor->data = new bool[num];
+    cbtensor->is_assign_inner = true;
+
+    std::copy(data.begin(), data.end(), cbtensor->data);
+    return cbtensor;
 }
 
 inline CUCTensor* init_cuctensor(std::vector<unsigned char> data, std::vector<int64_t> shape){
@@ -117,7 +145,7 @@ inline CUCTensor* init_cuctensor(std::vector<unsigned char> data, std::vector<in
     cuctensor->data = new unsigned char[num];
     cuctensor->is_assign_inner = true;
 
-    memcpy(cuctensor->data, &data[0], sizeof(unsigned char)*num);
+    memcpy(cuctensor->data, data.data(), sizeof(unsigned char)*num);
     return cuctensor;
 }
 
@@ -135,6 +163,12 @@ inline CITensor* new_citensor(){
 
 inline CUCTensor* new_cuctensor(){
     CUCTensor* t = new CUCTensor();
+    t->is_assign_inner = false;
+    return t;
+}
+
+inline CBTensor* new_cbtensor(){
+    CBTensor* t = new CBTensor();
     t->is_assign_inner = false;
     return t;
 }

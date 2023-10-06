@@ -495,6 +495,16 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             Tensor temp(shape, EAGLEEYE_UCHAR, DataFormat::AUTO, buf.ptr);
             inputs.push_back(temp);
         }
+        else if(array.dtype() == pybind11::btype::of<bool>()){
+            py::buffer_info buf = array.request();
+
+            std::vector<int64_t> shape;
+            for(int i=0; i<array.ndim(); ++i){
+                shape.push_back(buf.shape[i]);
+            }            
+            Tensor temp(shape, EAGLEEYE_BOOL, DataFormat::AUTO, buf.ptr);
+            inputs.push_back(temp);
+        }
 		else {
 			return output_tensors;
 		}
@@ -528,6 +538,10 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             auto result = py::array_t<unsigned char>(py::detail::any_container<ssize_t>(shape), tensor.cpu<unsigned char>());
             output_tensors.append(result);
         }
+        else if(tensor.type() == EAGLEEYE_BOOL){
+            auto result = py::array_t<bool>(py::detail::any_container<ssize_t>(shape), tensor.cpu<bool>());
+            output_tensors.append(result);
+        }        
     }
     return output_tensors;
 }

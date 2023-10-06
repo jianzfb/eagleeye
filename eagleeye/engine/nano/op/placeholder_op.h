@@ -13,6 +13,7 @@ namespace dataflow{
  */
 class PlaceholderOp:public BaseOp<0, 1>, DynamicCreator<PlaceholderOp>{
 public:
+    using BaseOp<0, 1>::init;
     PlaceholderOp();    // default constructor
     PlaceholderOp(int64_t b, int64_t h, int64_t w, int64_t c, DataFormat format, EagleeyeType type, MemoryType memory_type=CPU_BUFFER);
     PlaceholderOp(const PlaceholderOp& op);

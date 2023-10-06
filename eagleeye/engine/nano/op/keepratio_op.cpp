@@ -51,6 +51,15 @@ int KeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
     int offset_x = (after_image_w - image_w)/2;
     int offset_y = (after_image_h - image_h)/2;
 
+    // 保存布局信息
+    this->m_outputs[1] = Tensor(std::vector<int64_t>{4}, EAGLEEYE_INT, DataFormat::AUTO, CPU_BUFFER);
+    int* layout_ptr = this->m_outputs[1].cpu<int>();
+    layout_ptr[0] = offset_x;
+    layout_ptr[1] = offset_y;
+    layout_ptr[2] = image_w;
+    layout_ptr[3] = image_h;
+
+    // 保存图像数据信息
     if(image_dim.size() == 3){
         // rgb/bgr
         if(this->m_outputs[0].numel() != after_image_h*after_image_w*3){

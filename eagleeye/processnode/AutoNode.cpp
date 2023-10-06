@@ -18,7 +18,7 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator){
 
     this->m_thread_status = true;
     this->m_is_ini = false;
-}   
+}
 
 AutoNode::~AutoNode(){
     delete m_auto_node;

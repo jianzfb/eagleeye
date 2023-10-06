@@ -15,6 +15,7 @@ namespace dataflow{
 template<std::size_t IN, std::size_t OUT>
 class TensorrtOp: public BaseOp<IN, OUT>{
 public:
+    using BaseOp<IN, OUT>::init;
     TensorrtOp(std::string model_name, 
 			   std::string device,
 			   std::vector<std::string> input_names,
