@@ -16,6 +16,7 @@ enum AffineParamMode{
 
 class WarpAffineOp:public BaseOp<2, 3>,DynamicCreator<WarpAffineOp>{
 public:
+    using BaseOp<2, 3>::init;
     WarpAffineOp(AffineParamMode mode, int64_t out_h, int64_t out_w, int fill_type=-233, unsigned int v=0);
     virtual ~WarpAffineOp();
 

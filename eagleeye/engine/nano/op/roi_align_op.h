@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class RoiAlignOp:public BaseOp<3, 1>,DynamicCreator<RoiAlignOp>{
 public:
+    using BaseOp<3, 1>::init;
     RoiAlignOp(int64_t pooled_h, int64_t pooled_w, float spatial_scale, bool align);
     virtual ~RoiAlignOp();
 

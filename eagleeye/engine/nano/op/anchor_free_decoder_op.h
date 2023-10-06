@@ -14,6 +14,7 @@ enum AnchorFreeDecoderType{
 
 class AnchorFreeDecoderOp: public BaseOp<2, 1>, DynamicCreator<AnchorFreeDecoderOp>{
 public:
+    using BaseOp<2, 1>::init;
     AnchorFreeDecoderOp(){};
     AnchorFreeDecoderOp(AnchorFreeDecoderType decoder_type, int max_per, float x_scale, float y_scale, float x_scale_ext=1.0f, float y_scale_ext=1.0f);
     AnchorFreeDecoderOp(const AnchorFreeDecoderOp& op);

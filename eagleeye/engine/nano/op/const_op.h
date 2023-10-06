@@ -13,6 +13,7 @@ namespace dataflow{
 template<typename T>
 class ConstOp:public BaseOp<0, 1>{
 public:
+    using BaseOp<0, 1>::init;
     ConstOp(){}
 
     ConstOp(T val, std::vector<int64_t> shape, std::string device="CPU")

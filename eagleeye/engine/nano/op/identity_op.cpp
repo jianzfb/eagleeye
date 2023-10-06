@@ -10,9 +10,6 @@ IdentityOp::IdentityOp(const IdentityOp& op){
     OP_SUPPORT(CPU);
     OP_SUPPORT(GPU);
 }
-int IdentityOp::init(std::map<std::string, std::vector<float>> params){
-    return 0;
-}
 
 int IdentityOp::runOnCpu(const std::vector<Tensor>& input){
     this->m_outputs[0] = input[0];

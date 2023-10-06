@@ -12,6 +12,7 @@ namespace dataflow{
 
 class TransposeOp:public BaseOp<1, 1>,DynamicCreator<TransposeOp>{
 public:
+    using BaseOp<1, 1>::init;
     TransposeOp(){};
     TransposeOp(std::vector<int64_t> axis);
     TransposeOp(const TransposeOp& op);

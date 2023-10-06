@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class MeshgridOp: public BaseOp<2, 2>,DynamicCreator<MeshgridOp>{
 public:
+    using BaseOp<2, 2>::init;
     MeshgridOp() = default;
     virtual ~MeshgridOp(){};
 

@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class ConcatOp:public BaseOp<2, 1>,DynamicCreator<ConcatOp>{
 public:
+    using BaseOp<2, 1>::init;
     ConcatOp(int aixs);
     ConcatOp(const ConcatOp& op);
     virtual ~ConcatOp();

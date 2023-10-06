@@ -15,6 +15,7 @@ namespace dataflow{
 template<std::size_t IN, std::size_t OUT>
 class PaddleOp: public BaseOp<IN, OUT>{
 public:
+    using BaseOp<IN, OUT>::init;
     PaddleOp(std::string model_name, 
 			   std::string device,
 			   std::vector<std::string> input_names,

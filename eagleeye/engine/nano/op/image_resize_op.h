@@ -12,6 +12,7 @@ namespace dataflow{
 
 class ResizeOp: public BaseOp<1, 1>,DynamicCreator<ResizeOp>{
 public:
+    using BaseOp<1, 1>::init;
     ResizeOp() = default;
     ResizeOp(std::vector<int64_t> out_size, float scale, InterpolateOpType op_type);
     ResizeOp(const ResizeOp& op);
@@ -32,6 +33,7 @@ private:
 
 class ResizeWithShapeOp: public BaseOp<2, 1>,DynamicCreator<ResizeWithShapeOp>{
 public:
+    using BaseOp<2, 1>::init;
     ResizeWithShapeOp() = default;
     ResizeWithShapeOp(InterpolateOpType op_type);
     ResizeWithShapeOp(const ResizeWithShapeOp& op);

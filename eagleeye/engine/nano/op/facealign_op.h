@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class FaceAlignOp:public BaseOp<2, 1>, DynamicCreator<FaceAlignOp>{
 public:
+    using BaseOp<2, 1>::init;
     FaceAlignOp(int target_h, int target_w, int margin=0);
     FaceAlignOp(const FaceAlignOp& op);
     virtual ~FaceAlignOp();

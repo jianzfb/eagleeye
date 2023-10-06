@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class SelectOp:public BaseOp<2, 1>,DynamicCreator<SelectOp>{
 public:
+    using BaseOp<2, 1>::init;
     SelectOp() = default;
     SelectOp(int begin, int end=-1);
     SelectOp(const SelectOp& op);

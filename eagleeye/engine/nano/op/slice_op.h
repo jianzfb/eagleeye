@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class SliceOp:public BaseOp<1, 1>,DynamicCreator<SliceOp>{
 public:
+    using BaseOp<1, 1>::init;
     SliceOp(std::vector<int> axes, std::vector<int> starts, std::vector<int> ends);
     SliceOp(const SliceOp& op);
     virtual ~SliceOp();

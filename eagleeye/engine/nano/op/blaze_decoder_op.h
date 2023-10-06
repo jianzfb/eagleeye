@@ -13,6 +13,7 @@ namespace dataflow{
 template<std::size_t IN>
 class BlazeDecoderOp: public BaseOp<IN, 1>, DynamicCreator<BlazeDecoderOp>{
 public:
+    using BaseOp<IN, 1>::init;
     BlazeDecoderOp() = default;
     BlazeDecoderOp(Matrix<float> anchors, int landmark_num);
     virtual ~BlazeDecoderOp() = default;

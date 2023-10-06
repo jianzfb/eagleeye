@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class ClipOp:public BaseOp<1, 1>, DynamicCreator<ClipOp>{
 public:
+    using BaseOp<1, 1>::init;
     ClipOp(float min_v, float max_v);
     ClipOp(const ClipOp& op);
     virtual ~ClipOp();

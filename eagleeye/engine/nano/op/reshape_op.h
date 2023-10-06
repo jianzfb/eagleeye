@@ -11,6 +11,7 @@ namespace dataflow{
 
 class ReshapeOp:public BaseOp<1, 1>,DynamicCreator<ReshapeOp>{
 public:
+    using BaseOp<1, 1>::init;
     ReshapeOp(){}
     ReshapeOp(std::vector<int64_t> shape, bool in_place);
     ReshapeOp(const ReshapeOp& op);

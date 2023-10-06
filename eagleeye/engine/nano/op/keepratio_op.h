@@ -9,8 +9,9 @@
 
 namespace eagleeye{
 namespace dataflow{
-class KeepRatioOp:public BaseOp<1, 1>, DynamicCreator<KeepRatioOp>{
+class KeepRatioOp:public BaseOp<1, 2>, DynamicCreator<KeepRatioOp>{
 public:
+    using BaseOp<1, 2>::init;
     KeepRatioOp();
     KeepRatioOp(float ratio);
     KeepRatioOp(const KeepRatioOp& op);

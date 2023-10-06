@@ -17,6 +17,7 @@ enum Pad2dOpType{
 
 class Pad2dOp:public BaseOp<1, 1>,DynamicCreator<Pad2dOp>{
 public:
+    using BaseOp<1, 1>::init;
     Pad2dOp(Pad2dOpType pad_type, std::vector<int64_t> pad_c, std::vector<int64_t> pad_h, std::vector<int64_t> pad_w, float pad_value=0.0f);
     Pad2dOp(const Pad2dOp& op);
     virtual ~Pad2dOp();

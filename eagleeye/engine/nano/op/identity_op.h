@@ -10,12 +10,13 @@ namespace eagleeye{
 namespace dataflow{
 class IdentityOp: public BaseOp<1, 1>,DynamicCreator<IdentityOp>{
 public:
+    using BaseOp<1, 1>::init;
     IdentityOp();
     IdentityOp(const IdentityOp& op);
 
     virtual ~IdentityOp(){}
 
-    virtual int init(std::map<std::string, std::vector<float>> params);
+    virtual int init(std::map<std::string, std::vector<float>> params){return 0;};
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
     virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
     

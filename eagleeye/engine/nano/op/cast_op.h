@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class CastOp:public BaseOp<1, 1>,DynamicCreator<CastOp>{
 public:
+    using BaseOp<1, 1>::init;
     CastOp(EagleeyeType data_type, float scale=1.0f);
     CastOp(const CastOp& op);
     virtual ~CastOp();

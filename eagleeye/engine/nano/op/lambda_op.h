@@ -12,6 +12,7 @@ namespace dataflow{
 template<std::size_t IN, std::size_t OUT>
 class LambdaOp:public BaseOp<IN, OUT>{
 public:
+    using BaseOp<IN, OUT>::init;
     LambdaOp() = default;
     virtual ~LambdaOp()=default;
 

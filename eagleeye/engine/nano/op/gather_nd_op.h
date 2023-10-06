@@ -10,6 +10,7 @@ namespace eagleeye{
 namespace dataflow{
 class GatherNdOp:public BaseOp<2, 1>,DynamicCreator<GatherNdOp>{
 public:
+    using BaseOp<2, 1>::init;
     GatherNdOp(const GatherNdOp& op);
 
     virtual ~GatherNdOp(){};

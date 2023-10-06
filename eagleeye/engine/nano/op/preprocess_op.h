@@ -11,6 +11,7 @@ namespace eagleeye{
 namespace dataflow{
 class PreprocessOp:public BaseOp<1, 1>,DynamicCreator<PreprocessOp>{
 public:
+    using BaseOp<1, 1>::init;
     PreprocessOp(std::vector<float> mean_v, std::vector<float> scale_v, bool reverse_channel);
     PreprocessOp(const PreprocessOp& op);
     virtual ~PreprocessOp();

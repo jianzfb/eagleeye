@@ -11,6 +11,7 @@ namespace dataflow{
 // [(label, confidence, xmin, ymin, xmax, ymax), ()]
 class NmsOp:public BaseOp<2, 2>,DynamicCreator<NmsOp>{
 public:
+    using BaseOp<2, 2>::init;
     NmsOp(float score_threshold, 
             int nms_top_k, 
             int keep_top_k=-1, 
