@@ -25,6 +25,9 @@ public:
 
 protected:
     int m_mode;
+    Tensor m_rotated_yuv;
+    bool m_from_android;
+    Tensor m_i420_yuv;
 };
 }    
 }

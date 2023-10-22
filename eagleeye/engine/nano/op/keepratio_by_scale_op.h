@@ -1,5 +1,5 @@
-#ifndef _EAGLEEYE_COLORCVT_OP_
-#define _EAGLEEYE_COLORCVT_OP_
+#ifndef _EAGLEEYE_KEEPRATIO_BY_SCALE_OP_
+#define _EAGLEEYE_KEEPRATIO_BY_SCALE_OP_
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
@@ -9,19 +9,12 @@
 
 namespace eagleeye{
 namespace dataflow{
-enum ColorCvtMode{
-    COLOR_RGB2BGR = 0,
-    COLOR_RGBA2RGB = 1,
-    COLOR_RGBA2BGR = 2
-};
-
-class ColorCvtOp:public BaseOp<1, 1>, DynamicCreator<ColorCvtOp>{
+class KeepRatioByScaleOp:public BaseOp<1, 2>, DynamicCreator<KeepRatioByScaleOp>{
 public:
-    using BaseOp<1, 1>::init;
-    ColorCvtOp();
-    ColorCvtOp(ColorCvtMode mode);
-    ColorCvtOp(const ColorCvtOp& op);
-    virtual ~ColorCvtOp();
+    using BaseOp<1, 2>::init;
+    KeepRatioByScaleOp();
+    KeepRatioByScaleOp(const KeepRatioByScaleOp& op);
+    virtual ~KeepRatioByScaleOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
@@ -31,12 +24,9 @@ public:
     virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
-    void convertRGB2BGR(const Tensor src, Tensor& tgt);
-    void convertRGBA2BGR(const Tensor src, Tensor& tgt);
-    void convertRGBA2RGB(const Tensor src, Tensor& tgt);
-
-protected:
-    ColorCvtMode m_mode;
+    float m_ratio;
+    std::vector<int> m_out_size;    // width, height
+    Tensor m_temp;
 };
 }
 }

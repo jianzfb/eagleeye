@@ -49,13 +49,20 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
     unsigned char* image_ptr = image.cpu<unsigned char>();
 
     float* bbox_ptr = bbox.cpu<float>();
-    int x0 = int(bbox_ptr[0] - this->m_margin + 0.5);
+    float face_cx = (bbox_ptr[0]+bbox_ptr[2])/2.0f;
+    float face_cy = (bbox_ptr[1]+bbox_ptr[3])/2.0f;
+    float face_w = bbox_ptr[2]-bbox_ptr[0];
+    float face_h = bbox_ptr[3]-bbox_ptr[1];
+    float face_half_size = std::max(face_w, face_h) / 2;
+    face_half_size = face_half_size + this->m_margin;
+
+    int x0 = int(face_cx - face_half_size + 0.5f);
     x0 = std::max(x0, 0);
-    int y0 = int(bbox_ptr[1] - this->m_margin + 0.5);
+    int y0 = int(face_cy - face_half_size + 0.5f);
     y0 = std::max(y0, 0);
-    int x1 = int(bbox_ptr[2] + this->m_margin + 0.5);
+    int x1 = int(face_cx + face_half_size + 0.5f);
     x1 = std::min(x1, image_w);
-    int y1 = int(bbox_ptr[3] + this->m_margin + 0.5);
+    int y1 = int(face_cy + face_half_size + 0.5f);
     y1 = std::min(y1, image_h);
 
     if(image_dim.size() == 4){

@@ -1,3 +1,5 @@
+#ifndef _EAGLEEYE_BGR_FLIP_HWC_H_
+#define _EAGLEEYE_BGR_FLIP_HWC_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 
 namespace eagleeye
@@ -6,3 +8,5 @@ namespace eagleeye
 void bgr_flip_hwc(const unsigned char* src, unsigned char* dst, int w_in, int h_in, int flip_num);
 
 } // namespace eagleeye
+
+#endif

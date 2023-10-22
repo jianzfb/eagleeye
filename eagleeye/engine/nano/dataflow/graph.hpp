@@ -39,6 +39,7 @@ public:
    */
   Graph(std::vector<EagleeyeRuntime> runtimes, 
         std::size_t num_worker = 2,
+        CPUAffinityPolicy performance=AFFINITY_HIGH_PERFORMANCE,
         ScheduleType schedule_type=NO_SCHEDULE)
     :m_queue(num_worker),
      m_count_down_latch(0){
@@ -62,7 +63,7 @@ public:
 
     // 3.step performance adjust
     m_is_performance_set = false;
-    m_performance = CPUAffinityPolicy::AFFINITY_BIG_ONLY;
+    m_performance = performance;
   }
 
   /**
@@ -136,7 +137,7 @@ public:
       return false;
     }
 
-    if(!m_is_performance_set){
+    if(!m_is_performance_set && m_performance != AFFINITY_NONE){
       EagleeyeCPU cpu_info;
       cpu_info.getRuntime()->SchedSetAffinity(m_performance);
       m_is_performance_set = true;

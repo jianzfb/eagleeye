@@ -134,6 +134,7 @@ set(EAGLEEYE_SRC
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/common/EagleeyeYUV.cpp
+    eagleeye/common/EagleeyeRGBRotate.cpp
     eagleeye/common/EagleeyeGraph.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/framework/pipeline/EmptySignal.cpp
@@ -153,10 +154,9 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SwitchNode.cpp
     eagleeye/processnode/AnyPlaceholder.cpp
     eagleeye/processnode/CropNode.cpp
-    eagleeye/basic/BGRARotateHWC.cpp
-    eagleeye/basic/BGRRotateHWC.cpp
-    eagleeye/basic/BGRAFlipHWC.cpp
-    eagleeye/basic/BGRFlipHWC.cpp
+    eagleeye/common/EagleeyeBGRARotateHWC.cpp
+    eagleeye/common/EagleeyeBGRAFlipHWC.cpp
+    eagleeye/common/EagleeyeBGRFlipHWC.cpp
     eagleeye/basic/Dim.cpp
     eagleeye/engine/nano/op/factory.cpp
     eagleeye/engine/nano/op/placeholder_op.cpp
@@ -197,6 +197,8 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/keepratio_op.cpp
     eagleeye/engine/nano/op/colorcvt_op.cpp
     eagleeye/engine/nano/op/yuv_op.cpp
+    eagleeye/engine/nano/op/keepratio_by_scale_op.cpp
+    eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
     eagleeye/engine/math/common/pixel_affine.cpp
     eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/thread_pool.cpp
@@ -290,6 +292,7 @@ set(EAGLEEYE_SRC
     eagleeye/ui/ScrollView.cpp
     eagleeye/render/YUVShow.cpp
     eagleeye/common/EagleeyeYUV.cpp
+    eagleeye/common/EagleeyeRGBRotate.cpp
     eagleeye/common/EagleeyeShader.cpp
     eagleeye/common/EagleeyeGraph.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
@@ -310,10 +313,9 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SwitchNode.cpp
     eagleeye/processnode/AnyPlaceholder.cpp
     eagleeye/processnode/CropNode.cpp
-    eagleeye/basic/BGRARotateHWC.cpp
-    eagleeye/basic/BGRRotateHWC.cpp
-    eagleeye/basic/BGRAFlipHWC.cpp
-    eagleeye/basic/BGRFlipHWC.cpp
+    eagleeye/common/EagleeyeBGRARotateHWC.cpp
+    eagleeye/common/EagleeyeBGRAFlipHWC.cpp
+    eagleeye/common/EagleeyeBGRFlipHWC.cpp
     eagleeye/render/AutoRenderRegion.cpp
     eagleeye/basic/Dim.cpp
     eagleeye/engine/nano/op/factory.cpp
@@ -355,6 +357,8 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/keepratio_op.cpp
     eagleeye/engine/nano/op/colorcvt_op.cpp
     eagleeye/engine/nano/op/yuv_op.cpp
+    eagleeye/engine/nano/op/keepratio_by_scale_op.cpp
+    eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
