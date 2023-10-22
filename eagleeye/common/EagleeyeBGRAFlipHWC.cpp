@@ -1,5 +1,5 @@
 
-#include "eagleeye/basic/BGRARotateHWC.h"
+#include "eagleeye/common/EagleeyeBGRARotateHWC.h"
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>

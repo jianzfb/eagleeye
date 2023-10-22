@@ -495,7 +495,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             Tensor temp(shape, EAGLEEYE_UCHAR, DataFormat::AUTO, buf.ptr);
             inputs.push_back(temp);
         }
-        else if(array.dtype() == pybind11::btype::of<bool>()){
+        else if(array.dtype() == pybind11::dtype::of<bool>()){
             py::buffer_info buf = array.request();
 
             std::vector<int64_t> shape;

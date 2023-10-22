@@ -7,8 +7,8 @@
 
 namespace eagleeye
 {
-NNNode::NNNode(){
-    m_g = new dataflow::Graph(std::vector<EagleeyeRuntime>(), 1);
+NNNode::NNNode(int thread_num, CPUAffinityPolicy performance){
+    m_g = new dataflow::Graph(std::vector<EagleeyeRuntime>(), thread_num, performance);
     m_is_init = false;
 
 	EAGLEEYE_MONITOR_VAR(std::string, setModelFolder, getModelFolder, "model_folder", "", "");
@@ -46,6 +46,7 @@ void NNNode::executeNodeInfo(){
         graph_output_map[m_output_map[sig_i].first] = std::tuple<void*, std::vector<int64_t>, EagleeyeType>(NULL, {}, EAGLEEYE_UNDEFINED);
     
     }    
+
     m_g->run(graph_input_map, graph_output_map);
 
     // 3.step 输出绑定

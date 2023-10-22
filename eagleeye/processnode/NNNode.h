@@ -21,7 +21,7 @@ public:
     typedef NNNode                  Self;
     typedef AnyNode                 Superclass;
 
-    NNNode();
+    NNNode(int thread_num=1, CPUAffinityPolicy performance=AFFINITY_HIGH_PERFORMANCE);
     virtual ~NNNode();
 
     /**

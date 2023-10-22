@@ -1,14 +1,14 @@
-#include "eagleeye/basic/BGRRotateHWC.h"
+#include "eagleeye/common/EagleeyeRGBRotate.h"
+#if defined(__ANDROID__) || defined(ANDROID)
+// android 默认开启neon
+#include <arm_neon.h>
+#endif
 #include <stdint.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <algorithm>
-#if defined(__ANDROID__) || defined(ANDROID)
-// android 默认开启neon
-#include <arm_neon.h>
-#endif
 
 namespace eagleeye{
 void rotate90_hwc(const unsigned char* src, unsigned char* dst, int w_in, int h_in);
@@ -1341,4 +1341,16 @@ void rotate180_hwc(const unsigned char* src, unsigned char* dst, int w_in, int h
     // TODO support
 }
 #endif
-} //namespace eagleeye
+
+// bgr2rgb, rgb2bgr
+void rgb_to_bgr_convert(unsigned char* rgb_data, int width, int height, unsigned char* bgr_data){
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            *bgr_data++ = rgb_data[2];  // r
+            *bgr_data++ = rgb_data[1];  // g
+            *bgr_data++ = rgb_data[0];  // b
+            rgb_data += 3;
+        }
+    }
+}
+}

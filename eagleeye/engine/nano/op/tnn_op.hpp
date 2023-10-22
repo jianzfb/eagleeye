@@ -49,7 +49,12 @@ public:
         m_model_init = false;
         m_reverse_channel = false;
     };
-    TnnOp()=default;
+    TnnOp(){
+        m_model_run = NULL;
+        m_model_init = false;
+        m_reverse_channel = false;  
+        m_device = "CPU";      
+    };
     virtual ~TnnOp(){
     };
 

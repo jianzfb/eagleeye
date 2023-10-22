@@ -39,13 +39,13 @@ void YUVConvertNode::executeNodeInfo(){
     if(input_sig->getValueType() == EAGLEEYE_YUV_I420){
         unsigned char* yuv_ptr = (unsigned char*)yuv_data.cpu();
         if(m_convert_type == I420ToRGB){
-            Matrix<Array<unsigned char, 3>> data = eagleeye_I420_to_RGB(yuv_ptr, width, height);
+            Matrix<Array<unsigned char, 3>> data = I420_to_RGB(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
             output_sig->setSignalType(EAGLEEYE_SIGNAL_RGB_IMAGE);
         }
         else if(m_convert_type == I420ToBGR){
-            Matrix<Array<unsigned char, 3>> data = eagleeye_I420_to_BGR(yuv_ptr, width, height);
+            Matrix<Array<unsigned char, 3>> data = I420_to_BGR(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
             output_sig->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);
@@ -57,13 +57,13 @@ void YUVConvertNode::executeNodeInfo(){
     else if(input_sig->getValueType() == EAGLEEYE_YUV_NV21){
         unsigned char* yuv_ptr = (unsigned char*)yuv_data.cpu();
         if(m_convert_type == NV21ToRGB){
-            Matrix<Array<unsigned char, 3>> data = eagleeye_NV21_to_RGB(yuv_ptr, width, height);
+            Matrix<Array<unsigned char, 3>> data = NV21_to_RGB(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
             output_sig->setSignalType(EAGLEEYE_SIGNAL_RGB_IMAGE);
         }
         else if(m_convert_type == NV21ToBGR){
-            Matrix<Array<unsigned char, 3>> data = eagleeye_NV21_to_BGR(yuv_ptr, width, height);
+            Matrix<Array<unsigned char, 3>> data = NV21_to_BGR(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
             output_sig->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);
@@ -76,13 +76,13 @@ void YUVConvertNode::executeNodeInfo(){
     else if(input_sig->getValueType() == EAGLEEYE_YUV_NV12){
         unsigned char* yuv_ptr = (unsigned char*)yuv_data.cpu();
         if(m_convert_type == NV12ToRGB){
-            Matrix<Array<unsigned char, 3>> data = eagleeye_NV12_to_RGB(yuv_ptr, width, height);
+            Matrix<Array<unsigned char, 3>> data = NV12_to_RGB(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
             output_sig->setSignalType(EAGLEEYE_SIGNAL_RGB_IMAGE);
         }
         else if(m_convert_type == NV12ToBGR){
-            Matrix<Array<unsigned char, 3>> data = eagleeye_NV12_to_BGR(yuv_ptr, width, height);
+            Matrix<Array<unsigned char, 3>> data = NV12_to_BGR(yuv_ptr, width, height);
             ImageSignal<Array<unsigned char, 3>>* output_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
             output_sig->setData(data, input_meta);
             output_sig->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);

@@ -23,6 +23,9 @@ int KeepRatioOp::init(std::map<std::string, std::vector<float>> params){
     if(params.find("ratio") != params.end()){
         this->m_ratio = params["ratio"][0];
     }
+    if(params.find("aspect_ratio") != params.end()){
+        this->m_ratio = params["aspect_ratio"][0];
+    }    
     return 0;
 }
 
@@ -56,8 +59,8 @@ int KeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
     int* layout_ptr = this->m_outputs[1].cpu<int>();
     layout_ptr[0] = offset_x;
     layout_ptr[1] = offset_y;
-    layout_ptr[2] = image_w;
-    layout_ptr[3] = image_h;
+    layout_ptr[2] = after_image_w;
+    layout_ptr[3] = after_image_h;
 
     // 保存图像数据信息
     if(image_dim.size() == 3){

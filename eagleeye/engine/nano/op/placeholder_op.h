@@ -31,6 +31,7 @@ private:
     MemoryType m_memory_type;
     DataFormat m_data_format;
     EagleeyeType m_data_type;
+    bool m_zero_copy;
 };
 }    
 }
