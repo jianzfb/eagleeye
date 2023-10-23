@@ -33,7 +33,7 @@ public:
             return;
         }
 
-        m_model_run = NULL;        
+        m_model_run = NULL;
         m_model_name = model_name;
         m_device = device;
         m_input_names = input_names;
@@ -50,7 +50,11 @@ public:
         m_model_init = false;
     };
     
-    SnpeOp()=default;
+    SnpeOp(){
+        m_model_run = NULL;
+        m_reverse_channel = false;
+        m_model_init = false;
+    };
     virtual ~SnpeOp(){};
 
     virtual int init(std::map<std::string, std::vector<float>> params){
