@@ -52,7 +52,12 @@ public:
         m_preprocess_tensors.resize(input_names.size());
     };
     
-    TensorrtOp()=default;
+    TensorrtOp(){
+        m_model_run = NULL;  
+        m_model_init = false;
+        m_reverse_channel = false;
+        m_preprocess_tensors.resize(input_names.size());
+    };
     virtual ~TensorrtOp(){};
 
     virtual int init(std::map<std::string, std::vector<float>> params){

@@ -48,7 +48,11 @@ public:
         m_writable_path = writable_path;
         m_model_init = false;
     };
-    RknnOp()=default;
+    RknnOp(){
+        m_model_run = NULL;
+        m_model_init = false;
+    };
+
     virtual ~RknnOp(){
     };
 
