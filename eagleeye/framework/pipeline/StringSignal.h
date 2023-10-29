@@ -115,8 +115,10 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(){m_sig_category = SIGNAL_CATEGORY_STRING_QUEUE;};
-
+	virtual void transformCategoryToQ(int max_queue_size=5){
+		m_sig_category = SIGNAL_CATEGORY_STRING_QUEUE;
+		m_max_queue_size = max_queue_size;
+	};
 
 private:
     std::string m_str;
@@ -130,6 +132,7 @@ private:
 	size_t m_data_size[1];
 	std::string m_ini_str;
 	int m_release_count;
+	int m_max_queue_size;
 };
 
 }

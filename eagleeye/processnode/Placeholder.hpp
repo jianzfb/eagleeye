@@ -1,14 +1,14 @@
 namespace eagleeye{
 template<class T>
-Placeholder<T>::Placeholder(bool queue_mode){
+Placeholder<T>::Placeholder(bool queue_mode, int queue_size){
 	this->setNumberOfOutputSignals(1);
 	this->setOutputPort(new T,OUTPUT_PORT_PLACEHOLDER);
 
     this->m_queue_mode = queue_mode;
     if(this->m_queue_mode){
-        this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->transformCategoryToQ();
+        this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->transformCategoryToQ(queue_size);
     }
-}   
+}
 
 template<class T>
 Placeholder<T>::~Placeholder(){

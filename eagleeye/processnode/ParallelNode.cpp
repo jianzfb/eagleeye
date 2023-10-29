@@ -3,7 +3,7 @@
 #include "eagleeye/common/EagleeyeStr.h"
 
 namespace eagleeye{
-ParallelNode::ParallelNode(int thread_num, std::function<AnyNode*()> generator){
+ParallelNode::ParallelNode(int thread_num, std::function<AnyNode*()> generator, int queue_size){
     // generate run nodes
     for(int i=0; i<thread_num; ++i){
         m_run_node.push_back(generator());
@@ -15,7 +15,7 @@ ParallelNode::ParallelNode(int thread_num, std::function<AnyNode*()> generator){
     for(int signal_i=0; signal_i<signal_num; ++signal_i){
         AnySignal* output_signal = m_run_node[0]->getOutputPort(signal_i)->make();
         // 必须为队列信号
-        output_signal->transformCategoryToQ();
+        output_signal->transformCategoryToQ(queue_size);
         this->setOutputPort(output_signal, signal_i);
     }
     m_output_cache.resize(signal_num);

@@ -14,7 +14,7 @@ public:
 
     EAGLEEYE_CLASSIDENTITY(QueueNode);
     
-    QueueNode();
+    QueueNode(int queue_size=5);
     virtual ~QueueNode();
 
     /**
@@ -34,6 +34,7 @@ public:
 private:
     QueueNode(const QueueNode&);
     void operator=(const QueueNode&);
+    int m_queue_size;
 };
 
 }

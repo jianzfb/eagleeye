@@ -27,7 +27,7 @@ public:
 		needed_rows = 0;
 		needed_cols = 0;	
 		allocate_mode = 0;
-		timestamp = 0;
+		timestamp = 0.0;
 		mirror = false;
 	}
 	std::string name;		// name
@@ -43,7 +43,7 @@ public:
 	int needed_rows;		// rows(largest)
 	int needed_cols;		// cols(largest)
 	int allocate_mode;		// 0（do nothing）;1（InPlace）;2（largest）;3（same size with input）;
-	int64_t timestamp;		// timestamp
+	double timestamp;		// timestamp
 	bool mirror;			// mirror(mirror, rotation)
 };	
 
@@ -288,7 +288,7 @@ public:
 	 * @brief upgrade signal to queue version
 	 * 
 	 */
-	virtual void transformCategoryToQ(){};
+	virtual void transformCategoryToQ(int max_queue_size=5){};
 
 	/**
 	 * @brief Get the Signal Value Type object
