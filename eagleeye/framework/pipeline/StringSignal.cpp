@@ -10,6 +10,7 @@ StringSignal::StringSignal(std::string ini_str){
 	this->m_sig_category = SIGNAL_CATEGORY_STRING;
 
 	this->m_release_count = 1;
+	this->m_max_queue_size = 5;
 }   
 StringSignal::~StringSignal(){
 } 
@@ -98,6 +99,9 @@ void StringSignal::setData(StringSignal::DataType data){
 	else{
 		// SIGNAL_CATEGORY_STRING_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(this->m_queue.size() > this->m_max_queue_size){
+			this->m_queue.pop();
+		}
 		this->m_queue.push(data); 
 		locker.unlock();
 

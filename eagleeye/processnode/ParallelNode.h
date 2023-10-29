@@ -32,7 +32,7 @@ public:
      * @brief Construct a new Parallel Node object
      * 
      */
-    ParallelNode(int thread_num=1, std::function<AnyNode*()> generator=nullptr);
+    ParallelNode(int thread_num=1, std::function<AnyNode*()> generator=nullptr, int queue_size=5);
 
     /**
      * @brief Destroy the Parallel Node object

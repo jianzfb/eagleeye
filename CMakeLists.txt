@@ -73,8 +73,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
-    eagleeye/processnode/VideoReadNode.cpp
-    eagleeye/processnode/VideoWriteNode.cpp
+    # eagleeye/processnode/VideoReadNode.cpp
+    # eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
@@ -206,6 +206,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageTransformNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
     eagleeye/processnode/ImageSelect.cpp
+    eagleeye/processnode/RTSPReadNode.cpp
     eagleeye/render/RenderContext.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
@@ -218,8 +219,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
-    eagleeye/processnode/VideoReadNode.cpp
-    eagleeye/processnode/VideoWriteNode.cpp
+    # eagleeye/processnode/VideoReadNode.cpp
+    # eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
@@ -362,6 +363,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
+    eagleeye/processnode/RTSPReadNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
     eagleeye/processnode/ImageSelect.cpp)
 endif()
@@ -445,34 +447,49 @@ endif()
 
 
 
-if(DEFINED FFMPEG AND DEFINED X264)
+if(DEFINED FFMPEG)
+    message(STATUS "Define FFMPEG")
     add_definitions(-DEAGLEEYE_FFMPEG)
-    include_directories(${FFMPEG}/include/)
-    include_directories(${X264}/include/)
+    include_directories(${FFMPEG})
 
     if(BUILD_PYTHON_MODULE)
         target_link_libraries(eagleeye PRIVATE
-                                ${FFMPEG}/lib/libavdevice.so
-                                ${FFMPEG}/lib/libavutil.so
-                                ${FFMPEG}/lib/libswresample.so
-                                ${FFMPEG}/lib/libswscale.so
-                                ${FFMPEG}/lib/libavcodec.so
-                                ${FFMPEG}/lib/libavformat.so
-                                ${FFMPEG}/lib/libavfilter.so
-                                ${FFMPEG}/lib/libpostproc.so
-                                ${X264}/lib/libx264.163.so)    
+                                ${FFMPEG}/install/lib/libavcodec.so
+                                ${FFMPEG}/install/lib/libavfilter.so
+                                ${FFMPEG}/install/lib/libavformat.so
+                                ${FFMPEG}/install/lib/libavutil.so
+                                ${FFMPEG}/install/lib/libswresample.so
+                                ${FFMPEG}/install/lib/libswscale.so)    
     else()
         target_link_libraries(eagleeye 
-                                ${FFMPEG}/lib/libavdevice.so
-                                ${FFMPEG}/lib/libavutil.so
-                                ${FFMPEG}/lib/libswresample.so
-                                ${FFMPEG}/lib/libswscale.so
-                                ${FFMPEG}/lib/libavcodec.so
-                                ${FFMPEG}/lib/libavformat.so
-                                ${FFMPEG}/lib/libavfilter.so
-                                ${FFMPEG}/lib/libpostproc.so
-                                ${X264}/lib/libx264.163.so)
+                                ${FFMPEG}/install/lib/libavcodec.so
+                                ${FFMPEG}/install/lib/libavfilter.so
+                                ${FFMPEG}/install/lib/libavformat.so
+                                ${FFMPEG}/install/lib/libavutil.so
+                                ${FFMPEG}/install/lib/libswresample.so
+                                ${FFMPEG}/install/lib/libswscale.so)
     endif()
+endif()
+
+
+if(DEFINED RKCHIP)
+    message(STATUS "Define RK")
+    add_definitions(-DEAGLEEYE_RKCHIP)
+    include_directories(${RKCHIP}/mpp/inc/)
+    include_directories(${RKCHIP}/mpp/)
+    include_directories(${RKCHIP}/librga/include)
+
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE
+                                ${RKCHIP}/mpp/mpp/libmpp.so
+                                ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)    
+    else()
+        target_link_libraries(eagleeye 
+                                ${RKCHIP}/mpp/mpp/libmpp.so
+                                ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
+    endif()
+
+
 endif()
 
 if(pnglib_FOUND)

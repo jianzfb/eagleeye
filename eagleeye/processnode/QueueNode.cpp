@@ -1,14 +1,13 @@
 #include "eagleeye/processnode/QueueNode.h"
 namespace  eagleeye
 {
-QueueNode::QueueNode(){
+QueueNode::QueueNode(int queue_size){
+    this->m_queue_size = queue_size;
 }   
-
 
 QueueNode::~QueueNode(){
 
 } 
-
 
 void QueueNode::executeNodeInfo(){
     int signal_num = this->getNumberOfInputSignals();
@@ -22,7 +21,7 @@ void QueueNode::addInputPort(AnySignal* sig){
     int index = this->getNumberOfInputSignals() - 1;
 
     AnySignal* sig_cp = sig->make();
-    sig_cp->transformCategoryToQ();
+    sig_cp->transformCategoryToQ(this->m_queue_size);
 
     if(this->getNumberOfOutputSignals() < index+1){
         this->setNumberOfOutputSignals(index+1);
@@ -37,7 +36,7 @@ void QueueNode::setInputPort(AnySignal* sig,int index){
     Superclass::setInputPort(sig, index);
 
     AnySignal* sig_cp = sig->make();
-    sig_cp->transformCategoryToQ();
+    sig_cp->transformCategoryToQ(this->m_queue_size);
 
     if(this->getNumberOfOutputSignals() < index+1){
         this->setNumberOfOutputSignals(index+1);

@@ -4,7 +4,7 @@
 
 namespace eagleeye
 {
-AutoNode::AutoNode(std::function<AnyNode*()> generator){
+AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size){
     m_auto_node = generator();
     // 设置输出端口
     int signal_num = m_auto_node->getNumberOfOutputSignals();
@@ -12,7 +12,7 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator){
     for(int signal_i=0; signal_i<signal_num; ++signal_i){
         AnySignal* output_signal = m_auto_node->getOutputPort(signal_i)->make();
         // 必须为队列信号
-        output_signal->transformCategoryToQ();
+        output_signal->transformCategoryToQ(queue_size);
         this->setOutputPort(output_signal, signal_i);
     }
 
@@ -34,13 +34,11 @@ void AutoNode::run(){
         AnySignal* signal_cp = this->getInputPort(signal_i)->make();
         signal_list.push_back(signal_cp);
     }
-
     bool running_ischange = false;
     while (true){
         if(!this->m_thread_status){
             break;
         }
-
         if(!running_ischange){
             // 1.step get input
             int signal_num = this->getNumberOfInputSignals();
@@ -59,7 +57,6 @@ void AutoNode::run(){
         if(!this->m_thread_status){
             break;
         }
-
         // 2.step run node
         running_ischange = m_auto_node->start();
         if(!running_ischange){

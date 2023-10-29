@@ -185,7 +185,10 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(){m_sig_category = SIGNAL_CATEGORY_IMAGE_QUEUE;};
+	virtual void transformCategoryToQ(int max_queue_size=5){
+		m_sig_category = SIGNAL_CATEGORY_IMAGE_QUEUE;
+		m_max_queue_size = max_queue_size;
+	};
 
 	/**
 	 * @brief Set the Meta object
@@ -202,6 +205,7 @@ private:
 	std::queue<Matrix<T>> m_queue;
 	std::queue<MetaData> m_meta_queue;
 	SignalCategory m_sig_category;
+	int m_max_queue_size;
 };
 }
 

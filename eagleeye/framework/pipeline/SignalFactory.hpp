@@ -22,6 +22,7 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 
 	this->m_meta.timestamp = 0;
 	this->m_sig_category = SIGNAL_CATEGORY_IMAGE;
+	this->m_max_queue_size = 5;
 }
 
 template<class T>
@@ -121,12 +122,10 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
 		std::unique_lock<std::mutex> locker(this->m_mu);
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
-
 			if(this->m_queue.size() > 0 || this->m_signal_exit){
 				break;
 			}
         }
-
 		if(this->m_signal_exit){
 			return Matrix<T>();
 		}
@@ -150,6 +149,11 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(this->m_queue.size() > this->m_max_queue_size){
+			this->m_queue.pop();
+			this->m_meta_queue.pop();
+		}
+
 		this->m_queue.push(data); 
 		MetaData mm;
 		mm.rows = data.rows();
@@ -218,12 +222,15 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(this->m_queue.size() > this->m_max_queue_size){
+			this->m_queue.pop();
+			this->m_meta_queue.pop();
+		}
 		this->m_queue.push(data); 
 		this->m_meta_queue.push(mm);
 		locker.unlock();
 
 		// notify
-		// this->m_cond.notify_one();
 		this->m_cond.notify_all();
 	}
 

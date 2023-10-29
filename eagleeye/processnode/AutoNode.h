@@ -16,7 +16,7 @@ public:
     typedef AnyNode                 Superclass;
     EAGLEEYE_CLASSIDENTITY(AutoNode);
 
-    AutoNode(std::function<AnyNode*()> generator=nullptr);
+    AutoNode(std::function<AnyNode*()> generator=nullptr, int queue_size=5);
     virtual ~AutoNode();
 
     /**
