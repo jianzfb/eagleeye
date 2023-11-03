@@ -5,7 +5,7 @@
 #include "eagleeye/common/EagleeyeStr.h"
 #include "libyuv.h"
 #ifdef EAGLEEYE_FFMPEG
-extern "C" { 
+extern "C" {
 #include "libavformat/avformat.h"
 #include "libavdevice/avdevice.h"
 #include "libswresample/swresample.h"
@@ -31,9 +31,17 @@ extern "C" {
 #include "libavfilter/buffersink.h"
 #include "libavutil/frame.h"
 #include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
 }
+
+#ifdef EAGLEEYE_RKCHIP
+#include "im2d_version.h"
+#include "rk_type.h"
+#include "rk_mpi.h"
+#include "RgaUtils.h"
+#include "im2d_buffer.h"
+#include "im2d_type.h"
+#include "im2d_single.h"
+#endif
 namespace  eagleeye
 {
 VideoWriteNode::VideoWriteNode(){
@@ -42,29 +50,60 @@ VideoWriteNode::VideoWriteNode(){
     this->setOutputPort(this->makeOutputSignal(), 0);
     this->m_is_init = false;
     this->m_is_finish = true;
-    this->m_fps = 0;
-    m_output_cxt = NULL;
+    this->m_fps = 30;
+
     m_codec_cxt = NULL;
-    stream = NULL;
-    packet = NULL;
-    frame = NULL;
-    avcodec_register_all();
+    m_frame_count = 0;
+    m_frame = NULL;
+    m_pkt = NULL;
+    m_encoder = NULL;
+
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
     EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
     EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
 
     EAGLEEYE_MONITOR_VAR(int, setStop, getStop, "stop","0","2");
+    EAGLEEYE_MONITOR_VAR(int, setStart, getStart, "start","0","2");
 
     this->m_prefix = "video_";
     this->m_folder = "/sdcard/";
     this->m_manually_stop = 0;
-}   
+    this->m_manually_start = 0;
+}
 
 VideoWriteNode::~VideoWriteNode(){
     if(!this->m_is_finish){
         this->writeFinish();
     }
 } 
+
+static bool encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& fp)
+{
+    int ret;
+    ret = avcodec_send_frame(enc_ctx, frame);
+    if (ret < 0) {
+        EAGLEEYE_LOGE("Error sending a frame for encoding");
+        return false;
+    }
+
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(enc_ctx, pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF){
+            av_packet_unref(pkt);
+            return false;
+        }
+        else if (ret < 0) {
+            av_packet_unref(pkt);
+            EAGLEEYE_LOGE("Error during encoding");
+            return false;
+        }
+
+        fp.write((char*)(pkt->data), pkt->size);
+        av_packet_unref(pkt);
+    }
+
+    return true;
+}
 
 void VideoWriteNode::executeNodeInfo(){
     ImageSignal<Array<unsigned char,3>>* input_img_signal = 
@@ -74,13 +113,13 @@ void VideoWriteNode::executeNodeInfo(){
     if(!image.isContinuous()){
         image = image.clone();
     }
-
-    if(!m_is_init && !image_meta_data.is_start_frame){
-        // 对于非首帧，不可以启动初始化
+    if(!m_is_init && (!image_meta_data.is_start_frame && !m_manually_start)){
+        // 对于非首帧(或手动开始)，不可以启动初始化
         // 首帧和尾帧，必须设置
         return;
     }
-
+    int image_h = image.rows();
+    int image_w = image.cols();
     if(this->m_file_path.empty()){
         if(this->m_folder != "./"){
             if(!isdirexist(this->m_folder.c_str())){
@@ -89,152 +128,153 @@ void VideoWriteNode::executeNodeInfo(){
         }
 
         this->setFilePath(this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp()+".mp4");
-        EAGLEEYE_LOGD("Video path %s.", this->m_file_path.c_str());
     }
 
     if(this->m_is_init && this->m_manually_stop != 0){
-        // 开始保存
-        this->m_file_path = "";
-        this->m_is_finish = true;
-        this->m_is_init = false;
-        this->m_manually_stop = 0;
         this->writeFinish();
-
         EAGLEEYE_LOGD("Success to finish write video.");
         return;
     }
 
     if(!this->m_is_init){
         EAGLEEYE_LOGD("Start to write video.");
-        //新建一个输出的AVFormatContext并分配内存
-        m_output_cxt = avformat_alloc_context();
-        AVOutputFormat* fmt = av_guess_format(NULL, this->m_file_path.c_str(), NULL);
-        m_output_cxt->oformat = fmt;
-        //创建和初始化一个和该URL相关的AVIOContext
-        if(avio_open(&m_output_cxt->pb,this->m_file_path.c_str(),AVIO_FLAG_READ_WRITE) < 0){
-            EAGLEEYE_LOGD("Couldnt open write file.");
-            avformat_free_context(m_output_cxt);
-            return;
-        }
-        //构建新的Stream
-        stream = avformat_new_stream(m_output_cxt, NULL);
-        if(stream == NULL){
-            EAGLEEYE_LOGD("Couldnt build new stream.");
-            return;
-        }
-        stream->time_base.num = 1;
-        stream->time_base.den = 30;
 
-        //初始化AVStream信息
-        m_codec_cxt = stream->codec;
-        m_codec_cxt->codec_id = m_output_cxt->oformat->video_codec;
-        m_codec_cxt->codec_type = AVMEDIA_TYPE_VIDEO;
+        //打开输出文件流
+        m_output_file.open(m_file_path.c_str(), std::ios::binary);
+
+        //设置编码器
+        m_encoder = avcodec_find_encoder_by_name("libx264");
+        //初始化并设置编码器上下文
+        m_codec_cxt = avcodec_alloc_context3(m_encoder);
+        m_codec_cxt->bit_rate = 400000;
+        m_codec_cxt->width = image_w;
+        m_codec_cxt->height = image_h;
+        m_codec_cxt->time_base = (AVRational){1, 25};
+        m_codec_cxt->framerate = (AVRational){25, 1};
         m_codec_cxt->pix_fmt = AV_PIX_FMT_YUV420P;
-        m_codec_cxt->height = image.rows();
-        m_codec_cxt->width = image.cols();
-        m_codec_cxt->time_base.num = 1;
-        m_codec_cxt->time_base.den = 30;
-        m_codec_cxt->bit_rate = 400000;  
-        m_codec_cxt->gop_size = 250;
-        m_codec_cxt->max_b_frames = 1;
+        m_codec_cxt->gop_size = 2;
+        m_codec_cxt->max_b_frames = 20;
+        m_codec_cxt->thread_count = 4;
 
-        //H.264
-        if(m_codec_cxt->codec_id == AV_CODEC_ID_H264) {
-            m_codec_cxt->refs = 3;
-            m_codec_cxt->qcompress = 1.0;
-            m_codec_cxt->qmin = 10;
-            m_codec_cxt->qmax = 20;
+        // av_opt_set(m_codec_cxt->priv_data, "preset", "veryfast", 0);
+        // av_opt_set(m_codec_cxt->priv_data, "tune", "zerolatency", 0);
+
+        //编码器初始化
+        int ret = avcodec_open2(m_codec_cxt, m_encoder, NULL);
+        if(ret < 0){
+            EAGLEEYE_LOGE("Could not avcodec_open2 err=%d.", ret);
         }
 
-        if (m_codec_cxt->codec_id == AV_CODEC_ID_MPEG2VIDEO)
-            m_codec_cxt->max_b_frames = 2;
-        if (m_codec_cxt->codec_id == AV_CODEC_ID_MPEG1VIDEO)
-            m_codec_cxt->mb_decision = 2;
-
-        AVCodec* codec = avcodec_find_encoder(m_codec_cxt->codec_id);
-        if(!codec){
-            EAGLEEYE_LOGD("Couldnt find encoder.");
-            return;
+        m_pkt = av_packet_alloc();
+        if(!m_pkt){
+            EAGLEEYE_LOGE("Could not allocate video packet");
         }
-        if(avcodec_open2(m_codec_cxt,codec,NULL) < 0){
-            EAGLEEYE_LOGD("Couldnt open encoder.");
-            return;
+        m_frame = av_frame_alloc();
+        if (!m_frame) {
+            EAGLEEYE_LOGE("Could not allocate video frame");
         }
-        avcodec_parameters_from_context(stream->codecpar, m_codec_cxt);
 
-        // 写入文件头
-        avformat_write_header(m_output_cxt, NULL);
+        m_frame->format = m_codec_cxt->pix_fmt;
+        m_frame->width  = m_codec_cxt->width;
+        m_frame->height = m_codec_cxt->height;
+        ret = av_frame_get_buffer(m_frame, 0);
+        if (ret < 0) {
+            EAGLEEYE_LOGE("Could not allocate the video frame data");
+        }
 
-        // 申请空间 (frame, packet, data)
-        packet = av_packet_alloc();
-        av_new_packet(packet, m_codec_cxt->width * m_codec_cxt->height * 3);        
-        frame = av_frame_alloc();
-        av_image_alloc(frame->data, frame->linesize, m_codec_cxt->width, m_codec_cxt->height,AV_PIX_FMT_YUV420P,32);
         m_is_init = true;
         m_is_finish = false;
+        this->m_frame_count = 0;
     }
 
-    // // 将RGB24转换成YUVframe
-    // SwsContext* swsContext = sws_getContext(image.cols(), 
-    //                                         image.rows(),
-    //                                         AV_PIX_FMT_RGB24 ,
-    //                                         image.cols(), 
-    //                                         image.rows(),
-    //                                         AV_PIX_FMT_YUV420P ,
-    //                                         NULL, NULL, NULL, NULL);
-    // uint8_t *const rgb_bufer[1] = {(uint8_t*)image.dataptr()};
-    // int srcStride[1];
-    // srcStride[0] = image.cols()*3;
+// #ifndef EAGLEEYE_RKCHIP
+    long start_time = EagleeyeTime::getCurrentTime();
+    // 颜色空间转换到YUV420P
+    if(image_meta_data.color_format == -1 || image_meta_data.color_format == 0){
+        // RGB
+        libyuv::RAWToI420((uint8_t*)image.dataptr(), 
+            image.cols()*3, 
+            m_frame->data[0],m_frame->linesize[0],
+            m_frame->data[1],m_frame->linesize[1],
+            m_frame->data[2],m_frame->linesize[2],
+            m_frame->width,
+            m_frame->height);
+    }
+    else{
+        // BGR
+        libyuv::RGB24ToI420((uint8_t*)image.dataptr(), 
+            image.cols()*3, 
+            m_frame->data[0],m_frame->linesize[0],
+            m_frame->data[1],m_frame->linesize[1],
+            m_frame->data[2],m_frame->linesize[2],
+            m_frame->width,
+            m_frame->height);
+    }
+    long end_time = EagleeyeTime::getCurrentTime();
+    std::cout<<"cvt time "<<end_time-start_time<<std::endl;
+// #endif
 
-    frame->pts = this->m_fps;
-    this->m_fps += 1;
-    frame->format = m_codec_cxt->pix_fmt;
-    frame->width  = image.cols();
-    frame->height = image.rows();
+// #ifdef EAGLEEYE_RKCHIP
+//     long start_time = EagleeyeTime::getCurrentTime();
+//     int src_width = image_w;
+//     int src_height = image_h;
+//     int src_format = RK_FORMAT_RGB_888;
+//     if(image_meta_data.color_format == -1 || image_meta_data.color_format == 0){
+//         src_format = RK_FORMAT_RGB_888;
+//     }
+//     else{
+//         src_format = RK_FORMAT_BGR_888;
+//     }
+//     int src_buf_size = src_width * src_height * get_bpp_from_format(src_format);
+//     rga_buffer_t src_img, dst_img;
+//     rga_buffer_handle_t src_handle, dst_handle;
+//     memset(&src_img, 0, sizeof(src_img));
+//     memset(&dst_img, 0, sizeof(dst_img));
 
-    // sws_scale(swsContext, rgb_bufer, srcStride, 0, image.rows(), frame->data, frame->linesize);
-    // sws_freeContext(swsContext);
+//     int dst_width, dst_height, dst_format;
+//     dst_width = src_width;
+//     dst_height = src_height;
+//     dst_format = RK_FORMAT_YCbCr_420_P;
+    
+//     src_handle = importbuffer_virtualaddr(image.cpu<char>(), src_buf_size);
+//     if(m_temp.numel() != int(dst_width*dst_height*1.5)){
+//         m_temp = Matrix<unsigned char>(1, int(dst_width*dst_height*1.5));
+//     }
+//     dst_handle = importbuffer_virtualaddr(m_temp.cpu<char>(), int(dst_width*dst_height*1.5));
 
-    EAGLEEYE_TIME_START(A);
-    // 使用libyuv 转换空间
-    libyuv::RAWToI420((uint8_t*)image.dataptr(), 
-                image.cols()*3, 
-                frame->data[0],frame->linesize[0],
-                frame->data[1],frame->linesize[1],
-                frame->data[2],frame->linesize[2],
-                frame->width,
-                frame->height);
-    EAGLEEYE_TIME_END(A);
+//     src_img = wrapbuffer_handle(src_handle, src_width, src_height, src_format);
+//     dst_img = wrapbuffer_handle(dst_handle, dst_width, dst_height, dst_format);
+//     imcvtcolor(src_img, dst_img, src_format, dst_format);
+//     if (src_handle)
+//         releasebuffer_handle(src_handle);
+//     if (dst_handle)
+//         releasebuffer_handle(dst_handle);
+//     long end_time = EagleeyeTime::getCurrentTime();
 
-    EAGLEEYE_TIME_START(B);
-    int got_picture = 0;
-    int ret = avcodec_encode_video2(m_codec_cxt, packet, frame, &got_picture);
+//     memcpy(m_frame->data[0], m_temp.cpu<char>(), m_frame->linesize[0]);
+//     memcpy(m_frame->data[1], m_temp.cpu<char>() + m_frame->linesize[0], m_frame->linesize[1]);
+//     memcpy(m_frame->data[2], m_temp.cpu<char>() + m_frame->linesize[0] + m_frame->linesize[1], m_frame->linesize[2]);
+//     std::cout<<"linesize "<<m_frame->linesize[0]<<" "<<m_frame->linesize[1]<<" "<<m_frame->linesize[2]<<std::endl;
+
+//     std::cout<<"cvt time "<<end_time-start_time<<std::endl;
+// #endif
+
+    int ret = av_frame_make_writable(m_frame);
     if(ret < 0){
-        EAGLEEYE_LOGD("Fail to encoder.");
-        return;
+        EAGLEEYE_LOGE("Could not av_frame_make_writable");
     }
-    EAGLEEYE_TIME_END(B);
+    m_frame->pts = this->m_frame_count;
+    this->m_frame_count += 1;
 
-    if(got_picture == 1){
-        EAGLEEYE_TIME_START(C);
-        //将packet中的数据写入本地文件
-        packet->stream_index = stream->index;
-        av_packet_rescale_ts(packet, m_codec_cxt->time_base, stream->time_base);
-        packet->pos = -1;
-        av_interleaved_write_frame(m_output_cxt, packet);
-        EAGLEEYE_TIME_END(C);
-        // av_packet_unref(packet);
-        // av_frame_unref(frame);
-    }
+    /* encode the image */
+    start_time = EagleeyeTime::getCurrentTime();
+    encode(m_codec_cxt, m_frame, m_pkt, m_output_file);
+    end_time = EagleeyeTime::getCurrentTime();
+    std::cout<<"encode time "<<end_time-start_time<<std::endl;
 
+    // stop
     if(image_meta_data.is_end_frame){
-        // 当前是视频流的最后一帧
-        this->m_file_path = "";
-        this->m_is_finish = true;
-        this->m_is_init = false;
-        this->m_manually_stop = 0;
         this->writeFinish();
-
         EAGLEEYE_LOGD("Success to finish write video.");
     }
 }
@@ -275,63 +315,24 @@ void VideoWriteNode::getFolder(std::string& folder){
 }
 
 void VideoWriteNode::writeFinish(){
-    //将流尾写入输出媒体文件并释放文件数据
-    flushEncoder(m_output_cxt, 0);
-    av_write_trailer(m_output_cxt);
+    /* flush the encoder */
+    encode(m_codec_cxt, NULL, m_pkt, m_output_file);
+    /* add sequence end code to have a real mpeg file */
+    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
+    if (m_encoder->id == AV_CODEC_ID_MPEG1VIDEO || m_encoder->id == AV_CODEC_ID_MPEG2VIDEO)
+        m_output_file.write((char*)endcode, sizeof(endcode));
 
-    if(this->m_codec_cxt){
-        avcodec_close(m_codec_cxt);
-    }
+	m_output_file.close();
+	avcodec_free_context(&m_codec_cxt);    
+    av_frame_free(&m_frame);
+    av_packet_free(&m_pkt);
 
-    if(this->m_output_cxt){
-        avio_close(m_output_cxt->pb);
-        avformat_free_context(m_output_cxt);
-    }
-
-    av_freep(&frame->data[0]);
-    av_frame_free(&frame);
-    av_free_packet(packet);
-    av_packet_free(&packet);
-
-    frame = NULL;
-    packet = NULL;
-    m_output_cxt = NULL;
     m_codec_cxt = NULL;
+    this->m_file_path = "";
     this->m_is_finish = true;
-}
-
-int VideoWriteNode::flushEncoder(AVFormatContext *fmt_ctx, unsigned int stream_index)
-{
-    int ret;
-    int got_frame;
-    AVPacket enc_pkt;
-    if (!(fmt_ctx->streams[stream_index]->codec->codec->capabilities))
-        return 0;
-    while (1) {
-        printf("Flushing stream #%u encoder\n", stream_index);
-        enc_pkt.data = NULL;
-        enc_pkt.size = 0;
-        av_init_packet(&enc_pkt);
-        ret = avcodec_encode_video2(fmt_ctx->streams[stream_index]->codec, &enc_pkt,
-            NULL, &got_frame);
-        av_frame_free(NULL);
-        if (ret < 0)
-            break;
-        if (!got_frame)
-        {
-            ret = 0; break;
-        }
-
-        // parpare packet for muxing  
-        enc_pkt.stream_index = stream_index;
-        av_packet_rescale_ts(&enc_pkt,
-            fmt_ctx->streams[stream_index]->codec->time_base,
-            fmt_ctx->streams[stream_index]->time_base);
-        ret = av_interleaved_write_frame(fmt_ctx, &enc_pkt);
-        if (ret < 0)
-            break;
-    }
-    return ret;
+    this->m_is_init = false;
+    this->m_manually_stop = 0;
+    this->m_manually_start = 0;    
 }
 
 void VideoWriteNode::setStop(int stop){
@@ -347,6 +348,27 @@ void VideoWriteNode::getStop(int& stop){
     stop = this->m_manually_stop;
 }
 
+void VideoWriteNode::setStart(int start){
+    if(start != 0){
+        start = 1;
+    }
+
+    this->m_manually_start = start;
+    this->modified();
+}
+
+void VideoWriteNode::getStart(int& start){
+    start = this->m_manually_start;
+}
+
+void VideoWriteNode::setFPS(int fps){
+    this->m_fps = fps;
+    this->modified();
+}
+
+void VideoWriteNode::getFPS(int& fps){
+    fps = this->m_fps;
+}
 } // namespace  eagleeye
 
 #endif

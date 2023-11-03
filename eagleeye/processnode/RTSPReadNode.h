@@ -65,6 +65,7 @@ private:
 
     void* m_mpp_ctx;
     void* m_mpp_api;
+    void*  m_frm_grp;
 
     std::mutex m_out_mu;
 	std::condition_variable m_out_cond;

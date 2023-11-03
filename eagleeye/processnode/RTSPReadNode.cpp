@@ -71,6 +71,7 @@ RTSPReadNode::RTSPReadNode(){
     this->m_exit_flag = false;
     this->m_max_queue_size = 0;
 
+    m_format_ctx = NULL;
 #ifdef EAGLEEYE_RKCHIP
     MppCtx mpp_ctx;
     MppApi* mpp_api;
@@ -94,9 +95,32 @@ RTSPReadNode::RTSPReadNode(){
         EAGLEEYE_LOGE("MPP mpp_init failure.");
     }
 
+    MppDecCfg cfg       = NULL;
+    mpp_dec_cfg_init(&cfg);
+    /* get default config from decoder context */
+    mpp_ret = mpp_api->control(mpp_ctx, MPP_DEC_GET_CFG, cfg);
+    if (mpp_ret) {
+        EAGLEEYE_LOGE("failed to get decoder cfg ret %d\n", mpp_ret);
+    }
+
+    /*
+     * split_parse is to enable mpp internal frame spliter when the input
+     * packet is not aplited into frames.
+     */
+    mpp_ret = mpp_dec_cfg_set_u32(cfg, "base:split_parse", need_split);
+    if (mpp_ret) {
+        EAGLEEYE_LOGE("failed to set split_parse ret %d\n", mpp_ret);
+    }
+
+    mpp_ret = mpp_api->control(mpp_ctx, MPP_DEC_SET_CFG, cfg);
+    if (mpp_ret) {
+        EAGLEEYE_LOGE("failed to set cfg %p ret %d\n", cfg, mpp_ret);
+    }
+
     m_mpp_ctx = mpp_ctx;
     m_mpp_api = mpp_api;
-    m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_rga,this));
+    m_frm_grp = NULL;
+    // m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_rga,this));
 #endif
 
 #ifndef EAGLEEYE_RKCHIP
@@ -107,26 +131,32 @@ RTSPReadNode::RTSPReadNode(){
 RTSPReadNode::~RTSPReadNode(){
     avcodec_free_context(&m_pCodecCtx);
     if(m_format_ctx != NULL){
+        avformat_close_input(&m_format_ctx);
         avformat_free_context(m_format_ctx);
     }
     this->m_exit_flag = true;
 
-    std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
-#ifndef EAGLEEYE_RKCHIP
-    m_postprocess_queue.push(NULL);
-#endif
+//     std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
+// #ifndef EAGLEEYE_RKCHIP
+//     m_postprocess_queue.push(NULL);
+// #endif
+
+// #ifdef EAGLEEYE_RKCHIP
+//     m_postprocess_mpp_queue.push(NULL);
+// #endif
+//     locker.unlock();
+//     m_postprocess_cond.notify_all();
+
+//     if(m_thread.joinable()){
+//         m_thread.join();
+//     }
 
 #ifdef EAGLEEYE_RKCHIP
-    m_postprocess_mpp_queue.push(NULL);
-#endif
-    locker.unlock();
-    m_postprocess_cond.notify_all();
-
-    if(m_thread.joinable()){
-        m_thread.join();
+    if (m_frm_grp != NULL) {
+        mpp_buffer_group_put(m_frm_grp);
+        m_frm_grp = NULL;
     }
 
-#ifdef EAGLEEYE_RKCHIP
     MppCtx mpp_ctx = (MppCtx)m_mpp_ctx;
     MppApi* mpp_api = (MppApi*)m_mpp_api;
     mpp_api->reset(mpp_ctx);
@@ -134,6 +164,50 @@ RTSPReadNode::~RTSPReadNode(){
 #endif
 }
 
+#ifdef EAGLEEYE_RKCHIP
+void postprocess_decode_by_rga(MppFrame mpp_frame, int output_image_format, std::queue<std::pair<Matrix<Array<unsigned char,3>>, __int64_t>>& out_queue){
+        // 转换到颜色空间
+        RK_U32 src_width    = mpp_frame_get_width(mpp_frame);
+        RK_U32 src_height   = mpp_frame_get_height(mpp_frame);
+        RK_U32 src_h_stride = mpp_frame_get_hor_stride(mpp_frame);
+        RK_U32 src_v_stride = mpp_frame_get_ver_stride(mpp_frame);
+        MppBuffer src_buf   = mpp_frame_get_buffer(mpp_frame);
+        RK_S64 pts = mpp_frame_get_pts(mpp_frame);
+
+        int src_format = RK_FORMAT_YCbCr_420_SP;
+        int src_buf_size = src_width * src_height * get_bpp_from_format(src_format);
+        rga_buffer_t src_img, dst_img;
+        rga_buffer_handle_t src_handle, dst_handle;
+        memset(&src_img, 0, sizeof(src_img));
+        memset(&dst_img, 0, sizeof(dst_img));
+
+        int dst_width, dst_height, dst_format;
+        dst_width = src_width;
+        dst_height = src_height;
+        if(output_image_format == 0){
+            dst_format = RK_FORMAT_RGB_888;
+        }
+        else{
+            dst_format = RK_FORMAT_BGR_888;
+        }
+        
+        int dst_buf_size = dst_width * dst_height * get_bpp_from_format(dst_format);
+        Matrix<Array<unsigned char,3>> dst_mat(dst_height, dst_width);
+
+        src_handle = importbuffer_virtualaddr(mpp_buffer_get_ptr(src_buf), src_buf_size);
+        dst_handle = importbuffer_virtualaddr((void*)(dst_mat.cpu<char>()), dst_buf_size);
+
+        src_img = wrapbuffer_handle(src_handle, src_width, src_height, src_format);
+        dst_img = wrapbuffer_handle(dst_handle, dst_width, dst_height, dst_format);
+        imcvtcolor(src_img, dst_img, src_format, dst_format);
+        if (src_handle)
+            releasebuffer_handle(src_handle);
+        if (dst_handle)
+            releasebuffer_handle(dst_handle);
+
+        out_queue.push(std::make_pair(dst_mat, pts));
+}
+#endif
 
 void RTSPReadNode::executeNodeInfo(){
     // 每调用一次，从流中读取一帧
@@ -162,6 +236,7 @@ void RTSPReadNode::executeNodeInfo(){
                     RK_U32 ret = 0;
                     do {
                         // send the packet first if packet is not done
+                        RK_S32 times = 5;
                         if (!pkt_done) {
                             ret = mpp_api->decode_put_packet(mpp_ctx, mpp_packet);
                             if (MPP_OK == ret){
@@ -172,10 +247,15 @@ void RTSPReadNode::executeNodeInfo(){
                         do{
                             MppFrame mpp_frame = NULL;
                             ret = mpp_api->decode_get_frame(mpp_ctx, &mpp_frame);
-                            if(ret != MPP_OK || !mpp_frame){
-                                if(mpp_frame){
-                                    mpp_frame_deinit(&mpp_frame);
+                            if (ret == MPP_ERR_TIMEOUT) {
+                                if(times > 0){
+                                    times --;
+                                    msleep(1);
+                                    continue;
                                 }
+                            }
+
+                            if(mpp_frame == NULL || ret != MPP_OK){
                                 break;
                             }
 
@@ -191,7 +271,38 @@ void RTSPReadNode::executeNodeInfo(){
                                 EAGLEEYE_LOGD("decoder require buffer w:h [%d:%d] stride [%d:%d] buf_size %d",
                                         width, height, hor_stride, ver_stride, buf_size);
 
+                                if (NULL == this->m_frm_grp) {
+                                    /* If buffer group is not set create one and limit it */
+                                    ret = mpp_buffer_group_get_internal(&this->m_frm_grp, MPP_BUFFER_TYPE_ION);
+                                    if (ret) {
+                                        EAGLEEYE_LOGE("get mpp buffer group failed ret %d", ret);
+                                        break;
+                                    }
+
+                                    /* Set buffer to mpp decoder */
+                                    ret = mpp_api->control(mpp_ctx, MPP_DEC_SET_EXT_BUF_GROUP, this->m_frm_grp);
+                                    if (ret) {
+                                        EAGLEEYE_LOGE("set buffer group failed ret %d", ret);
+                                        break;
+                                    }
+                                } else {
+                                    /* If old buffer group exist clear it */
+                                    ret = mpp_buffer_group_clear(this->m_frm_grp);
+                                    if (ret) {
+                                        EAGLEEYE_LOGE("clear buffer group failed ret %d", ret);
+                                        break;
+                                    }
+                                }
+
+                                /* Use limit config to limit buffer count to 24 with buf_size */
+                                ret = mpp_buffer_group_limit_config(this->m_frm_grp, buf_size, 24);
+                                if (ret) {
+                                    EAGLEEYE_LOGE("limit buffer group failed ret %d", ret);
+                                    break;
+                                }
+
                                 mpp_api->control(mpp_ctx, MPP_DEC_SET_INFO_CHANGE_READY, NULL);
+                                mpp_frame_deinit(&mpp_frame);
                                 continue;
                             }
 
@@ -200,15 +311,15 @@ void RTSPReadNode::executeNodeInfo(){
                                 // 解码错误
                                 EAGLEEYE_LOGE("decoder_get_frame get err info:%d discard:%d.\n",
                                         mpp_frame_get_errinfo(mpp_frame), mpp_frame_get_discard(mpp_frame));
+                                mpp_frame_deinit(&mpp_frame);
                                 continue;
                             }
 
-                            {
-                                std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
-                                m_postprocess_mpp_queue.push((void*)mpp_frame);
-                                locker.unlock();
-                                m_postprocess_cond.notify_all();
-                            }
+                            // color space transform
+                            postprocess_decode_by_rga(mpp_frame, m_output_image_format, m_out_queue);
+
+                            // clear
+                            mpp_frame_deinit(&mpp_frame);
                         } while(1);
 
                         if (pkt_done)
@@ -298,13 +409,13 @@ void RTSPReadNode::executeNodeInfo(){
         break;
     }
 
-    static int count = 0;
-    if(count % 30 == 0){
-        std::ofstream file_path_handle;
-        file_path_handle.open("./temp/"+std::to_string(ntp_time)+".png", std::ios::binary);
-        file_path_handle.write(ntp_data.cpu<char>(), int(ntp_data.rows()*ntp_data.cols()*3));
-    }
-    count += 1;
+    // static int count = 0;
+    // if(count % 30 == 0){
+    //     std::ofstream file_path_handle;
+    //     file_path_handle.open("./temp/"+std::to_string(ntp_time)+".png", std::ios::binary);
+    //     file_path_handle.write(ntp_data.cpu<char>(), int(ntp_data.rows()*ntp_data.cols()*3));
+    // }
+    // count += 1;
 
     ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
     MetaData output_meta = output_img_signal->meta();
@@ -391,6 +502,7 @@ void RTSPReadNode::postprocess_by_rga(){
     } while(1);
 #endif
 }
+
 
 void RTSPReadNode::postprocess_by_libyuv(){
     unsigned char* y_ptr = NULL;

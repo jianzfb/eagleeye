@@ -74,7 +74,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
     # eagleeye/processnode/VideoReadNode.cpp
-    # eagleeye/processnode/VideoWriteNode.cpp
+    eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
@@ -220,7 +220,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
     # eagleeye/processnode/VideoReadNode.cpp
-    # eagleeye/processnode/VideoWriteNode.cpp
+    eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
