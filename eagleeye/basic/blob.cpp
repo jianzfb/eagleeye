@@ -16,7 +16,7 @@ Blob::Blob(){
 
 Blob::Blob(int64_t size, EagleeyeType data_type, MemoryType memory_type, Aligned aligned, 
             void* data,
-            bool copy)
+            bool copy, bool manage)
         :m_offset(0),
         m_size(0),
         m_elem_size(0),
@@ -68,7 +68,13 @@ Blob::Blob(int64_t size, EagleeyeType data_type, MemoryType memory_type, Aligned
             this->m_cpu_data = 
                     std::shared_ptr<unsigned char>(new unsigned char[m_size], 
                     [](unsigned char* arr) { delete [] arr; });
-            memcpy(this->m_cpu_data.get(), data, m_size);		
+            memcpy(this->m_cpu_data.get(), data, m_size);
+        }
+        else if(manage){
+            // share cpu memory
+            this->m_cpu_data = 
+                        std::shared_ptr<unsigned char>((unsigned char*)data, 
+                        [](unsigned char* arr){ delete [] arr;});
         }
         else{
             // share cpu memory
@@ -97,7 +103,7 @@ Blob::Blob(int64_t size, EagleeyeType data_type, MemoryType memory_type, Aligned
 
 Blob::Blob(int64_t h, int64_t w, EagleeyeType data_type, MemoryType memory_type, Aligned aligned, 
             void* data,
-            bool copy)
+            bool copy, bool manage)
     :m_offset(0),
     m_size(0),
     m_is_cpu_ready(false),
@@ -150,8 +156,13 @@ Blob::Blob(int64_t h, int64_t w, EagleeyeType data_type, MemoryType memory_type,
                     [](unsigned char* arr) { delete [] arr; });
             memcpy(this->m_cpu_data.get(), data, m_size);		
         }
-        else{
+        else if(manage){
             // share cpu memory
+            this->m_cpu_data = 
+                        std::shared_ptr<unsigned char>((unsigned char*)data, 
+                        [](unsigned char* arr){delete [] arr;});
+        }
+        else{
             this->m_cpu_data = 
                         std::shared_ptr<unsigned char>((unsigned char*)data, 
                         [](unsigned char* arr){});
@@ -221,7 +232,7 @@ Blob::Blob(const std::vector<int64_t> shape,
             EagleeyeType data_type, 
             MemoryType memory_type, 
             std::vector<int64_t> image_shape,
-            Aligned aligned, void* data)
+            Aligned aligned, void* data, bool copy, bool manage)
         :m_size(0), m_offset(0), m_is_cpu_ready(false), m_is_cpu_waiting_from_gpu(false),
             m_is_gpu_ready(false), m_is_gpu_waiting_from_cpu(false), m_aligned(aligned),
             m_waiting_reset_runtime(false), m_waiting_runtime(EAGLEEYE_UNKNOWN_RUNTIME), 
@@ -258,6 +269,17 @@ Blob::Blob(const std::vector<int64_t> shape,
                     std::shared_ptr<unsigned char>(new unsigned char[m_size], 
                                                     [](unsigned char* arr) { delete [] arr; });
             memset(this->m_cpu_data.get(), 0, m_size);
+        }
+        else if(copy){
+            this->m_cpu_data = 
+                std::shared_ptr<unsigned char>((unsigned char*)data, 
+                                                [](unsigned char* arr){ delete [] arr; });
+            memcpy(this->m_cpu_data.get(), data, m_size);
+        }
+        else if(manage){
+            this->m_cpu_data = 
+                std::shared_ptr<unsigned char>((unsigned char*)data, 
+                                                [](unsigned char* arr){ delete [] arr; });
         }
         else{
             this->m_cpu_data = 

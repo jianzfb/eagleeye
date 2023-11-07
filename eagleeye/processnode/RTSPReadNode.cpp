@@ -45,7 +45,6 @@ namespace eagleeye{
 RTSPReadNode::RTSPReadNode(){
     // 输出信号
     this->setNumberOfOutputSignals(1);
-	this->setOutputPort(this->makeOutputSignal(),0);
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "rtsp","","");
 
     m_overtime = "2000000";
@@ -63,8 +62,14 @@ RTSPReadNode::RTSPReadNode(){
     if(avcodec_open2(m_pCodecCtx, m_pCodec, NULL)<0){
         EAGLEEYE_LOGE("Couldn't open codec.");
     }
-    this->m_output_image_format = 1;    // 0: RGB, 1: BGR
-    this->m_output_image_rotation = 0;  // 0,90,180,270
+
+    // 0: RGB, 1: BGR, 2: RGBA, 3: BGRA
+    // 设置默认图像格式
+    this->setImageFormat(1);
+
+    // 0,90,180,270
+    // 设置默认图像旋转
+    this->setImageRotation(0);
 
     m_mpp_ctx = NULL;
     m_mpp_api = NULL;
@@ -120,7 +125,7 @@ RTSPReadNode::RTSPReadNode(){
     m_mpp_ctx = mpp_ctx;
     m_mpp_api = mpp_api;
     m_frm_grp = NULL;
-    // m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_rga,this));
+    m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_rga,this));
 #endif
 
 #ifndef EAGLEEYE_RKCHIP
@@ -136,22 +141,32 @@ RTSPReadNode::~RTSPReadNode(){
     }
     this->m_exit_flag = true;
 
-//     std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
-// #ifndef EAGLEEYE_RKCHIP
-//     m_postprocess_queue.push(NULL);
-// #endif
-
-// #ifdef EAGLEEYE_RKCHIP
-//     m_postprocess_mpp_queue.push(NULL);
-// #endif
-//     locker.unlock();
-//     m_postprocess_cond.notify_all();
-
-//     if(m_thread.joinable()){
-//         m_thread.join();
-//     }
+    std::unique_lock<std::mutex> in_locker(this->m_postprocess_mu);
+#ifndef EAGLEEYE_RKCHIP
+    m_postprocess_queue.push(NULL);
+#endif
 
 #ifdef EAGLEEYE_RKCHIP
+    m_postprocess_mpp_queue.push(NULL);
+#endif
+    in_locker.unlock();
+    m_postprocess_cond.notify_all();
+
+    if(m_thread.joinable()){
+        m_thread.join();
+    }
+
+    // 输出队列中数据
+    std::unique_lock<std::mutex> out_locker(this->m_out_mu);
+    while(this->m_out_queue.size() > 0){
+        std::pair<unsigned char*, __int64_t> out = this->m_out_queue.front();
+        delete[] out.first;
+        this->m_out_queue.pop();
+    }
+    out_locker.unlock();    
+
+#ifdef EAGLEEYE_RKCHIP
+    // 销毁RK资源
     if (m_frm_grp != NULL) {
         mpp_buffer_group_put(m_frm_grp);
         m_frm_grp = NULL;
@@ -164,58 +179,13 @@ RTSPReadNode::~RTSPReadNode(){
 #endif
 }
 
-#ifdef EAGLEEYE_RKCHIP
-void postprocess_decode_by_rga(MppFrame mpp_frame, int output_image_format, std::queue<std::pair<Matrix<Array<unsigned char,3>>, __int64_t>>& out_queue){
-        // 转换到颜色空间
-        RK_U32 src_width    = mpp_frame_get_width(mpp_frame);
-        RK_U32 src_height   = mpp_frame_get_height(mpp_frame);
-        RK_U32 src_h_stride = mpp_frame_get_hor_stride(mpp_frame);
-        RK_U32 src_v_stride = mpp_frame_get_ver_stride(mpp_frame);
-        MppBuffer src_buf   = mpp_frame_get_buffer(mpp_frame);
-        RK_S64 pts = mpp_frame_get_pts(mpp_frame);
-
-        int src_format = RK_FORMAT_YCbCr_420_SP;
-        int src_buf_size = src_width * src_height * get_bpp_from_format(src_format);
-        rga_buffer_t src_img, dst_img;
-        rga_buffer_handle_t src_handle, dst_handle;
-        memset(&src_img, 0, sizeof(src_img));
-        memset(&dst_img, 0, sizeof(dst_img));
-
-        int dst_width, dst_height, dst_format;
-        dst_width = src_width;
-        dst_height = src_height;
-        if(output_image_format == 0){
-            dst_format = RK_FORMAT_RGB_888;
-        }
-        else{
-            dst_format = RK_FORMAT_BGR_888;
-        }
-        
-        int dst_buf_size = dst_width * dst_height * get_bpp_from_format(dst_format);
-        Matrix<Array<unsigned char,3>> dst_mat(dst_height, dst_width);
-
-        src_handle = importbuffer_virtualaddr(mpp_buffer_get_ptr(src_buf), src_buf_size);
-        dst_handle = importbuffer_virtualaddr((void*)(dst_mat.cpu<char>()), dst_buf_size);
-
-        src_img = wrapbuffer_handle(src_handle, src_width, src_height, src_format);
-        dst_img = wrapbuffer_handle(dst_handle, dst_width, dst_height, dst_format);
-        imcvtcolor(src_img, dst_img, src_format, dst_format);
-        if (src_handle)
-            releasebuffer_handle(src_handle);
-        if (dst_handle)
-            releasebuffer_handle(dst_handle);
-
-        out_queue.push(std::make_pair(dst_mat, pts));
-}
-#endif
-
 void RTSPReadNode::executeNodeInfo(){
     // 每调用一次，从流中读取一帧
     bool is_found = false;
     AVPacket pkt;
 
     // 如果解码失败，则重新读取下一针
-    Matrix<Array<unsigned char,3>> ntp_data;
+    unsigned char* ntp_data = NULL;
     double ntp_time;
 
     while(1){
@@ -254,7 +224,6 @@ void RTSPReadNode::executeNodeInfo(){
                                     continue;
                                 }
                             }
-
                             if(mpp_frame == NULL || ret != MPP_OK){
                                 break;
                             }
@@ -316,10 +285,12 @@ void RTSPReadNode::executeNodeInfo(){
                             }
 
                             // color space transform
-                            postprocess_decode_by_rga(mpp_frame, m_output_image_format, m_out_queue);
-
-                            // clear
-                            mpp_frame_deinit(&mpp_frame);
+                            {
+                                std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
+                                m_postprocess_mpp_queue.push(mpp_frame);
+                                locker.unlock();
+                                m_postprocess_cond.notify_all();
+                            }
                         } while(1);
 
                         if (pkt_done)
@@ -368,7 +339,7 @@ void RTSPReadNode::executeNodeInfo(){
                             m_postprocess_queue.push(pframe);
                             locker.unlock();
                             m_postprocess_cond.notify_all();
-                        }        
+                        }
                     } while(1);
 #endif
 
@@ -394,11 +365,12 @@ void RTSPReadNode::executeNodeInfo(){
         uint32_t seconds = ((rtp_demux_context->first_rtcp_ntp_time >> 32) & 0xffffffff)-2208988800;
         uint32_t fraction  = (rtp_demux_context->first_rtcp_ntp_time & 0xffffffff);
         double useconds = ((double) fraction / 0xffffffff);
-        std::pair<Matrix<Array<unsigned char,3>>, __int64_t> out = this->m_out_queue.front();
+        std::pair<unsigned char*, __int64_t> out = this->m_out_queue.front();
         this->m_out_queue.pop();
         ntp_data = out.first;
+
         double pts = 0;
-        if(out.second == AV_NOPTS_VALUE){
+        if(out.second == AV_NOPTS_VALUE || out.second < 0){
             pts = 0;
         }
         else{
@@ -413,14 +385,30 @@ void RTSPReadNode::executeNodeInfo(){
     // if(count % 30 == 0){
     //     std::ofstream file_path_handle;
     //     file_path_handle.open("./temp/"+std::to_string(ntp_time)+".png", std::ios::binary);
-    //     file_path_handle.write(ntp_data.cpu<char>(), int(ntp_data.rows()*ntp_data.cols()*3));
+    //     file_path_handle.write(ntp_data, int(ntp_data.rows()*ntp_data.cols()*3));
     // }
     // count += 1;
 
-    ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
-    MetaData output_meta = output_img_signal->meta();
-    output_meta.timestamp = ntp_time;
-    output_img_signal->setData(ntp_data, output_meta);
+    if(this->m_output_image_format <= 1){
+        // RGB/BGR
+        ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
+        MetaData output_meta = output_img_signal->meta();
+        output_meta.timestamp = ntp_time;
+        output_img_signal->setData(
+            Matrix<Array<unsigned char,3>>(this->m_image_h,this->m_image_w,ntp_data,false,true), 
+            output_meta
+        );
+    }
+    else{
+        // RGBA/BGRA
+        ImageSignal<Array<unsigned char,4>>* output_img_signal = (ImageSignal<Array<unsigned char,4>>*)(this->getOutputPort(0));
+        MetaData output_meta = output_img_signal->meta();
+        output_meta.timestamp = ntp_time;
+        output_img_signal->setData(
+            Matrix<Array<unsigned char,4>>(this->m_image_h,this->m_image_w,ntp_data,false,true), 
+            output_meta
+        );
+    }
 }
 
 void RTSPReadNode::postprocess_by_rga(){
@@ -468,16 +456,26 @@ void RTSPReadNode::postprocess_by_rga(){
         dst_width = src_width;
         dst_height = src_height;
         if(m_output_image_format == 0){
+            // RGB
             dst_format = RK_FORMAT_RGB_888;
         }
-        else{
+        else if(m_output_image_format == 1){
+            // BGR
             dst_format = RK_FORMAT_BGR_888;
+        }
+        else if(m_output_image_format == 2){
+            // RGBA
+            dst_format = RK_FORMAT_RGBA_8888;
+        }
+        else{
+            // BGRA
+            dst_format = RK_FORMAT_BGRA_8888;
         }
 
         int dst_buf_size = dst_width * dst_height * get_bpp_from_format(dst_format);
-        Matrix<Array<unsigned char,3>> dst_mat(dst_height, dst_width);
+        unsigned char* dst_buf = new unsigned char[dst_buf_size];
         src_handle = importbuffer_virtualaddr(mpp_buffer_get_ptr(src_buf), src_buf_size);
-        dst_handle = importbuffer_virtualaddr(dst_mat.cpu<char>(), dst_buf_size);
+        dst_handle = importbuffer_virtualaddr(dst_buf, dst_buf_size);
 
         src_img = wrapbuffer_handle(src_handle, src_width, src_height, src_format);
         dst_img = wrapbuffer_handle(dst_handle, dst_width, dst_height, dst_format);
@@ -487,13 +485,17 @@ void RTSPReadNode::postprocess_by_rga(){
         if (dst_handle)
             releasebuffer_handle(dst_handle);
 
+        this->m_image_h = dst_height;
+        this->m_image_w = dst_width;
         {
             std::unique_lock<std::mutex> locker(this->m_out_mu);
             if(this->m_max_queue_size > 0 && this->m_out_queue.size() > this->m_max_queue_size){
+                std::pair<unsigned char*, __int64_t> out = this->m_out_queue.front();
+                delete[] out.first;
                 this->m_out_queue.pop();
             }
 
-            this->m_out_queue.push(std::make_pair(dst_mat, pts));
+            this->m_out_queue.push(std::make_pair(dst_buf, pts));
             locker.unlock();
             m_out_cond.notify_all();
         }
@@ -600,29 +602,59 @@ void RTSPReadNode::postprocess_by_libyuv(){
             frame_v = Matrix<unsigned char>(1, int(image_h*image_w*0.25), v_ptr);
         }
 
-        Matrix<Array<unsigned char,3>> decode_image(image_h, image_w);
+        // Matrix<Array<unsigned char,3>> decode_image(image_h, image_w);
+
+        unsigned char* decode_image = NULL;
+        if(this->m_output_image_format <= 1){
+            decode_image = new unsigned char[image_h*image_w*3];
+        }
+        else{
+            decode_image = new unsigned char[image_h*image_w*4];
+        }
         if(this->m_output_image_format == 0){
             // to RGB
             libyuv::I420ToRAW(frame_y.cpu<unsigned char>(), image_w, 
                                 frame_u.cpu<unsigned char>(), (image_w>>1),
                                 frame_v.cpu<unsigned char>(), (image_w>>1),
-                                decode_image.cpu<unsigned char>(), image_w*3,
+                                decode_image, image_w*3,
                                 image_w,
                                 image_h);
         }
-        else{
+        else if(this->m_output_image_format == 1){
             // to BGR
             libyuv::I420ToRGB24(frame_y.cpu<unsigned char>(), image_w, 
                                 frame_u.cpu<unsigned char>(), (image_w>>1),
                                 frame_v.cpu<unsigned char>(), (image_w>>1),
-                                decode_image.cpu<unsigned char>(), image_w*3,
+                                decode_image, image_w*3,
                                 image_w,
                                 image_h);         
         }
+        else if(this->m_output_image_format == 2){
+            // to RGBA
+            libyuv::I420ToRGBA(
+                frame_y.cpu<unsigned char>(), image_w, 
+                frame_u.cpu<unsigned char>(), (image_w>>1),
+                frame_v.cpu<unsigned char>(), (image_w>>1),
+                decode_image, image_w*4,
+                image_w, image_h); 
+        }
+        else{
+            // to BGRA
+            libyuv::I420ToBGRA(
+                frame_y.cpu<unsigned char>(), image_w, 
+                frame_u.cpu<unsigned char>(), (image_w>>1),
+                frame_v.cpu<unsigned char>(), (image_w>>1),
+                decode_image, image_w*4,
+                image_w, image_h);            
+        }
 
+        this->m_image_h = image_h;
+        this->m_image_w = image_w;
         {
             std::unique_lock<std::mutex> locker(this->m_out_mu);
             if(this->m_max_queue_size > 0 && this->m_out_queue.size() > this->m_max_queue_size){
+                std::pair<unsigned char*, __int64_t> out = this->m_out_queue.front();
+                delete[] out.first;
                 this->m_out_queue.pop();
             }
 
@@ -679,13 +711,25 @@ void RTSPReadNode::setFilePath(std::string file_path){
         return;
     }
 }
+
 void RTSPReadNode::getFilePath(std::string& file_path){
     file_path = this->m_rtsp_address;
 }
 
 void RTSPReadNode::setImageFormat(int image_format){
-    // image_format: 0,RGB; 1:BGR
+    // image_format: 0: RGB; 1: BGR, 2: RGBA, 3: BGRA
+    if(image_format > 3){
+        EAGLEEYE_LOGE("image format only support 0(RGB),1(BGR),2(RGBA),3(BGRA)");
+        return;
+    }
+
     this->m_output_image_format = image_format;
+    if(this->m_output_image_format <= 1){
+        this->setOutputPort(new ImageSignal<Matrix<Array<unsigned char,3>>>(),0);
+    }
+    else{
+        this->setOutputPort(new ImageSignal<Matrix<Array<unsigned char,4>>>(),0);
+    }
 }
 
 void RTSPReadNode::setImageRotation(int image_rotation){
@@ -699,6 +743,7 @@ void RTSPReadNode::setImageRotation(int image_rotation){
 void RTSPReadNode::setRTSPTransport(std::string rtsp_transport){
     m_rtsp_transport = rtsp_transport;
 }
+
 void RTSPReadNode::setOvertime(std::string overtime){
     m_overtime = overtime;
 }

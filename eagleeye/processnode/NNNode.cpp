@@ -13,6 +13,7 @@ NNNode::NNNode(int thread_num, CPUAffinityPolicy performance){
 
 	EAGLEEYE_MONITOR_VAR(std::string, setModelFolder, getModelFolder, "model_folder", "", "");
     EAGLEEYE_MONITOR_VAR(std::string, setWritableFolder, getWritableFolder, "writable_path", "", "");
+    EAGLEEYE_MONITOR_VAR(std::string, setClear, getClear, "clear", "", "");
 }   
 NNNode::~NNNode(){
     delete m_g;
@@ -414,4 +415,15 @@ void NNNode::getWritableFolder(std::string& writable_folder){
     // do nothing
 }
 
+void NNNode:: setClear(const std::string name){
+    std::vector<dataflow::Node*> nodes = this->m_g->getNodes();
+    for(int i=0; i<nodes.size(); ++i){
+        if(nodes[i]->name == name){
+            nodes[i]->clear();
+        }
+    }
+}
+void NNNode::getClear(std::string& name){
+    // do nothing
+}
 } // namespace eagleeye

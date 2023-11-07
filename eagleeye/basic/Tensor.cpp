@@ -18,8 +18,8 @@ Tensor::Tensor(
     const std::vector<int64_t> shape, 
     EagleeyeType data_type, 
     DataFormat data_format, 
-    void* data)
-        :Blob(shape, data_type, CPU_BUFFER, std::vector<int64_t>(), Aligned(64), data){
+    void* data, bool copy, bool manage)
+        :Blob(shape, data_type, CPU_BUFFER, std::vector<int64_t>(), Aligned(64), data, copy, manage){
     assert(data_type == EAGLEEYE_FLOAT || data_type == EAGLEEYE_CHAR || data_type == EAGLEEYE_BOOL || data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_INT);
     
     this->m_format = data_format;

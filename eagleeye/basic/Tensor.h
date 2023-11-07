@@ -34,7 +34,7 @@ public:
     Tensor(const std::vector<int64_t> shape, 
             EagleeyeType data_type, 
             DataFormat data_format, 
-            void* data);
+            void* data, bool copy=false, bool manage=false);
 
     /**
      * @brief null tensor

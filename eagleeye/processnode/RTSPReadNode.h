@@ -6,6 +6,7 @@
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/MetaOperation.h"
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
@@ -14,10 +15,10 @@ class AVCodec;
 class AVFrame;
 class AVFormatContext;
 namespace eagleeye{
-class RTSPReadNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>, DynamicNodeCreator<RTSPReadNode>{
+class RTSPReadNode:public AnyNode, DynamicNodeCreator<RTSPReadNode>{
 public:
-    typedef RTSPReadNode Self;
-    typedef ImageIONode<ImageSignal<Array<unsigned char, 3>>>       Superclass;
+    typedef RTSPReadNode        Self;
+    typedef AnyNode             Superclass;
 
     /**
 	 *	@brief get class identity	
@@ -65,11 +66,11 @@ private:
 
     void* m_mpp_ctx;
     void* m_mpp_api;
-    void*  m_frm_grp;
+    void* m_frm_grp;
 
     std::mutex m_out_mu;
 	std::condition_variable m_out_cond;
-    std::queue<std::pair<Matrix<Array<unsigned char,3>>, __int64_t>> m_out_queue;
+    std::queue<std::pair<unsigned char*, __int64_t>> m_out_queue;
 
     std::mutex m_postprocess_mu;
 	std::condition_variable m_postprocess_cond;
@@ -77,7 +78,8 @@ private:
     std::queue<void*> m_postprocess_mpp_queue;
     std::thread m_thread;
     bool m_exit_flag;
-
+    int64_t m_image_h;              // image h
+    int64_t m_image_w;              // image w
     int m_max_queue_size;
 };
 }

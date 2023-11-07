@@ -12,7 +12,7 @@ Matrix<T>::Matrix()
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols, MemoryType memory_type, Aligned aligned)
+Matrix<T>::Matrix(int64_t rows,int64_t cols, MemoryType memory_type, Aligned aligned)
 	:Blob(rows, cols, TypeTrait<T>::type, memory_type, aligned){
 	m_rows = rows;
 	m_cols = cols;
@@ -44,7 +44,7 @@ Matrix<T>::Matrix(std::vector<int64_t> shape, MemoryType memory_type, Aligned al
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, MemoryType memory_type, Aligned aligned)
+Matrix<T>::Matrix(int64_t rows,int64_t cols,T val, MemoryType memory_type, Aligned aligned)
 	:Blob(rows, cols, TypeTrait<T>::type, memory_type, aligned){
 	m_rows = rows;
 	m_cols = cols;
@@ -66,8 +66,8 @@ Matrix<T>::Matrix(unsigned int rows,unsigned int cols,T val, MemoryType memory_t
 }
 
 template<typename T>
-Matrix<T>::Matrix(unsigned int rows,unsigned int cols,void* data,bool copy_flag, MemoryType memory_type, Aligned aligned)
-	:Blob(rows, cols, TypeTrait<T>::type, memory_type, aligned, data, copy_flag){
+Matrix<T>::Matrix(int64_t rows,int64_t cols,void* data,bool copy_flag, bool manage_flag, MemoryType memory_type, Aligned aligned)
+	:Blob(rows, cols, TypeTrait<T>::type, memory_type, aligned, data, copy_flag, manage_flag){
 	m_rows = rows;
 	m_cols = cols;
 
