@@ -73,6 +73,11 @@ public:
   virtual int init(std::map<std::string, std::vector<std::string>> params) noexcept = 0;
   virtual int init(std::map<std::string, void*> params) noexcept = 0;
 
+  /*
+   * @brief clear history info
+  */
+  virtual void clear(){};
+
   /**
    * @brief transfer target runtime
    */ 

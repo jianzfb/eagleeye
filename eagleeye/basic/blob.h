@@ -50,7 +50,8 @@ public:
     
     Blob(int64_t size, EagleeyeType data_type, MemoryType memory_type, Aligned aligned, 
          void* data=NULL, 
-         bool copy=false);
+         bool copy=false,
+         bool manage=false);
 
     /**
      * @brief Construct a new Blob object (support heterogeneous device)
@@ -60,10 +61,12 @@ public:
      * @param runtime  memory device
      * @param data  data
      * @param copy  whether copy 
+     * @param manage whether manage
      */
     Blob(int64_t h, int64_t w, EagleeyeType data_type, MemoryType memory_type, Aligned aligned, 
          void* data=NULL, 
-         bool copy=false);
+         bool copy=false,
+         bool manage=false);
     
     /**
      * @brief create blob by TEXTURE2D
@@ -78,7 +81,9 @@ public:
          MemoryType memory_type, 
          std::vector<int64_t> image_shape,
          Aligned aligned=Aligned(64),
-         void* data=NULL);
+         void* data=NULL,
+         bool copy=false,
+         bool manage=false);
 
     /**
      * @brief Destroy the Blob object
@@ -230,7 +235,8 @@ public:
      * @return int64_t 
      */
     int64_t numel() const { return m_dims.production(); }
-    
+    int64_t elemsize() const {return m_elem_size;}
+
 protected:
     /**
      * @brief sync memory between device

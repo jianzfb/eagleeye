@@ -11,10 +11,9 @@ public:
 	 *	@brief define some basic type
 	 *	@note you must do these
 	 */
-    typedef TensorSignal                     Self;
-    typedef AnySignal                       Superclass;
-
-	typedef Tensor						    DataType;
+    typedef TensorSignal                     	Self;
+    typedef AnySignal                       	Superclass;
+	typedef Tensor						    	DataType;
 
     TensorSignal();
     virtual ~TensorSignal();

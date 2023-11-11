@@ -8,15 +8,15 @@
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/MetaOperation.h"
 #include <string>
+#include <fstream>
+#include <iostream>
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
-class AVFormatContext;
+class AVCodec;
 class AVCodecContext;
 class AVFrame;
-class AVStream;
 class AVPacket;
-class AVFrame;
 namespace eagleeye{
 class VideoWriteNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>, DynamicNodeCreator<VideoWriteNode>{
 public:
@@ -76,6 +76,17 @@ public:
     void setStop(int stop);
     void getStop(int& stop);
 
+    /**
+     * @brief Set/Get the Force Start object
+     * 
+     * @param start 
+     */
+    void setStart(int start);
+    void getStart(int& start);
+
+    void setFPS(int fps);
+    void getFPS(int& fps);
+
 private:
     VideoWriteNode(const VideoWriteNode&);
     void operator=(const VideoWriteNode&);
@@ -86,28 +97,24 @@ private:
      */
     void writeFinish();
 
-    /**
-     * @brief flush encoder
-     * 
-     * @param fmt_ctx 
-     * @param stream_index 
-     * @return int 
-     */
-    int flushEncoder(AVFormatContext *fmt_ctx, unsigned int stream_index);
-
     bool m_is_init;
     bool m_is_finish;
     int m_fps;
-    AVFormatContext* m_output_cxt;
-    AVCodecContext* m_codec_cxt;
-    AVStream* stream;
-    AVPacket* packet;
-    AVFrame* frame;
 
     std::string m_prefix;
     std::string m_folder;
 
     int m_manually_stop;
+    int m_manually_start;
+
+    std::ofstream m_output_file;
+    AVCodecContext* m_codec_cxt;
+    const AVCodec* m_encoder;
+    AVFrame *m_frame;
+    AVPacket *m_pkt;
+    int m_frame_count;
+
+    Matrix<unsigned char> m_temp;
 };
 }
 #endif

@@ -226,15 +226,11 @@ bool EagleeyeIO::read(void*& info,int& size)
 	{
 	case READ_BINARY_MODE:
 		{
-			if(size <= 0 && info == NULL){
-				m_i_file_handle.read((char*)(&size),sizeof(int));
-				return true;
-			}
-			else if(size > 0 && info != NULL){
-				m_i_file_handle.read((char*)info, sizeof(char)*size);
-				return true;
-			}
-			return false;
+			int mm = 0;
+			m_i_file_handle.read((char*)(&mm),sizeof(int));
+			size = mm;
+			m_i_file_handle.read((char*)info, sizeof(char)*size);
+			return true;
 		}
 	default:
 		break;

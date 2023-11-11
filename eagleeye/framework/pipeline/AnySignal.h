@@ -29,6 +29,7 @@ public:
 		allocate_mode = 0;
 		timestamp = 0.0;
 		mirror = false;
+		color_format = -1;
 	}
 	std::string name;		// name
 	std::string info;		// info
@@ -45,6 +46,7 @@ public:
 	int allocate_mode;		// 0（do nothing）;1（InPlace）;2（largest）;3（same size with input）;
 	double timestamp;		// timestamp
 	bool mirror;			// mirror(mirror, rotation)
+	int color_format;		// color space(// -1: UNKOWN, 0: RGB, 1: BGR, 2: RGBA, 3: BGRA, 4: YUV420P, 5: YUV420SP)
 };	
 
 class AnyNode;

@@ -74,6 +74,9 @@ public:
     void setWritableFolder(const std::string writable_folder);
     void getWritableFolder(std::string& writable_folder);
 
+    void setClear(const std::string name);
+    void getClear(std::string& name);
+
 private:
     NNNode(const NNNode&);
     void operator=(const NNNode&);

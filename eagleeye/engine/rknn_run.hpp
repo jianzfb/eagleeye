@@ -95,7 +95,7 @@ bool ModelRun<RknnRun, Enabled>::run(std::map<std::string, const unsigned char*>
 
     // run model
     rknn_run(this->m_ctx, NULL);
-    
+
     // get output
     if(outputs.size() > 0){
         for(int index=0; index<this->m_output_names.size(); ++index){

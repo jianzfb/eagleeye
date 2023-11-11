@@ -16,47 +16,95 @@ public:
     using BaseOp<0, 1>::init;
     ConstOp(){}
 
-    ConstOp(T val, std::vector<int64_t> shape, std::string device="CPU")
-        :m_shape(shape),
-         m_device(device),
-         m_vals(std::vector<T>{val}){
-        m_type = TypeTrait<T>::type;
-        if(!(m_type == EAGLEEYE_FLOAT || m_type == EAGLEEYE_INT)){
-            EAGLEEYE_LOGE("Data type dont support.");
-            return;
+    ConstOp(T value, std::vector<int64_t> shape, std::string device="CPU")
+        :m_device(device){
+        this->m_outputs[0] = Tensor(
+            shape,
+            TypeTrait<T>::type,
+            DataFormat::AUTO,
+            CPU_BUFFER
+        );
+
+        int64_t out_total = this->m_outputs[0].numel();
+        T* data_ptr = (T*)this->m_outputs[0].cpu();
+        for(int i=0; i<out_total; ++i){
+            data_ptr[i] = value;
         }
     }
     
-    ConstOp(std::vector<T> value, std::vector<int64_t> shape, std::string device="CPU")
-        :m_shape(shape),
-         m_device(device),
-         m_vals(value){
-        m_type = TypeTrait<T>::type;
-        if(!(m_type == EAGLEEYE_FLOAT || m_type == EAGLEEYE_INT)){
-            EAGLEEYE_LOGE("Data type dont support.");
-            return;
+    ConstOp(std::vector<T> value,  std::string device="CPU")
+        :m_device(device){
+        int64_t num = value.size();
+        this->m_outputs[0] = Tensor(
+            std::vector<int64_t>{num},
+             TypeTrait<T>::type,
+            DataFormat::AUTO,
+            CPU_BUFFER
+        );
+
+        T* data_ptr = (T*)this->m_outputs[0].cpu();
+        for(int i=0; i<num; ++i){
+            data_ptr[i] = value[i];
         }
     }
     
     virtual ~ConstOp(){};
 
     virtual int init(std::map<std::string, std::vector<float>> params){
+        if(params.find("value") == params.end()){
+            return 0;
+        }
+
+        std::vector<float> data = params["value"];
+        int num = data.size();
         this->m_outputs[0] = Tensor(
-            m_shape,
-            m_type,
+            std::vector<int64_t>{num},
+             TypeTrait<T>::type,
             DataFormat::AUTO,
             CPU_BUFFER
         );
 
-        int64_t out_total = this->m_outputs[0].numel();
-        int64_t vals_num = m_vals.size();
         T* data_ptr = (T*)this->m_outputs[0].cpu();
-        for(int i=0; i<out_total; ++i){
-            data_ptr[i] = m_vals[i%vals_num];
+        for(int i=0; i<num; ++i){
+            data_ptr[i] = T(data[i]);
         }
+
         return 0;
     }
-    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){
+        if(params.find("value") == params.end()){
+            return 0;
+        }
+
+        std::vector<std::vector<float>> data = params["value"];
+        int64_t dim_0_num = data.size();
+        if(dim_0_num == 0){
+            this->m_outputs[0] = Tensor(
+                std::vector<int64_t>{0,0},
+                TypeTrait<T>::type,
+                DataFormat::AUTO,
+                CPU_BUFFER
+            );
+            return 0;
+        }
+        else{
+            int64_t dim_1_num = data[0].size();
+            this->m_outputs[0] = Tensor(
+                std::vector<int64_t>{dim_0_num, dim_1_num},
+                TypeTrait<T>::type,
+                DataFormat::AUTO,
+                CPU_BUFFER
+            );
+
+            if(dim_0_num > 0 && dim_1_num > 0){
+                for(int i=0; i<dim_0_num; ++i){
+                    T* ptr = this->m_outputs[0].template cpu<T>() + i * dim_1_num;
+                    memcpy(ptr, data[i].data(), sizeof(T)*dim_1_num);
+                }
+            }
+        }
+        return 0;
+    };
     virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
@@ -68,10 +116,6 @@ public:
     }
 
 protected:
-    std::vector<int64_t> m_shape;
-    std::vector<T> m_vals;
-    T m_val;
-    EagleeyeType m_type;
     std::string m_device;
 };
 

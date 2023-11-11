@@ -108,6 +108,11 @@ public:
     // get output
     return &((&m_handler)->getOutput(index));
   }
+
+  virtual void clear(){
+    (&m_handler)->clear();
+  }
+
 private:
   int fireImpl(index_sequence<>, EagleeyeRuntime runtime, int32_t& elapsed_time) {
     long start_time = EagleeyeTime::getCurrentTime();

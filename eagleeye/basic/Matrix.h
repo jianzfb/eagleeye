@@ -31,8 +31,8 @@ public:
 	/**
 	 * @brief create matrix with (rows, cols)
 	 */ 
-	Matrix(unsigned int rows,
-			unsigned int cols, 
+	Matrix(int64_t rows,
+			int64_t cols, 
 			MemoryType memory_type=CPU_BUFFER,
 			Aligned aligned=Aligned(64));
 	
@@ -46,8 +46,8 @@ public:
 	/**
 	 * @brief fill matrix with val
 	 */ 
-	Matrix(unsigned int rows,
-			unsigned int cols,
+	Matrix(int64_t rows,
+			int64_t cols,
 			T val, 
 			MemoryType memory_type=CPU_BUFFER,
 			Aligned aligned=Aligned(64));
@@ -56,10 +56,11 @@ public:
 	 *	@brief using matrix structure to wrap outside data
 	 *	@note if copy_flag == true, it would copy this outside data; 
 	 */
-	Matrix(unsigned int rows,
-			unsigned int cols,
+	Matrix(int64_t rows,
+			int64_t cols,
 			void* data,
 			bool copy_flag = false, 
+			bool manage_flag = false,
 			MemoryType memory_type=CPU_BUFFER,
 			Aligned aligned=Aligned(64));
 

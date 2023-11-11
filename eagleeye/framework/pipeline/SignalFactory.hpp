@@ -19,6 +19,7 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_meta.needed_rows = 0;
 	this->m_meta.needed_cols = 0;	
 	this->m_meta.allocate_mode = 1;
+	this->m_meta.color_format = -1;
 
 	this->m_meta.timestamp = 0;
 	this->m_sig_category = SIGNAL_CATEGORY_IMAGE;

@@ -169,7 +169,7 @@ public:
                         m_model_power,
                         m_writable_path,
                         is_inner_preprocess), [](ModelEngine* d) {delete d;});
-            
+
             this->m_model_run->setModelFolder(m_model_folder);
             this->m_model_init = this->m_model_run->initialize();
         }
@@ -179,32 +179,55 @@ public:
         }
 
         // 运行
-        std::map<std::string, const unsigned char*> inputs;
-        std::map<std::string, unsigned char*> outputs;
-
-        // 输入
-        for(int input_i=0; input_i<m_input_names.size(); ++input_i){
-            inputs[m_input_names[input_i]] = input[input_i].cpu<unsigned char>();
+        if(input.size() == 0 || input[0].dims()[0] == 0){
+            // do nothing
+            return 0;
         }
 
-        // 输出
-        for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-            outputs[m_output_names[output_i]] = NULL;
+        int batch_size = 1;
+        if(input[0].dims().size() >= 4 && input[0].dims()[0] > 1){
+            batch_size = input[0].dims()[0];
         }
-        this->m_model_run->run(inputs, outputs);
 
-        // 导出
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
             std::string output_name = this->m_output_names[output_i];
             std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
-
-            this->m_outputs[output_i] = Tensor(
-                        output_shape,
-                        m_output_types[output_i],
-                        DataFormat::AUTO,
-                        outputs[output_name]
-                    );
+            output_shape[0] = batch_size;
+            if(this->m_outputs[output_i].empty() || this->m_outputs[output_i].dims()[0] != batch_size){
+                this->m_outputs[output_i] = Tensor(
+                    output_shape,
+                    m_output_types[output_i],
+                    DataFormat::AUTO,
+                    CPU_BUFFER
+                );
+            }
         }
+
+        for(int b_i=0; b_i<batch_size; ++b_i){
+            std::map<std::string, const unsigned char*> inputs;
+            std::map<std::string, unsigned char*> outputs;
+
+            // 输入
+            for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+                int slice_size = input[input_i].numel() / batch_size;
+                inputs[m_input_names[input_i]] = input[input_i].cpu<unsigned char>() + b_i * slice_size * input[input_i].elemsize();
+            }
+
+            // 输出
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                outputs[m_output_names[output_i]] = NULL;
+            }
+            this->m_model_run->run(inputs, outputs);
+
+            // 导出
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                int slice_size = this->m_outputs[output_i].numel() / batch_size;
+                int elem_size = this->m_outputs[output_i].elemsize();
+                char* output_ptr = this->m_outputs[output_i].template cpu<char>() + b_i * slice_size * elem_size;
+                memcpy(output_ptr, outputs[m_output_names[output_i]], slice_size * elem_size);
+            }
+        }
+
         return 0;
     }
 
