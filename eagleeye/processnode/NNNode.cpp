@@ -45,8 +45,7 @@ void NNNode::executeNodeInfo(){
     signal_num = this->getNumberOfOutputSignals();
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
         graph_output_map[m_output_map[sig_i].first] = std::tuple<void*, std::vector<int64_t>, EagleeyeType>(NULL, {}, EAGLEEYE_UNDEFINED);
-    
-    }    
+    }
 
     m_g->run(graph_input_map, graph_output_map);
 
