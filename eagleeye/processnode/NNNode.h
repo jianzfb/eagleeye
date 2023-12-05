@@ -77,6 +77,9 @@ public:
     void setClear(const std::string name);
     void getClear(std::string& name);
 
+    void setOpValue(const std::string name);
+    void getOpValue(std::string& name);
+
 private:
     NNNode(const NNNode&);
     void operator=(const NNNode&);

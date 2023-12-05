@@ -41,13 +41,18 @@ int PlaceholderOp::init(std::map<std::string, std::vector<float>> params){
         return 0;
     }
 
-    this->m_memory_type = (MemoryType)((int)(params["memory_type"][0]));
-    this->m_memory_type = CPU_BUFFER;  
+    if(params.find("memory_type") != params.end()){
+        this->m_memory_type = (MemoryType)((int)(params["memory_type"][0]));
+        this->m_memory_type = CPU_BUFFER;
+    }
+
     this->m_data_format = DataFormat::AUTO;
     if(params.find("data_format") != params.end()){
         this->m_data_format = (DataFormat)((int)(params["data_format"][0]));
     }
-    this->m_data_type = (EagleeyeType)((int)(params["data_type"][0]));
+    if(params.find("data_type") != params.end()){
+        this->m_data_type = (EagleeyeType)((int)(params["data_type"][0]));
+    }
 
     if(params.find("zero_copy") != params.end()){
         this->m_zero_copy = bool((int)(params["zero_copy"][0]));

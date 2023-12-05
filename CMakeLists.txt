@@ -154,6 +154,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SwitchNode.cpp
     eagleeye/processnode/AnyPlaceholder.cpp
     eagleeye/processnode/CropNode.cpp
+    eagleeye/processnode/CallbackNode.cpp
+    eagleeye/processnode/AutoPipeline.cpp
     eagleeye/common/EagleeyeBGRARotateHWC.cpp
     eagleeye/common/EagleeyeBGRAFlipHWC.cpp
     eagleeye/common/EagleeyeBGRFlipHWC.cpp
@@ -237,6 +239,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/State2BooleanNode.cpp
     eagleeye/processnode/CopyNode.cpp
     eagleeye/processnode/DelayFetch.cpp
+    eagleeye/processnode/CallbackNode.cpp
+    eagleeye/processnode/AutoPipeline.cpp
     eagleeye/common/EagleeyeFile.cpp 
     eagleeye/common/EagleeyeTime.cpp 
     eagleeye/common/EagleeyeProcessor.cpp
@@ -280,21 +284,8 @@ set(EAGLEEYE_SRC
     eagleeye/runtime/cpu/cpu_runtime.cpp
     eagleeye/engine/nano/op/placeholder_op.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
-    eagleeye/render/GLUtils.cpp
-    eagleeye/render/RenderContext.cpp
-    eagleeye/render/RenderNode.cpp
-    eagleeye/render/ImageContainer.cpp
-    eagleeye/render/RenderBase.cpp
-    eagleeye/render/ShapeNode.cpp
-    eagleeye/render/HighlightShow.cpp
-    eagleeye/render/ImageBlend.cpp
-    eagleeye/render/RenderMapToCPU.cpp
-    eagleeye/render/ImageShow.cpp
-    eagleeye/ui/ScrollView.cpp
-    eagleeye/render/YUVShow.cpp
     eagleeye/common/EagleeyeYUV.cpp
     eagleeye/common/EagleeyeRGBRotate.cpp
-    eagleeye/common/EagleeyeShader.cpp
     eagleeye/common/EagleeyeGraph.cpp
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/framework/pipeline/EmptySignal.cpp
@@ -317,7 +308,6 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeBGRARotateHWC.cpp
     eagleeye/common/EagleeyeBGRAFlipHWC.cpp
     eagleeye/common/EagleeyeBGRFlipHWC.cpp
-    eagleeye/render/AutoRenderRegion.cpp
     eagleeye/basic/Dim.cpp
     eagleeye/engine/nano/op/factory.cpp
     eagleeye/engine/nano/op/cast_op.cpp
@@ -417,6 +407,34 @@ if(WITH_OPENCL)
     endif()
 endif()
 
+# OPENGL
+if(DEFINED ANDROID_ABI AND DEFINED WITH_OPENGL)
+    # 仅针对ANDROID平台，引入opengl环境
+    message(STATUS "CONFIGURE OPENGL")
+    set(EAGLEEYE_SRC 
+        ${EAGLEEYE_SRC} 
+        eagleeye/ui/ScrollView.cpp
+        eagleeye/render/YUVShow.cpp
+        eagleeye/render/GLUtils.cpp
+        eagleeye/render/RenderContext.cpp
+        eagleeye/render/RenderNode.cpp
+        eagleeye/render/ImageContainer.cpp
+        eagleeye/render/RenderBase.cpp
+        eagleeye/render/ShapeNode.cpp
+        eagleeye/render/HighlightShow.cpp
+        eagleeye/render/ImageBlend.cpp
+        eagleeye/render/RenderMapToCPU.cpp
+        eagleeye/render/ImageShow.cpp
+        eagleeye/render/AutoRenderRegion.cpp
+        eagleeye/render/RenderMapToCPU.cpp
+        eagleeye/common/EagleeyeShader.cpp
+    )
+    add_definitions(-DEAGLEEYE_OPENGL)
+    ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
+    find_path(GLES3_INCLUDE_DIR GLES3/gl3.h HINTS ${ANDROID_NDK})              #找到opengl头文件路径
+    find_library(GLES3_LIBRARY libGLESv3.so HINTS ${GLES3_INCLUDE_DIR}/../lib) #找到opengl库文件路径
+    include_directories(${GLES3_INCLUDE_DIR})    
+endif()
 
 find_package(pnglib)
 if(pnglib_FOUND)
@@ -444,7 +462,6 @@ if(OpenMP_CXX_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
-
 
 
 if(DEFINED FFMPEG)
@@ -514,14 +531,8 @@ endif()
 
 
 if(DEFINED ANDROID_ABI AND DEFINED WITH_OPENGL)
-    # 仅针对ANDROID平台，引入opengl环境
-    ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
-    find_path(GLES3_INCLUDE_DIR GLES3/gl3.h HINTS ${ANDROID_NDK})              #找到opengl头文件路径
-    find_library(GLES3_LIBRARY libGLESv3.so HINTS ${GLES3_INCLUDE_DIR}/../lib) #找到opengl库文件路径
-    include_directories(${GLES3_INCLUDE_DIR})
     target_link_libraries(eagleeye ${GLES3_LIBRARY})
     target_link_libraries(eagleeye EGL)
-    add_definitions(-DEAGLEEYE_OPENGL)
 endif()
 
 if(DEFINED ANDROID_ABI)

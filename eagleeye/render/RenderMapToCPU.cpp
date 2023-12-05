@@ -1,6 +1,5 @@
 #include "eagleeye/render/RenderMapToCPU.h"
-#include "eagleeye/basic/BGRARotateHWC.h"
-
+#include "eagleeye/common/EagleeyeBGRARotateHWC.h"
 namespace eagleeye
 {
 RenderMapToCPU::RenderMapToCPU(){

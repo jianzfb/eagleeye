@@ -238,6 +238,7 @@ public:
 	 * @param data_dims 
 	 */
 	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){};
+	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type, MetaData& data_meta){};
 
 	/**
 	 * @brief whether content is prepared in the current signal 
@@ -290,7 +291,7 @@ public:
 	 * @brief upgrade signal to queue version
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5){};
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){};
 
 	/**
 	 * @brief Get the Signal Value Type object
@@ -353,7 +354,6 @@ protected:
 	bool m_data_update;
 	AnyNode* m_link_node;
 	MetaData m_meta;
-	bool m_signal_exit;
 	std::shared_ptr<unsigned char> m_mem;
 
 private:

@@ -76,13 +76,10 @@ typename StringSignal::DataType StringSignal::getData(){
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
 
-			if(this->m_queue.size() > 0 || this->m_signal_exit){
+			if(this->m_queue.size() > 0){
 				break;
 			}
         }
-		if(this->m_signal_exit){
-			return std::string();
-		}
 
 		std::string data = this->m_queue.front();
         this->m_queue.pop();

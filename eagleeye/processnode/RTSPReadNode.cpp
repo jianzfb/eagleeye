@@ -47,7 +47,7 @@ RTSPReadNode::RTSPReadNode(){
     this->setNumberOfOutputSignals(1);
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "rtsp","","");
 
-    m_overtime = "2000000";
+    m_overtime = "20000";
     m_rtsp_transport = "tcp";   // tcp, udp
     //Find H.264 Decoder
     m_pCodec = avcodec_find_decoder(AV_CODEC_ID_H264);
@@ -505,7 +505,6 @@ void RTSPReadNode::postprocess_by_rga(){
 #endif
 }
 
-
 void RTSPReadNode::postprocess_by_libyuv(){
     unsigned char* y_ptr = NULL;
     unsigned char* u_ptr = NULL;
@@ -602,8 +601,6 @@ void RTSPReadNode::postprocess_by_libyuv(){
             frame_v = Matrix<unsigned char>(1, int(image_h*image_w*0.25), v_ptr);
         }
 
-        // Matrix<Array<unsigned char,3>> decode_image(image_h, image_w);
-
         unsigned char* decode_image = NULL;
         if(this->m_output_image_format <= 1){
             decode_image = new unsigned char[image_h*image_w*3];
@@ -684,6 +681,8 @@ void RTSPReadNode::setFilePath(std::string file_path){
     AVDictionary* format_opts = NULL;
     av_dict_set(&format_opts, "stimeout", m_overtime.c_str(), 0); //设置链接超时时间（us）
     av_dict_set(&format_opts, "rtsp_transport", m_rtsp_transport.c_str(), 0); //设置推流的方式，默认udp。
+    av_dict_set(&format_opts, "max_analyze_duration", "10", 0);
+    av_dict_set(&format_opts, "probesize", "2048", 0);
     ret = avformat_open_input(&m_format_ctx, file_path.c_str(), nullptr, &format_opts);
     if (ret != 0) {
         EAGLEEYE_LOGE("Fail to open url: %s, return value: %d", file_path.c_str(), ret);
@@ -725,10 +724,22 @@ void RTSPReadNode::setImageFormat(int image_format){
 
     this->m_output_image_format = image_format;
     if(this->m_output_image_format <= 1){
-        this->setOutputPort(new ImageSignal<Matrix<Array<unsigned char,3>>>(),0);
+        this->setOutputPort(new ImageSignal<Array<unsigned char,3>>(),0);
+        if(this->m_output_image_format == 0){
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_RGB_IMAGE);
+        }
+        else{
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);
+        }
     }
     else{
-        this->setOutputPort(new ImageSignal<Matrix<Array<unsigned char,4>>>(),0);
+        this->setOutputPort(new ImageSignal<Array<unsigned char,4>>(),0);
+        if(this->m_output_image_format == 2){
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_RGBA_IMAGE);
+        }
+        else{
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_BGRA_IMAGE);
+        }
     }
 }
 

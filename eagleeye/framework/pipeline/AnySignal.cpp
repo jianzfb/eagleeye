@@ -65,8 +65,6 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 
 	m_signal_type_value = EAGLEEYE_UNDEFINED_SIGNAL;
 	m_signal_target_value = EAGLEEYE_UNDEFINED_TARGET;
-
-	this->m_signal_exit = false;
 }
 AnySignal::~AnySignal()
 {
@@ -171,7 +169,6 @@ void AnySignal::reset(){
 }
 
 void AnySignal::exit(){
-	m_signal_exit = true;
 	if(m_link_node && this->m_link_node->getExitTime() < this->m_link_node->getPipelineExitTime()){
 		this->m_link_node->exit();
 	}	

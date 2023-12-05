@@ -115,7 +115,7 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5){
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
 		m_sig_category = SIGNAL_CATEGORY_STRING_QUEUE;
 		m_max_queue_size = max_queue_size;
 	};

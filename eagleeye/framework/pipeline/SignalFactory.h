@@ -98,7 +98,9 @@ public:
 	 * @return AnySignal* 
 	 */
 	virtual AnySignal* make(){
-		return new ImageSignal<T>();
+		ImageSignal<T>* signal_cp = new ImageSignal<T>();
+		signal_cp->setSignalType(this->getSignalType());
+		return signal_cp;
 	}
 
 	/**
@@ -166,6 +168,7 @@ public:
 	 * @param data_dims 
 	 */
 	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
+	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type, MetaData& data_meta);
 
 	/**
 	 * @brief Get the Signal Value Type object
@@ -185,9 +188,10 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5){
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
 		m_sig_category = SIGNAL_CATEGORY_IMAGE_QUEUE;
 		m_max_queue_size = max_queue_size;
+		this->m_get_then_auto_remove = get_then_auto_remove;
 	};
 
 	/**
@@ -206,6 +210,7 @@ private:
 	std::queue<MetaData> m_meta_queue;
 	SignalCategory m_sig_category;
 	int m_max_queue_size;
+	bool m_get_then_auto_remove;
 };
 }
 

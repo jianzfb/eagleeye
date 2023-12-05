@@ -45,6 +45,7 @@ public:
 protected:
     GLuint m_Program;
     GLuint m_VAO;
+    bool m_finish_ini;
 }; 
 } // namespace eagleeye
 

@@ -14,7 +14,9 @@ NNNode::NNNode(int thread_num, CPUAffinityPolicy performance){
 	EAGLEEYE_MONITOR_VAR(std::string, setModelFolder, getModelFolder, "model_folder", "", "");
     EAGLEEYE_MONITOR_VAR(std::string, setWritableFolder, getWritableFolder, "writable_path", "", "");
     EAGLEEYE_MONITOR_VAR(std::string, setClear, getClear, "clear", "", "");
-}   
+    EAGLEEYE_MONITOR_VAR(std::string, setOpValue, getOpValue, "opvalue", "", "");
+}
+
 NNNode::~NNNode(){
     delete m_g;
 } 
@@ -423,6 +425,30 @@ void NNNode:: setClear(const std::string name){
     }
 }
 void NNNode::getClear(std::string& name){
+    // do nothing
+}
+
+void NNNode::setOpValue(const std::string name){
+    // name format: node_name:var_name:var_value
+    std::string separator = ":";
+    std::vector<std::string> name_and_value = split(name, separator);
+    if(name_and_value.size() != 3){
+        EAGLEEYE_LOGE("value %s format error(expected format node_name:var_name:var_value).", name.c_str());
+        return;
+    }
+
+    std::string node_name = name_and_value[0];
+    std::string var_name = name_and_value[1];
+    float var_value = tof<float>(name_and_value[2]);
+    std::vector<dataflow::Node*> nodes = this->m_g->getNodes();
+    for(int i=0; i<nodes.size(); ++i){
+        if(nodes[i]->name == node_name){
+            nodes[i]->init(std::map<std::string, std::vector<float>>({{var_name,{var_value}}}));
+        }
+    }
+}
+
+void NNNode::getOpValue(std::string& name){
     // do nothing
 }
 } // namespace eagleeye

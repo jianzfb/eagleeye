@@ -16,7 +16,7 @@ public:
     typedef AnyNode                 Superclass;
     EAGLEEYE_CLASSIDENTITY(AutoNode);
 
-    AutoNode(std::function<AnyNode*()> generator=nullptr, int queue_size=5);
+    AutoNode(std::function<AnyNode*()> generator=nullptr, int queue_size=1, bool get_then_auto_remove=true);
     virtual ~AutoNode();
 
     /**
@@ -69,6 +69,21 @@ public:
      */
     virtual void updateUnitInfo();
 
+    /**
+     * @brief set call back
+     */
+	virtual void setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
+
+    /**
+     * @brief get inner delegation instance
+     */
+    AnyNode* getInnerIns(){return m_auto_node;};
+
+    /**
+     * @brief 常驻标记
+     */
+    void setPersistent(bool flag){this->m_persistent_flag=flag;};
+
 protected:
     /**
      * @brief run in independent thread
@@ -85,6 +100,9 @@ private:
     bool m_thread_status;
     std::thread m_auto_thread;
     bool m_is_ini;
+    bool m_persistent_flag;
+    double m_last_timestamp;
+    std::function<void(AnyNode*, std::vector<AnySignal*>)> m_callback;
 };
 }
 #endif

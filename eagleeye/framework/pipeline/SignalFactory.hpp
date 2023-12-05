@@ -24,6 +24,7 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_meta.timestamp = 0;
 	this->m_sig_category = SIGNAL_CATEGORY_IMAGE;
 	this->m_max_queue_size = 5;
+	this->m_get_then_auto_remove = true;
 }
 
 template<class T>
@@ -123,17 +124,15 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
 		std::unique_lock<std::mutex> locker(this->m_mu);
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
-			if(this->m_queue.size() > 0 || this->m_signal_exit){
+			if(this->m_queue.size() > 0){
 				break;
 			}
         }
-		if(this->m_signal_exit){
-			return Matrix<T>();
-		}
-
 		Matrix<T> data = this->m_queue.front();
-        this->m_queue.pop();
-		this->m_meta_queue.pop();
+		if(this->m_get_then_auto_remove){
+			this->m_queue.pop();
+			this->m_meta_queue.pop();
+		}
         locker.unlock();
 		return data;
 	}
@@ -146,6 +145,7 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 		this->img = data;
 		this->m_meta.rows = this->img.rows();
 		this->m_meta.cols = this->img.cols();
+		modified();
 	}
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
@@ -162,11 +162,10 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 		this->m_meta_queue.push(mm);
 		locker.unlock();
 
+		modified();
 		// notify
 		this->m_cond.notify_all();
 	}
-
-	modified();
 }
 
 template<class T>
@@ -187,18 +186,17 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm){
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
 
-			if(this->m_queue.size() > 0 || this->m_signal_exit){
+			if(this->m_queue.size() > 0){
 				break;
 			}
         }
-		if(this->m_signal_exit){
-			return Matrix<T>();
-		}
 
 		Matrix<T> data = this->m_queue.front();
 		mm = this->m_meta_queue.front();
-        this->m_queue.pop();
-		this->m_meta_queue.pop();
+		if(this->m_get_then_auto_remove){
+			this->m_queue.pop();
+			this->m_meta_queue.pop();
+		}
         locker.unlock();
 		return data;
 	}
@@ -219,6 +217,7 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 		this->m_meta.needed_rows = needed_rows;
 		this->m_meta.needed_cols = needed_cols;
 		this->m_meta.allocate_mode = allocate_mode;
+		modified();
 	}
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
@@ -231,11 +230,10 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 		this->m_meta_queue.push(mm);
 		locker.unlock();
 
+		modified();
 		// notify
 		this->m_cond.notify_all();
 	}
-
-	modified();
 }
 
 template<class T>
@@ -280,6 +278,20 @@ void ImageSignal<T>::getSignalContent(void*& data, size_t*& data_size, int& data
 	data_dims = 3;
 	data_type = TypeTrait<T>::type;
 }
+
+template<class T>
+void ImageSignal<T>::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type, MetaData& data_meta){
+	this->m_tmp = this->getData(data_meta);
+	data = (void*)this->m_tmp.dataptr();
+	this->m_data_size[0] = this->m_tmp.rows();
+	this->m_data_size[1] = this->m_tmp.cols();
+	this->m_data_size[2] = TypeTrait<T>::size;
+	data_size = this->m_data_size;
+	
+	data_dims = 3;
+	data_type = TypeTrait<T>::type;
+}
+
 
 template<class T>
 void ImageSignal<T>::setMeta(MetaData meta){

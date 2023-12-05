@@ -1,5 +1,6 @@
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#include "eagleeye/3rd/pnglib/png.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -166,5 +167,62 @@ bool traverseFiles(const char* folder){
             closedir(dp);
         }
         return true;
+}
+
+void savepng(const char* file_path, unsigned char* data, int height, int width, int stride, int channel){
+    int y;
+    FILE *fp = fopen(file_path, "wb");
+    if(!fp) abort();
+
+    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png) abort();
+
+    png_infop info = png_create_info_struct(png);
+    if (!info) abort();
+    
+    if (setjmp(png_jmpbuf(png))) abort();
+    
+    png_init_io(png, fp);
+
+    // Output is 8bit depth, RGBA format.
+    int png_color = 0;
+    switch (channel)
+    {
+    case 1:
+        png_color = PNG_COLOR_TYPE_GRAY;
+        break;
+    case 3:
+        png_color = PNG_COLOR_TYPE_RGB;
+        break;
+    default:
+        png_color = PNG_COLOR_TYPE_RGBA;
+        break;
+    }
+    png_set_IHDR(
+        png,
+        info,
+        width, height,
+        8,
+        png_color,
+        PNG_INTERLACE_NONE,
+        PNG_COMPRESSION_TYPE_DEFAULT,
+        PNG_FILTER_TYPE_DEFAULT
+    );
+    png_write_info(png, info);
+
+    // To remove the alpha channel for PNG_COLOR_TYPE_RGB format,
+    // Use png_set_filler().
+    //png_set_filler(png, 0, PNG_FILLER_AFTER);
+    png_bytep* row_pointers = (png_bytep*)malloc(sizeof(png_bytep) * height);
+    for(int i=0; i<height; ++i){
+        row_pointers[i] = data + stride*i*channel;
+    }
+
+    png_write_image(png, row_pointers);
+    png_write_end(png, NULL);
+
+    free(row_pointers);
+    fclose(fp);
+    png_destroy_write_struct(&png, &info);
 }
 }

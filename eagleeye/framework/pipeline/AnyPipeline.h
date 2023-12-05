@@ -237,6 +237,13 @@ public:
     void getParameter(const char* node_name, const char* param_name, void* value);
     
     /**
+     * @brief Set the Node callback
+     * @param node_name
+     * @param callback
+     */
+    void setCallback(const char* node_name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
+
+    /**
      * @brief Set the Pipeline Input 
      * 
      * @param node_name 

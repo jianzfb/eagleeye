@@ -1,7 +1,8 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
-#include<iostream>
+#include <iostream>
+#include <thread>
 
 namespace eagleeye{
 bool AnyNode::m_saved_resource = false;
@@ -53,6 +54,8 @@ AnyNode::AnyNode(const char* unit_name)
 	this->m_pipeline = NULL;
 	this->m_node_category = COMPUTING;
 	this->m_wait_flag = false;
+
+	this->m_init_once = false;
 }
 
 AnyNode::~AnyNode()
@@ -63,6 +66,15 @@ AnyNode::~AnyNode()
 		if ((*iter))
 		{
 			delete (*iter);
+		}
+	}
+
+	iend = m_input_signals.end();
+	for (iter = m_input_signals.begin(); iter != iend; ++iter)
+	{
+		if((*iter))
+		{
+			(*iter)->decrementOutDegree();
 		}
 	}
 }
@@ -303,6 +315,9 @@ void AnyNode::passonNodeInfo(){
 }
 
 bool AnyNode::start(){
+	// only init once
+	this->init();
+
 	//update some necessary info, such as basic format or struct of AnySignal(without content),
 	//re-assign update time
 	std::vector<AnySignal*>::iterator out_iter,out_iend(m_output_signals.end());
@@ -774,6 +789,10 @@ void AnyNode::exit(){
 }
 
 void AnyNode::init(){
+	if(m_init_once){
+		return;
+	}
+
 	if(m_init_flag){
 		return;
 	}
@@ -790,7 +809,7 @@ void AnyNode::init(){
 		}
 	}
 	m_init_flag = false;
-
+	m_init_once = true;
 	// log
 	EAGLEEYE_LOGD("node %s init", this->getUnitName());
 }
@@ -862,5 +881,17 @@ std::string AnyNode::resourceFolder(){
 void AnyNode::setResourceFolder(std::string folder){
 	AnyNode::m_resource_folder = folder;
 }
+
+void AnyNode::asnyDestroy(AnyNode* cur_node){
+	std::thread([cur_node](){
+		cur_node->exit();
+		delete cur_node;
+	}).detach();
+}
+
+void AnyNode::registerAuxNode(AnyNode* aux_node){
+	this->m_aux_nodes.push_back(aux_node);
+}
+
 }
 

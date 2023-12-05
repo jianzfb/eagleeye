@@ -627,12 +627,25 @@ void AnyPipeline::setParameter(const char* node_name,
     // node_name/{}/param_name
     bool issuccess=false;
     std::map<std::string, AnyMonitor*>::iterator iter, iend(this->m_monitor_params.end());
+    // try 1: 严格匹配
     for(iter = this->m_monitor_params.begin(); iter != iend; ++iter){
-        if(startswith(iter->first, node_name) && endswith(iter->first, param_name)){
+        std::string separator = "/";
+        std::vector<std::string> ab = split(iter->first, separator);
+        if(ab[0] == node_name && endswith(iter->first, param_name)){
             iter->second->setVar(value);
             issuccess = true;
         }
     }
+    // try 2: 模糊匹配
+    if(!issuccess){
+        for(iter = this->m_monitor_params.begin(); iter != iend; ++iter){
+            if(startswith(iter->first, node_name) && endswith(iter->first, param_name)){
+                iter->second->setVar(value);
+                issuccess = true;
+            }
+        }
+    }
+
     if(!issuccess){
         EAGLEEYE_LOGE("%s/%s not in monitor parameters", node_name, param_name);
     }
@@ -674,6 +687,20 @@ void AnyPipeline::getParameter(const char* node_name,
     //     return;
     // }
     // this->m_monitor_params[param_key]->getVar(value);
+}
+
+void AnyPipeline::setCallback(const char* node_name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("Node name is empty");
+        return;
+    }
+
+    AnyNode* node = this->getNode(node_name);
+    if(node == NULL){
+        EAGLEEYE_LOGE("Node %s not exists.", node_name);
+        return;
+    }
+    node->setCallback(callback);
 }
 
 void AnyPipeline::setInput(const char* node_name, 

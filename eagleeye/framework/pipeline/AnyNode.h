@@ -7,6 +7,7 @@
 #include "eagleeye/framework/EagleeyeTimeStamp.h"
 #include <map>
 #include <vector>
+#include <thread>
 
 namespace eagleeye
 {
@@ -350,11 +351,27 @@ public:
 	std::string resourceFolder();
 
 	/**
+	 * @brief set callback
+	 */
+	virtual void setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){};
+
+	/**
 	 * @brief Set the Resource Folder object
 	 * 
 	 * @param folder 
 	 */
 	static void setResourceFolder(std::string folder);
+
+	/**
+	 * @brief asyn destroy node
+	 */
+	static void asnyDestroy(AnyNode* cur_node);
+
+	/**
+	 * @brief register aux node (跳过管线框架，直接获取额外节点)
+	 */
+	void registerAuxNode(AnyNode* aux_node);
+	std::vector<AnyNode*> getAuxNode(){return this->m_aux_nodes;}
 
 protected:
 	/**
@@ -420,6 +437,8 @@ protected:
 
 	NodeCategory m_node_category;
 
+	std::vector<AnyNode*> m_aux_nodes;
+
 private:
 	AnyNode(const AnyNode&);
 	void operator=(const AnyNode&);
@@ -429,6 +448,8 @@ private:
 	bool m_init_flag;			// prevent recurrent call (init)
 	bool m_process_flag;		// prevent recurrent call (process)
 	bool m_wait_flag;			// prevent recurrent call (wait)
+
+	bool m_init_once;			// only init once flag
 
 	bool m_get_monitor_flag;	// ...
 	// bool m_feadback_flag;		// ...

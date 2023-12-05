@@ -5,6 +5,7 @@
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
 #include <fstream> 
+#include "eagleeye/common/EagleeyeTime.h"
 
 
 namespace eagleeye{
@@ -28,6 +29,7 @@ void ImageShow::executeNodeInfo(){
 	unsigned char* img_ptr = NULL;
 	int img_height = 0;
 	int img_width = 0;
+	
 	if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_RGB_IMAGE || this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_BGR_IMAGE){
 		// 获得输入信号
 		ImageSignal<Array<unsigned char, 3>>* input_img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getInputPort(0));
@@ -93,7 +95,6 @@ void ImageShow::executeNodeInfo(){
 	float img_y0 = (canvas_h - scaled_img_height)/2.0f + canvas_y;
 	float img_x1 = (canvas_w - scaled_img_width)/2.0f + scaled_img_width + canvas_x;
 	float img_y1 = (canvas_h - scaled_img_height)/2.0f + scaled_img_height + canvas_y;
-	EAGLEEYE_LOGD("Image position x0 %f y0 %f x1 %f y1 %f.", img_x0, img_y0, img_x1, img_y1);
 
 	// 输出信号1：渲染区域
 	ImageSignal<float>* render_region_sig = (ImageSignal<float>*)(this->getOutputPort(0));
@@ -169,7 +170,7 @@ void ImageShow::executeNodeInfo(){
 	if(img_width % 4 != 0){
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 4); 
 	}
-
+ 
 	// 绘制图像
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const void *)0);
 

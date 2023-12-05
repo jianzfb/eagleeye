@@ -8,6 +8,7 @@ namespace eagleeye
 RenderBase::RenderBase(){
     m_VAO = 0;
     m_Program = 0;
+    m_finish_ini = false;
 }
 
 RenderBase::~RenderBase(){
@@ -35,8 +36,11 @@ RenderBase::~RenderBase(){
 
 void RenderBase::destroy(){
     // 删除VAO
-    glDeleteVertexArrays(1, &m_VAO);
-    this->m_VAO = 0;
+    if(this->m_finish_ini){
+        glDeleteVertexArrays(1, &m_VAO);
+        this->m_VAO = 0;
+        this->m_finish_ini = false;
+    }
 }
 
 void RenderBase::create(const char* program_name, 
@@ -48,7 +52,7 @@ void RenderBase::create(const char* program_name,
     // 1.step 创建shader program
     this->m_Program = 
         ShaderManager::getInstance()->create(program_name, pVertexShaderSource, pFragShaderSource);
-    
+
     // 2.step 创建并绑定VAO
     glGenVertexArrays(1, &m_VAO);
 	glBindVertexArray(m_VAO);
@@ -58,5 +62,6 @@ void RenderBase::create(const char* program_name,
     
     // 4.step 取消VAO绑定
     glBindVertexArray(GL_NONE);
+    this->m_finish_ini = true;
 }
 } // namespace eagleeye
