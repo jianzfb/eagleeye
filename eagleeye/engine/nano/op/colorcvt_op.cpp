@@ -38,19 +38,21 @@ void ColorCvtOp::convertRGB2BGR(const Tensor src, Tensor& tgt){
         unsigned char* row_tgt_ptr = tgt_ptr + i*image_w*3;
         for(int j=0; j<image_w; ++j){
             int offset = j*3;
-            row_tgt_ptr[offset] = row_src_ptr[offset+2];
-            row_tgt_ptr[offset+1] = row_src_ptr[offset+1];
-            row_tgt_ptr[offset+2] = row_src_ptr[offset];
+            row_tgt_ptr[offset]     = row_src_ptr[offset+2];
+            row_tgt_ptr[offset+1]   = row_src_ptr[offset+1];
+            row_tgt_ptr[offset+2]   = row_src_ptr[offset];
         }
     }
 }
 void ColorCvtOp::convertRGBA2BGR(const Tensor src, Tensor& tgt){
+    Dim image_dim = src.dims();
+    int image_h = image_dim[0];
+    int image_w = image_dim[1];
+
     const unsigned char* src_ptr = src.cpu<unsigned char>();
     unsigned char* tgt_ptr = tgt.cpu<unsigned char>();
-    int srch = src.dims()[0];
-    int srcw = src.dims()[1];
-    for (int i = 0; i < srch; i++) {
-        for (int j = 0; j < srcw; j++) {
+    for (int i = 0; i < image_h; i++) {
+        for (int j = 0; j < image_w; j++) {
             *tgt_ptr++ = src_ptr[2];  // r
             *tgt_ptr++ = src_ptr[1];  // g
             *tgt_ptr++ = src_ptr[0];  // b
@@ -61,26 +63,69 @@ void ColorCvtOp::convertRGBA2BGR(const Tensor src, Tensor& tgt){
 }
 
 void ColorCvtOp::convertRGBA2RGB(const Tensor src, Tensor& tgt){
+    Dim image_dim = src.dims();
+    int image_h = image_dim[0];
+    int image_w = image_dim[1];
+
     const unsigned char* src_ptr = src.cpu<unsigned char>();
     unsigned char* tgt_ptr = tgt.cpu<unsigned char>();
-
-    int srch = src.dims()[0];
-    int srcw = src.dims()[1];
-    for (int i = 0; i < srch; i++) {
-        for (int j = 0; j < srcw; j++) {
+    for (int i = 0; i < image_h; i++) {
+        for (int j = 0; j < image_w; j++) {
             *tgt_ptr++ = src_ptr[0];  // r
             *tgt_ptr++ = src_ptr[1];  // g
             *tgt_ptr++ = src_ptr[2];  // b
             // *dst++ = src[4];//a
             src_ptr += 4;
         }
-    }    
+    }
+}
+
+void ColorCvtOp::convertRGB2RGBA(const Tensor src, Tensor& tgt){
+    Dim image_dim = src.dims();
+    int image_h = image_dim[0];
+    int image_w = image_dim[1];
+
+    const unsigned char* src_ptr = src.cpu<unsigned char>();
+    unsigned char* tgt_ptr = tgt.cpu<unsigned char>();
+    for (int i = 0; i < image_h; i++) {
+        for (int j = 0; j < image_w; j++) {
+            *tgt_ptr++ = src_ptr[0];  // r
+            *tgt_ptr++ = src_ptr[1];  // g
+            *tgt_ptr++ = src_ptr[2];  // b
+            *tgt_ptr++ = 0;           // a
+            src_ptr += 3;
+        }
+    }
+}
+
+void ColorCvtOp::convertBGR2RGBA(const Tensor src, Tensor& tgt){
+    Dim image_dim = src.dims();
+    int image_h = image_dim[0];
+    int image_w = image_dim[1];
+
+    const unsigned char* src_ptr = src.cpu<unsigned char>();
+    unsigned char* tgt_ptr = tgt.cpu<unsigned char>();
+    for (int i = 0; i < image_h; i++) {
+        for (int j = 0; j < image_w; j++) {
+            *tgt_ptr++ = src_ptr[2];  // r
+            *tgt_ptr++ = src_ptr[1];  // g
+            *tgt_ptr++ = src_ptr[0];  // b
+            *tgt_ptr++ = 0;           // a
+            src_ptr += 3;
+        }
+    } 
 }
 
 int ColorCvtOp::runOnCpu(const std::vector<Tensor>& input){
-    Dim out_dim = input[0].dims();
-    std::vector<int64_t> out_size = out_dim.data();
-    out_size[2] = 3;
+    Dim in_dim = input[0].dims();
+    std::vector<int64_t> out_size = {in_dim[0], in_dim[1], in_dim[2]};
+    if(this->m_mode == COLOR_RGB2BGR || this->m_mode == COLOR_RGBA2BGR || this->m_mode == COLOR_RGBA2RGB){
+        out_size[2] = 3;
+    }
+    else{
+        out_size[2] = 4;
+    }
+
     if(this->m_outputs[0].numel() != out_size[0]*out_size[1]*out_size[2]){
         this->m_outputs[0] = Tensor(out_size,input[0].type(),input[0].format(),CPU_BUFFER);
     }
@@ -93,7 +138,13 @@ int ColorCvtOp::runOnCpu(const std::vector<Tensor>& input){
             break;
         case COLOR_RGBA2RGB:
             this->convertRGBA2RGB(input[0], this->m_outputs[0]);
-            break;            
+            break;
+        case COLOR_RGB2RGBA:
+            this->convertRGB2RGBA(input[0], this->m_outputs[0]);
+            break;
+        case COLOR_BGR2RGBA:
+            this->convertBGR2RGBA(input[0], this->m_outputs[0]);
+            break;      
         default:
             break;
     }

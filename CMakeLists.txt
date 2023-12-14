@@ -198,6 +198,8 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/facealign_op.cpp
     eagleeye/engine/nano/op/keepratio_op.cpp
     eagleeye/engine/nano/op/colorcvt_op.cpp
+    eagleeye/engine/nano/op/image_rotate_op.cpp
+    eagleeye/engine/nano/op/auto_keepratio_op.cpp
     eagleeye/engine/nano/op/yuv_op.cpp
     eagleeye/engine/nano/op/keepratio_by_scale_op.cpp
     eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
@@ -347,9 +349,11 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/facealign_op.cpp
     eagleeye/engine/nano/op/keepratio_op.cpp
     eagleeye/engine/nano/op/colorcvt_op.cpp
+    eagleeye/engine/nano/op/image_rotate_op.cpp
     eagleeye/engine/nano/op/yuv_op.cpp
     eagleeye/engine/nano/op/keepratio_by_scale_op.cpp
     eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
+    eagleeye/engine/nano/op/auto_keepratio_op.cpp
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp

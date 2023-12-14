@@ -1,68 +1,69 @@
-#ifndef _EAGLEEYE_IMAGERESIZE_OP_
-#define _EAGLEEYE_IMAGERESIZE_OP_
+#ifndef _EAGLEEYE_IMAGEROTATE_OP_H_
+#define _EAGLEEYE_IMAGEROTATE_OP_H_
+
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"
-#include "eagleeye/engine/nano/op/interpolate_op.h"
 #include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
 
 namespace eagleeye{
 namespace dataflow{
+enum ImageRotateMode{
+    IMAGE_ROTATE_0 = 0,
+    IMAGE_ROTATE_90 = 1,
+    IMAGE_ROTATE_180 = 2,
+    IMAGE_ROTATE_270 = 3,
+    IMAGE_FLIP_H = 4
+};
 
-class ResizeOp: public BaseOp<1, 1>,DynamicCreator<ResizeOp>{
+class ImageRotateOp:public BaseOp<1,1>, DynamicCreator<ImageRotateOp>{
 public:
     using BaseOp<1, 1>::init;
-    ResizeOp();
-    ResizeOp(std::vector<int64_t> out_size, float scale, InterpolateOpType op_type);
-    ResizeOp(const ResizeOp& op);
-    virtual ~ResizeOp();
+    ImageRotateOp();
+    ImageRotateOp(ImageRotateMode mode);
+    ImageRotateOp(const ImageRotateOp& op);
+    virtual ~ImageRotateOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
     virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
-    
+
     virtual int runOnCpu(const std::vector<Tensor>& input);
     virtual int runOnGpu(const std::vector<Tensor>& input);
 
-private:
-    std::vector<int64_t> m_out_size;
-    float m_scale;
-    InterpolateOpType m_op_type;
+protected:
+    int m_image_rotate_mode;
 
     int m_rk_src_handler;
     int m_rk_tgt_handler;
 
     void* m_rk_src_image_ptr;
-    void* m_rk_tgt_image_ptr;    
+    void* m_rk_tgt_image_ptr;
 };
 
-class ResizeWithShapeOp: public BaseOp<2, 1>,DynamicCreator<ResizeWithShapeOp>{
+class ImageRotateDynamicOp:public BaseOp<2,1>, DynamicCreator<ImageRotateDynamicOp>{
 public:
     using BaseOp<2, 1>::init;
-    ResizeWithShapeOp();
-    ResizeWithShapeOp(InterpolateOpType op_type);
-    ResizeWithShapeOp(const ResizeWithShapeOp& op);
-    virtual ~ResizeWithShapeOp();
+    ImageRotateDynamicOp();
+    ImageRotateDynamicOp(const ImageRotateDynamicOp& op);
+    virtual ~ImageRotateDynamicOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
     virtual int init(std::map<std::string, std::vector<std::string>> params){return 0;}
-    
+
     virtual int runOnCpu(const std::vector<Tensor>& input);
     virtual int runOnGpu(const std::vector<Tensor>& input);
 
-private:
-    InterpolateOpType m_op_type;
-
+protected:
     int m_rk_src_handler;
     int m_rk_tgt_handler;
 
     void* m_rk_src_image_ptr;
-    void* m_rk_tgt_image_ptr;    
+    void* m_rk_tgt_image_ptr;
 };
-} // namespace dataflow
-
-} // namespace eagleeye
+}
+}
 
 #endif

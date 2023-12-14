@@ -16,7 +16,7 @@ public:
     FaceAlignOp(const FaceAlignOp& op);
     virtual ~FaceAlignOp();
 
-    FaceAlignOp() = default;
+    FaceAlignOp();
 
     virtual int init(std::map<std::string, std::vector<float>> params);
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
@@ -29,6 +29,15 @@ protected:
     int m_target_h;
     int m_target_w;
     int m_margin;
+
+    int m_rk_src_handler;
+    int m_rk_cache_handler;
+
+    int m_rk_mid_cache_handler;
+    int m_rk_mid_cache_size;
+    void* m_rk_mid_cache_ptr;
+
+    void* m_rk_src_image_ptr;
 };
 }
 }
