@@ -43,6 +43,8 @@ private:
     int m_rotate_handler;
     int m_rotate_buf_size;
     void* m_rotate_ptr;
+
+    
 };
 }    
 }
