@@ -12,12 +12,14 @@
 namespace eagleeye{
 namespace dataflow{
 ImageRotateOp::~ImageRotateOp(){
+#ifdef EAGLEEYE_RKCHIP    
     if (m_src_handler){
         releasebuffer_handle(m_src_handler);
     }
     if (m_tgt_handler){
         releasebuffer_handle(m_tgt_handler);
-    }    
+    }
+#endif
 }
 
 int ImageRotateOp::init(std::map<std::string, std::vector<float>> params){

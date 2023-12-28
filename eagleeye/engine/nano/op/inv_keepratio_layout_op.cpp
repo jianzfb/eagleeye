@@ -18,14 +18,12 @@ int InvKeepRatioLayoutOp::runOnCpu(const std::vector<Tensor>& input){
     const int* layout_info = input[0].cpu<int>();
     int layout_offset_x = layout_info[0];
     int layout_offset_y = layout_info[1];
-    int layout_ori_w = layout_info[2];
-    int layout_ori_h = layout_info[3];
-    int layout_w = layout_ori_w;
-    int layout_h = layout_ori_h;
-    if(input[0].dims()[0] == 6){
-        layout_w = layout_info[4];
-        layout_h = layout_info[5];
-    }
+    int layout_w = layout_info[2];
+    int layout_h = layout_info[3];
+    int layout_ori_w = layout_info[4];
+    int layout_ori_h = layout_info[5];
+    // TODO
+    int rotate = layout_info[6];
 
     const Tensor position = input[1];
     Dim position_dim = position.dims();
@@ -44,7 +42,7 @@ int InvKeepRatioLayoutOp::runOnCpu(const std::vector<Tensor>& input){
             // x
             inv_position_row_ptr[j*2] = (position_row_ptr[j*2] - layout_offset_x) * ((float)layout_ori_w/(float)layout_w);
             // y
-            inv_position_row_ptr[j*2+1] = (position_row_ptr[j*2+1] - layout_offset_y) * ((float)layout_ori_h/(float)layout_h);;
+            inv_position_row_ptr[j*2+1] = (position_row_ptr[j*2+1] - layout_offset_y) * ((float)layout_ori_h/(float)layout_h);
         }
     }
     return 0;
