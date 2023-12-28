@@ -217,6 +217,7 @@ public:
             for(int output_i=0; output_i<m_output_names.size(); ++output_i){
                 outputs[m_output_names[output_i]] = NULL;
             }
+
             this->m_model_run->run(inputs, outputs);
 
             // 导出

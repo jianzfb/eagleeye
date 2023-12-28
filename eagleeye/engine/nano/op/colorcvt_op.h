@@ -12,7 +12,9 @@ namespace dataflow{
 enum ColorCvtMode{
     COLOR_RGB2BGR = 0,
     COLOR_RGBA2RGB = 1,
-    COLOR_RGBA2BGR = 2
+    COLOR_RGBA2BGR = 2,
+    COLOR_RGB2RGBA = 3,
+    COLOR_BGR2RGBA = 4    
 };
 
 class ColorCvtOp:public BaseOp<1, 1>, DynamicCreator<ColorCvtOp>{
@@ -35,6 +37,8 @@ protected:
     void convertRGBA2BGR(const Tensor src, Tensor& tgt);
     void convertRGBA2RGB(const Tensor src, Tensor& tgt);
 
+    void convertRGB2RGBA(const Tensor src, Tensor& tgt);
+    void convertBGR2RGBA(const Tensor src, Tensor& tgt);
 protected:
     ColorCvtMode m_mode;
 };

@@ -1,5 +1,5 @@
-#ifndef _TNN_MODEL_RUN_H_
-#define _TNN_MODEL_RUN_H_
+#ifndef _RKNN_MODEL_RUN_H_
+#define _RKNN_MODEL_RUN_H_
 #include "eagleeye/engine/model_engine.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/engine/model_run.h"
