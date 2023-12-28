@@ -1,4 +1,5 @@
 #include "eagleeye/engine/nano/op/auto_keepratio_op.h"
+#include "eagleeye/common/EagleeyeRGBRotate.h"
 #ifdef EAGLEEYE_RKCHIP
 #include "im2d_version.h"
 #include "rk_type.h"
@@ -161,7 +162,6 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
     layout_ptr[6] = int(m_rotate);
     
     // resize -> rotate -> fill 
-
 #ifdef EAGLEEYE_RKCHIP
     if(image_c == 4){
         if(m_src_ptr == NULL || m_src_ptr != input[0].cpu()){
@@ -255,7 +255,86 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
         return -1;
     }
 
-    // 
+    // support image_c = 3
+    if(m_resize_buf_size == 0 || m_resize_buf_size != resized_width*resized_height*3){
+        if(m_resize_buf_size > 0){
+            free(m_resize_ptr);
+        }
+
+        m_resize_buf_size = resized_width*resized_height*3;
+        m_resize_ptr = malloc(m_resize_buf_size);
+    }
+
+    // resize
+#if defined(__ANDROID__) || defined(ANDROID)    
+        math::arm::bilinear_rgb_8u_3d_interp(
+            input[0].cpu<char>(),
+            (char*)m_resize_ptr,
+            image_w,
+            image_h,
+            0,0,
+            image_w,
+            resized_width,
+            resized_height
+        );
+#else
+        math::x86::bilinear_rgb_8u_3d_interp(
+            input[0].cpu<char>(),
+            (char*)m_resize_ptr,
+            image_w,
+            image_h,
+            0,0,
+            image_w,
+            resized_width,
+            resized_height
+        );
+#endif
+
+    // rotate
+    unsigned char* use_rotate_ptr = (unsigned char*)m_resize_ptr;
+    int use_rotate_width = resized_width;
+    int use_rotate_height = resized_height;
+    if(m_rotate != IMAGE_ROTATE_0){
+        if(m_rotate_buf_size == 0 || m_rotate_buf_size != m_resize_buf_size){
+            if(m_rotate_buf_size > 0){
+                free(m_rotate_ptr);
+                m_rotate_ptr = NULL;            
+            }
+
+            m_rotate_ptr = malloc(m_resize_buf_size);
+            m_rotate_buf_size = m_resize_buf_size;
+        }
+
+        use_rotate_ptr = (unsigned char*)m_rotate_ptr;
+        if(m_rotate == IMAGE_ROTATE_90){
+            // 顺时针旋转90
+            use_rotate_width = resized_height;
+            use_rotate_height = resized_width;
+
+            bgr_rotate_hwc((unsigned char*)m_resize_ptr, use_rotate_ptr, resized_width, resized_height, 90);
+        }
+        else if(m_rotate == IMAGE_ROTATION_180){
+            // 顺时针旋转180
+            use_rotate_width = resized_width;
+            use_rotate_height = resized_height;
+
+            bgr_rotate_hwc((unsigned char*)m_resize_ptr, use_rotate_ptr, resized_width, resized_height, 180);
+        }
+        else{
+            // 顺时针旋转270
+            use_rotate_width = resized_height;
+            use_rotate_height = resized_width;
+
+            bgr_rotate_hwc((unsigned char*)m_resize_ptr, use_rotate_ptr, resized_width, resized_height, 270);
+        }
+    }
+
+    // fill
+    unsigned char* tgt_ptr = this->m_outputs[0].cpu<unsigned char>();
+    for(int i=0; i<use_rotate_height; ++i){
+        unsigned char* tgt_fill_ptr = tgt_ptr + (i + fill_y) * m_target_w * 3 + fill_x*3;
+        memcpy(tgt_fill_ptr, use_rotate_ptr+i*use_rotate_width*3, use_rotate_width*3);
+    }
     return 0;
 }
 
