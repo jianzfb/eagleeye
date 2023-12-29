@@ -19,9 +19,13 @@ public:
         if(params.find("init_val") != params.end()){
             this->m_init_val = (bool)(params["init_val"][0]);
         }
+        this->m_first_call = true;
         return 0;
     }
-    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){
+        this->m_first_call = true;
+        return 0;
+    };
     virtual int init(std::map<std::string, std::vector<std::string>> params){
         this->m_first_call = true;
         return 0;

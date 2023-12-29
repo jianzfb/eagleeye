@@ -201,6 +201,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/yuv_op.cpp
     eagleeye/engine/nano/op/keepratio_by_scale_op.cpp
     eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
+    eagleeye/engine/nano/op/switch_op.cpp
     eagleeye/engine/math/common/pixel_affine.cpp
     eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/thread_pool.cpp
@@ -350,6 +351,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/yuv_op.cpp
     eagleeye/engine/nano/op/keepratio_by_scale_op.cpp
     eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
+    eagleeye/engine/nano/op/switch_op.cpp
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
