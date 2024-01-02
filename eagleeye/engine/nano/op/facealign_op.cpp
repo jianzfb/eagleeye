@@ -44,10 +44,24 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
     Tensor image = input[0];
     Tensor bbox = input[1];
     Dim image_dim = image.dims();
+    if(image_dim.size() == 4){
+        EAGLEEYE_LOGE("FaceAlignOp dont support batch image");
+        return -1;
+    }
+
     int image_h = image_dim[0];
     int image_w = image_dim[1];
+    int image_c = image_dim[2];
     unsigned char* image_ptr = image.cpu<unsigned char>();
 
+    if(bbox.dims()[0] == 0){
+        EAGLEEYE_LOGD("No face.");
+        if(this->m_outputs[0].numel() != this->m_target_h*this->m_target_w*image_c){
+            Dim out_dim(std::vector<int64_t>{this->m_target_h, this->m_target_w, image_c});
+            this->m_outputs[0] = Tensor(out_dim.data(),image.type(),image.format(),CPU_BUFFER);
+        }
+        return 0;
+    }
     float* bbox_ptr = bbox.cpu<float>();
     float face_cx = (bbox_ptr[0]+bbox_ptr[2])/2.0f;
     float face_cy = (bbox_ptr[1]+bbox_ptr[3])/2.0f;
@@ -65,10 +79,6 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
     int y1 = int(face_cy + face_half_size + 0.5f);
     y1 = std::min(y1, image_h);
 
-    if(image_dim.size() == 4){
-        EAGLEEYE_LOGE("FaceAlignOp dont support batch image");
-        return -1;
-    }
     if(image_dim.size() == 3){
         // rgb/bgr
         if(image_dim[2] != 3){
