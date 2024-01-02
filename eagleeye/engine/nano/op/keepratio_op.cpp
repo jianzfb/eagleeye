@@ -59,8 +59,8 @@ int KeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
     int* layout_ptr = this->m_outputs[1].cpu<int>();
     layout_ptr[0] = offset_x;
     layout_ptr[1] = offset_y;
-    layout_ptr[2] = after_image_w;
-    layout_ptr[3] = after_image_h;
+    layout_ptr[2] = image_w;
+    layout_ptr[3] = image_h;
     layout_ptr[4] = image_w;
     layout_ptr[5] = image_h;
     layout_ptr[6] = 0;

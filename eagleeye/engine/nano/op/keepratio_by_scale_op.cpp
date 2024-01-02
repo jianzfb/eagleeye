@@ -163,14 +163,16 @@ int KeepRatioByScaleOp::runOnCpu(const std::vector<Tensor>& input){
     }
 
     // 保存布局信息
-    this->m_outputs[1] = Tensor(std::vector<int64_t>{6}, EAGLEEYE_INT, DataFormat::AUTO, CPU_BUFFER);
+    this->m_outputs[1] = Tensor(std::vector<int64_t>{7}, EAGLEEYE_INT, DataFormat::AUTO, CPU_BUFFER);
     int* layout_ptr = this->m_outputs[1].cpu<int>();
     layout_ptr[0] = offset_x;
     layout_ptr[1] = offset_y;
-    layout_ptr[2] = after_image_w;
-    layout_ptr[3] = after_image_h;
-    layout_ptr[4] = after_image_canvas_w;
-    layout_ptr[5] = after_image_canvas_h;
+    layout_ptr[2] = after_image_content_w;
+    layout_ptr[3] = after_image_content_h;
+    layout_ptr[4] = after_image_content_w;
+    layout_ptr[5] = after_image_content_h;
+    layout_ptr[6] = 0;
+    
     return 0;
 }
 

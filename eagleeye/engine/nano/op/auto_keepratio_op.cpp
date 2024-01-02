@@ -1,5 +1,11 @@
 #include "eagleeye/engine/nano/op/auto_keepratio_op.h"
 #include "eagleeye/common/EagleeyeRGBRotate.h"
+#if defined(__ANDROID__) || defined(ANDROID)  
+#include "eagleeye/engine/math/arm/interpolate.h"
+#else
+#include "eagleeye/engine/math/x86/interpolate.h"
+#endif
+
 #ifdef EAGLEEYE_RKCHIP
 #include "im2d_version.h"
 #include "rk_type.h"
@@ -49,7 +55,7 @@ AutoKeepRatioOp::AutoKeepRatioOp(int width, int height, ImageRotateMode rotate){
     m_rotate_ptr = NULL;
 }
 
-AutoKeepRatioOp::~AutoKeepRatioOp{
+AutoKeepRatioOp::~AutoKeepRatioOp(){
 #ifdef EAGLEEYE_RKCHIP
     if (m_src_handler){
         releasebuffer_handle(m_src_handler);
@@ -93,7 +99,7 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
     int image_h = input[0].dims()[0];
     int image_w = input[0].dims()[1];
     int image_c = input[0].dims()[2];    
-    if(image_c != 3 && image_c.dims()[2] != 4){
+    if(image_c != 3 && image_c != 4){
         EAGLEEYE_LOGE("AutoKeepRatioOp only support channel 3,4");
         return -1;
     }
@@ -219,15 +225,15 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
 
             if(m_rotate == IMAGE_ROTATE_90){
                 rotated_img = wrapbuffer_handle(m_rotate_handler, resized_height, resized_width, RK_FORMAT_RGBA_8888);
-                imrotate(m_resize_handler, rotated_img, IM_HAL_TRANSFORM_ROT_90);
+                imrotate(resized_img, rotated_img, IM_HAL_TRANSFORM_ROT_90);
             }
-            else if(m_rotate == IMAGE_ROTATION_180){
+            else if(m_rotate == IMAGE_ROTATE_180){
                 rotated_img = wrapbuffer_handle(m_rotate_handler, resized_width, resized_height, RK_FORMAT_RGBA_8888);
-                imrotate(m_resize_handler, rotated_img, IM_HAL_TRANSFORM_ROT_180);
+                imrotate(resized_img, rotated_img, IM_HAL_TRANSFORM_ROT_180);
             }
             else{
                 rotated_img = wrapbuffer_handle(m_rotate_handler, resized_height, resized_width, RK_FORMAT_RGBA_8888);
-                imrotate(m_resize_handler, rotated_img, IM_HAL_TRANSFORM_ROT_270);
+                imrotate(resized_img, rotated_img, IM_HAL_TRANSFORM_ROT_270);
             }
         }
 
@@ -266,10 +272,11 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
     }
 
     // resize
+    unsigned char* x_ptr = (unsigned char*)input[0].cpu();
 #if defined(__ANDROID__) || defined(ANDROID)    
         math::arm::bilinear_rgb_8u_3d_interp(
-            input[0].cpu<char>(),
-            (char*)m_resize_ptr,
+            x_ptr,
+            (unsigned char*)m_resize_ptr,
             image_w,
             image_h,
             0,0,
@@ -279,8 +286,8 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
         );
 #else
         math::x86::bilinear_rgb_8u_3d_interp(
-            input[0].cpu<char>(),
-            (char*)m_resize_ptr,
+            x_ptr,
+            (unsigned char*)m_resize_ptr,
             image_w,
             image_h,
             0,0,
@@ -313,7 +320,7 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
 
             bgr_rotate_hwc((unsigned char*)m_resize_ptr, use_rotate_ptr, resized_width, resized_height, 90);
         }
-        else if(m_rotate == IMAGE_ROTATION_180){
+        else if(m_rotate == IMAGE_ROTATE_180){
             // 顺时针旋转180
             use_rotate_width = resized_width;
             use_rotate_height = resized_height;
