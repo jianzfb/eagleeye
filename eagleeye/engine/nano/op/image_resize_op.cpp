@@ -6,20 +6,46 @@
 #endif
 #include "eagleeye/common/EagleeyeLog.h"
 
+#ifdef EAGLEEYE_RKCHIP
+#include "im2d_version.h"
+#include "rk_type.h"
+#include "RgaUtils.h"
+#include "im2d_buffer.h"
+#include "im2d_type.h"
+#include "im2d_single.h"
+#endif
+
+
 namespace eagleeye{
 namespace dataflow{
+ResizeOp::ResizeOp(){
+    m_out_size = std::vector<int64_t>{32, 32};
+    m_scale =  0.0f;
+    m_op_type = INTERPOLATE_BILINER;
+    
+    m_src_handler = 0;
+    m_tgt_handler = 0;
+    m_src_ptr = NULL;
+    m_tgt_ptr = NULL;
+}
 ResizeOp::ResizeOp(std::vector<int64_t> out_size, float scale, InterpolateOpType op_type){
     m_out_size = out_size;
     m_scale = scale;
     m_op_type = op_type;
-}
 
-ResizeOp::ResizeOp(const ResizeOp& op)
-    :m_out_size(op.m_out_size), m_scale(op.m_scale), m_op_type(op.m_op_type){
-
+    m_src_handler = 0;
+    m_tgt_handler = 0;
+    m_src_ptr = NULL;
+    m_tgt_ptr = NULL;
 }
 
 ResizeOp::~ResizeOp(){
+    if (m_src_handler){
+        releasebuffer_handle(m_src_handler);
+    }
+    if (m_tgt_handler){
+        releasebuffer_handle(m_tgt_handler);
+    }    
 }
 
 int ResizeOp::init(std::map<std::string, std::vector<float>> params){
@@ -56,8 +82,8 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
         return -1;
     }
     else if(dimx.size() == 3){
-        if(dimx[2] != 3){
-            EAGLEEYE_LOGE("ResizeOp only support HxWx3");
+        if(dimx[2] != 3 && dimx[2] != 4){
+            EAGLEEYE_LOGE("ResizeOp only support HxWx3, HxWx4");
             return -1;
         }
     }
@@ -108,9 +134,49 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     }
 
     int count = (dimx.size() == 2 || dimx.size() == 3) ? 1 : dimx[0];
-    int channels = dimx.size() == 2 ? 1 : 3;
+    int channels = dimx.size() == 2 ? 1 : dimx[dimx.size()-1];
     int in_height = dimx[h_dim_i];
     int in_width = dimx[w_dim_i];
+
+    std::cout<<"channels "<<channels<<std::endl;
+    std::cout<<"in "<<in_height<<" "<<in_width<<std::endl;
+    std::cout<<"out "<<out_height<<" "<<out_width<<std::endl;
+#ifdef EAGLEEYE_RKCHIP
+    if(channels == 4){
+        if(m_src_ptr == NULL || m_src_ptr != input[0].cpu()){
+            if(m_src_ptr != NULL){
+                releasebuffer_handle(m_src_handler);
+            }
+
+            m_src_ptr = input[0].cpu();
+            m_src_handler = importbuffer_virtualaddr(m_src_ptr, in_height*in_width*4);
+        }
+
+        if(m_tgt_ptr == NULL || m_tgt_ptr != m_outputs[0].cpu()){
+            if(m_tgt_ptr != NULL){
+                releasebuffer_handle(m_tgt_handler);
+            }
+
+            m_tgt_ptr = m_outputs[0].cpu();
+            m_tgt_handler = importbuffer_virtualaddr(m_tgt_ptr, out_width*out_height*4);
+        }
+
+        rga_buffer_t src_img, dst_img;
+        memset(&src_img, 0, sizeof(src_img));
+        memset(&dst_img, 0, sizeof(dst_img));
+
+        src_img = wrapbuffer_handle(m_src_handler, in_width, in_height, RK_FORMAT_RGBA_8888);
+        dst_img = wrapbuffer_handle(m_tgt_handler, out_width, out_height, RK_FORMAT_RGBA_8888);
+
+        imresize(src_img, dst_img);
+        return 0;
+    }
+#endif
+
+    if(channels == 4){
+        EAGLEEYE_LOGE("Todo support channel = 4, image resize.");
+        return 0;
+    }
 
     unsigned char* x_ptr = (unsigned char*)x.cpu();
     unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
