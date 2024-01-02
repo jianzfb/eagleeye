@@ -40,12 +40,14 @@ ResizeOp::ResizeOp(std::vector<int64_t> out_size, float scale, InterpolateOpType
 }
 
 ResizeOp::~ResizeOp(){
+#ifdef EAGLEEYE_RKCHIP
     if (m_src_handler){
         releasebuffer_handle(m_src_handler);
     }
     if (m_tgt_handler){
         releasebuffer_handle(m_tgt_handler);
-    }    
+    }
+#endif
 }
 
 int ResizeOp::init(std::map<std::string, std::vector<float>> params){
@@ -138,9 +140,6 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     int in_height = dimx[h_dim_i];
     int in_width = dimx[w_dim_i];
 
-    std::cout<<"channels "<<channels<<std::endl;
-    std::cout<<"in "<<in_height<<" "<<in_width<<std::endl;
-    std::cout<<"out "<<out_height<<" "<<out_width<<std::endl;
 #ifdef EAGLEEYE_RKCHIP
     if(channels == 4){
         if(m_src_ptr == NULL || m_src_ptr != input[0].cpu()){
