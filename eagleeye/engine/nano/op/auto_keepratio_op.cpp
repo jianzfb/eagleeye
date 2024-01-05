@@ -163,8 +163,14 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
     layout_ptr[2] = fill_w;
     layout_ptr[3] = fill_h;
 
-    layout_ptr[4] = image_w;
-    layout_ptr[5] = image_h;
+    if(m_rotate == IMAGE_ROTATE_0 || m_rotate == IMAGE_ROTATE_180){
+        layout_ptr[4] = image_w;
+        layout_ptr[5] = image_h;
+    }
+    else{
+        layout_ptr[4] = image_h;
+        layout_ptr[5] = image_w;
+    }
     layout_ptr[6] = int(m_rotate);
     
     // resize -> rotate -> fill 

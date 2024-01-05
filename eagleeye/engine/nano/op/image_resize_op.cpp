@@ -141,7 +141,7 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     int in_width = dimx[w_dim_i];
 
 #ifdef EAGLEEYE_RKCHIP
-    if(channels == 4){
+    if(channels == 4 && count == 1){
         if(m_src_ptr == NULL || m_src_ptr != input[0].cpu()){
             if(m_src_ptr != NULL){
                 releasebuffer_handle(m_src_handler);

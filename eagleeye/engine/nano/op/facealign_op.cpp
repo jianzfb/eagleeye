@@ -99,9 +99,9 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
     int y0 = int(face_cy - face_half_size + 0.5f);
     y0 = std::max(y0, 0) / 4 * 4;
     int x1 = int(face_cx + face_half_size + 0.5f);
-    x1 = (std::min(x1, image_w) + 3) / 4 * 4;
+    x1 = (std::min(x1+3, image_w)) / 4 * 4;
     int y1 = int(face_cy + face_half_size + 0.5f);
-    y1 = (std::min(y1, image_h) + 3) / 4 * 4;
+    y1 = (std::min(y1+3, image_h)) / 4 * 4;
 
     face_w = x1 - x0;
     face_h = y1 - y0;
@@ -157,8 +157,8 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
         imcrop(src_img, crop_img, rect);
         imresize(crop_img, dst_img);
 
-        releasebuffer_handle(crop_handle);
         free(crop_buf);
+        releasebuffer_handle(crop_handle);
         return 0;
     }
 #endif

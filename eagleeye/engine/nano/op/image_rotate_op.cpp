@@ -1,4 +1,6 @@
 #include "eagleeye/engine/nano/op/image_rotate_op.h"
+#include <iostream>
+#include <fstream>
 #ifdef EAGLEEYE_RKCHIP
 #include "im2d_version.h"
 #include "rk_type.h"
