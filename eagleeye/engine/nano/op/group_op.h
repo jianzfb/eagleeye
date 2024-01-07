@@ -5,7 +5,7 @@
 #include "eagleeye/basic/Dim.h"
 #include "eagleeye/basic/type.h"
 #include "eagleeye/engine/nano/op/dynamiccreater.h"
-#include "eagleeye/common/"
+#include "eagleeye/common/EagleeyeLog.h"
 #include <string>
 #include <vector>
 
@@ -15,8 +15,7 @@ template<std::size_t IN, std::size_t OUT>
 class GroupOp:public BaseOp<IN,OUT>{
 public:
     using BaseOp<IN,OUT>::init; 
-    GroupOp(){
-    }
+    GroupOp(){}
     virtual ~GroupOp(){
         for(int op_i=0; op_i<m_ops.size(); ++op_i){
             delete m_ops[op_i];
@@ -24,25 +23,24 @@ public:
         this->m_ops.clear();
     }
 
-    virtual int init(std::map<std::string, std::vector<float>> params){
-        return 0;
-    };
-    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){
-        return 0;
-    };
+    virtual int init(std::map<std::string, std::vector<float>> params){return 0;};
+    virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
     virtual int init(std::map<std::string, std::vector<std::string>> params){
         // 内部算子链接关系
         for(int op_i=0; op_i<m_ops.size(); ++op_i){
             std::string op_i_name = std::to_string(op_i);
             if(params.find(op_i_name) != params.end()){
+                // add input_ctx, output_ctx
                 m_relations.push_back(params[op_i_name]);
+            }
+            else{
+                // add empty
+                m_relations.push_back(std::vector<std::string>());
             }
         }
         return 0;
     }
-    virtual int init(std::map<std::string, void*> params){
-        return 0;
-    }
+    virtual int init(std::map<std::string, void*> params){return 0;}
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
         if(this->m_ops.size() == 0){
@@ -62,7 +60,7 @@ public:
             std::vector<Tensor> op_input;
             for(int op_input_i=0; op_input_i<input_terms.size(); ++op_input_i){
                 std::string op_input_i_name = input_terms[op_input_i];
-                if(inner_data_dict.find(op_input_i_name) == inner_data_dict.ends()){
+                if(inner_data_dict.find(op_input_i_name) == inner_data_dict.end()){
                     op_input.push_back(input[tof<int>(op_input_i_name)]);
                 }
                 else{
@@ -73,12 +71,12 @@ public:
             this->m_ops[op_i]->runOnCpu(op_input);
 
             for(int op_output_i=0; op_output_i<output_terms.size(); ++op_output_i){
-                inner_data_dict[output_terms[op_output_i]] = this->m_ops[op_i].getOutput(op_output_i);
+                inner_data_dict[output_terms[op_output_i]] = this->m_ops[op_i]->getOutput(op_output_i);
             }
         }
 
         for(int output_i=0; output_i<OUT; ++output_i){
-            this->m_outputs[std::to_string(output_i)] = inner_data_dict[std::to_string(output_i)];
+            this->m_outputs[output_i] = inner_data_dict[std::to_string(output_i)];
         }
 
         return 0;

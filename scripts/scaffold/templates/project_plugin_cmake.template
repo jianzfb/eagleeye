@@ -27,6 +27,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} {{'${CMAKE_CURRENT_SOURCE_DIR}'}}/cma
 add_definitions(-DEAGLEEYE_ENABLE_LOG)
 
 # source code
+include_directories(./)
 set({{project}}_SRC 
     ./{{project}}_plugin.cpp
 )
