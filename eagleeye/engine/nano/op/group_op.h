@@ -26,20 +26,25 @@ public:
     virtual int init(std::map<std::string, std::vector<float>> params){return 0;};
     virtual int init(std::map<std::string, std::vector<std::vector<float>>> params){return 0;};
     virtual int init(std::map<std::string, std::vector<std::string>> params){
-        // 内部算子链接关系
+        // 对于公用参数 初始化
+        for(int op_i=0; op_i<m_ops.size(); ++op_i){
+            m_ops[op_i]->init(params);
+        }
+
+        // 对于组内算子链接关系 初始化
         for(int op_i=0; op_i<m_ops.size(); ++op_i){
             std::string op_i_name = std::to_string(op_i);
             if(params.find(op_i_name) != params.end()){
                 // add input_ctx, output_ctx
                 m_relations.push_back(params[op_i_name]);
             }
-            else{
-                // add empty
-                m_relations.push_back(std::vector<std::string>());
-            }
+        }
+        if(m_relations.size() != m_ops.size()){
+            EAGLEEYE_LOGE("Group relation not complete.");
         }
         return 0;
     }
+
     virtual int init(std::map<std::string, void*> params){return 0;}
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
