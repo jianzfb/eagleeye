@@ -64,7 +64,7 @@ void AutoPipeline::run(){
             int data_dims=0;    // 3
             int data_type=0;    // DATA TYPE 
             MetaData data_meta;
-            m_cache_input[signal_i]->copy( this->getInputPort(signal_i));
+            m_cache_input[signal_i]->copy(this->getInputPort(signal_i));
             m_cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
             if(!this->m_thread_status){
                 break;

@@ -84,7 +84,7 @@ public:
         }
         else if(a.type() == EAGLEEYE_UCHAR){
             unsigned char* a_ptr = a.cpu<unsigned char>();
-            if(a_ptr[0] == ){
+            if(a_ptr[0] == (unsigned char)m_init_val){
                 output_ptr[0] = true;
             }
             else{
@@ -93,8 +93,7 @@ public:
         }
         else if(a.type() == EAGLEEYE_INT){
             int* a_ptr = a.cpu<int>();
-            int* b_ptr = b.cpu<int>();
-            if(a_ptr[0] == b_ptr[1]){
+            if(a_ptr[0] == (int)m_init_val){
                 output_ptr[0] = true;
             }
             else{
