@@ -130,6 +130,18 @@ void NNNode::executeNodeInfo(){
 
             image_sig->setData(image);
         }
+        else if(tt == EAGLEEYE_SIGNAL_TIMESTAMP){
+            ImageSignal<double>* image_sig = (ImageSignal<double>*)(this->getOutputPort(sig_i));
+            Matrix<double> image = image_sig->getData();
+            if(image.rows() != 1 || image.cols() != 1){
+                image = Matrix<double>(1, 1);
+            }
+
+            if(std::get<1>(p)[0]*std::get<1>(p)[1] > 0){
+                memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
+            }
+            image_sig->setData(image);
+        }
         else{
             // Tensor
             TensorSignal* tensor_sig = (TensorSignal*)(this->getOutputPort(sig_i));
@@ -386,6 +398,10 @@ void NNNode::makeOutputSignal(int port,  std::string type_str){
     else if(type_str == "EAGLEEYE_SIGNAL_TENSOR"){
         this->setOutputPort(new TensorSignal(), port);
         this->getOutputPort(port)->setSignalType(EAGLEEYE_SIGNAL_TENSOR);
+    }
+    else if(type_str == "EAGLEEYE_SIGNAL_TIMESTAMP"){
+        this->setOutputPort(new ImageSignal<double>(), port);
+        this->getOutputPort(port)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
     }
     else{
         EAGLEEYE_LOGE("Dont support signal type %s.", type_str.c_str());

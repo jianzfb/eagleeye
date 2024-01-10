@@ -198,7 +198,8 @@ enum SignalType{
 	EAGLEEYE_SIGNAL_POS_2D			= 24,				//
 	EAGLEEYE_SIGNAL_POS_3D			= 25,
 	EAGLEEYE_SIGNAL_GROUP			= 26, 				// 
-	EAGLEEYE_SIGNAL_TENSOR			= 27
+	EAGLEEYE_SIGNAL_TENSOR			= 27,
+	EAGLEEYE_SIGNAL_TIMESTAMP		= 28				// timestamp
 };
 
 enum SignalTarget{

@@ -86,6 +86,8 @@ private:
     double m_last_timestamp;
     bool m_persistent_flag;
     std::function<void(AnyNode*, std::vector<AnySignal*>)> m_callback;
+
+    std::vector<AnySignal*> m_cache_input;
 }; 
 }
 #endif

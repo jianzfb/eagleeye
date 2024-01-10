@@ -30,6 +30,10 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
 
 AutoPipeline::~AutoPipeline(){
     delete m_auto_pipeline;
+
+    for(int cache_input_i=0; cache_input_i<m_cache_input.size(); ++cache_input_i){
+        delete m_cache_input[cache_input_i];
+    }
 }
 
 void AutoPipeline::executeNodeInfo(){
@@ -44,6 +48,14 @@ void AutoPipeline::run(){
 
         // 管线输入
         int signal_num = this->getNumberOfInputSignals();
+        if(m_cache_input.size() == 0){
+            for(int signal_i=0; signal_i<signal_num; ++signal_i){
+                m_cache_input.push_back(
+                    this->getInputPort(signal_i)->make()
+                );
+            }
+        }
+
         bool is_duplicate_frame = false;
         double input_data_timestamp = 0.0;
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
@@ -52,7 +64,8 @@ void AutoPipeline::run(){
             int data_dims=0;    // 3
             int data_type=0;    // DATA TYPE 
             MetaData data_meta;
-            this->getInputPort(signal_i)->getSignalContent(data, data_size, data_dims, data_type, data_meta);
+            m_cache_input[signal_i]->copy( this->getInputPort(signal_i));
+            m_cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
             if(!this->m_thread_status){
                 break;
             }
