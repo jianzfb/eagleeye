@@ -68,7 +68,10 @@ RTSPReadNode::RTSPReadNode(){
     this->setImageFormat(1);
 
     // 设置时间戳端口
-    this->setOutputPort(new ImageSignal<double>(),1);
+    ImageSignal<double>* timestamp_sig = new ImageSignal<double>();
+     Matrix<double> timestamp(1,1);
+    timestamp_sig->setData(timestamp);
+    this->setOutputPort(timestamp_sig,1);
     this->getOutputPort(1)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
 
     // 0,90,180,270
@@ -413,6 +416,9 @@ void RTSPReadNode::executeNodeInfo(){
             output_meta
         );
     }
+
+    ImageSignal<double>* output_timestamp_signal = (ImageSignal<double>*)(this->getOutputPort(1));
+    output_timestamp_signal->getData().at(0,0) = ntp_time;
 }
 
 void RTSPReadNode::postprocess_by_rga(){

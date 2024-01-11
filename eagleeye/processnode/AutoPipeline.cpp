@@ -23,7 +23,6 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
     m_pipeline_node = pipeline_node;
     this->m_thread_status = true;
     this->m_is_ini = false;
-    this->m_last_timestamp = 0.0;
     this->m_callback = nullptr;
     this->m_persistent_flag = false;
 }
@@ -55,9 +54,16 @@ void AutoPipeline::run(){
                 );
             }
         }
+        if(m_last_timestamp.size() == 0){
+            m_last_timestamp.resize(signal_num);
+            for(int signal_i=0; signal_i<signal_num; ++signal_i){
+                m_last_timestamp[signal_i] = 0.0;
+            }
+        }
 
-        bool is_duplicate_frame = false;
-        double input_data_timestamp = 0.0;
+        bool is_duplicate_frame = true;
+        int no_timestamp_signal_num = 0;
+        std::vector<double> input_data_timestamp(signal_num);
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             void* data;         // data address
             size_t* data_size;  // data size
@@ -74,15 +80,18 @@ void AutoPipeline::run(){
             data_meta.rows = data_size[0];
             data_meta.cols = data_size[1];
             data_meta.rotation = 0;
-            if(data_meta.timestamp > 0.0 && m_last_timestamp == data_meta.timestamp){
-                is_duplicate_frame = true;
+            if(data_meta.timestamp > 0.0 && m_last_timestamp[signal_i] != data_meta.timestamp){
+                // 只要有一个输入信号的时间戳发生了更新，则设置为非重复帧
+                is_duplicate_frame = false;
             }
-            input_data_timestamp = data_meta.timestamp;
-            if(!is_duplicate_frame){
-                m_auto_pipeline->setInput(placeholder_name.c_str(), data, data_meta);
+            if(int(data_meta.timestamp) == 0){
+                no_timestamp_signal_num += 1;
             }
+            input_data_timestamp[signal_i] = data_meta.timestamp;
+            m_auto_pipeline->setInput(placeholder_name.c_str(), data, data_meta);
         }
-        if(is_duplicate_frame){
+        // 如果所有输入信号都是无时间戳信号，则忽略重复帧去除
+        if(is_duplicate_frame && no_timestamp_signal_num != signal_num){
             // 重复帧，休息1ms
             std::this_thread::sleep_for(std::chrono::microseconds(1000));
             continue;

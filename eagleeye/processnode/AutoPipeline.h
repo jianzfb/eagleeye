@@ -83,11 +83,11 @@ private:
     std::vector<std::pair<std::string, int>> m_pipeline_node;
     std::thread m_auto_thread;
     bool m_thread_status;
-    double m_last_timestamp;
     bool m_persistent_flag;
     std::function<void(AnyNode*, std::vector<AnySignal*>)> m_callback;
 
     std::vector<AnySignal*> m_cache_input;
+    std::vector<double> m_last_timestamp;
 }; 
 }
 #endif
