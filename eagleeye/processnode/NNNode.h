@@ -4,9 +4,6 @@
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/basic/Array.h"
-// #include "eagleeye/engine/nano/op/placeholder.h"
-// #include "eagleeye/engine/nano/dataflow/node_impl_asyn.hpp"
-// #include "eagleeye/engine/nano/dataflow/asyn.hpp"
 #include "eagleeye/engine/nano/dataflow/graph.hpp"
 #include "eagleeye/common/CJsonObject.hpp"
 #include<functional>
@@ -89,6 +86,7 @@ private:
     std::map<int, std::pair<std::string, int>> m_output_map;
 
     bool m_is_init;
+    std::vector<AnySignal*> m_cache_input;
 };
 }
 #endif

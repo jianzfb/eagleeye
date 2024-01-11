@@ -19,18 +19,31 @@ NNNode::NNNode(int thread_num, CPUAffinityPolicy performance){
 
 NNNode::~NNNode(){
     delete m_g;
+
+    for(int cache_input_i=0; cache_input_i<m_cache_input.size(); ++cache_input_i){
+        delete m_cache_input[cache_input_i];
+    }
 } 
 
 void NNNode::executeNodeInfo(){
     // 1.step 输入绑定
     int signal_num = this->getNumberOfInputSignals();
+    if(m_cache_input.size() == 0){
+        for(int signal_i=0; signal_i<signal_num; ++signal_i){
+            m_cache_input.push_back(
+                this->getInputPort(signal_i)->make()
+            );
+        }
+    }
+
     std::map<std::string, std::pair<void*, std::vector<int64_t>>> graph_input_map;
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
         void* data = NULL;
         size_t* data_size;
         int data_dims = 0;
         int data_type = -1;
-        this->getInputPort(sig_i)->getSignalContent(data, data_size, data_dims, data_type);
+        m_cache_input[sig_i]->copy(this->getInputPort(sig_i));
+        m_cache_input[sig_i]->getSignalContent(data, data_size, data_dims, data_type);
 
         std::string sig_i_name = this->m_input_map[sig_i];
 
