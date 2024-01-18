@@ -11,10 +11,10 @@ namespace dataflow{
 class TensorInt32Op: public BaseOp<1, 1>,DynamicCreator<TensorInt32Op>{
 public:
     using BaseOp<1, 1>::init;
-    TensorOp(){
+    TensorInt32Op(){
         
     }
-    virtual ~TensorOp(){}
+    virtual ~TensorInt32Op(){}
 
     virtual int init(std::map<std::string, std::vector<float>> params){
         if(params.find("init_val") != params.end() && params.find("init_shape") != params.end()){
@@ -29,7 +29,7 @@ public:
             }
             if(num != init_val.size()){
                 EAGLEEYE_LOGE("Init tensor size not consistent.");
-                return;
+                return 0;
             }
             m_latest_val = Tensor(
                 tensor_shape,
@@ -80,10 +80,10 @@ private:
 class TensorFloat32Op: public BaseOp<1, 1>,DynamicCreator<TensorFloat32Op>{
 public:
     using BaseOp<1, 1>::init;
-    TensorOp(){
+    TensorFloat32Op(){
         
     }
-    virtual ~TensorOp(){}
+    virtual ~TensorFloat32Op(){}
 
     virtual int init(std::map<std::string, std::vector<float>> params){
         if(params.find("init_val") != params.end() && params.find("init_shape") != params.end()){
@@ -98,7 +98,7 @@ public:
             }
             if(num != init_val.size()){
                 EAGLEEYE_LOGE("Init tensor size not consistent.");
-                return;
+                return 0;
             }
             m_latest_val = Tensor(
                 tensor_shape,
@@ -150,8 +150,8 @@ private:
 class TensorFloat64Op: public BaseOp<1, 1>,DynamicCreator<TensorFloat64Op>{
 public:
     using BaseOp<1, 1>::init;
-    TensorOp(){}
-    virtual ~TensorOp(){}
+    TensorFloat64Op(){}
+    virtual ~TensorFloat64Op(){}
 
     virtual int init(std::map<std::string, std::vector<float>> params){
         if(params.find("init_val") != params.end() && params.find("init_shape") != params.end()){
@@ -166,7 +166,7 @@ public:
             }
             if(num != init_val.size()){
                 EAGLEEYE_LOGE("Init tensor size not consistent.");
-                return;
+                return 0;
             }
             m_latest_val = Tensor(
                 tensor_shape,
