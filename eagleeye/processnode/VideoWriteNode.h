@@ -76,6 +76,8 @@ public:
     void setStop(int stop);
     void getStop(int& stop);
 
+    void setImageFormat(int image_format);
+
     /**
      * @brief Set/Get the Force Start object
      * 
@@ -115,6 +117,20 @@ private:
     int m_frame_count;
 
     Matrix<unsigned char> m_temp;
+
+    Matrix<Array<unsigned char, 3>> m_c3_image;
+    Matrix<Array<unsigned char, 4>> m_c4_image;
+    int m_frame_size;
+    int m_header_size;
+    int m_image_format;
+
+    void* m_pkt_buf;
+    void* m_frame_buf;
+    void* m_md_info;
+    void* m_buf_grp;
+
+    void* m_mpp_ctx;
+    void* m_mpp_api;    
 };
 }
 #endif

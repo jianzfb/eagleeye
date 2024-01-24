@@ -496,17 +496,23 @@ endif()
 if(DEFINED RKCHIP)
     message(STATUS "Define RK")
     add_definitions(-DEAGLEEYE_RKCHIP)
-    include_directories(${RKCHIP}/mpp/inc/)
     include_directories(${RKCHIP}/mpp/)
+    include_directories(${RKCHIP}/mpp/inc/)
+    include_directories(${RKCHIP}/mpp/utils/)
+    include_directories(${RKCHIP}/mpp/osal/inc/)
     include_directories(${RKCHIP}/librga/include)
 
     if(BUILD_PYTHON_MODULE)
         target_link_libraries(eagleeye PRIVATE
                                 ${RKCHIP}/mpp/mpp/libmpp.so
+                                ${RKCHIP}/mpp/utils/libutils.a
+                                ${RKCHIP}/mpp/osal/libosal.a
                                 ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)    
     else()
         target_link_libraries(eagleeye 
                                 ${RKCHIP}/mpp/mpp/libmpp.so
+                                ${RKCHIP}/mpp/utils/libutils.a
+                                ${RKCHIP}/mpp/osal/libosal.a
                                 ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
     endif()
 
