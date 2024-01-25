@@ -17,6 +17,8 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
         this->setOutputPort(output_signal, signal_i);
     }
 
+    EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder", "", "");
+
     this->m_thread_status = true;
     this->m_is_ini = false;
     this->m_last_timestamp = 0.0;
@@ -25,6 +27,14 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
 }
 
 AutoNode::~AutoNode(){
+    // 重复尝试停止线程
+    this->m_thread_status = false;
+    if(this->m_is_ini){
+        if(m_auto_thread.joinable()){
+            m_auto_thread.join();
+        }
+    }
+    // 删除内部节点
     delete m_auto_node;
 }
 
@@ -83,13 +93,24 @@ void AutoNode::run(){
 
         // 3.step get output
         signal_num = m_auto_node->getNumberOfOutputSignals();
+        bool is_auto_stop = false;
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));
+
+            if(this->getOutputPort(signal_i)->meta().is_end_frame){
+                is_auto_stop = true;
+            }
         }
 
         // 4.step callback
         if(this->m_callback != nullptr){           
             this->m_callback(this, this->m_output_signals);
+        }
+        
+        // 5.step 检查自动结束条件
+        if(is_auto_stop){
+            m_thread_status = false;
+            break;
         }
     }
 
@@ -177,4 +198,23 @@ void AutoNode::setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)
     this->m_callback = callback;
 }
 
+bool AutoNode::stop(bool block){
+    if(block){
+        // 等待直到结束
+        if(m_auto_thread.joinable()){
+            m_auto_thread.join();
+        }
+    }
+
+    // 返回线程标记
+    return !m_thread_status;
+}
+
+void AutoNode::setFolder(const std::string folder){
+    m_auto_node->setFolder(folder);
+}
+void AutoNode::getFolder(std::string& folder){
+    // do nothing
+    m_auto_node->getFolder(folder);
+}
 } // namespace eagleeye

@@ -373,6 +373,12 @@ public:
 	void registerAuxNode(AnyNode* aux_node);
 	std::vector<AnyNode*> getAuxNode(){return this->m_aux_nodes;}
 
+	/**
+	 * @brief set/get folder
+	 */
+    virtual void setFolder(std::string folder){};
+    virtual void getFolder(std::string& folder){};
+
 protected:
 	/**
 	 *	@brief make one output signal

@@ -71,6 +71,11 @@ public:
      */
     void setPersistent(bool flag){this->m_persistent_flag=flag;};
 
+    /**
+     * @brief 检查是否停止运行
+     */
+    bool stop(bool block=false);
+
 protected:
     void run();
 

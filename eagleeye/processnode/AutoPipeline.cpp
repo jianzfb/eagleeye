@@ -28,6 +28,15 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
 }
 
 AutoPipeline::~AutoPipeline(){
+    // 重复尝试停止线程
+    this->m_thread_status = false;
+    if(this->m_is_ini){
+        if(m_auto_thread.joinable()){
+            m_auto_thread.join();
+        }
+    }
+
+    // 删除内部节点
     delete m_auto_pipeline;
 
     for(int cache_input_i=0; cache_input_i<m_cache_input.size(); ++cache_input_i){
@@ -106,16 +115,28 @@ void AutoPipeline::run(){
 
         // 管线输出 
         signal_num = this->getNumberOfOutputSignals();
+        bool is_auto_stop = false;
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             std::string node_name = m_pipeline_node[signal_i].first;
             int node_signal_i = m_pipeline_node[signal_i].second;
 
             AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i);
             this->getOutputPort(signal_i)->copy(output_signal);
+
+            if(this->getOutputPort(signal_i)->meta().is_end_frame){
+                is_auto_stop = true;
+            }
         }
 
+        // 回调
         if(this->m_callback != nullptr){
             this->m_callback(this, this->m_output_signals);
+        }
+
+        // 检查自动结束条件
+        if(is_auto_stop){
+            m_thread_status = false;
+            break;
         }
     }
 }
@@ -176,5 +197,17 @@ void AutoPipeline::setUnitName(const char* unit_name){
 
 void AutoPipeline::setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
     this->m_callback = callback;
+}
+
+bool AutoPipeline::stop(bool block){
+    if(block){
+        // 等待直到结束
+        if(m_auto_thread.joinable()){
+            m_auto_thread.join();
+        }
+    }
+
+    // 返回线程标记
+    return !m_thread_status;
 }
 }

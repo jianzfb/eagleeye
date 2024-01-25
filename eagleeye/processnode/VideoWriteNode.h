@@ -86,6 +86,9 @@ public:
     void setStart(int start);
     void getStart(int& start);
 
+    void setPause(int pause);
+    void getPause(int& pause);
+
     void setFPS(int fps);
     void getFPS(int& fps);
 
@@ -97,7 +100,7 @@ private:
      * @brief finish writing process
      * 
      */
-    void writeFinish();
+    void writeFinish(AnySignal* out_sig=NULL);
 
     bool m_is_init;
     bool m_is_finish;
@@ -108,6 +111,7 @@ private:
 
     int m_manually_stop;
     int m_manually_start;
+    int m_manually_pause;
 
     std::ofstream m_output_file;
     AVCodecContext* m_codec_cxt;
@@ -130,7 +134,7 @@ private:
     void* m_buf_grp;
 
     void* m_mpp_ctx;
-    void* m_mpp_api;    
+    void* m_mpp_api;
 };
 }
 #endif

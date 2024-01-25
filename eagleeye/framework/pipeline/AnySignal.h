@@ -21,6 +21,7 @@ public:
 		frame = 0;
 		is_end_frame = false;
 		is_start_frame = false;
+		is_pause_frame = false;
 		rotation = 0;
 		rows = 0;
 		cols = 0;
@@ -38,6 +39,7 @@ public:
 	int frame;				// frame index for video
 	bool is_end_frame;		// end frame flag for video
 	bool is_start_frame; 	// start frame flag for video
+	bool is_pause_frame;	// pause frame flag for video
 	int rotation;			// rotation  (0,90,180,270)
 	int rows;				// current rows 
 	int cols;				// current cols
