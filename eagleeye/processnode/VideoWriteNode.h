@@ -106,6 +106,8 @@ private:
     bool m_is_finish;
     int m_fps;
 
+    bool m_is_header_init;
+
     std::string m_prefix;
     std::string m_folder;
 

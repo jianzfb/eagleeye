@@ -198,7 +198,12 @@ void AutoNode::setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)
     this->m_callback = callback;
 }
 
-bool AutoNode::stop(bool block){
+bool AutoNode::stop(bool block, bool force){
+    if(force){
+        // 主动退出
+        this->exit();
+    }
+
     if(block){
         // 等待直到结束
         if(m_auto_thread.joinable()){

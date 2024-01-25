@@ -211,6 +211,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeImageUti.cpp
     eagleeye/processnode/ImageSelect.cpp
     eagleeye/processnode/RTSPReadNode.cpp
+    eagleeye/processnode/SnapshotNode.cpp
     eagleeye/render/RenderContext.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
@@ -358,6 +359,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
     eagleeye/processnode/RTSPReadNode.cpp
+    eagleeye/processnode/SnapshotNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
     eagleeye/processnode/ImageSelect.cpp)
 endif()

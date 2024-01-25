@@ -55,6 +55,7 @@ VideoWriteNode::VideoWriteNode(){
     this->setNumberOfOutputSignals(1);
     this->setOutputPort(this->makeOutputSignal(), 0);
     this->m_is_init = false;
+    this->m_is_header_init = false;
     this->m_is_finish = true;
     this->m_fps = 30;
     this->m_image_format = 1;   // 默认BGR
@@ -150,7 +151,7 @@ bool encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstrea
 #endif
 
 #ifdef EAGLEEYE_RKCHIP
-MPP_RET mpp_enc_cfg_setup(MppEncCfg  cfg, MppApi* mpi, MppCtx ctx, int frame_width, int frame_height, int frame_elem_size, int frame_pix_fmt){
+MPP_RET mpp_enc_cfg_setup(MppEncCfg  cfg, MppApi* mpi, MppCtx ctx, int frame_width, int frame_height, int frame_elem_size, int frame_pix_fmt, MppCodingType type){
     MPP_RET ret;
     RK_U32 rotation;
     RK_U32 mirroring;
@@ -231,7 +232,6 @@ MPP_RET mpp_enc_cfg_setup(MppEncCfg  cfg, MppApi* mpi, MppCtx ctx, int frame_wid
     }
 
     /* setup qp for different codec and rc_mode */
-    MppCodingType type = MPP_VIDEO_CodingAVC;
     int qp_init = 40;
     switch (type) {
     case MPP_VIDEO_CodingAVC :
@@ -434,10 +434,46 @@ void VideoWriteNode::executeNodeInfo(){
         image_ptr = m_c4_image.cpu<unsigned char>();
     }
 
-    if(!m_is_init && (!image_meta_data.is_start_frame && !m_manually_start)){
+    if(!image_meta_data.is_start_frame && !m_manually_start){
         // 对于非首帧(或手动开始)，不可以启动初始化
         // 首帧和尾帧，必须设置
         return;
+    }
+
+    // 设置文件名
+    if(this->m_file_path == "" && image_meta_data.name != ""){
+        // 检查目录
+        if(this->m_folder != "./"){
+            if(!isdirexist(this->m_folder.c_str())){
+                createdirectory(this->m_folder.c_str());
+            }
+        }
+
+        this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) +".mp4";
+    }
+
+    if(this->m_file_path.empty()){
+        // 检查目录
+        if(this->m_folder != "./"){
+            if(!isdirexist(this->m_folder.c_str())){
+                createdirectory(this->m_folder.c_str());
+            }
+        }
+
+        // 动态生成唯一文件名
+        this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) +".mp4";
+    }
+
+    // 至此，说明已经开始录制
+    if(!(this->getOutputPort(0)->meta().is_start_frame)){
+        //打开输出文件流(一个新的视频存储)
+        m_output_file.open(m_file_path.c_str(), std::ios::binary);
+
+        m_is_header_init = false;
+        m_is_finish = false;
+        this->getOutputPort(0)->meta().is_end_frame = false;
+        this->getOutputPort(0)->meta().is_pause_frame = false;
+        this->m_frame_count = 0;
     }
 
     this->getOutputPort(0)->meta().is_start_frame = true;
@@ -448,17 +484,6 @@ void VideoWriteNode::executeNodeInfo(){
     }
     this->getOutputPort(0)->meta().is_pause_frame = false;
 
-    if(this->m_file_path.empty()){
-        if(this->m_folder != "./"){
-            if(!isdirexist(this->m_folder.c_str())){
-                createdirectory(this->m_folder.c_str());
-            }
-        }
-
-        // 动态生成唯一文件名
-        this->setFilePath(this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp()+".mp4");
-    }
-
     if(this->m_is_init && this->m_manually_stop != 0){
         this->writeFinish(this->getOutputPort(0));
         EAGLEEYE_LOGD("Success to finish write video.");
@@ -467,10 +492,6 @@ void VideoWriteNode::executeNodeInfo(){
 
     if(!this->m_is_init){
         EAGLEEYE_LOGD("Start to write video.");
-
-        //打开输出文件流
-        m_output_file.open(m_file_path.c_str(), std::ios::binary);
-
 #ifndef EAGLEEYE_RKCHIP
         //设置编码器
         m_encoder = avcodec_find_encoder_by_name("libx264");
@@ -598,37 +619,16 @@ void VideoWriteNode::executeNodeInfo(){
             return;
         }
 
-        ret = mpp_enc_cfg_setup(cfg, mpp_api, mpp_ctx, image_w, image_h, elem_size, this->m_image_format);
+        ret = mpp_enc_cfg_setup(cfg, mpp_api, mpp_ctx, image_w, image_h, elem_size, this->m_image_format, MPP_VIDEO_CodingAVC);
         if (ret) {
             EAGLEEYE_LOGE("mpp setup failed ret %d", ret);
             return;
-        }        
-
-        MppPacket packet = NULL;
-        mpp_packet_init_with_buffer(&packet, pkt_buf);
-        /* NOTE: It is important to clear output packet length!! */
-        mpp_packet_set_length(packet, 0);
-
-        ret = mpp_api->control(mpp_ctx, MPP_ENC_GET_HDR_SYNC, packet);
-        if (ret) {
-            EAGLEEYE_LOGE("mpp_api control enc get extra info failed");
-            return;
-        } else {
-            /* get and write sps/pps for H.264 */
-            void *ptr   = mpp_packet_get_pos(packet);
-            size_t len  = mpp_packet_get_length(packet);
-            m_output_file.write((char*)ptr, len);
         }
-        mpp_packet_deinit(&packet);
-
         m_mpp_ctx = mpp_ctx;
         m_mpp_api = mpp_api;
 #endif
 
         m_is_init = true;
-        m_is_finish = false;
-        this->getOutputPort(0)->meta().is_end_frame = false;
-        this->m_frame_count = 0;
     }
 
 #ifndef EAGLEEYE_RKCHIP
@@ -666,16 +666,37 @@ void VideoWriteNode::executeNodeInfo(){
 
 #ifdef EAGLEEYE_RKCHIP
     // RGB/BGR， RGBA/BGRA
+    MppCtx mpp_ctx = (MppCtx)(m_mpp_ctx);
+    MppApi* mpp_api = (MppApi*)m_mpp_api;
+
     MPP_RET ret = MPP_OK;
+    MppPacket packet = NULL;
+    MppBuffer pkt_buf = (MppBuffer)m_pkt_buf;
+    if(!m_is_header_init){
+        mpp_packet_init_with_buffer(&packet, pkt_buf);
+        /* NOTE: It is important to clear output packet length!! */
+        mpp_packet_set_length(packet, 0);
+
+        ret = mpp_api->control(mpp_ctx, MPP_ENC_GET_HDR_SYNC, packet);
+        if (ret) {
+            EAGLEEYE_LOGE("mpp_api control enc get extra info failed");
+            return;
+        } else {
+            /* get and write sps/pps for H.264 */
+            void *ptr   = mpp_packet_get_pos(packet);
+            size_t len  = mpp_packet_get_length(packet);
+            m_output_file.write((char*)ptr, len);
+        }
+        mpp_packet_deinit(&packet);
+        packet = NULL;
+        m_is_header_init = true;
+    }
+
     MppMeta meta = NULL;
     MppFrame frame = NULL;
-    MppPacket packet = NULL;
     MppBuffer frame_buf = (MppBuffer)(m_frame_buf);
     void *buf = mpp_buffer_get_ptr(frame_buf);
     RK_U32 eoi = 1;
-
-    MppCtx mpp_ctx = (MppCtx)(m_mpp_ctx);
-    MppApi* mpp_api = (MppApi*)m_mpp_api;
     memcpy(buf, image_ptr, image_h*image_w*elem_size);
 
     // 初始化frame
@@ -709,7 +730,6 @@ void VideoWriteNode::executeNodeInfo(){
     mpp_frame_set_buffer(frame, frame_buf);
 
     meta = mpp_frame_get_meta(frame);
-    MppBuffer pkt_buf = (MppBuffer)(m_pkt_buf);
     mpp_packet_init_with_buffer(&packet, pkt_buf);
     /* NOTE: It is important to clear output packet length!! */
     mpp_packet_set_length(packet, 0);
@@ -769,19 +789,20 @@ void VideoWriteNode::setImageFormat(int image_format){
 
     this->m_image_format = image_format;
 }
+
 void VideoWriteNode::setFilePath(std::string file_path){
     if(!this->m_is_finish){
         EAGLEEYE_LOGD("Force unfinish video stop.");
         this->writeFinish(this->getOutputPort(0));        
     }
 
-    this->m_is_init = false;
     this->m_file_path = file_path;
     this->m_is_finish = true;
     this->m_fps = 0;
     this->m_manually_stop = 0;
+    this->m_manually_start = 0;
+    this->m_manually_pause = 0;
 }
-
 void VideoWriteNode::getFilePath(std::string& file_path){
     file_path = this->m_file_path;
 }
@@ -789,7 +810,6 @@ void VideoWriteNode::getFilePath(std::string& file_path){
 void VideoWriteNode::setPrefix(std::string prefix){
     this->m_prefix = prefix;
 }
-
 void VideoWriteNode::getPrefix(std::string& prefix){
     prefix = this->m_prefix;
 }
@@ -827,7 +847,7 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
     }
 
     this->m_is_finish = true;
-    this->m_is_init = false;
+    this->m_is_header_init = false;
     this->m_manually_stop = 0;
     this->m_manually_start = 0;
     this->m_manually_pause = 0;
@@ -841,7 +861,6 @@ void VideoWriteNode::setStop(int stop){
     this->m_manually_stop = stop;
     this->modified();
 }
-
 void VideoWriteNode::getStop(int& stop){
     stop = this->m_manually_stop;
 }
@@ -854,7 +873,6 @@ void VideoWriteNode::setStart(int start){
     this->m_manually_start = start;
     this->modified();
 }
-
 void VideoWriteNode::getStart(int& start){
     start = this->m_manually_start;
 }
@@ -867,7 +885,6 @@ void VideoWriteNode::setPause(int pause){
     this->m_manually_pause = pause;
     this->modified();
 }
-
 void VideoWriteNode::getPause(int& pause){
     pause = this->m_manually_pause;
 }
@@ -876,7 +893,6 @@ void VideoWriteNode::setFPS(int fps){
     this->m_fps = fps;
     this->modified();
 }
-
 void VideoWriteNode::getFPS(int& fps){
     fps = this->m_fps;
 }
