@@ -74,7 +74,7 @@ public:
     /**
      * @brief 检查是否停止运行
      */
-    bool stop(bool block=false);
+    bool stop(bool block=false, bool force=false);
 
 protected:
     void run();

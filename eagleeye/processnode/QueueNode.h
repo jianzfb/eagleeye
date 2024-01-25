@@ -31,6 +31,8 @@ public:
 	virtual void addInputPort(AnySignal* sig);
 	virtual void setInputPort(AnySignal* sig,int index=0);
 
+    virtual void postexit();
+
 private:
     QueueNode(const QueueNode&);
     void operator=(const QueueNode&);

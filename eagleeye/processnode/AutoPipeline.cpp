@@ -199,7 +199,12 @@ void AutoPipeline::setCallback(std::function<void(AnyNode*, std::vector<AnySigna
     this->m_callback = callback;
 }
 
-bool AutoPipeline::stop(bool block){
+bool AutoPipeline::stop(bool block, bool force){
+    if(force){
+        // 主动退出
+        this->exit();
+    }
+
     if(block){
         // 等待直到结束
         if(m_auto_thread.joinable()){
