@@ -242,29 +242,13 @@ void SnapeshotNode::executeNodeInfo(){
     }
 
 #ifdef EAGLEEYE_RKCHIP
+    // RGB/BGR， RGBA/BGRA
     MppCtx mpp_ctx = (MppCtx)(m_mpp_ctx);
     MppApi* mpp_api = (MppApi*)m_mpp_api;
-
     MppPacket packet = NULL;
     MppBuffer pkt_buf = (MppBuffer)m_pkt_buf;
-    mpp_packet_init_with_buffer(&packet, pkt_buf);
-    /* NOTE: It is important to clear output packet length!! */
-    mpp_packet_set_length(packet, 0);
     MPP_RET ret = MPP_OK;
-    ret = mpp_api->control(mpp_ctx, MPP_ENC_GET_HDR_SYNC, packet);
-    if (ret) {
-        EAGLEEYE_LOGE("mpp_api control enc get extra info failed");
-        return;
-    } else {
-        /* get and write sps/pps for H.264 */
-        void *ptr   = mpp_packet_get_pos(packet);
-        size_t len  = mpp_packet_get_length(packet);
-        m_output_file.write((char*)ptr, len);
-    }
-    mpp_packet_deinit(&packet);
-    packet = NULL;
 
-    // RGB/BGR， RGBA/BGRA
     MppMeta meta = NULL;
     MppFrame frame = NULL;
     MppBuffer frame_buf = (MppBuffer)(m_frame_buf);

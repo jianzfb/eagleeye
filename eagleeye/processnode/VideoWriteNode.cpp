@@ -54,6 +54,10 @@ VideoWriteNode::VideoWriteNode(){
     this->setNumberOfInputSignals(1);
     this->setNumberOfOutputSignals(1);
     this->setOutputPort(this->makeOutputSignal(), 0);
+    this->getOutputPort(0)->meta().is_start_frame = false;
+    this->getOutputPort(0)->meta().is_end_frame = false;
+    this->getOutputPort(0)->meta().is_pause_frame = false;
+
     this->m_is_init = false;
     this->m_is_header_init = false;
     this->m_is_finish = true;
@@ -465,7 +469,7 @@ void VideoWriteNode::executeNodeInfo(){
     }
 
     // 至此，说明已经开始录制
-    if(!(this->getOutputPort(0)->meta().is_start_frame)){
+    if(m_frame_count == 0){
         //打开输出文件流(一个新的视频存储)
         m_output_file.open(m_file_path.c_str(), std::ios::binary);
 
@@ -473,7 +477,6 @@ void VideoWriteNode::executeNodeInfo(){
         m_is_finish = false;
         this->getOutputPort(0)->meta().is_end_frame = false;
         this->getOutputPort(0)->meta().is_pause_frame = false;
-        this->m_frame_count = 0;
     }
 
     this->getOutputPort(0)->meta().is_start_frame = true;
@@ -851,6 +854,7 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
     this->m_manually_stop = 0;
     this->m_manually_start = 0;
     this->m_manually_pause = 0;
+    this->m_frame_count = 0;
 }
 
 void VideoWriteNode::setStop(int stop){

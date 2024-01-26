@@ -1,4 +1,5 @@
 #include "eagleeye/processnode/QueueNode.h"
+#include "eagleeye/framework/pipeline/SignalFactory.h"
 namespace  eagleeye
 {
 QueueNode::QueueNode(int queue_size){
