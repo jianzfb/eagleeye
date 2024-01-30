@@ -17,6 +17,7 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
         AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i)->make();
         // 必须为队列信号
         output_signal->transformCategoryToQ(queue_size, get_then_auto_remove);
+        output_signal->disableDataTimestamp();  // 禁用数据时间戳
         this->setOutputPort(output_signal, signal_i);
     }
 
@@ -122,8 +123,7 @@ void AutoPipeline::run(){
 
             AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i);
             this->getOutputPort(signal_i)->copy(output_signal);
-
-            if(this->getOutputPort(signal_i)->meta().is_end_frame){
+            if(m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i)->meta().is_end_frame){
                 is_auto_stop = true;
             }
         }
