@@ -14,6 +14,7 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
         AnySignal* output_signal = m_auto_node->getOutputPort(signal_i)->make();
         // 必须为队列信号
         output_signal->transformCategoryToQ(queue_size, get_then_auto_remove);
+        output_signal->disableDataTimestamp();  // 禁用数据时间戳
         this->setOutputPort(output_signal, signal_i);
     }
 
@@ -96,8 +97,7 @@ void AutoNode::run(){
         bool is_auto_stop = false;
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));
-
-            if(this->getOutputPort(signal_i)->meta().is_end_frame){
+            if(m_auto_node->getOutputPort(signal_i)->meta().is_end_frame){
                 is_auto_stop = true;
             }
         }

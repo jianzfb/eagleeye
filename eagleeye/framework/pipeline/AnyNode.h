@@ -379,6 +379,11 @@ public:
     virtual void setFolder(std::string folder){};
     virtual void getFolder(std::string& folder){};
 
+	/**
+	 * @brief stop node (AutoNode, AutoPipeline有效)
+	 */
+	virtual bool stop(bool block=false, bool force=false){};
+
 protected:
 	/**
 	 *	@brief make one output signal

@@ -53,8 +53,6 @@ public:
 private:
     SnapeshotNode(const SnapeshotNode&);
     void operator=(const SnapeshotNode&);
-
-    Matrix<Array<unsigned char, 3>> m_c3_image;
     Matrix<Array<unsigned char, 4>> m_c4_image;
 
     int m_frame_size;

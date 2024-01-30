@@ -81,15 +81,28 @@ void SnapeshotNode::executeNodeInfo(){
     if(m_image_format == 0 || m_image_format == 1){
         ImageSignal<Array<unsigned char,3>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
-        m_c3_image = input_img_signal->getData(image_meta_data);
-        if(!m_c3_image.isContinuous()){
-            m_c3_image = m_c3_image.clone();
+        Matrix<Array<unsigned char,3>> c3_image = input_img_signal->getData(image_meta_data);
+        if(!c3_image.isContinuous()){
+            c3_image = c3_image.clone();
         }
 
-        image_h = m_c3_image.rows();
-        image_w = m_c3_image.cols();
-        elem_size = 3;
-        image_ptr = m_c3_image.cpu<unsigned char>();
+        image_h = c3_image.rows();
+        image_w = c3_image.cols();
+        m_c4_image = Matrix<Array<unsigned char,4>>(image_h, image_w);
+        unsigned char* c3_ptr = c3_image.cpu<unsigned char>();
+        unsigned char* c4_ptr = m_c4_image.cpu<unsigned char>();
+        for(int i=0; i<image_h; ++i){
+            unsigned char* c3_row_ptr = c3_ptr + i*image_w*3;
+            unsigned char* c4_row_ptr = c4_ptr + i*image_w*4;
+            for(int j=0; j<image_w; ++j){
+                c4_row_ptr[j*4] = c3_row_ptr[j*3];
+                c4_row_ptr[j*4+1] = c3_row_ptr[j*3+1];
+                c4_row_ptr[j*4+2] = c3_row_ptr[j*3+2];
+                c4_row_ptr[j*4+3] = 0;
+            }
+        }
+        image_ptr = c4_ptr;
+        elem_size = 4;
     }
     else{
         ImageSignal<Array<unsigned char,4>>* input_img_signal = 
@@ -158,15 +171,7 @@ void SnapeshotNode::executeNodeInfo(){
 
         MppBuffer frame_buf;
         MppFrameFormat fmt;
-        if(m_image_format == 0){
-            //RGB
-            fmt = MPP_FMT_RGB888;
-        }
-        else if(m_image_format == 1){
-            //BGR
-            fmt = MPP_FMT_BGR888;
-        }
-        else if(m_image_format == 2){
+        if(m_image_format == 2 || m_image_format == 0){
             //RGBA
             fmt = MPP_FMT_RGBA8888;
         }
@@ -228,7 +233,12 @@ void SnapeshotNode::executeNodeInfo(){
             return;
         }
 
-        ret = mpp_enc_cfg_setup(cfg, mpp_api, mpp_ctx, image_w, image_h, elem_size, this->m_image_format, MPP_VIDEO_CodingMJPEG);
+        if(this->m_image_format == 2 || this->m_image_format == 0){
+            ret = mpp_enc_cfg_setup(cfg, mpp_api, mpp_ctx, image_w, image_h, elem_size, 2, MPP_VIDEO_CodingMJPEG);
+        }
+        else{
+            ret = mpp_enc_cfg_setup(cfg, mpp_api, mpp_ctx, image_w, image_h, elem_size, 3, MPP_VIDEO_CodingMJPEG);
+        }
         if (ret) {
             EAGLEEYE_LOGE("mpp setup failed ret %d", ret);
             return;
@@ -267,15 +277,7 @@ void SnapeshotNode::executeNodeInfo(){
     mpp_frame_set_height(frame, image_h);
     mpp_frame_set_hor_stride(frame, image_w*elem_size);
     mpp_frame_set_ver_stride(frame, image_h);
-    if(m_image_format == 0){
-        // RGB
-        mpp_frame_set_fmt(frame, MPP_FMT_RGB888);
-    }
-    else if(m_image_format == 1){
-        // BGR
-        mpp_frame_set_fmt(frame, MPP_FMT_BGR888);
-    }
-    else if(m_image_format == 2){
+    if(m_image_format == 2 || m_image_format == 0){
         // RGBA
         mpp_frame_set_fmt(frame, MPP_FMT_RGBA8888);
     }

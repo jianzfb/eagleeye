@@ -347,6 +347,16 @@ public:
 	 */
 	void* getNeededMem();
 
+	/*
+	 * @brief Get link node
+	 */
+	AnyNode* getLinkNode(){return this->m_link_node;}
+
+	/**
+	 * @brief 禁用数据时间戳
+	 */
+	void disableDataTimestamp(){m_disable_data_timestamp = true;}
+
 protected:
 	std::string m_signal_type;
 	std::string m_signal_target;
@@ -359,6 +369,7 @@ protected:
 	AnyNode* m_link_node;
 	MetaData m_meta;
 	std::shared_ptr<unsigned char> m_mem;
+	bool m_disable_data_timestamp;
 
 private:
 	AnySignal(const AnySignal&);

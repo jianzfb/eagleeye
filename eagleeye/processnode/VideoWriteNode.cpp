@@ -438,7 +438,7 @@ void VideoWriteNode::executeNodeInfo(){
         image_ptr = m_c4_image.cpu<unsigned char>();
     }
 
-    if(!image_meta_data.is_start_frame && !m_manually_start){
+    if((m_frame_count == 0) && (!image_meta_data.is_start_frame) && (!m_manually_start)){
         // 对于非首帧(或手动开始)，不可以启动初始化
         // 首帧和尾帧，必须设置
         return;
@@ -775,6 +775,7 @@ void VideoWriteNode::executeNodeInfo(){
 #endif
 
     this->m_frame_count += 1;
+    std::cout<<"frame count "<<this->m_frame_count<<std::endl;
 
     // stop
     if(image_meta_data.is_end_frame){
