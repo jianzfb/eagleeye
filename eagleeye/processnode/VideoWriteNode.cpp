@@ -438,11 +438,20 @@ void VideoWriteNode::executeNodeInfo(){
         image_ptr = m_c4_image.cpu<unsigned char>();
     }
 
-    if((m_frame_count == 0) && (!image_meta_data.is_start_frame) && (!m_manually_start)){
-        // 对于非首帧(或手动开始)，不可以启动初始化
-        // 首帧和尾帧，必须设置
+    if(m_frame_count == 0 && (image_meta_data.is_end_frame || m_manually_stop)){
+        // 没有开始, 直接遇到结束标记
+        this->getOutputPort(0)->meta().is_end_frame = true;
+        this->getOutputPort(0)->meta().is_start_frame = false;
+        this->getOutputPort(0)->meta().is_pause_frame = false;
         return;
     }
+
+    if((m_frame_count == 0) && (!image_meta_data.is_start_frame) && (!m_manually_start)){
+        // 对于非首帧(或手动开始)，不可以启动初始化, 持续等待
+        return;
+    }
+
+    // 执行至此，说明遇到开始视频录制信号（is_start_frame or m_manually_start）
 
     // 设置文件名
     if(this->m_file_path == "" && image_meta_data.name != ""){
@@ -775,7 +784,6 @@ void VideoWriteNode::executeNodeInfo(){
 #endif
 
     this->m_frame_count += 1;
-    std::cout<<"frame count "<<this->m_frame_count<<std::endl;
 
     // stop
     if(image_meta_data.is_end_frame){
