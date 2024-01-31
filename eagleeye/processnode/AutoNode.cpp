@@ -41,6 +41,11 @@ AutoNode::~AutoNode(){
 
 void AutoNode::executeNodeInfo(){
     // do nothing
+    int signal_num = this->getNumberOfOutputSignals();
+    for(int signal_i=0; signal_i<signal_num; ++signal_i){
+        // 手动强制触发，时间戳更新
+        this->getOutputPort(signal_i)->modified();
+    }
 }
 
 void AutoNode::run(){

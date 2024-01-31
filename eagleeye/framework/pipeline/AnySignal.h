@@ -93,8 +93,11 @@ public:
 	 *	of AnyNode, implicitly.
 	 */
 	virtual void copyInfo(AnySignal* sig){
-		this->m_prepared_ok = this->m_prepared_ok&sig->isPreparedOK();
+		if(sig == NULL){
+			return;
+		}
 
+		this->m_prepared_ok = this->m_prepared_ok&sig->isPreparedOK();
 		// 传递时间戳
 		this->m_meta.timestamp = sig->meta().timestamp;
 	};

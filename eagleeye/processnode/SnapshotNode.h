@@ -50,6 +50,11 @@ public:
 
     void setImageFormat(int image_format);
 
+    /*
+     * @brief 设置序列标记（加入序列命名）
+     */
+    void setSerial(bool is_serial);
+
 private:
     SnapeshotNode(const SnapeshotNode&);
     void operator=(const SnapeshotNode&);
@@ -72,6 +77,9 @@ private:
     std::string m_prefix;
     std::string m_file_path;
     std::ofstream m_output_file;
+
+    bool m_is_serial;
+    int m_snapshot_count;
 };
 }
 

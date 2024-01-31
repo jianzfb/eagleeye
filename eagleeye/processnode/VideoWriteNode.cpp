@@ -94,6 +94,9 @@ VideoWriteNode::VideoWriteNode(){
 
     m_frame_size = 0;
     m_header_size = 0;
+
+    m_is_serial = false;
+    m_video_count = 0;
 }
 
 VideoWriteNode::~VideoWriteNode(){
@@ -462,10 +465,15 @@ void VideoWriteNode::executeNodeInfo(){
             }
         }
 
-        this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) +".mp4";
+        if(this->m_is_serial){
+            this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) + std::string("_") + std::to_string(this->m_video_count) +".mp4";
+        }
+        else{
+            this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) +".mp4";
+        }
     }
 
-    if(this->m_file_path.empty()){
+    if(m_frame_count == 0 && (this->m_file_path == "" || this->m_is_serial)){
         // 检查目录
         if(this->m_folder != "./"){
             if(!isdirexist(this->m_folder.c_str())){
@@ -474,7 +482,12 @@ void VideoWriteNode::executeNodeInfo(){
         }
 
         // 动态生成唯一文件名
-        this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) +".mp4";
+        if(this->m_is_serial){
+            this->m_file_path = this->m_folder+this->m_prefix +  std::to_string(this->m_video_count)+".mp4";
+        }
+        else{
+            this->m_file_path = this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp() + ".mp4";
+        }
     }
 
     // 至此，说明已经开始录制
@@ -498,6 +511,7 @@ void VideoWriteNode::executeNodeInfo(){
 
     if(this->m_is_init && this->m_manually_stop != 0){
         this->writeFinish(this->getOutputPort(0));
+        this->m_video_count += 1;
         EAGLEEYE_LOGD("Success to finish write video.");
         return;
     }
@@ -788,6 +802,7 @@ void VideoWriteNode::executeNodeInfo(){
     // stop
     if(image_meta_data.is_end_frame){
         this->writeFinish(this->getOutputPort(0));
+        this->m_video_count += 1;
         EAGLEEYE_LOGD("Success to finish write video.");
     }
 }
@@ -804,8 +819,8 @@ void VideoWriteNode::setImageFormat(int image_format){
 
 void VideoWriteNode::setFilePath(std::string file_path){
     if(!this->m_is_finish){
-        EAGLEEYE_LOGD("Force unfinish video stop.");
-        this->writeFinish(this->getOutputPort(0));        
+        EAGLEEYE_LOGD("Must pre video writer stop.");
+        return;
     }
 
     this->m_file_path = file_path;
@@ -908,6 +923,10 @@ void VideoWriteNode::setFPS(int fps){
 }
 void VideoWriteNode::getFPS(int& fps){
     fps = this->m_fps;
+}
+
+void VideoWriteNode::setSerial(bool is_serial){
+    this->m_is_serial = is_serial;
 }
 } // namespace  eagleeye
 

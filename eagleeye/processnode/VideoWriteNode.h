@@ -92,6 +92,11 @@ public:
     void setFPS(int fps);
     void getFPS(int& fps);
 
+    /*
+     * @brief 设置序列标记（加入序列命名）
+     */
+    void setSerial(bool is_serial);
+
 private:
     VideoWriteNode(const VideoWriteNode&);
     void operator=(const VideoWriteNode&);
@@ -137,6 +142,9 @@ private:
 
     void* m_mpp_ctx;
     void* m_mpp_api;
+
+    bool m_is_serial;
+    int m_video_count;
 };
 }
 #endif

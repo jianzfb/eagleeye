@@ -180,7 +180,7 @@ void AnySignal::exit(){
 void AnySignal::init(){
 	if(m_link_node && m_link_node->getInitTime() < m_link_node->getPipelineInitTime()){
 		this->m_link_node->init();
-	}	
+	}
 }
 
 void AnySignal::setSignalType(SignalType type){

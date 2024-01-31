@@ -12,17 +12,6 @@ YUVSignal::YUVSignal(){
 YUVSignal::~YUVSignal(){
 }
 
-void YUVSignal::copyInfo(AnySignal* sig){
-    Superclass::copyInfo(sig);
-    if(sig == NULL){
-        return;
-    }
-
-    if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
-        this->m_meta = sig->meta();
-    }
-}
-
 void YUVSignal::copy(AnySignal* sig){
     if(sig == NULL){
         return;

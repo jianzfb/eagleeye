@@ -28,19 +28,6 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 }
 
 template<class T>
-void ImageSignal<T>::copyInfo(AnySignal* sig){
-	if(sig == NULL){
-        return;
-    }
-
-	//call the base class
-	BaseImageSignal::copyInfo(sig);
-	if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
-		this->m_meta = sig->meta();
-	}
-}
-
-template<class T>
 void ImageSignal<T>::copy(AnySignal* sig){
 	if((SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) || 
 			(this->getValueType() != sig->getValueType())){

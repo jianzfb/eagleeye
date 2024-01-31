@@ -41,6 +41,9 @@ SnapeshotNode::SnapeshotNode(){
 
     m_frame_size = 0;
     m_header_size = 0;
+
+    m_is_serial = false;
+    m_snapshot_count = 0;
 }
 
 SnapeshotNode::~SnapeshotNode(){
@@ -136,9 +139,13 @@ void SnapeshotNode::executeNodeInfo(){
             }
         }
 
-        this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) +".jpg";
+        if(this->m_is_serial){
+            this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) + std::string("_") + std::to_string(this->m_snapshot_count) +".jpg";
+        }
+        else{
+            this->m_file_path = this->m_folder+this->m_prefix + std::string(image_meta_data.name) +".jpg";
+        }
     }
-
 
     if(this->m_file_path.empty()){
         // 检查目录
@@ -149,7 +156,12 @@ void SnapeshotNode::executeNodeInfo(){
         }
 
         // 动态生成唯一文件名
-        this->m_file_path = this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp()+".jpg";
+        if(this->m_is_serial){
+            this->m_file_path = this->m_folder+this->m_prefix +  std::to_string(this->m_snapshot_count)+".jpg";
+        }
+        else{
+            this->m_file_path = this->m_folder+this->m_prefix + EagleeyeTime::getTimeStamp()+".jpg";
+        }
     }
 
     // open file
@@ -329,8 +341,10 @@ void SnapeshotNode::executeNodeInfo(){
         }
     } while (!eoi);
 
-    m_output_file.close();
 #endif
+
+    m_output_file.close();
+    this->m_snapshot_count += 1;
 }
 
 void SnapeshotNode::setImageFormat(int image_format){
@@ -367,5 +381,9 @@ void SnapeshotNode::setFolder(std::string folder){
 }
 void SnapeshotNode::getFolder(std::string& folder){
     folder = this->m_folder;
+}
+
+void SnapeshotNode::setSerial(bool is_serial){
+    this->m_is_serial = is_serial;
 }
 }
