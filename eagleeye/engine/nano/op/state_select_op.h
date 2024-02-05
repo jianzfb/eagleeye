@@ -54,6 +54,8 @@ public:
             else{
                 output_ptr[0] = 0;
             }
+
+            EAGLEEYE_LOGD("FOOTBALL-TIME %s, %s", std::to_string(a_ptr[0]).c_str(), std::to_string(b_ptr[0]).c_str());
         }
         else if(a.type() == EAGLEEYE_FLOAT){
             float* a_ptr = a.cpu<float>();

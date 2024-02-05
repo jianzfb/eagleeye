@@ -97,6 +97,11 @@ public:
      */
     void setSerial(bool is_serial);
 
+    /**
+     * @brief get serial number
+     */
+    int getSerialNum();
+
 private:
     VideoWriteNode(const VideoWriteNode&);
     void operator=(const VideoWriteNode&);

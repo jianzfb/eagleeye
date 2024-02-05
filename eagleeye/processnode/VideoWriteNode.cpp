@@ -928,6 +928,10 @@ void VideoWriteNode::getFPS(int& fps){
 void VideoWriteNode::setSerial(bool is_serial){
     this->m_is_serial = is_serial;
 }
+
+int VideoWriteNode::getSerialNum(){
+    return m_video_count;
+}
 } // namespace  eagleeye
 
 #endif

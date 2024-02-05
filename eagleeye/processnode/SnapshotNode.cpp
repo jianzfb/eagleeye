@@ -386,4 +386,8 @@ void SnapeshotNode::getFolder(std::string& folder){
 void SnapeshotNode::setSerial(bool is_serial){
     this->m_is_serial = is_serial;
 }
+
+int SnapeshotNode::getSerialNum(){
+    return m_snapshot_count;
+}
 }

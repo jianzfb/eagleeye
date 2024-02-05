@@ -55,6 +55,11 @@ public:
      */
     void setSerial(bool is_serial);
 
+    /**
+     * @brief get serial number
+     */
+    int getSerialNum();
+
 private:
     SnapeshotNode(const SnapeshotNode&);
     void operator=(const SnapeshotNode&);
