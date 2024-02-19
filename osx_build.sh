@@ -5,9 +5,11 @@ fi
 # 0.step 当前目录
 CRTDIR=$(pwd)
 
-# 1.step 编译
+# 1.step 更新依赖
 git submodule init
 git submodule update
+
+# 2.step 编译
 mkdir build
 cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
@@ -18,7 +20,7 @@ fi
 make
 cd ..
 
-# 2.step 安装
+# 3.step 安装
 if [ -d "./install" ]; 
 then
   rm -rf install
@@ -43,7 +45,7 @@ mv include install/
 mv bin/* install/libs/
 rm -rf bin
 
-# 3.step 第三方库
+# 4.step 第三方库
 cd install
 # 第三方代码库
 mkdir 3rd
@@ -53,5 +55,5 @@ cp -r ../eagleeye/3rd/eigen 3rd/
 cp -r  ../eagleeye/3rd/libyuv/lib/osx/X86-64/* libs/X86-64/
 cd ..
 
-# 4.step 脚本工具
+# 5.step 脚本工具
 cp -r scripts install/
