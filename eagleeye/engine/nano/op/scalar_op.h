@@ -104,7 +104,7 @@ public:
         if(this->m_outputs[0].empty()){
             this->m_outputs[0] = Tensor(
                 std::vector<int64_t>{1},
-                EAGLEEYE_INT32,
+                EAGLEEYE_FLOAT,
                 DataFormat::AUTO,
                 CPU_BUFFER
             );
@@ -168,7 +168,7 @@ public:
         if(this->m_outputs[0].empty()){
             this->m_outputs[0] = Tensor(
                 std::vector<int64_t>{1},
-                EAGLEEYE_INT32,
+                EAGLEEYE_DOUBLE,
                 DataFormat::AUTO,
                 CPU_BUFFER
             );

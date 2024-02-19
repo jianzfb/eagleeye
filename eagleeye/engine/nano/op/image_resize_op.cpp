@@ -182,7 +182,7 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
 #if defined(__ANDROID__) || defined(ANDROID)      
     if(channels == 3){
         // 三通道图
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_rgb_8u_3d_interp(
                 x_ptr+i*in_width*in_height*3,
@@ -198,7 +198,7 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     }
     else{
         // 灰度图
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_gray_8u_1d_interp(
                 x_ptr+i*in_width*in_height,
@@ -210,12 +210,12 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
                 out_width,
                 out_height
             );
-        } 
+        }
     }
 #else
     if(channels == 3){
         // 三通道图
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::x86::bilinear_rgb_8u_3d_interp(
                 x_ptr+i*in_width*in_height*3,
@@ -231,7 +231,7 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     }
     else{
         // 灰度图
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::x86::bilinear_gray_8u_1d_interp(
                 x_ptr+i*in_width*in_height,

@@ -19,14 +19,8 @@ public:
     typedef AnySignal       	Superclass;
 	typedef Blob				DataType;
 
-
     YUVSignal();
     virtual ~YUVSignal();
-
-    /**
-	 *	@brief copy info
-	 */
-	virtual void copyInfo(AnySignal* sig);
 
 	/**
 	 * @brief copy content

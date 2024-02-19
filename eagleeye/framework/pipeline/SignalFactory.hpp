@@ -28,19 +28,6 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 }
 
 template<class T>
-void ImageSignal<T>::copyInfo(AnySignal* sig){
-	if(sig == NULL){
-        return;
-    }
-
-	//call the base class
-	BaseImageSignal::copyInfo(sig);
-	if(SIGNAL_CATEGORY_IMAGE == (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)){
-		this->m_meta = sig->meta();
-	}
-}
-
-template<class T>
 void ImageSignal<T>::copy(AnySignal* sig){
 	if((SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) || 
 			(this->getValueType() != sig->getValueType())){
@@ -51,6 +38,7 @@ void ImageSignal<T>::copy(AnySignal* sig){
 	MetaData from_data_meta;
 	Matrix<T> from_data = from_sig->getData(from_data_meta);
 	this->setData(from_data, from_data_meta);
+
 }
 
 template<class T>
@@ -90,7 +78,9 @@ void ImageSignal<T>::makeempty(bool auto_empty)
 	}
 
 	//force time update
-	modified();
+	if(!m_disable_data_timestamp){
+		modified();
+	}
 }
 
 template<class T>
@@ -145,7 +135,9 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 		this->img = data;
 		this->m_meta.rows = this->img.rows();
 		this->m_meta.cols = this->img.cols();
-		modified();
+		if(!m_disable_data_timestamp){
+			modified();
+		}
 	}
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
@@ -162,7 +154,9 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 		this->m_meta_queue.push(mm);
 		locker.unlock();
 
-		modified();
+		if(!m_disable_data_timestamp){
+			modified();
+		}
 		// notify
 		this->m_cond.notify_all();
 	}
@@ -192,7 +186,7 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm){
         }
 
 		Matrix<T> data = this->m_queue.front();
-		mm = this->m_meta_queue.front();
+		mm = this->m_meta_queue.front();		
 		if(this->m_get_then_auto_remove){
 			this->m_queue.pop();
 			this->m_meta_queue.pop();
@@ -217,7 +211,9 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 		this->m_meta.needed_rows = needed_rows;
 		this->m_meta.needed_cols = needed_cols;
 		this->m_meta.allocate_mode = allocate_mode;
-		modified();
+		if(!m_disable_data_timestamp){
+			modified();
+		}
 	}
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
@@ -230,7 +226,9 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 		this->m_meta_queue.push(mm);
 		locker.unlock();
 
-		modified();
+		if(!m_disable_data_timestamp){
+			modified();
+		}
 		// notify
 		this->m_cond.notify_all();
 	}

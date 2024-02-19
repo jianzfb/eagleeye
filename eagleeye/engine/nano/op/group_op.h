@@ -57,7 +57,7 @@ public:
         for(int op_i=0; op_i<m_ops.size(); ++op_i){
             std::string input_info = m_relations[op_i][0];
             std::string output_info = m_relations[op_i][1];
-
+    
             std::string separator = ",";
             std::vector<std::string> input_terms = split(input_info, separator);
             std::vector<std::string> output_terms = split(output_info, separator);
@@ -65,6 +65,7 @@ public:
             std::vector<Tensor> op_input;
             for(int op_input_i=0; op_input_i<input_terms.size(); ++op_input_i){
                 std::string op_input_i_name = input_terms[op_input_i];
+
                 if(inner_data_dict.find(op_input_i_name) == inner_data_dict.end()){
                     op_input.push_back(input[tof<int>(op_input_i_name)]);
                 }
@@ -74,7 +75,6 @@ public:
             }
 
             this->m_ops[op_i]->runOnCpu(op_input);
-
             for(int op_output_i=0; op_output_i<output_terms.size(); ++op_output_i){
                 inner_data_dict[output_terms[op_output_i]] = this->m_ops[op_i]->getOutput(op_output_i);
             }

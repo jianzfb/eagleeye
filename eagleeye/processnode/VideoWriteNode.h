@@ -76,6 +76,8 @@ public:
     void setStop(int stop);
     void getStop(int& stop);
 
+    void setImageFormat(int image_format);
+
     /**
      * @brief Set/Get the Force Start object
      * 
@@ -84,8 +86,21 @@ public:
     void setStart(int start);
     void getStart(int& start);
 
+    void setPause(int pause);
+    void getPause(int& pause);
+
     void setFPS(int fps);
     void getFPS(int& fps);
+
+    /*
+     * @brief 设置序列标记（加入序列命名）
+     */
+    void setSerial(bool is_serial);
+
+    /**
+     * @brief get serial number
+     */
+    int getSerialNum();
 
 private:
     VideoWriteNode(const VideoWriteNode&);
@@ -95,17 +110,20 @@ private:
      * @brief finish writing process
      * 
      */
-    void writeFinish();
+    void writeFinish(AnySignal* out_sig=NULL);
 
     bool m_is_init;
     bool m_is_finish;
     int m_fps;
+
+    bool m_is_header_init;
 
     std::string m_prefix;
     std::string m_folder;
 
     int m_manually_stop;
     int m_manually_start;
+    int m_manually_pause;
 
     std::ofstream m_output_file;
     AVCodecContext* m_codec_cxt;
@@ -115,6 +133,23 @@ private:
     int m_frame_count;
 
     Matrix<unsigned char> m_temp;
+
+    Matrix<Array<unsigned char, 3>> m_c3_image;
+    Matrix<Array<unsigned char, 4>> m_c4_image;
+    int m_frame_size;
+    int m_header_size;
+    int m_image_format;
+
+    void* m_pkt_buf;
+    void* m_frame_buf;
+    void* m_md_info;
+    void* m_buf_grp;
+
+    void* m_mpp_ctx;
+    void* m_mpp_api;
+
+    bool m_is_serial;
+    int m_video_count;
 };
 }
 #endif

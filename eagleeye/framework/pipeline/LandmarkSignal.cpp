@@ -26,8 +26,6 @@ void LandmarkSignal::copyInfo(AnySignal* sig){
 
     Superclass::copyInfo(sig);
     if(SIGNAL_CATEGORY_DEFAULT == (sig->getSignalCategory() & SIGNAL_CATEGORY_DEFAULT)){
-		this->m_meta = sig->meta();
-
         if(this->getSignalType() == sig->getSignalType()){
             LandmarkSignal* from_sig = (LandmarkSignal*)(sig);	
             this->setJoints(from_sig->getJoints());

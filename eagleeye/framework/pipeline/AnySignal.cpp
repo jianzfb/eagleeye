@@ -65,6 +65,7 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 
 	m_signal_type_value = EAGLEEYE_UNDEFINED_SIGNAL;
 	m_signal_target_value = EAGLEEYE_UNDEFINED_TARGET;
+	this->m_disable_data_timestamp = false;
 }
 AnySignal::~AnySignal()
 {
@@ -137,8 +138,10 @@ bool AnySignal::isHasBeenUpdate(){
 }
 
 void AnySignal::signalHasBeenUpdate()
-{
-	modified();
+{	
+	if(!this->m_disable_data_timestamp){
+		modified();
+	}
 	this->m_data_update = true;
 }
 
@@ -177,7 +180,7 @@ void AnySignal::exit(){
 void AnySignal::init(){
 	if(m_link_node && m_link_node->getInitTime() < m_link_node->getPipelineInitTime()){
 		this->m_link_node->init();
-	}	
+	}
 }
 
 void AnySignal::setSignalType(SignalType type){

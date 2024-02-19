@@ -44,7 +44,7 @@ extern "C"
 namespace eagleeye{
 RTSPReadNode::RTSPReadNode(){
     // 输出信号
-    this->setNumberOfOutputSignals(1);
+    this->setNumberOfOutputSignals(2);  // image signal, timestamp signal
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "rtsp","","");
 
     m_overtime = "20000";
@@ -64,8 +64,15 @@ RTSPReadNode::RTSPReadNode(){
     }
 
     // 0: RGB, 1: BGR, 2: RGBA, 3: BGRA
-    // 设置默认图像格式
+    // 设置默认图像格式(同步设置0端口数据)
     this->setImageFormat(1);
+
+    // 设置时间戳端口
+    ImageSignal<double>* timestamp_sig = new ImageSignal<double>();
+     Matrix<double> timestamp(1,1);
+    timestamp_sig->setData(timestamp);
+    this->setOutputPort(timestamp_sig,1);
+    this->getOutputPort(1)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
 
     // 0,90,180,270
     // 设置默认图像旋转
@@ -409,6 +416,9 @@ void RTSPReadNode::executeNodeInfo(){
             output_meta
         );
     }
+
+    ImageSignal<double>* output_timestamp_signal = (ImageSignal<double>*)(this->getOutputPort(1));
+    output_timestamp_signal->getData().at(0,0) = ntp_time;
 }
 
 void RTSPReadNode::postprocess_by_rga(){

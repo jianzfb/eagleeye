@@ -9,7 +9,7 @@ Tensor::Tensor(
     Aligned aligned,
     std::vector<int64_t> image_shape)
         :Blob(shape, data_type, memory_type, image_shape, aligned){
-    assert(data_type == EAGLEEYE_FLOAT || data_type == EAGLEEYE_CHAR || data_type == EAGLEEYE_BOOL ||data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_INT);
+    assert(data_type == EAGLEEYE_DOUBLE || data_type == EAGLEEYE_FLOAT || data_type == EAGLEEYE_CHAR || data_type == EAGLEEYE_BOOL ||data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_INT);
     
     this->m_format = data_format;
 }  
@@ -20,7 +20,7 @@ Tensor::Tensor(
     DataFormat data_format, 
     void* data, bool copy, bool manage)
         :Blob(shape, data_type, CPU_BUFFER, std::vector<int64_t>(), Aligned(64), data, copy, manage){
-    assert(data_type == EAGLEEYE_FLOAT || data_type == EAGLEEYE_CHAR || data_type == EAGLEEYE_BOOL || data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_INT);
+    assert(data_type == EAGLEEYE_DOUBLE || data_type == EAGLEEYE_FLOAT || data_type == EAGLEEYE_CHAR || data_type == EAGLEEYE_BOOL || data_type == EAGLEEYE_UCHAR || data_type == EAGLEEYE_INT);
     
     this->m_format = data_format;
 }

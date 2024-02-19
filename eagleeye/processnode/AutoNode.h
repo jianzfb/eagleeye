@@ -84,6 +84,14 @@ public:
      */
     void setPersistent(bool flag){this->m_persistent_flag=flag;};
 
+    /**
+     * @brief 检查是否停止运行
+     */
+    virtual bool stop(bool block=false, bool force=false);
+
+    void setFolder(const std::string folder);
+    void getFolder(std::string& folder);
+
 protected:
     /**
      * @brief run in independent thread

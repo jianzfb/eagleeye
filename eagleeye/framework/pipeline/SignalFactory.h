@@ -81,11 +81,6 @@ public:
 	virtual ~ImageSignal(){};
 
 	/**
-	 *	@brief copy info
-	 */
-	virtual void copyInfo(AnySignal* sig);
-
-	/**
 	 * @brief copy content
 	 * 
 	 * @param sig 

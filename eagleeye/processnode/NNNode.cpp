@@ -19,18 +19,31 @@ NNNode::NNNode(int thread_num, CPUAffinityPolicy performance){
 
 NNNode::~NNNode(){
     delete m_g;
+
+    for(int cache_input_i=0; cache_input_i<m_cache_input.size(); ++cache_input_i){
+        delete m_cache_input[cache_input_i];
+    }
 } 
 
 void NNNode::executeNodeInfo(){
     // 1.step 输入绑定
     int signal_num = this->getNumberOfInputSignals();
+    if(m_cache_input.size() == 0){
+        for(int signal_i=0; signal_i<signal_num; ++signal_i){
+            m_cache_input.push_back(
+                this->getInputPort(signal_i)->make()
+            );
+        }
+    }
+
     std::map<std::string, std::pair<void*, std::vector<int64_t>>> graph_input_map;
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
         void* data = NULL;
         size_t* data_size;
         int data_dims = 0;
         int data_type = -1;
-        this->getInputPort(sig_i)->getSignalContent(data, data_size, data_dims, data_type);
+        m_cache_input[sig_i]->copy(this->getInputPort(sig_i));
+        m_cache_input[sig_i]->getSignalContent(data, data_size, data_dims, data_type);
 
         std::string sig_i_name = this->m_input_map[sig_i];
 
@@ -64,9 +77,9 @@ void NNNode::executeNodeInfo(){
             Matrix<Array<unsigned char, 3>> image = image_sig->getData();
             if(image.rows() != std::get<1>(p)[0]|| image.cols() != std::get<1>(p)[1]){
                 image = Matrix<Array<unsigned char, 3>>(std::get<1>(p)[0], std::get<1>(p)[1]);
-                memcpy(image.dataptr(), std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]*3);
             }
 
+            memcpy(image.dataptr(), std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]*3);
             image_sig->setData(image);
         }
         else if(tt == EAGLEEYE_SIGNAL_RGBA_IMAGE || tt == EAGLEEYE_SIGNAL_BGRA_IMAGE){
@@ -76,9 +89,9 @@ void NNNode::executeNodeInfo(){
             
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
                 image = Matrix<Array<unsigned char, 4>>(std::get<1>(p)[0], std::get<1>(p)[1]);
-                memcpy(image.dataptr(), std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]*4);
             }
 
+            memcpy(image.dataptr(), std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]*4);
             image_sig->setData(image);
         }
         else if(tt == EAGLEEYE_SIGNAL_GRAY_IMAGE || tt == EAGLEEYE_SIGNAL_MASK){
@@ -88,9 +101,9 @@ void NNNode::executeNodeInfo(){
             
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
                 image = Matrix<unsigned char>(std::get<1>(p)[0], std::get<1>(p)[1]);
-                memcpy(image.dataptr(),std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
+            memcpy(image.dataptr(),std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             image_sig->setData(image);
         }
         else if(tt == EAGLEEYE_SIGNAL_SWITCH){
@@ -105,9 +118,9 @@ void NNNode::executeNodeInfo(){
             Matrix<int> image = image_sig->getData();
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
                 image = Matrix<int>(std::get<1>(p)[0], std::get<1>(p)[1]);
-                memcpy(image.dataptr(),std::get<0>(p), sizeof(int)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
+            memcpy(image.dataptr(),std::get<0>(p), sizeof(int)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             image_sig->setData(image);
         }
         else if(tt == EAGLEEYE_SIGNAL_DET || tt == EAGLEEYE_SIGNAL_DET_EXT || tt == EAGLEEYE_SIGNAL_POS_2D || tt == EAGLEEYE_SIGNAL_POS_3D){
@@ -115,9 +128,9 @@ void NNNode::executeNodeInfo(){
             Matrix<float> image = image_sig->getData();
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
                 image = Matrix<float>(std::get<1>(p)[0], std::get<1>(p)[1]);
-                memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
+            memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             image_sig->setData(image);
         }
         else if(tt == EAGLEEYE_SIGNAL_RECT || tt == EAGLEEYE_SIGNAL_LINE || tt == EAGLEEYE_SIGNAL_POINT){
@@ -125,9 +138,21 @@ void NNNode::executeNodeInfo(){
             Matrix<float> image = image_sig->getData();
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
                 image = Matrix<float>(std::get<1>(p)[0], std::get<1>(p)[1]);
-                memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             } 
 
+            memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
+            image_sig->setData(image);
+        }
+        else if(tt == EAGLEEYE_SIGNAL_TIMESTAMP){
+            ImageSignal<double>* image_sig = (ImageSignal<double>*)(this->getOutputPort(sig_i));
+            Matrix<double> image = image_sig->getData();
+            if(image.rows() != 1 || image.cols() != 1){
+                image = Matrix<double>(1, 1);
+            }
+
+            if(std::get<1>(p)[0]*std::get<1>(p)[1] > 0){
+                memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
+            }
             image_sig->setData(image);
         }
         else{
@@ -386,6 +411,10 @@ void NNNode::makeOutputSignal(int port,  std::string type_str){
     else if(type_str == "EAGLEEYE_SIGNAL_TENSOR"){
         this->setOutputPort(new TensorSignal(), port);
         this->getOutputPort(port)->setSignalType(EAGLEEYE_SIGNAL_TENSOR);
+    }
+    else if(type_str == "EAGLEEYE_SIGNAL_TIMESTAMP"){
+        this->setOutputPort(new ImageSignal<double>(), port);
+        this->getOutputPort(port)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
     }
     else{
         EAGLEEYE_LOGE("Dont support signal type %s.", type_str.c_str());

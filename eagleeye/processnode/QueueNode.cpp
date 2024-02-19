@@ -1,4 +1,5 @@
 #include "eagleeye/processnode/QueueNode.h"
+#include "eagleeye/framework/pipeline/SignalFactory.h"
 namespace  eagleeye
 {
 QueueNode::QueueNode(int queue_size){
@@ -42,6 +43,13 @@ void QueueNode::setInputPort(AnySignal* sig,int index){
         this->setNumberOfOutputSignals(index+1);
     }
     Superclass::setOutputPort(sig_cp, index);
+}
 
+void QueueNode::postexit(){
+    // 加入一个无效数据，触发后续节点，以防止后续节点退出阻塞
+    int signal_num = this->getNumberOfInputSignals();
+    for(int signal_i=0; signal_i<signal_num; ++signal_i){
+        this->getOutputPort(signal_i)->copy(this->getInputPort(signal_i));
+    }    
 }
 } // namespace  eagleeye

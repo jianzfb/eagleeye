@@ -21,6 +21,8 @@ public:
 		frame = 0;
 		is_end_frame = false;
 		is_start_frame = false;
+		is_pause_frame = false;
+		is_snapshot_frame = false;
 		rotation = 0;
 		rows = 0;
 		cols = 0;
@@ -38,6 +40,8 @@ public:
 	int frame;				// frame index for video
 	bool is_end_frame;		// end frame flag for video
 	bool is_start_frame; 	// start frame flag for video
+	bool is_pause_frame;	// pause frame flag for video
+	bool is_snapshot_frame;	// snapshot
 	int rotation;			// rotation  (0,90,180,270)
 	int rows;				// current rows 
 	int cols;				// current cols
@@ -89,8 +93,11 @@ public:
 	 *	of AnyNode, implicitly.
 	 */
 	virtual void copyInfo(AnySignal* sig){
-		this->m_prepared_ok = this->m_prepared_ok&sig->isPreparedOK();
+		if(sig == NULL){
+			return;
+		}
 
+		this->m_prepared_ok = this->m_prepared_ok&sig->isPreparedOK();
 		// 传递时间戳
 		this->m_meta.timestamp = sig->meta().timestamp;
 	};
@@ -343,6 +350,16 @@ public:
 	 */
 	void* getNeededMem();
 
+	/*
+	 * @brief Get link node
+	 */
+	AnyNode* getLinkNode(){return this->m_link_node;}
+
+	/**
+	 * @brief 禁用数据时间戳
+	 */
+	void disableDataTimestamp(){m_disable_data_timestamp = true;}
+
 protected:
 	std::string m_signal_type;
 	std::string m_signal_target;
@@ -355,6 +372,7 @@ protected:
 	AnyNode* m_link_node;
 	MetaData m_meta;
 	std::shared_ptr<unsigned char> m_mem;
+	bool m_disable_data_timestamp;
 
 private:
 	AnySignal(const AnySignal&);
