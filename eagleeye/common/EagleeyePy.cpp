@@ -396,6 +396,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
     if(op_pools.find(c_exe_name+"/"+c_op_name) == op_pools.end()){
         Base* op = CreateOp<>(c_cls_name);
         if(op == NULL){
+            EAGLEEYE_LOGE("No %s op support", c_cls_name.c_str());
             return output_tensors;
         }
 
@@ -452,8 +453,10 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
     std::vector<Tensor> inputs;
     for( py::handle t: input_tensors){
         auto array = pybind11::array::ensure(t);
-		if (!array)
+		if (!array){
+            EAGLEEYE_LOGE("Input tensor type abnormal");
 			return output_tensors;
+        }
 
 		if (array.dtype() == pybind11::dtype::of<int32_t>()){
             py::buffer_info buf = array.request();

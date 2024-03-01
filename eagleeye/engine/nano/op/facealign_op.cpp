@@ -24,6 +24,8 @@ FaceAlignOp::FaceAlignOp(){
 
     m_src_ptr = NULL;
     m_tgt_ptr = NULL;
+
+    this->m_margin = 10;
 }
 FaceAlignOp::FaceAlignOp(int target_h, int target_w, int margin){
     this->m_target_h = target_h;
