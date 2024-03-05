@@ -12,6 +12,10 @@
 #include <iostream>
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
+class AVCodec;
+class AVCodecContext;
+class AVFrame;
+class AVPacket;
 namespace eagleeye{
 class SnapeshotNode:public AnyNode, DynamicNodeCreator<SnapeshotNode>{
 public:
@@ -64,6 +68,7 @@ private:
     SnapeshotNode(const SnapeshotNode&);
     void operator=(const SnapeshotNode&);
     Matrix<Array<unsigned char, 4>> m_c4_image;
+    Matrix<Array<unsigned char, 3>> m_c3_image;
 
     int m_frame_size;
     int m_header_size;
@@ -85,6 +90,12 @@ private:
 
     bool m_is_serial;
     int m_snapshot_count;
+
+    // FFMPEG
+    AVCodecContext* m_codec_cxt;
+    const AVCodec* m_encoder;
+    AVFrame *m_frame;
+    AVPacket *m_pkt;    
 };
 }
 

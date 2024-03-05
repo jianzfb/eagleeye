@@ -469,29 +469,46 @@ if(OpenMP_CXX_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+if(CUDA)
+add_definitions(-DEAGLEEYE_CUDA)
+message(STATUS "Define CUDA")
+include_directories("/usr/local/cuda-12.1/targets/x86_64-linux/include")
+find_library(CUDART cudart PATHS /usr/local/cuda-12.1/lib64/)
+target_link_libraries(eagleeye ${CUDART})
+find_library(EXEC_NPPICC nppicc PATHS /usr/local/cuda-12.1/lib64/)
+target_link_libraries(eagleeye ${EXEC_NPPICC})
+endif()
 
 if(DEFINED FFMPEG)
     message(STATUS "Define FFMPEG")
     add_definitions(-DEAGLEEYE_FFMPEG)
     include_directories(${FFMPEG})
 
-    if(BUILD_PYTHON_MODULE)
-        target_link_libraries(eagleeye PRIVATE
-                                ${FFMPEG}/install/lib/libavcodec.so
-                                ${FFMPEG}/install/lib/libavfilter.so
-                                ${FFMPEG}/install/lib/libavformat.so
-                                ${FFMPEG}/install/lib/libavutil.so
-                                ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)    
-    else()
-        target_link_libraries(eagleeye 
-                                ${FFMPEG}/install/lib/libavcodec.so
-                                ${FFMPEG}/install/lib/libavfilter.so
-                                ${FFMPEG}/install/lib/libavformat.so
-                                ${FFMPEG}/install/lib/libavutil.so
-                                ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)
-    endif()
+    # if(BUILD_PYTHON_MODULE)
+    #     target_link_libraries(eagleeye PRIVATE
+    #                             ${FFMPEG}/install/lib/libavcodec.so
+    #                             ${FFMPEG}/install/lib/libavfilter.so
+    #                             ${FFMPEG}/install/lib/libavformat.so
+    #                             ${FFMPEG}/install/lib/libavutil.so
+    #                             ${FFMPEG}/install/lib/libswresample.so
+    #                             ${FFMPEG}/install/lib/libswscale.so)    
+    # else()
+    #     target_link_libraries(eagleeye 
+    #                             ${FFMPEG}/install/lib/libavcodec.so
+    #                             ${FFMPEG}/install/lib/libavfilter.so
+    #                             ${FFMPEG}/install/lib/libavformat.so
+    #                             ${FFMPEG}/install/lib/libavutil.so
+    #                             ${FFMPEG}/install/lib/libswresample.so
+    #                             ${FFMPEG}/install/lib/libswscale.so)
+    # endif()
+
+    target_link_libraries(eagleeye 
+                            libavcodec.so 
+                            libavfilter.so 
+                            libavformat.so 
+                            libavutil.so 
+                            libswresample.so 
+                            libswscale.so)
 endif()
 
 

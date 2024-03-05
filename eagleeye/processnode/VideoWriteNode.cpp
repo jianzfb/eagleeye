@@ -520,21 +520,41 @@ void VideoWriteNode::executeNodeInfo(){
         EAGLEEYE_LOGD("Start to write video.");
 #ifndef EAGLEEYE_RKCHIP
         //设置编码器
+#ifdef EAGLEEYE_CUDA
+        m_encoder = avcodec_find_encoder_by_name("h264_nvenc");
+#else
         m_encoder = avcodec_find_encoder_by_name("libx264");
+#endif
         //初始化并设置编码器上下文
         m_codec_cxt = avcodec_alloc_context3(m_encoder);
-        m_codec_cxt->bit_rate = 400000;
+        m_codec_cxt->bit_rate = 3000000;
         m_codec_cxt->width = image_w;
         m_codec_cxt->height = image_h;
         m_codec_cxt->time_base = (AVRational){1, 25};
         m_codec_cxt->framerate = (AVRational){25, 1};
-        m_codec_cxt->pix_fmt = AV_PIX_FMT_YUV420P;
-        m_codec_cxt->gop_size = 2;
-        m_codec_cxt->max_b_frames = 20;
+        if(m_image_format == 0){
+            m_codec_cxt->pix_fmt = AV_PIX_FMT_RGB0;
+        }
+        else if(m_image_format == 1){
+            m_codec_cxt->pix_fmt = AV_PIX_FMT_BGR0;
+        }
+        else if(m_image_format == 2){
+            m_codec_cxt->pix_fmt = AV_PIX_FMT_RGBA;
+        }
+        else{
+            m_codec_cxt->pix_fmt = AV_PIX_FMT_BGRA;
+        }
+        m_codec_cxt->gop_size = 20;
+        m_codec_cxt->max_b_frames = 0;
         m_codec_cxt->thread_count = 4;
 
-        // av_opt_set(m_codec_cxt->priv_data, "preset", "veryfast", 0);
-        // av_opt_set(m_codec_cxt->priv_data, "tune", "zerolatency", 0);
+		/* 设置h264中相关的参数 */
+		m_codec_cxt->qmin = 1;	        //2
+		m_codec_cxt->qmax = 31;	        //31
+		m_codec_cxt->max_qdiff = 4;
+		m_codec_cxt->me_range = 4;     //0	
+		m_codec_cxt->max_qdiff = 3;	    //3	
+		m_codec_cxt->qcompress = 0.5;	//0.5
 
         //编码器初始化
         int ret = avcodec_open2(m_codec_cxt, m_encoder, NULL);
@@ -658,28 +678,20 @@ void VideoWriteNode::executeNodeInfo(){
     }
 
 #ifndef EAGLEEYE_RKCHIP
-    // 颜色空间转换到YUV420P
-    if(image_meta_data.color_format == -1 || image_meta_data.color_format == 0){
-        // RGB
-        libyuv::RAWToI420((uint8_t*)image.dataptr(), 
-            image.cols()*3, 
-            m_frame->data[0],m_frame->linesize[0],
-            m_frame->data[1],m_frame->linesize[1],
-            m_frame->data[2],m_frame->linesize[2],
-            m_frame->width,
-            m_frame->height);
-    }
-    else{
-        // BGR
-        libyuv::RGB24ToI420((uint8_t*)image.dataptr(), 
-            image.cols()*3, 
-            m_frame->data[0],m_frame->linesize[0],
-            m_frame->data[1],m_frame->linesize[1],
-            m_frame->data[2],m_frame->linesize[2],
-            m_frame->width,
-            m_frame->height);
-    }
+    if(m_image_format == 0 || m_image_format == 1){
+        if(m_c4_image.empty()){
+            m_c4_image = Matrix<Array<unsigned char, 4>>(image_h, image_w);
+        }
+        unsigned char* c4_image_ptr = m_c4_image.cpu<unsigned char>();
+        for(int i=0; i<image_h * image_w; ++i){
+            c4_image_ptr[i*4] = image_ptr[i*3];
+            c4_image_ptr[i*4+1] = image_ptr[i*3+1];
+            c4_image_ptr[i*4+2] = image_ptr[i*3+2];
+        }
+        image_ptr = c4_image_ptr;
+    }    
 
+    av_image_fill_arrays(m_frame->data, m_frame->linesize, image_ptr, m_codec_cxt->pix_fmt, image_w, image_h, 1);
     int ret = av_frame_make_writable(m_frame);
     if(ret < 0){
         EAGLEEYE_LOGE("Could not av_frame_make_writable");
@@ -797,9 +809,10 @@ void VideoWriteNode::executeNodeInfo(){
     } while (!eoi);
 #endif
 
+    // 帧数+1
     this->m_frame_count += 1;
 
-    // stop
+    // 停止
     if(image_meta_data.is_end_frame){
         this->writeFinish(this->getOutputPort(0));
         this->m_video_count += 1;
@@ -860,6 +873,7 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
     if (m_encoder->id == AV_CODEC_ID_MPEG1VIDEO || m_encoder->id == AV_CODEC_ID_MPEG2VIDEO)
         m_output_file.write((char*)endcode, sizeof(endcode));
 
+    avcodec_close(m_codec_cxt);
 	avcodec_free_context(&m_codec_cxt);    
     av_frame_free(&m_frame);
     av_packet_free(&m_pkt);

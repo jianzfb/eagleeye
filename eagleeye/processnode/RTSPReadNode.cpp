@@ -12,8 +12,8 @@ extern "C"
 {
 #include "libavformat/rtsp.h"
 #include "libavformat/rtpdec.h"
-#include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
+#include "libavcodec/avcodec.h"
 #include "libavutil/avutil.h"
 #include "libswresample/swresample.h"
 #include "libswscale/swscale.h"
@@ -22,9 +22,11 @@ extern "C"
 #include "libavutil/opt.h"
 #include "libavcodec/avfft.h"
 #include "libavutil/imgutils.h"
-#include <libavutil/mathematics.h>
-#include <libavutil/time.h>
-#include <libavutil/samplefmt.h>
+#include "libavutil/mathematics.h"
+#include "libavutil/time.h"
+#include "libavutil/samplefmt.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/buffer.h"
 }
 
 #ifdef EAGLEEYE_RKCHIP
@@ -38,6 +40,10 @@ extern "C"
 #include "im2d_buffer.h"
 #include "im2d_type.h"
 #include "im2d_single.h"
+#endif
+
+#ifdef EAGLEEYE_CUDA
+#include <nppi.h>
 #endif
 
 #define msleep(msec) usleep(msec * 1000)
@@ -59,8 +65,25 @@ RTSPReadNode::RTSPReadNode(){
     if (!m_pCodecCtx) {
         EAGLEEYE_LOGE("Could not allocate video codec context");
     }
-    if(avcodec_open2(m_pCodecCtx, m_pCodec, NULL)<0){
+
+    m_hw_device_ctx = NULL;
+#ifdef EAGLEEYE_CUDA
+    //  设置硬件解码
+    const enum AVHWDeviceType type = av_hwdevice_find_type_by_name("cuda");
+    if (type == AV_HWDEVICE_TYPE_NONE){
+        EAGLEEYE_LOGE("Hardware device couldnt found");
+    }
+    if(av_hwdevice_ctx_create(&m_hw_device_ctx, type, NULL, NULL, 0) < 0){
+        EAGLEEYE_LOGE("Hardware ctx create fail.");
+    }
+    m_pCodecCtx->hw_device_ctx = av_buffer_ref(m_hw_device_ctx);
+#endif
+
+    if(avcodec_open2(m_pCodecCtx, m_pCodec, NULL) < 0){
         EAGLEEYE_LOGE("Couldn't open codec.");
+#ifdef EAGLEEYE_CUDA
+        av_buffer_unref(&m_hw_device_ctx);
+#endif
     }
 
     // 0: RGB, 1: BGR, 2: RGBA, 3: BGRA
@@ -69,7 +92,7 @@ RTSPReadNode::RTSPReadNode(){
 
     // 设置时间戳端口
     ImageSignal<double>* timestamp_sig = new ImageSignal<double>();
-     Matrix<double> timestamp(1,1);
+    Matrix<double> timestamp(1,1);
     timestamp_sig->setData(timestamp);
     this->setOutputPort(timestamp_sig,1);
     this->getOutputPort(1)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
@@ -135,12 +158,29 @@ RTSPReadNode::RTSPReadNode(){
     m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_rga,this));
 #endif
 
-#ifndef EAGLEEYE_RKCHIP
+#ifdef EAGLEEYE_CUDA
+    m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_cuda, this));
+#endif
+
+#if (!defined(EAGLEEYE_RKCHIP) && !defined(EAGLEEYE_CUDA))
     m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_libyuv,this));
 #endif
 }
 
 RTSPReadNode::~RTSPReadNode(){
+#ifdef EAGLEEYE_CUDA
+    if (m_pCodecCtx->hw_device_ctx != NULL){
+        av_buffer_unref(&(m_pCodecCtx->hw_device_ctx));
+        m_pCodecCtx->hw_device_ctx = NULL;
+    }
+
+    if (m_hw_device_ctx != NULL){
+        av_buffer_unref(&m_hw_device_ctx);
+        m_hw_device_ctx = NULL;
+    }
+#endif
+
+    avcodec_close(m_pCodecCtx);
     avcodec_free_context(&m_pCodecCtx);
     if(m_format_ctx != NULL){
         avformat_close_input(&m_format_ctx);
@@ -150,7 +190,7 @@ RTSPReadNode::~RTSPReadNode(){
 
     std::unique_lock<std::mutex> in_locker(this->m_postprocess_mu);
 #ifndef EAGLEEYE_RKCHIP
-    m_postprocess_queue.push(NULL);
+    m_postprocess_queue.push(std::make_pair<AVFrame*, __int64_t>(NULL, 0));
 #endif
 
 #ifdef EAGLEEYE_RKCHIP
@@ -317,7 +357,7 @@ void RTSPReadNode::executeNodeInfo(){
 #endif
 
 #ifndef EAGLEEYE_RKCHIP
-                    // 使用ffmpeg解码         
+                    // 使用ffmpeg解码(软解码+硬解码)      
                     int pkt_done = 0;
                     do {
                         if (!pkt_done) {
@@ -335,15 +375,24 @@ void RTSPReadNode::executeNodeInfo(){
 
                     do{
                         AVFrame* pframe = av_frame_alloc();
+                        AVFrame* sw_frame = av_frame_alloc();
                         int ret = avcodec_receive_frame(m_pCodecCtx, pframe);
                         if (ret < 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                             av_frame_free(&pframe);
+                            av_frame_free(&sw_frame);
                             break;
+                        }
+                        __int64_t pts = pframe->pts;
+
+                        if (pframe->format == AV_PIX_FMT_CUDA){
+                            av_hwframe_transfer_data(sw_frame, pframe, 1);
+                            av_frame_free(&pframe);
+                            pframe = sw_frame;
                         }
 
                         {
                             std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
-                            m_postprocess_queue.push(pframe);
+                            m_postprocess_queue.push(std::make_pair(pframe, pts));
                             locker.unlock();
                             m_postprocess_cond.notify_all();
                         }
@@ -389,10 +438,11 @@ void RTSPReadNode::executeNodeInfo(){
     }
 
     // static int count = 0;
+    // std::cout<<"save save "<<std::to_string(ntp_time)<<std::endl;
     // if(count % 30 == 0){
-    //     std::ofstream file_path_handle;
-    //     file_path_handle.open("./temp/"+std::to_string(ntp_time)+".png", std::ios::binary);
-    //     file_path_handle.write(ntp_data, int(ntp_data.rows()*ntp_data.cols()*3));
+        // std::ofstream file_path_handle;
+        // file_path_handle.open("./temp/"+std::to_string(ntp_time)+".png", std::ios::binary);
+        // file_path_handle.write((char*)(ntp_data), int(this->m_image_h*this->m_image_w*3));
     // }
     // count += 1;
 
@@ -529,6 +579,7 @@ void RTSPReadNode::postprocess_by_libyuv(){
 
     do{
         AVFrame* pframe = NULL;
+        long pts = 0;
         if(this->m_exit_flag){
             // 退出
             break;
@@ -543,7 +594,9 @@ void RTSPReadNode::postprocess_by_libyuv(){
                 }
             }
 
-            pframe = this->m_postprocess_queue.front();
+            std::pair<AVFrame*, __int64_t> info = this->m_postprocess_queue.front();
+            pframe = info.first;
+            pts = info.second;
             this->m_postprocess_queue.pop();
             if(pframe == NULL){
                 continue;
@@ -665,13 +718,144 @@ void RTSPReadNode::postprocess_by_libyuv(){
                 this->m_out_queue.pop();
             }
 
-            this->m_out_queue.push(std::make_pair(decode_image, pframe->pts));
+            this->m_out_queue.push(std::make_pair(decode_image, pts));
             locker.unlock();
             m_out_cond.notify_all();
         }
 
         av_frame_free(&pframe);
     } while(1);
+}
+
+void RTSPReadNode::postprocess_by_cuda(){
+#ifdef EAGLEEYE_CUDA
+    do{
+        AVFrame* pframe = NULL;
+        __int64_t pts = 0;
+        if(this->m_exit_flag){
+            // 退出
+            break;
+        }
+
+        {
+            std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
+            if(this->m_postprocess_queue.size() == 0){
+                m_postprocess_cond.wait(locker);
+                if(this->m_postprocess_queue.size() == 0){
+                    continue;
+                }
+            }
+
+            std::pair<AVFrame*, __int64_t> info = this->m_postprocess_queue.front();
+            pframe = info.first;
+            pts = info.second;
+            this->m_postprocess_queue.pop();
+            if(pframe == NULL){
+                continue;
+            }
+        }
+
+        ///////////////////////
+        int y_plane_size = pframe->width*pframe->height;
+        int uv_plane_size = pframe->width*pframe->height/4;
+
+        Npp8u *p_src_y, *p_src_u, *p_src_v;
+        cudaMalloc(&p_src_y, y_plane_size);
+        cudaMalloc(&p_src_u, uv_plane_size);
+        cudaMalloc(&p_src_v, uv_plane_size);
+        Npp8u *p_src[3] = {p_src_y, p_src_u, p_src_v};
+
+        cudaMemcpy(p_src[0], pframe->data[0], y_plane_size, cudaMemcpyHostToDevice);
+        uint8_t *u_buffer = new uint8_t[uv_plane_size];
+        uint8_t *v_buffer = new uint8_t[uv_plane_size];
+        size_t i = 0;
+        size_t j = 0;
+        for (; i < uv_plane_size*2; i+=2, j++){
+            u_buffer[j] = pframe->data[1][i];
+            v_buffer[j] = pframe->data[1][i+1];
+        }
+        cudaMemcpy(p_src[1], u_buffer, uv_plane_size, cudaMemcpyHostToDevice);
+        cudaMemcpy(p_src[2], v_buffer, uv_plane_size, cudaMemcpyHostToDevice);
+        delete[] u_buffer;
+        delete[] v_buffer;
+
+        int n_src_step_y = pframe->linesize[0];
+        int n_src_step_uv = pframe->linesize[1];
+        int r_src_step[3] = {n_src_step_y, n_src_step_uv/2, n_src_step_uv/2};
+        NppiSize o_size_roi = {pframe->width, pframe->height};
+
+        int dest_stop = pframe->width*3;
+        int dest_size = pframe->width*pframe->height*3;
+
+        Npp8u *p_dest;
+        cudaMalloc(&p_dest, dest_size);
+        cudaMemset(&p_dest, 0, dest_size);
+        nppiYUV420ToBGR_8u_P3C3R(p_src, r_src_step, p_dest, dest_stop, o_size_roi);
+
+        unsigned char* dest_in_host = new unsigned char[dest_size];
+        cudaMemcpy(dest_in_host, p_dest, dest_size, cudaMemcpyDeviceToHost);
+
+        cudaFree(p_src_y);
+        cudaFree(p_src_u);
+        cudaFree(p_src_v);
+        cudaFree(p_dest);
+
+        // std::cout<<"A"<<std::endl;
+        // int n_src_step_y = pframe->linesize[0];
+        // int n_src_step_uv = pframe->linesize[1];
+        // int r_src_step[3] = {n_src_step_y, n_src_step_uv/2, n_src_step_uv/2};
+
+        // std::cout<<"B"<<std::endl;
+        // NppiSize o_size_roi = {pframe->width, pframe->height};
+        // int dest_stop = pframe->width*3;
+        // int dest_size = pframe->width*pframe->height*3;
+
+        // std::cout<<"C"<<std::endl;
+        // Npp8u *p_dest;
+        // cudaMalloc(&p_dest, dest_size);
+        // // nv12->yuv420
+        // Npp8u *p_src[2] = {pframe->data[0], pframe->data[1]};
+        // Npp8u *p_yuv420_y, *p_yuv420_u, *p_yuv420_v;
+        // cudaMalloc(&p_yuv420_y, y_plane_size);
+        // cudaMalloc(&p_yuv420_u, uv_plane_size);
+        // cudaMalloc(&p_yuv420_v, uv_plane_size);
+        // Npp8u *p_yuv420[3] = {p_yuv420_y, p_yuv420_u, p_yuv420_v};
+        // int p_yuv420_step[3] = {n_src_step_y, n_src_step_uv/2, n_src_step_uv/2};
+
+        // std::cout<<"D"<<std::endl;
+        // nppiNV12ToYUV420_8u_P2P3R(p_src, pframe->width*2, p_yuv420, p_yuv420_step, o_size_roi);
+        // std::cout<<"E"<<std::endl;
+        // // yuv420->bgr
+        // nppiYUV420ToBGR_8u_P3C3R(p_yuv420, p_yuv420_step, p_dest, dest_stop, o_size_roi);
+        // std::cout<<"F"<<std::endl;
+
+        // unsigned char* dest_in_host = new unsigned char[dest_size];
+        // cudaMemcpy(dest_in_host, p_dest, dest_size, cudaMemcpyDeviceToHost);
+
+        // std::cout<<"G"<<std::endl;
+        // cudaFree(p_yuv420_y);
+        // cudaFree(p_yuv420_u);
+        // cudaFree(p_yuv420_v);
+        // cudaFree(p_dest);
+        ///////////////////////
+        this->m_image_h = pframe->height;
+        this->m_image_w = pframe->width;
+        {
+            std::unique_lock<std::mutex> locker(this->m_out_mu);
+            if(this->m_max_queue_size > 0 && this->m_out_queue.size() > this->m_max_queue_size){
+                std::pair<unsigned char*, __int64_t> out = this->m_out_queue.front();
+                delete[] out.first;
+                this->m_out_queue.pop();
+            }
+
+            this->m_out_queue.push(std::make_pair(dest_in_host, pts));
+            locker.unlock();
+            m_out_cond.notify_all();
+        }
+
+        av_frame_free(&pframe);
+    } while(1);
+#endif
 }
 
 void RTSPReadNode::processUnitInfo(){

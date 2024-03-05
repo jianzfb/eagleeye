@@ -20,6 +20,36 @@
 #include "mpp_rc_api.h"
 #endif
 
+#ifdef EAGLEEYE_FFMPEG
+extern "C" {
+#include "libavformat/avformat.h"
+#include "libavdevice/avdevice.h"
+#include "libswresample/swresample.h"
+#include "libavutil/opt.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/samplefmt.h"
+#include "libavutil/fifo.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
+#include "libavutil/display.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/avstring.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/timestamp.h"
+#include "libavutil/bprint.h"
+#include "libavutil/time.h"
+#include "libavutil/threadmessage.h"
+#include "libavfilter/avfilter.h"
+#include "libavfilter/buffersrc.h"
+#include "libavfilter/buffersink.h"
+#include "libavutil/frame.h"
+#include "libavcodec/avcodec.h"
+}
+#endif
+
 namespace eagleeye{
 SnapeshotNode::SnapeshotNode(){
     this->setNumberOfInputSignals(1);
@@ -44,6 +74,13 @@ SnapeshotNode::SnapeshotNode(){
 
     m_is_serial = false;
     m_snapshot_count = 0;
+
+#if defined(EAGLEEYE_FFMPEG) && !defined(EAGLEEYE_RKCHIP)
+    m_codec_cxt = NULL;
+    m_frame = NULL;
+    m_pkt = NULL;
+    m_encoder = NULL;
+#endif
 }
 
 SnapeshotNode::~SnapeshotNode(){
@@ -68,6 +105,20 @@ SnapeshotNode::~SnapeshotNode(){
         mpp_destroy(mpp_ctx);
     }
 #endif
+
+#if defined(EAGLEEYE_FFMPEG) && !defined(EAGLEEYE_RKCHIP)
+    if(m_codec_cxt != NULL){
+        avcodec_close(m_codec_cxt);
+        avcodec_free_context(&m_codec_cxt);
+    }
+    
+    if(m_frame != NULL){
+        av_frame_free(&m_frame);
+    }
+    if(m_pkt != NULL){
+        av_packet_free(&m_pkt);
+    }
+#endif
 }
 
 #ifdef EAGLEEYE_RKCHIP
@@ -84,15 +135,19 @@ void SnapeshotNode::executeNodeInfo(){
     if(m_image_format == 0 || m_image_format == 1){
         ImageSignal<Array<unsigned char,3>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
-        Matrix<Array<unsigned char,3>> c3_image = input_img_signal->getData(image_meta_data);
-        if(!c3_image.isContinuous()){
-            c3_image = c3_image.clone();
+        m_c3_image = input_img_signal->getData(image_meta_data);
+        if(!m_c3_image.isContinuous()){
+            m_c3_image = m_c3_image.clone();
         }
 
-        image_h = c3_image.rows();
-        image_w = c3_image.cols();
+        image_h = m_c3_image.rows();
+        image_w = m_c3_image.cols();
+        image_ptr = m_c3_image.cpu<unsigned char>();
+        elem_size = 3;
+#ifdef EAGLEEYE_RKCHIP
+        // RK硬件加速，不支持3通道格式，不得不转换到4通道
         m_c4_image = Matrix<Array<unsigned char,4>>(image_h, image_w);
-        unsigned char* c3_ptr = c3_image.cpu<unsigned char>();
+        unsigned char* c3_ptr = m_c3_image.cpu<unsigned char>();
         unsigned char* c4_ptr = m_c4_image.cpu<unsigned char>();
         for(int i=0; i<image_h; ++i){
             unsigned char* c3_row_ptr = c3_ptr + i*image_w*3;
@@ -106,6 +161,7 @@ void SnapeshotNode::executeNodeInfo(){
         }
         image_ptr = c4_ptr;
         elem_size = 4;
+#endif
     }
     else{
         ImageSignal<Array<unsigned char,4>>* input_img_signal = 
@@ -260,6 +316,48 @@ void SnapeshotNode::executeNodeInfo(){
         m_mpp_api = mpp_api;
 #endif
 
+#if defined(EAGLEEYE_FFMPEG) && !defined(EAGLEEYE_RKCHIP)
+        // 初始化编码器（使用ffmpeg AV_CODEC_ID_MJPEG）
+        m_encoder = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
+
+        //初始化并设置编码器上下文
+        m_codec_cxt = avcodec_alloc_context3(m_encoder);
+        m_codec_cxt->bit_rate = 3000000;
+        m_codec_cxt->width = image_w;
+        m_codec_cxt->height = image_h;
+        m_codec_cxt->time_base.num = 1;
+        m_codec_cxt->time_base.den = 25;
+        m_codec_cxt->pix_fmt = AV_PIX_FMT_YUV420P;
+        m_codec_cxt->gop_size = 10;
+        m_codec_cxt->max_b_frames = 0;
+        m_codec_cxt->thread_count = 1;
+        m_codec_cxt->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
+
+        //编码器初始化
+        int ret = avcodec_open2(m_codec_cxt, m_encoder, NULL);
+        if(ret < 0){
+            EAGLEEYE_LOGE("Could not avcodec_open2 err=%d.", ret);
+        }
+
+        m_pkt = av_packet_alloc();
+        if(!m_pkt){
+            EAGLEEYE_LOGE("Could not allocate video packet");
+        }
+        m_frame = av_frame_alloc();
+        if (!m_frame) {
+            EAGLEEYE_LOGE("Could not allocate video frame");
+        }
+
+        m_frame->format = m_codec_cxt->pix_fmt;
+        m_frame->width  = m_codec_cxt->width;
+        m_frame->height = m_codec_cxt->height;
+
+        ret = av_frame_get_buffer(m_frame, 0);
+        if (ret < 0) {
+            EAGLEEYE_LOGE("Could not allocate the video frame data");
+        }
+#endif
+
         m_is_init = true;
     }
 
@@ -340,7 +438,64 @@ void SnapeshotNode::executeNodeInfo(){
             mpp_packet_deinit(&packet);
         }
     } while (!eoi);
+#endif
 
+#if defined(EAGLEEYE_FFMPEG) && !defined(EAGLEEYE_RKCHIP)
+    // rgb->yuv420p, bgr->yuv420p, rgba->yuv420p, bgra->yuv420p
+    if(m_image_format == 0){
+        // RGB
+        libyuv::RAWToI420(image_ptr, 
+            image_w*3, 
+            m_frame->data[0],m_frame->linesize[0],
+            m_frame->data[1],m_frame->linesize[1],
+            m_frame->data[2],m_frame->linesize[2],
+            m_frame->width,
+            m_frame->height);
+    }
+    else if(m_image_format == 1){
+        // BGR
+        libyuv::RGB24ToI420(image_ptr, 
+            image_w*3, 
+            m_frame->data[0],m_frame->linesize[0],
+            m_frame->data[1],m_frame->linesize[1],
+            m_frame->data[2],m_frame->linesize[2],
+            m_frame->width,
+            m_frame->height);
+    }
+    else if(m_image_format == 2){
+        libyuv::RGBAToI420(image_ptr, 
+            image_w*4, 
+            m_frame->data[0],m_frame->linesize[0],
+            m_frame->data[1],m_frame->linesize[1],
+            m_frame->data[2],m_frame->linesize[2],
+            m_frame->width,
+            m_frame->height);
+    }
+    else{  
+        libyuv::BGRAToI420(image_ptr, 
+            image_w*4, 
+            m_frame->data[0],m_frame->linesize[0],
+            m_frame->data[1],m_frame->linesize[1],
+            m_frame->data[2],m_frame->linesize[2],
+            m_frame->width,
+            m_frame->height);   
+    }
+    
+    int ret = av_frame_make_writable(m_frame);
+    if(ret < 0){
+        EAGLEEYE_LOGE("Could not av_frame_make_writable");
+    }
+    ret = avcodec_send_frame(m_codec_cxt, m_frame);
+    if(ret < 0) {
+        EAGLEEYE_LOGE("Error sending a frame for encoding");
+    }    
+    ret = avcodec_receive_packet(m_codec_cxt, m_pkt);
+    if(ret < 0){
+        EAGLEEYE_LOGE("Error during encoding");        
+    }
+
+    m_output_file.write((char*)m_pkt->data, m_pkt->size);
+    av_packet_unref(m_pkt);
 #endif
 
     m_output_file.close();
