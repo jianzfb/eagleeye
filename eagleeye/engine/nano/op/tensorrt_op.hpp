@@ -56,7 +56,6 @@ public:
         m_model_run = NULL;  
         m_model_init = false;
         m_reverse_channel = false;
-        m_preprocess_tensors.resize(input_names.size());
     };
     virtual ~TensorrtOp(){};
 
@@ -188,12 +187,18 @@ public:
             return -1;
         }
 
+        // 运行
+        if(input.size() == 0 || input[0].dims()[0] == 0){
+            // do nothing
+            return 0;
+        }
+
         bool is_inner_preprocess = false;
         if(this->m_mean.size() > 0 && this->m_std.size() > 0){
             is_inner_preprocess = true;
         }
 
-        // 输入数据
+        // 数据预处理
         for(int input_i=0; input_i<m_input_names.size(); ++input_i){
             // 检查数据格式
             const Tensor x = input[input_i];
@@ -211,11 +216,10 @@ public:
                         MemoryType::CPU_BUFFER
                     );
             }
-
             float* preprocessed_data = m_preprocess_tensors[input_i].cpu<float>();
-            // continue;
+            
             Dim x_dims = x.dims();
-            if(is_inner_preprocess){
+            if(is_inner_preprocess && x.type() != EAGLEEYE_FLOAT){
                 // 需要进行预处理流程
                 // NxHxWx3 或 HxWx3 格式
                 if(x_dims.size() == 4){
@@ -245,7 +249,7 @@ public:
                                 &(this->m_mean[0]), 
                                 &(this->m_std[0])
                             );
-                        }     
+                        }
                     }
                 }
                 else{
@@ -282,29 +286,49 @@ public:
         }
 
         // 运行
-        std::map<std::string, const unsigned char*> inputs;
-        for(int input_i=0; input_i<m_input_names.size(); ++input_i){
-            inputs[m_input_names[input_i]] = m_preprocess_tensors[input_i].cpu<unsigned char>();
+        int batch_size = 1;
+        if(input[0].dims().size() >= 4 && input[0].dims()[0] > 1){
+            batch_size = input[0].dims()[0];
         }
-
-        std::map<std::string, unsigned char*> outputs;
-        for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-            outputs[m_output_names[output_i]] = NULL;
-        }
-        this->m_model_run->run(inputs, outputs);
-
-        // 输出数据
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
             std::string output_name = this->m_output_names[output_i];
-
-            this->m_outputs[output_i] = Tensor(
-                        m_output_shapes[output_i],
-                        m_output_types[output_i],
-                        DataFormat::AUTO,
-                        outputs[output_name]
-                    );
+            std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
+            output_shape[0] = batch_size;
+            if(this->m_outputs[output_i].empty() || this->m_outputs[output_i].dims()[0] != batch_size){
+                this->m_outputs[output_i] = Tensor(
+                    output_shape,
+                    m_output_types[output_i],
+                    DataFormat::AUTO,
+                    CPU_BUFFER
+                );
+            }
         }
-    
+
+        for(int b_i=0; b_i<batch_size; ++b_i){
+            std::map<std::string, const unsigned char*> inputs;
+            std::map<std::string, unsigned char*> outputs;
+
+            // 输入
+            for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+                int slice_size = m_preprocess_tensors[input_i].numel() / batch_size;
+                inputs[m_input_names[input_i]] = m_preprocess_tensors[input_i].cpu<unsigned char>() + b_i * slice_size * m_preprocess_tensors[input_i].elemsize();
+            }
+
+            // 输出
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                outputs[m_output_names[output_i]] = NULL;
+            }
+
+            this->m_model_run->run(inputs, outputs);
+
+            // 导出
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                int slice_size = this->m_outputs[output_i].numel() / batch_size;
+                int elem_size = this->m_outputs[output_i].elemsize();
+                char* output_ptr = this->m_outputs[output_i].template cpu<char>() + b_i * slice_size * elem_size;
+                memcpy(output_ptr, outputs[m_output_names[output_i]], slice_size * elem_size);
+            }
+        }
         return 0;
     }
 

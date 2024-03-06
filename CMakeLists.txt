@@ -470,13 +470,13 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 if(CUDA)
-add_definitions(-DEAGLEEYE_CUDA)
-message(STATUS "Define CUDA")
-include_directories("/usr/local/cuda-12.1/targets/x86_64-linux/include")
-find_library(CUDART cudart PATHS /usr/local/cuda-12.1/lib64/)
-target_link_libraries(eagleeye ${CUDART})
-find_library(EXEC_NPPICC nppicc PATHS /usr/local/cuda-12.1/lib64/)
-target_link_libraries(eagleeye ${EXEC_NPPICC})
+    add_definitions(-DEAGLEEYE_CUDA)
+    message(STATUS "Define CUDA")
+    include_directories("/usr/local/cuda-12.1/targets/x86_64-linux/include")
+    find_library(CUDART cudart PATHS /usr/local/cuda-12.1/lib64/)
+    target_link_libraries(eagleeye ${CUDART})
+    find_library(EXEC_NPPICC nppicc PATHS /usr/local/cuda-12.1/lib64/)
+    target_link_libraries(eagleeye ${EXEC_NPPICC})
 endif()
 
 if(DEFINED FFMPEG)
@@ -484,31 +484,32 @@ if(DEFINED FFMPEG)
     add_definitions(-DEAGLEEYE_FFMPEG)
     include_directories(${FFMPEG})
 
-    # if(BUILD_PYTHON_MODULE)
-    #     target_link_libraries(eagleeye PRIVATE
-    #                             ${FFMPEG}/install/lib/libavcodec.so
-    #                             ${FFMPEG}/install/lib/libavfilter.so
-    #                             ${FFMPEG}/install/lib/libavformat.so
-    #                             ${FFMPEG}/install/lib/libavutil.so
-    #                             ${FFMPEG}/install/lib/libswresample.so
-    #                             ${FFMPEG}/install/lib/libswscale.so)    
-    # else()
-    #     target_link_libraries(eagleeye 
-    #                             ${FFMPEG}/install/lib/libavcodec.so
-    #                             ${FFMPEG}/install/lib/libavfilter.so
-    #                             ${FFMPEG}/install/lib/libavformat.so
-    #                             ${FFMPEG}/install/lib/libavutil.so
-    #                             ${FFMPEG}/install/lib/libswresample.so
-    #                             ${FFMPEG}/install/lib/libswscale.so)
-    # endif()
-
-    target_link_libraries(eagleeye 
-                            libavcodec.so 
-                            libavfilter.so 
-                            libavformat.so 
-                            libavutil.so 
-                            libswresample.so 
-                            libswscale.so)
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE
+                                ${FFMPEG}/install/lib/libavcodec.so
+                                ${FFMPEG}/install/lib/libavfilter.so
+                                ${FFMPEG}/install/lib/libavformat.so
+                                ${FFMPEG}/install/lib/libavutil.so
+                                ${FFMPEG}/install/lib/libswresample.so
+                                ${FFMPEG}/install/lib/libswscale.so)    
+    elseif(DEFINED X86_ABI)
+        # 在主机侧，ffmpeg安装到系统目录
+        target_link_libraries(eagleeye 
+                                libavcodec.so 
+                                libavfilter.so 
+                                libavformat.so 
+                                libavutil.so 
+                                libswresample.so 
+                                libswscale.so)
+    else()
+        target_link_libraries(eagleeye 
+                                ${FFMPEG}/install/lib/libavcodec.so
+                                ${FFMPEG}/install/lib/libavfilter.so
+                                ${FFMPEG}/install/lib/libavformat.so
+                                ${FFMPEG}/install/lib/libavutil.so
+                                ${FFMPEG}/install/lib/libswresample.so
+                                ${FFMPEG}/install/lib/libswscale.so)
+    endif()
 endif()
 
 
@@ -521,21 +522,11 @@ if(DEFINED RKCHIP)
     include_directories(${RKCHIP}/mpp/osal/inc/)
     include_directories(${RKCHIP}/librga/include)
 
-    if(BUILD_PYTHON_MODULE)
-        target_link_libraries(eagleeye PRIVATE
-                                ${RKCHIP}/mpp/mpp/libmpp.so
-                                ${RKCHIP}/mpp/utils/libutils.a
-                                ${RKCHIP}/mpp/osal/libosal.a
-                                ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)    
-    else()
-        target_link_libraries(eagleeye 
-                                ${RKCHIP}/mpp/mpp/libmpp.so
-                                ${RKCHIP}/mpp/utils/libutils.a
-                                ${RKCHIP}/mpp/osal/libosal.a
-                                ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
-    endif()
-
-
+    target_link_libraries(eagleeye 
+                            ${RKCHIP}/mpp/mpp/libmpp.so
+                            ${RKCHIP}/mpp/utils/libutils.a
+                            ${RKCHIP}/mpp/osal/libosal.a
+                            ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
 endif()
 
 if(pnglib_FOUND)

@@ -39,7 +39,9 @@ enum EagleeyeIOMode
 class EagleeyeIO
 {
 public:
-	EagleeyeIO(){std::locale::global(std::locale(""));};
+	EagleeyeIO(){
+		// std::locale::global(std::locale(""));
+	};
 	virtual ~EagleeyeIO(){};
 
 	/**
