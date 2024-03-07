@@ -1,27 +1,51 @@
-#ifndef _EAGLEEYELOG_H_
-#define _EAGLEEYELOG_H_
+#ifndef _EAGLEEYE_MESSAGE_CENTER_H_
+#define _EAGLEEYE_MESSAGE_CENTER_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/common/EagleeyeStr.h"
-#include "eagleeye/common/cJSON.h"
+#include "eagleeye/common/EagleeyeMessage.h"
+#include <map>
+#include <queue>
+#include <functional> 
+#include <memory>
+#include <mutex>
+#include <condition_variable>
 
 namespace eagleeye{
+class MessageLock{
+public:
+    MessageLock(){
+        status = true;
+    }
+    std::mutex mu;
+    std::condition_variable cond;
+    bool status;
+};
+
 class MessageCenter{
 public:
-    MessageCenter();
     virtual ~MessageCenter();
-
     static MessageCenter* getInstance();
 
-    std::shared_ptr<BSReplyMes> getNeedReply(std::string key, bool isFirst, int64_t fairKey, std::string keyPrefix);
-    void insertMessage(std::string key, std::shared_ptr<BSReplyMes> message, bool isFinished = false);
-    
-    // 强制结束需要清空数据
-    void clearMessage(std::string key);
+    // 基于key消费队列消息
+    std::shared_ptr<Message> get(std::string key);
+
+    // 基于key插入消息进入队列
+    bool insert(std::string key, std::shared_ptr<Message> message);
+
+    // 清空key消息队列
+    bool clear(std::string key);
+
+    // 基于key创建消息队列
+    bool create(std::string key);
 
 private:
-    std::map<std::string, std::priority_queue<std::shared_ptr<BSReplyMes>, std::vector<std::shared_ptr<BSReplyMes>>, BS::BSReplyMes>> replyMap;
-    std::map<std::string, std::shared_ptr<BSSemaphore>> lockMap;
-    std::map<std::string, bool> lockWaitStatus;
+    MessageCenter();
+
+    std::map<std::string, std::priority_queue<std::shared_ptr<Message>, std::vector<std::shared_ptr<Message>>, Message>> m_message_map;
+    std::map<std::string, std::shared_ptr<MessageLock>> m_lock_map;
+    std::mutex m_mu;
+
+    static std::shared_ptr<MessageCenter> m_instance;
 };
 }
 

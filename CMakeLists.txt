@@ -209,6 +209,9 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
+    eagleeye/common/EagleeyeMessageCenter.cpp
+    eagleeye/common/EagleeyeRegisterCenter.cpp
+    eagleeye/common/EagleeyeCameraCenter.cpp
     eagleeye/processnode/ImageSelect.cpp
     eagleeye/processnode/RTSPReadNode.cpp
     eagleeye/processnode/SnapshotNode.cpp
@@ -361,6 +364,9 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/RTSPReadNode.cpp
     eagleeye/processnode/SnapshotNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
+    eagleeye/common/EagleeyeMessageCenter.cpp
+    eagleeye/common/EagleeyeRegisterCenter.cpp
+    eagleeye/common/EagleeyeCameraCenter.cpp
     eagleeye/processnode/ImageSelect.cpp)
 endif()
 
