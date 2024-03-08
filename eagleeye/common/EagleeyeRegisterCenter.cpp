@@ -16,6 +16,17 @@ bool RegisterCenter::hasObj(std::string key){
     return true;
 }
 
+bool RegisterCenter::hasObjWithPrefix(std::string prefix){
+    std::unique_lock<std::mutex> locker(m_mu);
+    std::map<std::string, std::pair<void*, std::function<void(std::string, void*)>>>::iterator iter, iend(m_register_map.end());
+    for(iter = m_register_map.begin(); iter != iend; ++iter){
+        if(startswith(iter->first, prefix)){
+            return true;
+        }
+    }
+    return false;
+}
+
 void* RegisterCenter::getObj(std::string key){
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_register_map.find(key) == m_register_map.end()){

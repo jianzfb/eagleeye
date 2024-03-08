@@ -15,7 +15,9 @@ public:
     virtual ~RegisterCenter();
     static RegisterCenter* getInstance();
 
+    bool hasObjWithPrefix(std::string prefix);
     bool hasObj(std::string key);
+
     void* getObj(std::string key);
     bool registerObj(std::string key, void* obj, std::function<void(std::string,void*)> destroy_func);
     bool destroyObjWithPrefix(std::string prefix);

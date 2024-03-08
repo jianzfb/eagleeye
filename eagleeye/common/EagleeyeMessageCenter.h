@@ -38,10 +38,13 @@ public:
     // 基于key创建消息队列
     bool create(std::string key);
 
+    // 基于key删除消息队列
+    bool remove(std::string key);
+
 private:
     MessageCenter();
 
-    std::map<std::string, std::priority_queue<std::shared_ptr<Message>, std::vector<std::shared_ptr<Message>>, Message>> m_message_map;
+    std::map<std::string, std::priority_queue<std::shared_ptr<Message>, std::vector<std::shared_ptr<Message>>, MessageCmp>> m_message_map;
     std::map<std::string, std::shared_ptr<MessageLock>> m_lock_map;
     std::mutex m_mu;
 

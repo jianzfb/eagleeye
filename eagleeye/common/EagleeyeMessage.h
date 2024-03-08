@@ -11,9 +11,11 @@
 namespace eagleeye{
 class Message{
 public:
-    Message(double timestamp=0){
+    friend class MessageCmp;
+    Message(double timestamp=0, bool status=true, bool is_timeliness=false){
         this->m_timestamp = timestamp;
-        this->m_status = false;
+        this->m_status = status;
+        this->m_is_timeliness = is_timeliness;
         m_json_obj = new neb::CJsonObject();
     }
     virtual ~Message(){
@@ -21,13 +23,6 @@ public:
     }
 
     class Null{}; 
-    bool operator<(const Message& one) const{
-        return m_timestamp > one.m_timestamp;
-    }
-    bool operator()(const std::shared_ptr<Message>& lhs, const std::shared_ptr<Message>& rhs) const{
-        return lhs->m_timestamp > rhs->m_timestamp;
-    }
-
     std::string serialize(){
         return m_json_obj->ToFormattedString();
     }
@@ -40,21 +35,31 @@ public:
     }
 
     void set(std::string key, std::vector<int> value){
-        m_json_obj->AddEmptySubArray(key);
-        neb::CJsonObject obj;
-        m_json_obj->Get(key, obj);
-        for(int i=0; i<value.size(); ++i){
-            obj.Add(value[i]);
+        if(value.size() > 0){
+            neb::CJsonObject obj;
+            for(int i=0; i<value.size(); ++i){
+                obj.Add(value[i]);
+            }
+
+            m_json_obj->Add(key, obj);          
+            return;  
         }
+
+        m_json_obj->AddEmptySubArray(key);
     }
 
     void set(std::string key, std::vector<std::string> value){
-        m_json_obj->AddEmptySubArray(key);
-        neb::CJsonObject obj;
-        m_json_obj->Get(key, obj);
-        for(int i=0; i<value.size(); ++i){
-            obj.Add(value[i]);
+        if(value.size() > 0){
+            neb::CJsonObject obj;
+            for(int i=0; i<value.size(); ++i){
+                obj.Add(value[i]);
+            }
+
+            m_json_obj->Add(key, obj);
+            return;
         }
+
+        m_json_obj->AddEmptySubArray(key);
     }
 
     template<typename T>
@@ -84,6 +89,21 @@ private:
     double m_timestamp;
     bool m_status;
     neb::CJsonObject* m_json_obj;
+    bool m_is_timeliness;
 }; 
+
+class MessageCmp {
+public:
+    bool operator()(const std::shared_ptr<Message>& lhs, const std::shared_ptr<Message>& rhs) const{
+        if(lhs->m_is_timeliness){
+            // 新消息排序在前
+            return lhs->m_timestamp < rhs->m_timestamp;
+        }
+        else{
+            // 老消息排序在前
+            return lhs->m_timestamp > rhs->m_timestamp;
+        }
+    }
+};
 }
 #endif
