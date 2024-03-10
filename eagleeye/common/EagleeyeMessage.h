@@ -48,6 +48,20 @@ public:
         m_json_obj->AddEmptySubArray(key);
     }
 
+    void set(std::string key, std::vector<float> value){
+        if(value.size() > 0){
+            neb::CJsonObject obj;
+            for(int i=0; i<value.size(); ++i){
+                obj.Add(value[i]);
+            }
+
+            m_json_obj->Add(key, obj);
+            return;
+        }
+
+        m_json_obj->AddEmptySubArray(key);
+    }
+
     void set(std::string key, std::vector<std::string> value){
         if(value.size() > 0){
             neb::CJsonObject obj;

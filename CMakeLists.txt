@@ -497,7 +497,7 @@ if(DEFINED FFMPEG)
                                 ${FFMPEG}/install/lib/libavformat.so
                                 ${FFMPEG}/install/lib/libavutil.so
                                 ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)    
+                                ${FFMPEG}/install/lib/libswscale.so)
     elseif(DEFINED X86_ABI)
         # 在主机侧，ffmpeg安装到系统目录
         target_link_libraries(eagleeye 

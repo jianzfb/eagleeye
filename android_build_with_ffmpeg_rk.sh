@@ -64,3 +64,6 @@ cd ..
 
 # 5.step 脚本工具
 cp -r scripts install/
+
+# 6.step 重命名
+mv install android-install
