@@ -17,6 +17,8 @@ class AVCodec;
 class AVCodecContext;
 class AVFrame;
 class AVPacket;
+class AVFormatContext;
+class AVStream;
 namespace eagleeye{
 class VideoWriteNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>, DynamicNodeCreator<VideoWriteNode>{
 public:
@@ -102,6 +104,21 @@ public:
      */
     int getSerialNum();
 
+    /*
+     * @brief minio
+     */
+    void setBaseURL(const std::string& url);
+
+    void setAccessKey(const std::string& access_key);
+
+    void setSecretKey(const std::string& secret_key);
+
+    void setBucketName(const std::string& bucket_name);
+
+    void setIsUpload(bool upload);
+
+    void setIsSecure(bool secure);
+
 private:
     VideoWriteNode(const VideoWriteNode&);
     void operator=(const VideoWriteNode&);
@@ -111,6 +128,11 @@ private:
      * 
      */
     void writeFinish(AnySignal* out_sig=NULL);
+
+    /**
+      * @brief h264 to mp4 for rk
+      */
+    bool h264Muxing(char*packet, std::uint64_t packet_size);
 
     bool m_is_init;
     bool m_is_finish;
@@ -125,8 +147,9 @@ private:
     int m_manually_start;
     int m_manually_pause;
 
-    std::ofstream m_output_file;
-    AVCodecContext* m_codec_cxt;
+    AVFormatContext* m_fmt_context_ff = nullptr;
+    AVStream* m_stream_ff = nullptr;
+    AVCodecContext* m_codec_cxt = nullptr;
     const AVCodec* m_encoder;
     AVFrame *m_frame;
     AVPacket *m_pkt;
@@ -150,6 +173,21 @@ private:
 
     bool m_is_serial;
     int m_video_count;
+
+    //for rk h264 to mp4
+    AVFormatContext* m_fmt_context = nullptr;
+    AVStream* m_stream = nullptr;
+    AVCodecContext* m_codec_ctx = nullptr;
+    AVPacket* m_av_packet = nullptr;
+
+    //for upload for minio
+    std::string m_base_url;
+    std::string m_access_key;
+    std::string m_secret_key;
+    std::string m_bucket_name;
+    bool uploader(const std::string &src_file);
+    bool m_is_upload = false;
+    bool m_is_secure = false;
 };
 }
 #endif

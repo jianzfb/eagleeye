@@ -4,6 +4,9 @@
 #include "eagleeye/common/EagleeyeTime.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "libyuv.h"
+#ifdef EAGLEEYE_MINIO
+#include "miniocpp/client.h"
+#endif
 #ifdef EAGLEEYE_FFMPEG
 extern "C" {
 #include "libavformat/avformat.h"
@@ -128,7 +131,7 @@ VideoWriteNode::~VideoWriteNode(){
 }
 
 #ifndef EAGLEEYE_RKCHIP
-bool encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream& fp)
+bool encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVFormatContext* fmt_ctx,AVStream* stream)
 {
     int ret;
     ret = avcodec_send_frame(enc_ctx, frame);
@@ -149,7 +152,13 @@ bool encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstrea
             return false;
         }
 
-        fp.write((char*)(pkt->data), pkt->size);
+        av_packet_rescale_ts(pkt, enc_ctx->time_base, stream->time_base);
+        pkt->stream_index = stream->index;
+        if (auto r = av_write_frame(fmt_ctx, pkt); r < 0)
+        {
+            EAGLEEYE_LOGE("Error av_write_frame");
+            return false;
+        }
         av_packet_unref(pkt);
     }
 
@@ -493,8 +502,6 @@ void VideoWriteNode::executeNodeInfo(){
     // 至此，说明已经开始录制
     if(m_frame_count == 0){
         //打开输出文件流(一个新的视频存储)
-        m_output_file.open(m_file_path.c_str(), std::ios::binary);
-
         m_is_header_init = false;
         m_is_finish = false;
         this->getOutputPort(0)->meta().is_end_frame = false;
@@ -518,6 +525,17 @@ void VideoWriteNode::executeNodeInfo(){
 
     if(!this->m_is_init){
         EAGLEEYE_LOGD("Start to write video.");
+        //初始化媒体文件上下文信息
+        if(auto ret = avformat_alloc_output_context2(&m_fmt_context_ff, nullptr, nullptr,  this->m_file_path.c_str()); ret != 0){
+            EAGLEEYE_LOGE("avformat_alloc_context failed, ret = %d", ret);
+            return;
+        }
+        if(m_stream_ff = avformat_new_stream(m_fmt_context_ff, nullptr);m_stream_ff == nullptr){
+            EAGLEEYE_LOGE("avformat_new_stream failed");
+            return;
+        }
+        m_stream_ff->id = m_fmt_context_ff->nb_streams - 1;
+
 #ifndef EAGLEEYE_RKCHIP
         //设置编码器
 #ifdef EAGLEEYE_CUDA
@@ -578,6 +596,22 @@ void VideoWriteNode::executeNodeInfo(){
         if (ret < 0) {
             EAGLEEYE_LOGE("Could not allocate the video frame data");
         }
+        if(auto ret = avcodec_parameters_from_context(m_stream_ff->codecpar,m_codec_cxt); ret != 0){
+            EAGLEEYE_LOGE("avcodec_parameters_to_context failed, ret = %d", ret);
+            return;        
+        }
+
+        av_dump_format(m_fmt_context_ff, 0, m_fmt_context_ff->url, 1);
+
+        if (auto ret = avio_open(&m_fmt_context_ff->pb, m_fmt_context_ff->url, AVIO_FLAG_WRITE);ret != 0){
+            EAGLEEYE_LOGE("avio_open failed, ret = %d", ret);
+            return;
+        }
+        if (auto r = avformat_write_header(m_fmt_context_ff, nullptr); r != 0){
+            EAGLEEYE_LOGE("avformat_write_header return %d", r);
+            return;
+        }
+
 #endif
 
 #ifdef EAGLEEYE_RKCHIP
@@ -672,6 +706,69 @@ void VideoWriteNode::executeNodeInfo(){
         }
         m_mpp_ctx = mpp_ctx;
         m_mpp_api = mpp_api;
+
+        if(auto ret = avformat_alloc_output_context2(&m_fmt_context, nullptr, nullptr,  this->m_file_path.c_str()); ret != 0){
+            EAGLEEYE_LOGE("avformat_alloc_context failed, ret = %d", ret);
+            return;
+        }
+        if(m_stream = avformat_new_stream(m_fmt_context, nullptr);m_stream == nullptr){
+            EAGLEEYE_LOGE("avformat_new_stream failed");
+            return;
+        }
+        m_stream->id = m_fmt_context->nb_streams - 1;
+        const AVCodec* codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+        if(codec == nullptr){
+            EAGLEEYE_LOGE("avcodec_find_decoder failed");
+            return;
+        }
+        if(m_codec_ctx = avcodec_alloc_context3(codec); m_codec_ctx == nullptr){
+            EAGLEEYE_LOGE("avcodec_alloc_context3 failed");
+            return;
+        }
+
+        m_codec_ctx->codec_id = codec->id;
+        m_codec_ctx->bit_rate = 4000;
+        m_codec_ctx->width = image_w;
+        m_codec_ctx->height = image_h;
+        m_codec_ctx->time_base = AVRational{1, 25};
+        m_codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+        m_codec_ctx->codec_type = AVMEDIA_TYPE_VIDEO;
+        if(m_fmt_context->flags & AVFMT_GLOBALHEADER){
+            m_codec_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        }
+
+        AVDictionary *opt = nullptr;
+        std::unique_ptr<AVDictionary *, decltype(av_dict_free) *> up_opt{&opt, av_dict_free};
+        av_dict_set(&opt, "r", "25", 0);
+
+        if(auto ret = avcodec_open2(m_codec_ctx, codec, &opt); ret != 0){
+            EAGLEEYE_LOGE("avcodec_open2 failed, ret = %d", ret);
+            return;
+        }
+
+        if(m_av_packet = av_packet_alloc(); m_av_packet == nullptr){
+            EAGLEEYE_LOGE("av_packet_alloc failed");
+            return;
+        }
+
+        if(auto ret = avcodec_parameters_from_context(m_stream->codecpar,m_codec_ctx); ret != 0){
+            EAGLEEYE_LOGE("avcodec_parameters_to_context failed, ret = %d", ret);
+            return;        
+        }
+
+        av_dump_format(m_fmt_context, 0, m_fmt_context->url, 1);
+
+        if (auto ret = avio_open(&m_fmt_context->pb, m_fmt_context->url, AVIO_FLAG_WRITE);ret != 0)
+        {
+            EAGLEEYE_LOGE("avio_open failed, ret = %d", ret);
+            return;
+        }
+        if (auto r = avformat_write_header(m_fmt_context, &opt); r != 0)
+        {
+            EAGLEEYE_LOGE("avformat_write_header return %d", r);
+            return;
+        }
+
 #endif
 
         m_is_init = true;
@@ -699,7 +796,7 @@ void VideoWriteNode::executeNodeInfo(){
     m_frame->pts = this->m_frame_count;
 
     /* encode the image */
-    encode(m_codec_cxt, m_frame, m_pkt, m_output_file);
+    encode(m_codec_cxt, m_frame, m_pkt, m_fmt_context_ff,m_stream_ff);
 #endif
 
 #ifdef EAGLEEYE_RKCHIP
@@ -723,7 +820,9 @@ void VideoWriteNode::executeNodeInfo(){
             /* get and write sps/pps for H.264 */
             void *ptr   = mpp_packet_get_pos(packet);
             size_t len  = mpp_packet_get_length(packet);
-            m_output_file.write((char*)ptr, len);
+            if(not h264Muxing((char*)ptr, len)){
+                EAGLEEYE_LOGE("h264Muxing failed");
+            }
         }
         mpp_packet_deinit(&packet);
         packet = NULL;
@@ -798,7 +897,9 @@ void VideoWriteNode::executeNodeInfo(){
             // write packet to file here
             void *ptr   = mpp_packet_get_pos(packet);
             size_t len  = mpp_packet_get_length(packet);
-            m_output_file.write((char*)ptr, len);
+            if(not h264Muxing((char*)ptr, len)){
+                EAGLEEYE_LOGE("h264Muxing failed");
+            }
 
             /* for low delay partition encoding */
             if (mpp_packet_is_partition(packet)) {
@@ -818,6 +919,37 @@ void VideoWriteNode::executeNodeInfo(){
         this->m_video_count += 1;
         EAGLEEYE_LOGD("Success to finish write video.");
     }
+}
+
+bool VideoWriteNode::h264Muxing(char* packet, std::uint64_t packet_size){
+#ifdef EAGLEEYE_RKCHIP
+    if(packet == nullptr or packet_size <=0 ){
+        EAGLEEYE_LOGE("avformat_new_stream failed");
+        return false;
+    }
+    if(m_av_packet == nullptr){
+        EAGLEEYE_LOGE("m_av_packet is nullptr");
+        return false;
+    }
+
+    av_init_packet(m_av_packet);
+    m_av_packet->data = reinterpret_cast<uint8_t*>(packet);
+    m_av_packet->size = packet_size;
+    AVRational time_base = {1, 25}; // time base for 25 fps
+    m_av_packet->pts = av_rescale_q(this->m_frame_count, time_base, m_stream->time_base);
+    m_av_packet->dts = m_av_packet->pts;
+    std::unique_ptr<AVPacket, decltype(av_packet_unref) *> unref_guard{m_av_packet, av_packet_unref};
+
+    if(auto ret = av_interleaved_write_frame(m_fmt_context, m_av_packet); ret  < 0){
+        EAGLEEYE_LOGE("av_write_frame ret = %d", ret);
+        return false;
+    }
+    EAGLEEYE_LOGE("h264Muxing success");
+    return true;
+
+#else
+    return true;
+#endif
 }
 
 void VideoWriteNode::setImageFormat(int image_format){
@@ -867,20 +999,41 @@ void VideoWriteNode::getFolder(std::string& folder){
 void VideoWriteNode::writeFinish(AnySignal* out_sig){
 #ifndef EAGLEEYE_RKCHIP
     /* flush the encoder */
-    encode(m_codec_cxt, NULL, m_pkt, m_output_file);
-    /* add sequence end code to have a real mpeg file */
-    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
-    if (m_encoder->id == AV_CODEC_ID_MPEG1VIDEO || m_encoder->id == AV_CODEC_ID_MPEG2VIDEO)
-        m_output_file.write((char*)endcode, sizeof(endcode));
-
+    encode(m_codec_cxt, NULL, m_pkt, m_fmt_context_ff, m_stream_ff);
+    av_write_trailer(m_fmt_context_ff);
+    if(m_fmt_context != nullptr){
+        avio_closep(&m_fmt_context_ff->pb);
+        avformat_free_context(m_fmt_context_ff);
+    }
     avcodec_close(m_codec_cxt);
 	avcodec_free_context(&m_codec_cxt);    
     av_frame_free(&m_frame);
     av_packet_free(&m_pkt);
     m_codec_cxt = NULL;
+
+#ifdef EAGLEEYE_MINIO
+    if(m_is_upload){
+        this->uploader(this->m_file_path);
+    }
+#endif //EAGLEEYE_MINIO
+
 #endif
 
-	m_output_file.close();
+#ifdef EAGLEEYE_RKCHIP
+    EAGLEEYE_LOGD(" end the file");
+    av_write_trailer(m_fmt_context);
+    if(m_codec_ctx != nullptr){
+         avcodec_free_context(&m_codec_ctx);
+    }
+    if(m_fmt_context != nullptr){
+        avio_closep(&m_fmt_context->pb);
+        avformat_free_context(m_fmt_context);
+    }
+    if(m_av_packet != nullptr){
+        av_packet_free(&m_av_packet);
+    }
+#endif
+
     if(out_sig != NULL){
         out_sig->meta().is_end_frame = true;
         out_sig->meta().is_start_frame = false;
@@ -945,6 +1098,125 @@ void VideoWriteNode::setSerial(bool is_serial){
 
 int VideoWriteNode::getSerialNum(){
     return m_video_count;
+}
+
+void VideoWriteNode::setBaseURL(const std::string& url){
+    this->m_base_url = url;
+}
+
+void VideoWriteNode::setAccessKey(const std::string& access_key){
+    this->m_access_key = access_key;
+}
+
+void VideoWriteNode::setSecretKey(const std::string& secret_key){
+    this->m_secret_key = secret_key;
+}
+
+void VideoWriteNode::setBucketName(const std::string& bucket_name){
+    this->m_bucket_name = bucket_name;
+}
+
+void VideoWriteNode::setIsUpload(bool upload){
+    this->m_is_upload = upload;
+}
+
+void VideoWriteNode::setIsSecure(bool secure){
+    this->m_is_secure = secure;
+}
+
+bool VideoWriteNode::uploader(const std::string &src_file){
+#ifdef EAGLEEYE_MINIO
+    if(src_file.empty()){
+        EAGLEEYE_LOGE("error src file = %s ",src_file);
+    }
+    //0. makr clent
+    std::shared_ptr<minio::s3::Client> client = nullptr;
+    minio::s3::BaseUrl base_url(m_base_url, m_is_secure);
+    minio::creds::StaticProvider provider(m_access_key,m_secret_key);
+    try
+    {
+        client =std::make_shared<minio::s3::Client>(base_url, &provider);
+    }
+    catch(const std::exception& e)
+    {
+        EAGLEEYE_LOGE("creat client error  = %s", e.what());
+        return false;
+    }
+
+    if(client == nullptr){
+        EAGLEEYE_LOGE("creat client error ");
+        return false;
+    }
+
+    //1. check bucket
+    bool exist = false;
+    try{
+        minio::s3::BucketExistsArgs args;
+        args.bucket = m_bucket_name;
+        minio::s3::BucketExistsResponse resp = client->BucketExists(args);
+        if (!resp) {
+            EAGLEEYE_LOGE("unable to do bucket existence check: error = %s", resp.Error());
+            return false;
+        }
+        exist = resp.exist;
+    }
+    catch(const std::exception& e)
+    {
+        EAGLEEYE_LOGE("BucketExists throw error = %s", e.what());
+        return false;
+    }
+    
+    //2. make bucket
+    if(not exist){
+        try{
+            minio::s3::MakeBucketArgs args;
+            args.bucket = m_bucket_name;
+            minio::s3::MakeBucketResponse resp = client->MakeBucket(args);
+            if (!resp) {
+                EAGLEEYE_LOGE("unable to create bucket, error = %s ", resp.Error());
+                return false;
+            }
+        }
+        catch(const std::exception& e){
+            EAGLEEYE_LOGE("MakeBucket throw error = %s",e.what());
+            return false;
+        }
+    }
+
+    //3. upload
+    auto getDestFileName = [](const std::string &src_file){
+        auto found = src_file.find_last_of("/\\");
+        if(found == std::string::npos){
+            return src_file;
+        }
+        return src_file.substr(found+1);
+    };
+    std::string dst_file = getDestFileName(src_file);
+    if(dst_file.empty()){
+        EAGLEEYE_LOGE("failed upload object [%s]");
+        return false;
+    }
+    try{
+        minio::s3::UploadObjectArgs args;
+        args.bucket = m_bucket_name;
+        args.object = dst_file;
+        args.filename = src_file;
+
+        minio::s3::UploadObjectResponse resp = client->UploadObject(args);
+        if (!resp) {
+            EAGLEEYE_LOGE("unable to upload object [%s], error = %s",src_file, resp.Error());
+            return false;
+        }   
+    }
+    catch(const std::exception& e)
+    {
+        EAGLEEYE_LOGE("UploadObject throw error = %s", e.what());
+        return false;
+    }
+    return true;
+#else
+    return true;
+#endif
 }
 } // namespace  eagleeye
 

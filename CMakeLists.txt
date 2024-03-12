@@ -485,6 +485,13 @@ if(CUDA)
     target_link_libraries(eagleeye ${EXEC_NPPICC})
 endif()
 
+if(MINIO)
+    add_definitions(-DEAGLEEYE_MINIO)
+    message(STATUS "Define MINIO")
+    include_directories(${MINIO_PATH}/include)
+    target_link_libraries(eagleeye ${MINIO_PATH}/lib/libminiocpp.so)
+endif()
+
 if(DEFINED FFMPEG)
     message(STATUS "Define FFMPEG")
     add_definitions(-DEAGLEEYE_FFMPEG)
@@ -501,12 +508,12 @@ if(DEFINED FFMPEG)
     elseif(DEFINED X86_ABI)
         # 在主机侧，ffmpeg安装到系统目录
         target_link_libraries(eagleeye 
-                                libavcodec.so 
-                                libavfilter.so 
-                                libavformat.so 
-                                libavutil.so 
-                                libswresample.so 
-                                libswscale.so)
+                                /workspace/3rd/linux-ffm/ffmpeg/install/libavcodec.so 
+                                /workspace/3rd/linux-ffm/ffmpeg/install/libavfilter.so 
+                                /workspace/3rd/linux-ffm/ffmpeg/install/libavformat.so 
+                                /workspace/3rd/linux-ffm/ffmpeg/install/libavutil.so 
+                                /workspace/3rd/linux-ffm/ffmpeg/install/libswresample.so 
+                                /workspace/3rd/linux-ffm/ffmpeg/install/libswscale.so)
     else()
         target_link_libraries(eagleeye 
                                 ${FFMPEG}/install/lib/libavcodec.so
