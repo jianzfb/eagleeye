@@ -81,6 +81,13 @@ VideoWriteNode::VideoWriteNode(){
     EAGLEEYE_MONITOR_VAR(int, setStop, getStop, "stop","0","2");
     EAGLEEYE_MONITOR_VAR(int, setStart, getStart, "start","0","2");
 
+    EAGLEEYE_MONITOR_VAR(std::string, setBaseURL, getBaseURL, "base_url","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setAccessKey, getAccessKey, "access_key","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setSecretKey, getSecretKey, "secret_key","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setBucketName, getBucketName, "bucket_name","","");
+    EAGLEEYE_MONITOR_VAR(bool, setIsUpload, getIsUpload, "is_upload","","");
+    EAGLEEYE_MONITOR_VAR(bool, setIsSecure, getIsSecure, "is_secure","","");
+
     this->m_prefix = "video_";
     this->m_folder = "/sdcard/";
     this->m_manually_stop = 0;
@@ -1100,28 +1107,52 @@ int VideoWriteNode::getSerialNum(){
     return m_video_count;
 }
 
-void VideoWriteNode::setBaseURL(const std::string& url){
+void VideoWriteNode::setBaseURL(std::string url){
     this->m_base_url = url;
 }
 
-void VideoWriteNode::setAccessKey(const std::string& access_key){
+void VideoWriteNode::getBaseURL(std::string& url){
+    url = this->m_base_url;
+}
+
+void VideoWriteNode::setAccessKey(std::string access_key){
     this->m_access_key = access_key;
 }
 
-void VideoWriteNode::setSecretKey(const std::string& secret_key){
+void VideoWriteNode::getAccessKey(std::string& access_key){
+    access_key = this->m_access_key;
+}
+
+void VideoWriteNode::setSecretKey(std::string secret_key){
     this->m_secret_key = secret_key;
 }
 
-void VideoWriteNode::setBucketName(const std::string& bucket_name){
+void VideoWriteNode::getSecretKey(std::string& secret_key){
+    secret_key = this->m_secret_key;
+}
+
+void VideoWriteNode::setBucketName(std::string bucket_name){
     this->m_bucket_name = bucket_name;
+}
+
+void VideoWriteNode::getBucketName(std::string& bucket_name){
+    bucket_name = this->m_bucket_name;
 }
 
 void VideoWriteNode::setIsUpload(bool upload){
     this->m_is_upload = upload;
 }
 
+void VideoWriteNode::getIsUpload(bool& upload){
+    upload = this->m_is_upload;
+}
+
 void VideoWriteNode::setIsSecure(bool secure){
     this->m_is_secure = secure;
+}
+
+void VideoWriteNode::getIsSecure(bool& secure){
+    secure = this->m_is_secure;
 }
 
 bool VideoWriteNode::uploader(const std::string &src_file){

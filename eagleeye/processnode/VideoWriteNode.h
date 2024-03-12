@@ -107,17 +107,29 @@ public:
     /*
      * @brief minio
      */
-    void setBaseURL(const std::string& url);
+    void setBaseURL(std::string url);
 
-    void setAccessKey(const std::string& access_key);
+    void getBaseURL(std::string& url);
 
-    void setSecretKey(const std::string& secret_key);
+    void setAccessKey(std::string access_key);
 
-    void setBucketName(const std::string& bucket_name);
+    void getAccessKey(std::string& access_key);
+
+    void setSecretKey(std::string secret_key);
+
+    void getSecretKey(std::string& secret_key);
+
+    void setBucketName(std::string bucket_name);
+
+    void getBucketName(std::string& bucket_name);
 
     void setIsUpload(bool upload);
 
+    void getIsUpload(bool& upload);
+
     void setIsSecure(bool secure);
+
+    void getIsSecure(bool& secure);
 
 private:
     VideoWriteNode(const VideoWriteNode&);
