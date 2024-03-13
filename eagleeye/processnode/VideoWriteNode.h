@@ -100,6 +100,11 @@ public:
     void setSerial(bool is_serial);
 
     /**
+     * @brief 是否成功写入完成
+     */
+    bool isSuccessWrite(){return m_is_success_write;};
+
+    /**
      * @brief get serial number
      */
     int getSerialNum();
@@ -200,6 +205,8 @@ private:
     bool uploader(const std::string &src_file);
     bool m_is_upload = false;
     bool m_is_secure = false;
+
+    bool m_is_success_write;
 };
 }
 #endif

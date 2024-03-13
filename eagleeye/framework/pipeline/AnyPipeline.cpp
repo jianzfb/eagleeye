@@ -639,7 +639,7 @@ void AnyPipeline::setParameter(const char* node_name,
     // try 2: 模糊匹配
     if(!issuccess){
         for(iter = this->m_monitor_params.begin(); iter != iend; ++iter){
-            if(startswith(iter->first, node_name) && endswith(iter->first, param_name)){
+            if((startswith(iter->first, node_name) && endswith(iter->first, param_name)) || (endswith(iter->first, node_name) && endswith(iter->first, param_name))){
                 iter->second->setVar(value);
                 issuccess = true;
             }

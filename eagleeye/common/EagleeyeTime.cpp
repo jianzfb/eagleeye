@@ -10,9 +10,6 @@ long EagleeyeTime::getCurrentTime(){
 }
 
 std::string EagleeyeTime::getTimeStamp(){
-	std::stringstream ss;
-	ss<<getCurrentTime();
-	std::string stamp = "timestamp_"+ss.str();
-	return stamp;
+	return std::to_string(getCurrentTime());
 }
 }

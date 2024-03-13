@@ -40,6 +40,15 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format){
     camera_source->setPersistent(true);
     camera_source->init();
 
+    RTSPReadNode* inner_rts_node = (RTSPReadNode*)(camera_source->getInnerIns());
+    if(inner_rts_node->isRTSPStreamPullError()){
+        // 错误，删除对象
+        camera_source->setPersistent(false);
+        camera_source->exit();
+        delete camera_source;
+        return false;
+    }
+
     // 激活相机，不计入占用计数
     m_camera_map[camera_address] = std::make_pair((AnyNode*)camera_source, 0);
     return true;
@@ -66,6 +75,15 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format){
     );
     camera_source->setPersistent(true);
     camera_source->init();
+
+    RTSPReadNode* inner_rts_node = (RTSPReadNode*)(camera_source->getInnerIns());
+    if(inner_rts_node->isRTSPStreamPullError()){
+        // 错误，删除对象
+        camera_source->setPersistent(false);
+        camera_source->exit();
+        delete camera_source;
+        return false;
+    }
 
     // 占用计数 +1
     m_camera_map[camera_address] = std::make_pair((AnyNode*)camera_source, 1);

@@ -46,6 +46,11 @@ public:
 
     void setMaxQueue(int size);
 
+    /**
+     * @brief 是否rtsp流拉流正常
+     */
+    bool isRTSPStreamPullError(){return m_is_rtsp_stream_pull_error;}
+
 private:
     RTSPReadNode(const RTSPReadNode&);
     void operator=(const RTSPReadNode&);
@@ -85,6 +90,8 @@ private:
     int64_t m_image_h;              // image h
     int64_t m_image_w;              // image w
     int m_max_queue_size;
+
+    bool m_is_rtsp_stream_pull_error;
 };
 }
 #endif

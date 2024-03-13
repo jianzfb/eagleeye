@@ -66,6 +66,7 @@ VideoWriteNode::VideoWriteNode(){
     this->m_is_finish = true;
     this->m_fps = 30;
     this->m_image_format = 1;   // 默认BGR
+    this->m_is_success_write = false;
 
     // FFMPEG原生编码器
     m_codec_cxt = NULL;
@@ -511,6 +512,7 @@ void VideoWriteNode::executeNodeInfo(){
         //打开输出文件流(一个新的视频存储)
         m_is_header_init = false;
         m_is_finish = false;
+        m_is_success_write = false;
         this->getOutputPort(0)->meta().is_end_frame = false;
         this->getOutputPort(0)->meta().is_pause_frame = false;
     }
@@ -981,6 +983,7 @@ void VideoWriteNode::setFilePath(std::string file_path){
     this->m_manually_stop = 0;
     this->m_manually_start = 0;
     this->m_manually_pause = 0;
+    this->m_is_success_write = false;
 }
 void VideoWriteNode::getFilePath(std::string& file_path){
     file_path = this->m_file_path;
@@ -1053,6 +1056,9 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
     this->m_manually_start = 0;
     this->m_manually_pause = 0;
     this->m_frame_count = 0;
+
+    // 调用至此，说明写入完成
+    this->m_is_success_write = true;
 }
 
 void VideoWriteNode::setStop(int stop){

@@ -66,6 +66,7 @@ RTSPReadNode::RTSPReadNode(){
         EAGLEEYE_LOGE("Could not allocate video codec context");
     }
 
+    m_is_rtsp_stream_pull_error = false;
     m_hw_device_ctx = NULL;
 #ifdef EAGLEEYE_CUDA
     //  设置硬件解码
@@ -83,7 +84,9 @@ RTSPReadNode::RTSPReadNode(){
         EAGLEEYE_LOGE("Couldn't open codec.");
 #ifdef EAGLEEYE_CUDA
         av_buffer_unref(&m_hw_device_ctx);
+        m_hw_device_ctx = NULL;
 #endif
+        m_is_rtsp_stream_pull_error = true;
     }
 
     // 0: RGB, 1: BGR, 2: RGBA, 3: BGRA
@@ -155,14 +158,17 @@ RTSPReadNode::RTSPReadNode(){
     m_mpp_ctx = mpp_ctx;
     m_mpp_api = mpp_api;
     m_frm_grp = NULL;
+    // 负责解码+颜色空间转换线程
     m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_rga,this));
 #endif
 
 #ifdef EAGLEEYE_CUDA
+    // 负责解码+颜色空间转换线程
     m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_cuda, this));
 #endif
 
 #if (!defined(EAGLEEYE_RKCHIP) && !defined(EAGLEEYE_CUDA))
+    // 负责解码+颜色空间转换线程
     m_thread = std::thread(std::bind(&RTSPReadNode::postprocess_by_libyuv,this));
 #endif
 }
@@ -227,6 +233,11 @@ RTSPReadNode::~RTSPReadNode(){
 }
 
 void RTSPReadNode::executeNodeInfo(){
+    if(m_is_rtsp_stream_pull_error){
+        EAGLEEYE_LOGE("RTSP stream error, skip pull process.");
+        return;
+    }
+
     // 每调用一次，从流中读取一帧
     bool is_found = false;
     AVPacket pkt;
@@ -880,11 +891,13 @@ void RTSPReadNode::setFilePath(std::string file_path){
     ret = avformat_open_input(&m_format_ctx, file_path.c_str(), nullptr, &format_opts);
     if (ret != 0) {
         EAGLEEYE_LOGE("Fail to open url: %s, return value: %d", file_path.c_str(), ret);
+        this->m_is_rtsp_stream_pull_error = true;
         return;
     }
     ret = avformat_find_stream_info(m_format_ctx, nullptr);
     if (ret < 0) {
         EAGLEEYE_LOGE("Fail to get stream information: %d", ret);
+        this->m_is_rtsp_stream_pull_error = true;
         return;
     }
 
@@ -901,6 +914,7 @@ void RTSPReadNode::setFilePath(std::string file_path){
     }
     if (m_video_stream_index == -1) {
         EAGLEEYE_LOGE("no video stream");
+        this->m_is_rtsp_stream_pull_error = true;
         return;
     }
 }
