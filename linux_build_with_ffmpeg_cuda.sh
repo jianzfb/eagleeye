@@ -15,7 +15,7 @@ cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DFFMPEG=/workspace/project/linux-ffm/ffmpeg -DCUDA:BOOL=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DFFMPEG=/workspace/3rd/linux-ffm/ffmpeg -DCUDA:BOOL=ON -DMINIO:BOOL=ON -DMINIO_PATH=/workspace/github/minio-cpp/build/vcpkg_installed/x64-linux/ ..
 fi
 make
 cd ..

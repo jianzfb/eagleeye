@@ -485,6 +485,13 @@ if(CUDA)
     target_link_libraries(eagleeye ${EXEC_NPPICC})
 endif()
 
+if(MINIO)
+    add_definitions(-DEAGLEEYE_MINIO)
+    message(STATUS "Define MINIO")
+    include_directories(${MINIO_PATH}/include)
+    target_link_libraries(eagleeye ${MINIO_PATH}/lib/libminiocpp.so)
+endif()
+
 if(DEFINED FFMPEG)
     message(STATUS "Define FFMPEG")
     add_definitions(-DEAGLEEYE_FFMPEG)
