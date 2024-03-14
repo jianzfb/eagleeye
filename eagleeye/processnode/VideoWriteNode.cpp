@@ -1232,6 +1232,7 @@ bool VideoWriteNode::uploader(const std::string &src_file){
         args.bucket = m_bucket_name;
         args.object = dst_file;
         args.filename = src_file;
+        args.content_type = "video/mp4";
 
         minio::s3::UploadObjectResponse resp = client->UploadObject(args);
         if (!resp) {
