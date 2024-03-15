@@ -29,9 +29,9 @@ make
 cd ..
 
 # 3.step 安装
-if [ -d "./install" ]; 
+if [ -d "./android-install" ]; 
 then
-  rm -rf install
+  rm -rf android-install
 fi
 mkdir include
 
@@ -45,16 +45,16 @@ else
 fi
 
 
-mkdir install
-cd install
+mkdir android-install
+cd android-install
 mkdir libs
 cd ..
-mv include install/
-mv bin/* install/libs/
+mv include android-install/
+mv bin/* android-install/libs/
 rm -rf bin
 
 # 4.step 第三方库（opencl）
-cd install
+cd android-install
 mkdir 3rd
 cp -r ../eagleeye/3rd/opencl 3rd/
 cp -r ../eagleeye/3rd/eigen 3rd/
@@ -63,7 +63,4 @@ cp -r ../eagleeye/3rd/libyuv 3rd/
 cd ..
 
 # 5.step 脚本工具
-cp -r scripts install/
-
-# 6.step 重命名
-mv install android-install
+cp -r scripts android-install/

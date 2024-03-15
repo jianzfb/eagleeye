@@ -21,9 +21,9 @@ make
 cd ..
 
 # 3.step 安装
-if [ -d "./install" ]; 
+if [ -d "./linux-install" ]; 
 then
-  rm -rf install
+  rm -rf linux-install
 fi
 mkdir include
 
@@ -36,16 +36,16 @@ else
   find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.h" -type f -exec cp --parent -r {} include/ \;
 fi
 
-mkdir install
-cd install
+mkdir linux-install
+cd linux-install
 mkdir libs
 cd ..
-mv include install/
-mv bin/* install/libs/
+mv include linux-install/
+mv bin/* linux-install/libs/
 rm -rf bin
 
 # 4.step 第三方库
-cd install
+cd linux-install
 # 第三方代码库
 mkdir 3rd
 cp -r ../eagleeye/3rd/eigen 3rd/
@@ -56,7 +56,4 @@ cp -r  ../eagleeye/3rd/libyuv/lib/linux/X86-64/* libs/X86-64/
 cd ..
 
 # 5.step 脚本工具
-cp -r scripts install/
-
-# 6.step 重命名
-mv install linux-install
+cp -r scripts linux-install/
