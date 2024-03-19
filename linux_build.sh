@@ -10,10 +10,12 @@ git submodule init
 git submodule update
 
 # 2.step 编译
+install_dir="linux-install"
 mkdir build
 cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON ..
+install_dir="py"
 else
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON ..
 fi
@@ -21,9 +23,9 @@ make
 cd ..
 
 # 3.step 安装
-if [ -d "./linux-install" ]; 
+if [ -d $install_dir ]; 
 then
-  rm -rf linux-install
+  rm -rf $install_dir
 fi
 mkdir include
 
@@ -36,16 +38,16 @@ else
   find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.h" -type f -exec cp --parent -r {} include/ \;
 fi
 
-mkdir linux-install
-cd linux-install
+mkdir $install_dir
+cd $install_dir
 mkdir libs
 cd ..
-mv include linux-install/
-mv bin/* linux-install/libs/
+mv include $install_dir/
+mv bin/* $install_dir/libs/
 rm -rf bin
 
 # 4.step 第三方库
-cd linux-install
+cd $install_dir
 # 第三方代码库
 mkdir 3rd
 cp -r ../eagleeye/3rd/eigen 3rd/
@@ -56,4 +58,4 @@ cp -r  ../eagleeye/3rd/libyuv/lib/linux/X86-64/* libs/X86-64/
 cd ..
 
 # 5.step 脚本工具
-cp -r scripts linux-install/
+cp -r scripts $install_dir/

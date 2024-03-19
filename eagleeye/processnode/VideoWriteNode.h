@@ -136,6 +136,8 @@ public:
 
     void getIsSecure(bool& secure);
 
+    void forceWriteFinish();
+
 private:
     VideoWriteNode(const VideoWriteNode&);
     void operator=(const VideoWriteNode&);

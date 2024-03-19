@@ -82,9 +82,6 @@ void AutoPipeline::run(){
             MetaData data_meta;
             m_cache_input[signal_i]->copy(this->getInputPort(signal_i));
             m_cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
-            if(!this->m_thread_status){
-                break;
-            }
 
             std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
             data_meta.rows = data_size[0];
@@ -107,9 +104,6 @@ void AutoPipeline::run(){
             continue;
         }
         this->m_last_timestamp = input_data_timestamp;
-        if(!this->m_thread_status){
-            break;
-        }
 
         // 运行管线
         m_auto_pipeline->start();

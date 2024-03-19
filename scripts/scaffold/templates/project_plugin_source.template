@@ -1,3 +1,4 @@
+// >>>>>>>>>>>>>>>>>>>>>>AUTOGENERATE PLUGIN HEADER>>>>>>>>>>>>>>>>>>>>>>
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnyNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
@@ -5,9 +6,12 @@
 #include "eagleeye/processnode/Placeholder.h"
 #include "eagleeye/framework/pipeline/DynamicPipelineCreater.h"
 #include "{{project}}_plugin.h"
+// >>>>>>>>>>>>>>>>>>>>>>AUTOGENERATE PLUGIN HEADER>>>>>>>>>>>>>>>>>>>>>>
 
+// DEVELOPER WRITE HEADER HERE
 
 namespace eagleeye{
+using namespace dataflow;
 
 /**
  * @brief register pipeline plugin
@@ -20,6 +24,7 @@ EAGLEEYE_PIPELINE_REGISTER({{project}}, {{version}}, {{signature}});
  * 
  */
 EAGLEEYE_BEGIN_PIPELINE_INITIALIZE({{project}})
+// >>>>>>>>>>>>>>>>>>>>>>AUTOGENERATE PLUGIN SOURCE>>>>>>>>>>>>>>>>>>>>>>
 // 1.step build datasource node
 Placeholder<ImageSignal<Array<unsigned char, 3>>>* placeholder = new Placeholder<ImageSignal<Array<unsigned char, 3>>>();
 placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_IMAGE);
@@ -39,6 +44,10 @@ placeholder->setPlaceholderSignalType(EAGLEEYE_SIGNAL_IMAGE);
 // 4.step link all node in pipeline
 // for example:
 // {{project}}->bind("placeholder",0,"instance_person_seg_node",0);
+
+// >>>>>>>>>>>>>>>>>>>>>>AUTOGENERATE PLUGIN SOURCE>>>>>>>>>>>>>>>>>>>>>>
+
+// DEVELOPER WRITE SOURCE HERE
 
 EAGLEEYE_END_PIPELINE_INITIALIZE({{project}})
 }

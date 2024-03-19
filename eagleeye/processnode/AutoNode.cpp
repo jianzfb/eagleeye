@@ -36,7 +36,9 @@ AutoNode::~AutoNode(){
         }
     }
     // 删除内部节点
-    delete m_auto_node;
+    if(m_auto_node != NULL){
+        delete m_auto_node;
+    }
 }
 
 void AutoNode::executeNodeInfo(){
@@ -68,9 +70,6 @@ void AutoNode::run(){
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             // block call
             signal_list[signal_i]->copy(this->getInputPort(signal_i));
-            if(!this->m_thread_status){
-                break;
-            }
 
             // set input
             MetaData data_meta = signal_list[signal_i]->meta();
@@ -86,10 +85,6 @@ void AutoNode::run(){
             continue;
         }
         this->m_last_timestamp = input_data_timestamp;
-
-        if(!this->m_thread_status){
-            break;
-        }
 
         // 2.step run node
         bool running_ischange = m_auto_node->start();
@@ -111,7 +106,7 @@ void AutoNode::run(){
         if(this->m_callback != nullptr){           
             this->m_callback(this, this->m_output_signals);
         }
-        
+
         // 5.step 检查自动结束条件
         if(is_auto_stop){
             m_thread_status = false;

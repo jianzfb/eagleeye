@@ -53,7 +53,7 @@ RTSPReadNode::RTSPReadNode(){
     this->setNumberOfOutputSignals(2);  // image signal, timestamp signal
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "rtsp","","");
 
-    m_overtime = "100000";
+    m_overtime = "20000";      // 100000
     m_rtsp_transport = "tcp";   // tcp, udp
     //Find H.264 Decoder
     m_pCodec = avcodec_find_decoder(AV_CODEC_ID_H264);
@@ -895,12 +895,17 @@ void RTSPReadNode::setFilePath(std::string file_path){
     this->m_rtsp_address = file_path;
     int ret = -1;
     AVDictionary* format_opts = NULL;
-    av_dict_set(&format_opts, "stimeout", m_overtime.c_str(), 0);               //设置阻塞超时，否则可能在流断开时连接发生阻塞，微秒
-    av_dict_set(&format_opts, "timeout", "1000000", 0);                         //在进行网络操作时允许的最大等待时间。1秒
-    av_dict_set(&format_opts, "rtsp_transport", m_rtsp_transport.c_str(), 0);   //设置推流的方式，默认udp。
-    av_dict_set(&format_opts, "max_analyze_duration", "10", 0);                 //设置find_stream_info 最大时长，微秒
-    av_dict_set(&format_opts, "max_delay", "100000", 0);                        //接收包间隔最大延迟，微秒
-    av_dict_set(&format_opts, "fflags", "nobuffer", 0);     
+    // av_dict_set(&format_opts, "stimeout", m_overtime.c_str(), 0);               //设置阻塞超时，否则可能在流断开时连接发生阻塞，微秒
+    // av_dict_set(&format_opts, "timeout", "2000000", 0);                         //在进行网络操作时允许的最大等待时间。1秒
+    // av_dict_set(&format_opts, "rtsp_transport", m_rtsp_transport.c_str(), 0);   //设置推流的方式，默认udp。
+    // av_dict_set(&format_opts, "max_analyze_duration", "10", 0);                 //设置find_stream_info 最大时长，微秒
+    // av_dict_set(&format_opts, "max_delay", "200000", 0);                        //接收包间隔最大延迟，微秒
+    // av_dict_set(&format_opts, "fflags", "nobuffer", 0);     
+
+    av_dict_set(&format_opts, "stimeout", m_overtime.c_str(), 0); //设置链接超时时间（us）
+    av_dict_set(&format_opts, "rtsp_transport", m_rtsp_transport.c_str(), 0); //设置推流的方式，默认udp。
+    av_dict_set(&format_opts, "max_analyze_duration", "10", 0);
+    av_dict_set(&format_opts, "probesize", "2048", 0);
     ret = avformat_open_input(&m_format_ctx, file_path.c_str(), nullptr, &format_opts);
     if (ret != 0) {
         EAGLEEYE_LOGE("Fail to open url: %s, return value: %d", file_path.c_str(), ret);

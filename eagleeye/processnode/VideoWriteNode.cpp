@@ -1007,6 +1007,15 @@ void VideoWriteNode::getFolder(std::string& folder){
 }
 
 void VideoWriteNode::writeFinish(AnySignal* out_sig){
+    if(!this->m_is_init || m_frame_count <= 0){
+        // 没有启动开始写操作，直接结束
+        return;
+    }
+    if(this->m_is_success_write){
+        // 已经完成了写，重复操作，直接跳过
+        return;
+    }
+
 #ifndef EAGLEEYE_RKCHIP
     /* flush the encoder */
     encode(m_codec_cxt, NULL, m_pkt, m_fmt_context_ff, m_stream_ff);
@@ -1202,7 +1211,7 @@ bool VideoWriteNode::uploader(const std::string &src_file){
         EAGLEEYE_LOGE("BucketExists throw error = %s", e.what());
         return false;
     }
-    
+
     //2. make bucket
     if(not exist){
         try{
@@ -1233,6 +1242,7 @@ bool VideoWriteNode::uploader(const std::string &src_file){
         EAGLEEYE_LOGE("failed upload object [%s]");
         return false;
     }
+
     try{
         minio::s3::UploadObjectArgs args;
         args.bucket = m_bucket_name;
@@ -1255,6 +1265,10 @@ bool VideoWriteNode::uploader(const std::string &src_file){
 #else
     return true;
 #endif
+}
+
+void VideoWriteNode::forceWriteFinish(){
+    this->writeFinish();
 }
 } // namespace  eagleeye
 
