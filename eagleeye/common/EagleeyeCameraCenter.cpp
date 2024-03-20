@@ -22,6 +22,9 @@ bool CameraCenter::isExist(std::string camera_address){
 }
 
 bool CameraCenter::activeCamera(std::string camera_address, int pixel_format){
+#ifndef EAGLEEYE_FFMPEG
+    return false;
+#else
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_camera_map.find(camera_address) != m_camera_map.end()){
         return true;
@@ -52,9 +55,13 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format){
     // 激活相机，不计入占用计数
     m_camera_map[camera_address] = std::make_pair((AnyNode*)camera_source, 0);
     return true;
+#endif
 }
 
 bool CameraCenter::addCamera(std::string camera_address, int pixel_format){
+#ifndef EAGLEEYE_FFMPEG
+    return false;
+#else
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_camera_map.find(camera_address) != m_camera_map.end()){
         // 占用计数 +1
@@ -89,6 +96,7 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format){
     m_camera_map[camera_address] = std::make_pair((AnyNode*)camera_source, 1);
     EAGLEEYE_LOGD("Camera %s use +1 (now %d)", camera_address.c_str(), 1);
     return true;
+#endif
 }
 
 bool CameraCenter::removeCamera(std::string camera_address){
