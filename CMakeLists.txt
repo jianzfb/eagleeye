@@ -505,15 +505,6 @@ if(DEFINED FFMPEG)
                                 ${FFMPEG}/install/lib/libavutil.so
                                 ${FFMPEG}/install/lib/libswresample.so
                                 ${FFMPEG}/install/lib/libswscale.so)
-    elseif(DEFINED X86_ABI)
-        # 在主机侧，ffmpeg安装到系统目录
-        target_link_libraries(eagleeye 
-                                libavcodec.so 
-                                libavfilter.so 
-                                libavformat.so 
-                                libavutil.so 
-                                libswresample.so 
-                                libswscale.so)
     else()
         target_link_libraries(eagleeye 
                                 ${FFMPEG}/install/lib/libavcodec.so
@@ -536,9 +527,9 @@ if(DEFINED RKCHIP)
     include_directories(${RKCHIP}/librga/include)
 
     target_link_libraries(eagleeye 
-                            ${RKCHIP}/mpp/mpp/libmpp.so
-                            ${RKCHIP}/mpp/utils/libutils.a
-                            ${RKCHIP}/mpp/osal/libosal.a
+                            ${RKCHIP}/mpp/build/android/mpp/librockchip_mpp.so
+                            ${RKCHIP}/mpp/build/android/utils/libutils.a
+                            ${RKCHIP}/mpp/build/android/osal/libosal.a
                             ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
 endif()
 
