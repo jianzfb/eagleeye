@@ -95,6 +95,12 @@ public:
     void getFPS(int& fps);
 
     /*
+     * @brief only write once
+     */
+    void enableOnlyOnce();
+    void disableOnlyOnce();
+
+    /*
      * @brief 设置序列标记（加入序列命名）
      */
     void setSerial(bool is_serial);
@@ -209,6 +215,7 @@ private:
     bool m_is_secure = false;
 
     bool m_is_success_write;
+    bool m_is_only_once;
 };
 }
 #endif

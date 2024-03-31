@@ -344,6 +344,16 @@ def main():
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "run.sh"), 'w') as fp:
         fp.write(output)
 
+      # VS CODE - setup.sh
+      template = env.get_template('project_setup.template')
+      output = template.render(project=project_name,
+                                eagleeye=FLAGS.eagleeye(),
+                                abi=FLAGS.abi().split(',')[0],
+                                paddlelite=FLAGS.paddlelite())
+
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, "setup.sh"), 'w') as fp:
+        fp.write(output)
+
       # 生成数据文件夹 data
       os.makedirs(os.path.join(os.curdir, 'data'), exist_ok=True)
       # 生成模型文件夹 model

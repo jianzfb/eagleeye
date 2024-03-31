@@ -1,25 +1,6 @@
 {% if abi == "arm64-v8a" or  abi == "armeabi-v7a" %}
-if [ "$1"x = "reload"x ]; then
-adb shell "if [ ! -d '/data/local/tmp/{{project}}' ]; then mkdir /data/local/tmp/{{project}}; fi;"
-adb push {{eagleeye}}/libs/{{abi}}/* /data/local/tmp/{{project}}/
-adb push {{eagleeye}}/3rd/opencv/lib/{{abi}}/* /data/local/tmp/{{project}}/
-adb push {{eagleeye}}/3rd/libyuv/lib/{{abi}}/* /data/local/tmp/{{project}}/
-adb push ./bin/{{abi}}/* /data/local/tmp/{{project}}/
-adb push ./3rd/{{abi}}/* /data/local/tmp/{{project}}/
-adb shell "if [ ! -d '/data/local/tmp/{{project}}/data' ]; then mkdir /data/local/tmp/{{project}}/data; fi;"
-fi
-adb push ./data/input /data/local/tmp/{{project}}/data/
-{% if paddlelite != '' %}
-adb push {{paddlelite}}/{{abi}}/lib/* /data/local/tmp/{{project}}/
-{% endif %}
-
-
-adb shell "cd /data/local/tmp/{{project}}; export LD_LIBRARY_PATH=.; ./{{project}}_demo ${@:2}"
+adb shell "cd /data/local/tmp/{{project}}; export LD_LIBRARY_PATH=.; ./{{project}}_demo file ${@:2}"
 adb pull /data/local/tmp/{{project}}/data/output ./data/
 {% else %}
-if [ "$1"x = "reload"x ]; then
-cp -r {{eagleeye}}/libs/{{abi}}/* bin/{{abi}}/
-cp -r ./3rd/{{abi}}/* bin/{{abi}}/
-fi
-cd bin/{{abi}}/; export LD_LIBRARY_PATH=.; ./{{project}}_demo ${@:2}
+cd bin/{{abi}}/; export LD_LIBRARY_PATH=.; ./{{project}}_demo file ${@:2}
 {% endif %}

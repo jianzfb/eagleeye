@@ -67,6 +67,7 @@ VideoWriteNode::VideoWriteNode(){
     this->m_fps = 30;
     this->m_image_format = 1;   // 默认BGR
     this->m_is_success_write = false;
+    this->m_is_only_once = true;
 
     // FFMPEG原生编码器
     m_codec_cxt = NULL;
@@ -458,6 +459,11 @@ void VideoWriteNode::executeNodeInfo(){
         image_ptr = m_c4_image.cpu<unsigned char>();
     }
 
+    if(m_is_only_once && m_video_count >= 1){
+        EAGLEEYE_LOGE("Write Only Once, could write new video.");
+        return;
+    }
+
     if(m_frame_count == 0 && (image_meta_data.is_end_frame || m_manually_stop)){
         // 没有开始, 直接遇到结束标记
         this->getOutputPort(0)->meta().is_end_frame = true;
@@ -527,7 +533,6 @@ void VideoWriteNode::executeNodeInfo(){
 
     if(this->m_is_init && this->m_manually_stop != 0){
         this->writeFinish(this->getOutputPort(0));
-        this->m_video_count += 1;
         EAGLEEYE_LOGD("Success to finish write video.");
         return;
     }
@@ -925,7 +930,6 @@ void VideoWriteNode::executeNodeInfo(){
     // 停止
     if(image_meta_data.is_end_frame){
         this->writeFinish(this->getOutputPort(0));
-        this->m_video_count += 1;
         EAGLEEYE_LOGD("Success to finish write video.");
     }
 }
@@ -1068,6 +1072,7 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
 
     // 调用至此，说明写入完成
     this->m_is_success_write = true;
+    this->m_video_count += 1;
 }
 
 void VideoWriteNode::setStop(int stop){
@@ -1268,7 +1273,15 @@ bool VideoWriteNode::uploader(const std::string &src_file){
 }
 
 void VideoWriteNode::forceWriteFinish(){
+    EAGLEEYE_LOGD("use forceWriteFinish");
     this->writeFinish();
+}
+
+void VideoWriteNode::enableOnlyOnce(){
+    m_is_only_once = true;
+}
+void VideoWriteNode::disableOnlyOnce(){
+    m_is_only_once = false;
 }
 } // namespace  eagleeye
 
