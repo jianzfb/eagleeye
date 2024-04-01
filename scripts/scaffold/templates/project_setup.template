@@ -11,10 +11,6 @@ adb push ./data/input /data/local/tmp/{{project}}/data/
 {% if paddlelite != '' %}
 adb push {{paddlelite}}/{{abi}}/lib/* /data/local/tmp/{{project}}/
 {% endif %}
-
-
-adb shell "cd /data/local/tmp/{{project}}; export LD_LIBRARY_PATH=.; ./{{project}}_demo ${@:2}"
-adb pull /data/local/tmp/{{project}}/data/output ./data/
 {% else %}
 cp -r {{eagleeye}}/libs/{{abi}}/* bin/{{abi}}/
 cp -r ./3rd/{{abi}}/* bin/{{abi}}/
