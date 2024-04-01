@@ -62,6 +62,7 @@ private:
     int m_padding_x;
     int m_padding_y;
     std::vector<std::shared_ptr<ImageShow>> m_imageshow_list;
+    std::vector<AnySignal*> m_input_signals_cp;
 }; 
 } // namespace eagleeye
 

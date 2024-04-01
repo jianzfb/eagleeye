@@ -23,6 +23,12 @@ ImageContainer::ImageContainer(){
 }   
 
 ImageContainer::~ImageContainer(){
+    if(m_input_signals_cp.size() != 0){
+        for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
+            delete m_input_signals_cp[signal_i];
+        }
+        m_input_signals_cp.clear();
+    }
 }
 
 void ImageContainer::executeNodeInfo(){
@@ -43,14 +49,27 @@ void ImageContainer::executeNodeInfo(){
     int space_w = (canvas_w - 2*this->m_margin_x - (this->m_split_w-1)*this->m_padding_x) / this->m_split_w;
     int space_h = (canvas_h - 2*this->m_margin_y - (this->m_split_h-1)*this->m_padding_y) / this->m_split_h;
 
-    std::vector<AnySignal*> signal_list;
+    if(m_input_signals_cp.size() != this->getNumberOfInputSignals()){
+        if(m_input_signals_cp.size() != 0){
+            for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
+                delete m_input_signals_cp[signal_i];
+            }
+            m_input_signals_cp.clear();
+        }
+
+        for(int index=0; index<this->m_imageshow_list.size(); ++index){
+            AnySignal* signal_cp = this->getInputPort(index)->make();
+            // 记录
+            m_input_signals_cp.push_back(signal_cp);
+            // 注册到绘制节点
+            this->m_imageshow_list[index]->setInputPort(signal_cp , 0);
+        }
+    }
+
     for(int index=0; index<this->m_imageshow_list.size(); ++index){
         if(index < this->getNumberOfInputSignals() && index < this->m_split_w * this->m_split_h){
-            AnySignal* signal_cp = this->getInputPort(index)->make();
-            signal_cp->copy(this->getInputPort(index));
-            this->m_imageshow_list[index]->setInputPort(signal_cp , 0);
+            m_input_signals_cp[index]->copy(this->getInputPort(index));
 
-            signal_list.push_back(signal_cp);
             int r_i = index / this->m_split_w;
             int c_i = index - r_i*this->m_split_w;
 
@@ -81,11 +100,6 @@ void ImageContainer::executeNodeInfo(){
     // 渲染图像信息
     for(int index=0; index<this->m_imageshow_list.size(); ++index){
         this->m_imageshow_list[index]->start();
-    }
-
-    // 删除信号
-    for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
-        delete signal_list[signal_i];
     }
 }
 

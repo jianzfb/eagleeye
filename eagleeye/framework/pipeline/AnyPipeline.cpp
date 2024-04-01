@@ -859,6 +859,26 @@ void AnyPipeline::setInput(const char* node_name, std::string from_register_node
     this->m_input_nodes[input_key]->getOutputPort(port)->copy(register_sig);
 }
 
+void AnyPipeline::setInputPort(const char* node_name, int node_port, AnySignal* input_sig){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("Node name is empty.");
+        return;
+    }
+
+    std::string input_key = std::string(node_name);    
+    int port = node_port;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+    if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
+        EAGLEEYE_LOGE("Node %s is not input node.", node_name);
+        return;
+    }
+
+    this->m_input_nodes[input_key]->setInputPort(input_sig, port);
+}
 
 void AnyPipeline::getOutput(const char* node_name, 
                             void*& data, 
