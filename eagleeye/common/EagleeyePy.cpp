@@ -928,7 +928,6 @@ py::object load_data(py::str file_path, py::str dtype){
         i_file_handle.close();
         return py::object();
     }
-	
 }
 
 bool save_data(py::str file_path, py::object t){
@@ -991,6 +990,7 @@ bool save_data(py::str file_path, py::object t){
     yard_io.createWriteHandle(c_file_path, false, WRITE_BINARY_MODE);
     yard_io.write(ptr, size);
     yard_io.destroyHandle();
+    return true;
 }
 
 
