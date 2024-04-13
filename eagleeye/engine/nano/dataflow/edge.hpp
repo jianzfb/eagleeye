@@ -10,16 +10,16 @@ namespace dataflow {
 class Node;
 class Edge {
 public:  
-  Edge(Node & prev,int prev_slot, Node & next, int next_slot) noexcept
+  Edge(Node* prev,int prev_slot, Node* next, int next_slot) noexcept
   : prev_(prev), next_(next), prev_slot_(prev_slot), next_slot_(next_slot) {
     lock_ = false;
   }
 
-  Node & next() noexcept {
+  Node* next() noexcept {
     return next_;
   }
 
-  Node & prev() noexcept {
+  Node* prev() noexcept {
     return prev_;
   }
 
@@ -46,9 +46,9 @@ public:
 
 private:
   std::atomic_bool lock_;
-  Node & prev_;
+  Node* prev_;
   int prev_slot_;
-  Node & next_;
+  Node* next_;
   int next_slot_;
 };
 }

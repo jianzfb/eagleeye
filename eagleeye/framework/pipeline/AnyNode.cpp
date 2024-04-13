@@ -69,14 +69,15 @@ AnyNode::~AnyNode()
 		}
 	}
 
-	iend = m_input_signals.end();
-	for (iter = m_input_signals.begin(); iter != iend; ++iter)
-	{
-		if((*iter))
-		{
-			(*iter)->decrementOutDegree();
-		}
-	}
+	// iend = m_input_signals.end();
+	// for (iter = m_input_signals.begin(); iter != iend; ++iter)
+	// {
+	// 	if((*iter))
+	// 	{
+	// 		std::cout<<"in anynode delete"<<std::endl;
+	// 		(*iter)->decrementOutDegree();
+	// 	}
+	// }
 }
 
 void AnyNode::addInputPort(AnySignal* sig)

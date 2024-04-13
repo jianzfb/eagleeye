@@ -151,7 +151,7 @@ public:
         for(unsigned int i=0; i<n->prev_.size(); ++i){
           int next_slot = n->prev_[i]->next_slot();
           n->ready_[next_slot] = 0;
-          if(n->prev_[i]->prev().isCircle()){
+          if(n->prev_[i]->prev()->isCircle()){
             n->ready_[next_slot] = 1;
           }
         }
@@ -252,9 +252,7 @@ public:
   }
 
   void bind(Node* from, int from_i, Node* to, int to_i){
-    assert(!from->findNext(to));
-    assert(!to->findPrev(from));
-    Edge * e = new Edge(*from, from_i, *to, to_i);
+    Edge * e = new Edge(from, from_i, to, to_i);
     m_edges.push_back(e);
 
     from->next_.push_back(e);
@@ -351,10 +349,10 @@ private:
     int i = id;
     for (Edge* next: node->next_){
       // 4.1.step increment 1, for succeed node
-      unsigned n = next->next().count_.fetch_add(1);
+      unsigned n = next->next()->count_.fetch_add(1);
 
       // 4.2.step transfer data asynchronous
-      Node* next_node = &next->next();
+      Node* next_node = next->next();
       EagleeyeRuntime target_runtime = this->m_schedule->getRuntime(next_node);
       node->transfer(next->pre_slot(), target_runtime, true);
       if(next_node->isCircle()){

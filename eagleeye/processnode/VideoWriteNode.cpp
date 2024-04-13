@@ -1024,7 +1024,7 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
     /* flush the encoder */
     encode(m_codec_cxt, NULL, m_pkt, m_fmt_context_ff, m_stream_ff);
     av_write_trailer(m_fmt_context_ff);
-    if(m_fmt_context != nullptr){
+    if(m_fmt_context_ff != nullptr){
         avio_closep(&m_fmt_context_ff->pb);
         avformat_free_context(m_fmt_context_ff);
     }
