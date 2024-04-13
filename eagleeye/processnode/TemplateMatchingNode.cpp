@@ -182,7 +182,7 @@ void TemplateMatchingNode::executeNodeInfo(){
 
 void TemplateMatchingNode::setTemplate(Matrix<Array<unsigned char,3>> mat){
     // template size must be 32 x 32
-    assert(mat.rows() == 32 && mat.cols == 32);
+    assert(mat.rows() == 32 && mat.cols() == 32);
     this->m_tmpl = mat;
     this->m_tmpl_update = true;
 }

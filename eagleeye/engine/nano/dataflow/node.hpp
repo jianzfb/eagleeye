@@ -39,7 +39,7 @@ public:
   bool findNext (Node const* n) {
     for (Edge * e : next_) {
       assert(e);
-      if (&(e->next()) == n) { return true; }
+      if ((e->next()) == n) { return true; }
     }
     return false;
   }
@@ -50,7 +50,7 @@ public:
   bool findPrev (Node const* n) {
     for (Edge * e : prev_) {
       assert(e);
-      if (&(e->prev()) == n) { return true; }
+      if ((e->prev()) == n) { return true; }
     }
     return false;
   }

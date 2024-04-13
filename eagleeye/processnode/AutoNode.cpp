@@ -38,6 +38,7 @@ AutoNode::~AutoNode(){
     // 删除内部节点
     if(m_auto_node != NULL){
         delete m_auto_node;
+        m_auto_node = NULL;
     }
 }
 
@@ -114,6 +115,9 @@ void AutoNode::run(){
         }
     }
 
+    for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
+        m_auto_node->clearInputPort(signal_i);
+    }
     for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
         delete signal_list[signal_i];
     }
