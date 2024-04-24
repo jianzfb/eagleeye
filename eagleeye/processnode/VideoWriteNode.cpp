@@ -7,34 +7,6 @@
 #ifdef EAGLEEYE_MINIO
 #include "miniocpp/client.h"
 #endif
-#ifdef EAGLEEYE_FFMPEG
-extern "C" {
-#include "libavformat/avformat.h"
-#include "libavdevice/avdevice.h"
-#include "libswresample/swresample.h"
-#include "libavutil/opt.h"
-#include "libavutil/channel_layout.h"
-#include "libavutil/parseutils.h"
-#include "libavutil/samplefmt.h"
-#include "libavutil/fifo.h"
-#include "libavutil/hwcontext.h"
-#include "libavutil/intreadwrite.h"
-#include "libavutil/dict.h"
-#include "libavutil/display.h"
-#include "libavutil/mathematics.h"
-#include "libavutil/pixdesc.h"
-#include "libavutil/avstring.h"
-#include "libavutil/imgutils.h"
-#include "libavutil/timestamp.h"
-#include "libavutil/bprint.h"
-#include "libavutil/time.h"
-#include "libavutil/threadmessage.h"
-#include "libavfilter/avfilter.h"
-#include "libavfilter/buffersrc.h"
-#include "libavfilter/buffersink.h"
-#include "libavutil/frame.h"
-#include "libavcodec/avcodec.h"
-}
 
 #ifdef EAGLEEYE_RKCHIP
 #include "im2d_version.h"
@@ -50,132 +22,7 @@ extern "C" {
 #include "osal/inc/mpp_common.h"
 #include "utils/mpi_enc_utils.h"
 #include "mpp_rc_api.h"
-#endif
-namespace  eagleeye
-{
-VideoWriteNode::VideoWriteNode(){
-    this->setNumberOfInputSignals(1);
-    this->setNumberOfOutputSignals(1);
-    this->setOutputPort(this->makeOutputSignal(), 0);
-    this->getOutputPort(0)->meta().is_start_frame = false;
-    this->getOutputPort(0)->meta().is_end_frame = false;
-    this->getOutputPort(0)->meta().is_pause_frame = false;
-
-    this->m_is_init = false;
-    this->m_is_header_init = false;
-    this->m_is_finish = true;
-    this->m_fps = 30;
-    this->m_image_format = 1;   // 默认BGR
-    this->m_is_success_write = false;
-    this->m_is_only_once = true;
-
-    // FFMPEG原生编码器
-    m_codec_cxt = NULL;
-    m_frame_count = 0;
-    m_frame = NULL;
-    m_pkt = NULL;
-    m_encoder = NULL;
-
-    EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
-    EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
-    EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
-
-    EAGLEEYE_MONITOR_VAR(int, setStop, getStop, "stop","0","2");
-    EAGLEEYE_MONITOR_VAR(int, setStart, getStart, "start","0","2");
-
-    EAGLEEYE_MONITOR_VAR(std::string, setBaseURL, getBaseURL, "base_url","","");
-    EAGLEEYE_MONITOR_VAR(std::string, setAccessKey, getAccessKey, "access_key","","");
-    EAGLEEYE_MONITOR_VAR(std::string, setSecretKey, getSecretKey, "secret_key","","");
-    EAGLEEYE_MONITOR_VAR(std::string, setBucketName, getBucketName, "bucket_name","","");
-    EAGLEEYE_MONITOR_VAR(bool, setIsUpload, getIsUpload, "is_upload","","");
-    EAGLEEYE_MONITOR_VAR(bool, setIsSecure, getIsSecure, "is_secure","","");
-
-    this->m_prefix = "video_";
-    this->m_folder = "/sdcard/";
-    this->m_manually_stop = 0;
-    this->m_manually_start = 0;
-    this->m_manually_pause = 0;
-
-    // RK MPP硬件加速编码器
-    m_pkt_buf = NULL;
-    m_frame_buf = NULL;
-    m_md_info = NULL;    
-    m_buf_grp = NULL;
-    m_mpp_ctx = NULL;
-    m_mpp_api = NULL;
-
-    m_frame_size = 0;
-    m_header_size = 0;
-
-    m_is_serial = false;
-    m_video_count = 0;
-}
-
-VideoWriteNode::~VideoWriteNode(){
-    if(!this->m_is_finish){
-        this->writeFinish();
-    }
-
-#ifdef EAGLEEYE_RKCHIP
-    if(m_pkt_buf != NULL){
-        mpp_buffer_put((MppBuffer)(m_pkt_buf));
-    }
-    if(m_frame_buf != NULL){
-        mpp_buffer_put((MppBuffer)(m_frame_buf));
-    }
-    if(m_md_info != NULL){
-        mpp_buffer_put((MppBuffer)(m_md_info));
-    }
-    if(m_buf_grp != NULL){
-        mpp_buffer_group_put((MppBufferGroup)(m_buf_grp));
-    }
-    if(m_mpp_ctx != NULL){
-        MppCtx mpp_ctx = (MppCtx)m_mpp_ctx;
-        MppApi* mpp_api = (MppApi*)m_mpp_api;
-
-        mpp_api->reset(mpp_ctx);
-        mpp_destroy(mpp_ctx);
-    }
-#endif
-}
-
-#ifndef EAGLEEYE_RKCHIP
-bool encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVFormatContext* fmt_ctx,AVStream* stream)
-{
-    int ret;
-    ret = avcodec_send_frame(enc_ctx, frame);
-    if (ret < 0) {
-        EAGLEEYE_LOGE("Error sending a frame for encoding");
-        return false;
-    }
-
-    while (ret >= 0) {
-        ret = avcodec_receive_packet(enc_ctx, pkt);
-        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF){
-            av_packet_unref(pkt);
-            return false;
-        }
-        else if (ret < 0) {
-            av_packet_unref(pkt);
-            EAGLEEYE_LOGE("Error during encoding");
-            return false;
-        }
-
-        av_packet_rescale_ts(pkt, enc_ctx->time_base, stream->time_base);
-        pkt->stream_index = stream->index;
-        if (auto r = av_write_frame(fmt_ctx, pkt); r < 0)
-        {
-            EAGLEEYE_LOGE("Error av_write_frame");
-            return false;
-        }
-        av_packet_unref(pkt);
-    }
-
-    return true;
-}
-#endif
-
-#ifdef EAGLEEYE_RKCHIP
+namespace eagleeye{
 MPP_RET mpp_enc_cfg_setup(MppEncCfg  cfg, MppApi* mpi, MppCtx ctx, int frame_width, int frame_height, int frame_elem_size, int frame_pix_fmt, MppCodingType type){
     MPP_RET ret;
     RK_U32 rotation;
@@ -422,6 +269,160 @@ MPP_RET mpp_enc_cfg_setup(MppEncCfg  cfg, MppApi* mpi, MppCtx ctx, int frame_wid
         }
     }
     return ret;
+}
+}
+#endif
+
+#ifdef EAGLEEYE_FFMPEG
+extern "C" {
+#include "libavformat/avformat.h"
+#include "libavdevice/avdevice.h"
+#include "libswresample/swresample.h"
+#include "libavutil/opt.h"
+#include "libavutil/channel_layout.h"
+#include "libavutil/parseutils.h"
+#include "libavutil/samplefmt.h"
+#include "libavutil/fifo.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
+#include "libavutil/display.h"
+#include "libavutil/mathematics.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/avstring.h"
+#include "libavutil/imgutils.h"
+#include "libavutil/timestamp.h"
+#include "libavutil/bprint.h"
+#include "libavutil/time.h"
+#include "libavutil/threadmessage.h"
+#include "libavfilter/avfilter.h"
+#include "libavfilter/buffersrc.h"
+#include "libavfilter/buffersink.h"
+#include "libavutil/frame.h"
+#include "libavcodec/avcodec.h"
+}
+
+namespace  eagleeye
+{
+VideoWriteNode::VideoWriteNode(){
+    this->setNumberOfInputSignals(1);
+    this->setNumberOfOutputSignals(1);
+    this->setOutputPort(this->makeOutputSignal(), 0);
+    this->getOutputPort(0)->meta().is_start_frame = false;
+    this->getOutputPort(0)->meta().is_end_frame = false;
+    this->getOutputPort(0)->meta().is_pause_frame = false;
+
+    this->m_is_init = false;
+    this->m_is_header_init = false;
+    this->m_is_finish = true;
+    this->m_fps = 30;
+    this->m_image_format = 1;   // 默认BGR
+    this->m_is_success_write = false;
+    this->m_is_only_once = true;
+
+    // FFMPEG原生编码器
+    m_codec_cxt = NULL;
+    m_frame_count = 0;
+    m_frame = NULL;
+    m_pkt = NULL;
+    m_encoder = NULL;
+
+    EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
+
+    EAGLEEYE_MONITOR_VAR(int, setStop, getStop, "stop","0","2");
+    EAGLEEYE_MONITOR_VAR(int, setStart, getStart, "start","0","2");
+
+    EAGLEEYE_MONITOR_VAR(std::string, setBaseURL, getBaseURL, "base_url","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setAccessKey, getAccessKey, "access_key","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setSecretKey, getSecretKey, "secret_key","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setBucketName, getBucketName, "bucket_name","","");
+    EAGLEEYE_MONITOR_VAR(bool, setIsUpload, getIsUpload, "is_upload","","");
+    EAGLEEYE_MONITOR_VAR(bool, setIsSecure, getIsSecure, "is_secure","","");
+
+    this->m_prefix = "video_";
+    this->m_folder = "/sdcard/";
+    this->m_manually_stop = 0;
+    this->m_manually_start = 0;
+    this->m_manually_pause = 0;
+
+    // RK MPP硬件加速编码器
+    m_pkt_buf = NULL;
+    m_frame_buf = NULL;
+    m_md_info = NULL;    
+    m_buf_grp = NULL;
+    m_mpp_ctx = NULL;
+    m_mpp_api = NULL;
+
+    m_frame_size = 0;
+    m_header_size = 0;
+
+    m_is_serial = false;
+    m_video_count = 0;
+}
+
+VideoWriteNode::~VideoWriteNode(){
+    if(!this->m_is_finish){
+        this->writeFinish();
+    }
+
+#ifdef EAGLEEYE_RKCHIP
+    if(m_pkt_buf != NULL){
+        mpp_buffer_put((MppBuffer)(m_pkt_buf));
+    }
+    if(m_frame_buf != NULL){
+        mpp_buffer_put((MppBuffer)(m_frame_buf));
+    }
+    if(m_md_info != NULL){
+        mpp_buffer_put((MppBuffer)(m_md_info));
+    }
+    if(m_buf_grp != NULL){
+        mpp_buffer_group_put((MppBufferGroup)(m_buf_grp));
+    }
+    if(m_mpp_ctx != NULL){
+        MppCtx mpp_ctx = (MppCtx)m_mpp_ctx;
+        MppApi* mpp_api = (MppApi*)m_mpp_api;
+
+        mpp_api->reset(mpp_ctx);
+        mpp_destroy(mpp_ctx);
+    }
+#endif
+}
+
+#ifndef EAGLEEYE_RKCHIP
+bool encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVFormatContext* fmt_ctx,AVStream* stream)
+{
+    int ret;
+    ret = avcodec_send_frame(enc_ctx, frame);
+    if (ret < 0) {
+        EAGLEEYE_LOGE("Error sending a frame for encoding");
+        return false;
+    }
+
+    while (ret >= 0) {
+        ret = avcodec_receive_packet(enc_ctx, pkt);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF){
+            av_packet_unref(pkt);
+            return false;
+        }
+        else if (ret < 0) {
+            av_packet_unref(pkt);
+            EAGLEEYE_LOGE("Error during encoding");
+            return false;
+        }
+
+        av_packet_rescale_ts(pkt, enc_ctx->time_base, stream->time_base);
+        pkt->stream_index = stream->index;
+        if (auto r = av_write_frame(fmt_ctx, pkt); r < 0)
+        {
+            EAGLEEYE_LOGE("Error av_write_frame");
+            return false;
+        }
+        av_packet_unref(pkt);
+    }
+
+    return true;
 }
 #endif
 

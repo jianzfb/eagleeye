@@ -44,10 +44,10 @@ bool isfileexist(const char* path);
 bool traverseFiles(const char* folder);
 
 /**
-* @brief save png file
+* @brief save/load png file
 */
 void savepng(const char* file_path, unsigned char* data, int height, int width, int stride, int channel);
-
+void loadpng(const char* file_path, unsigned char*& data, int& height, int& width, int& channel);
 }
 
 #endif
