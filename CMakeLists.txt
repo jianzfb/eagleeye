@@ -215,7 +215,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ImageSelect.cpp
     eagleeye/processnode/RTSPReadNode.cpp
     eagleeye/processnode/SnapshotNode.cpp
-    eagleeye/render/RenderContext.cpp)
+    eagleeye/render/RenderContext.cpp
+    eagleeye/processnode/AndroidCameraNode.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
@@ -583,6 +584,6 @@ endif()
 
 if(DEFINED ANDROID_ABI)
     # android, dont support build_python_module
-    target_link_libraries(eagleeye log)
+    target_link_libraries(eagleeye log mediandk android camera2ndk)
 endif()
 
