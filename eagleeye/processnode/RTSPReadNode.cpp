@@ -262,6 +262,8 @@ RTSPReadNode::~RTSPReadNode(){
 void RTSPReadNode::executeNodeInfo(){
     if(m_is_rtsp_stream_pull_error){
         EAGLEEYE_LOGE("RTSP stream error, skip pull process.");
+        EAGLEEYE_LOGE("Try to reconnect video source");
+        setFilePath(m_rtsp_address);
         return;
     }
 
@@ -452,7 +454,7 @@ void RTSPReadNode::executeNodeInfo(){
         if(!is_read_frame_ok){
             // 读取帧异常，直接返回
             EAGLEEYE_LOGE("Reading frame from stream abnormal.");
-            continue;
+            return;
         }
 
         std::unique_lock<std::mutex> locker(this->m_out_mu);
