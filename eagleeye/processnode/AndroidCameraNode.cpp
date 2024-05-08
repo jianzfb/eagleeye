@@ -111,93 +111,95 @@ static void imageCallback(void* context, AImageReader* reader){
     EAGLEEYE_LOGD("imageCallback()");
     // Check status here ...
 
-    // Try to process data without blocking the callback
-    std::thread processor([=](){
-        uint8_t *data = nullptr;
-        int len = 0;
-        uint8_t *src_y = nullptr;
-        AImage_getPlaneData(image, 0, &src_y, &len);
-        int32_t src_stride_y = 0;
-        AImage_getPlaneRowStride(image, 0, &src_stride_y);
+    uint8_t *data = nullptr;
+    int len = 0;
+    uint8_t *src_y = nullptr;
+    AImage_getPlaneData(image, 0, &src_y, &len);
+    int32_t src_stride_y = 0;
+    AImage_getPlaneRowStride(image, 0, &src_stride_y);
 
-        uint8_t *src_u = nullptr;
-        AImage_getPlaneData(image, 1, &src_u, &len);
-        int32_t src_stride_u = 0;
-        AImage_getPlaneRowStride(image, 1, &src_stride_u);
+    uint8_t *src_u = nullptr;
+    AImage_getPlaneData(image, 1, &src_u, &len);
+    int32_t src_stride_u = 0;
+    AImage_getPlaneRowStride(image, 1, &src_stride_u);
 
-        uint8_t *src_v = nullptr;
-        AImage_getPlaneData(image, 2, &src_v, &len);
-        int32_t src_stride_v = 0;
-        AImage_getPlaneRowStride(image, 2, &src_stride_v);
+    uint8_t *src_v = nullptr;
+    AImage_getPlaneData(image, 2, &src_v, &len);
+    int32_t src_stride_v = 0;
+    AImage_getPlaneRowStride(image, 2, &src_stride_v);
 
-        // Process data here
-        // ...
-        // yuv -> bgr -> output queue
-        auto *src_i420_data = (uint8_t *) malloc(sizeof(uint8_t) * captureImageWidth * captureImageHeight * 3 / 2);
-        jint src_y_size = captureImageWidth * captureImageHeight;
-        jint src_u_size = (captureImageWidth >> 1) * (captureImageHeight >> 1);
-        uint8_t *src_i420_y_data = src_i420_data;
-        uint8_t *src_i420_u_data = src_i420_data + src_y_size;
-        uint8_t *src_i420_v_data = src_i420_data + src_y_size + src_u_size;
+    // Process data here
+    // ...
+    // yuv -> bgr -> output queue
+    auto *src_i420_data = (uint8_t *) malloc(sizeof(uint8_t) * captureImageWidth * captureImageHeight * 3 / 2);
+    jint src_y_size = captureImageWidth * captureImageHeight;
+    jint src_u_size = (captureImageWidth >> 1) * (captureImageHeight >> 1);
+    uint8_t *src_i420_y_data = src_i420_data;
+    uint8_t *src_i420_u_data = src_i420_data + src_y_size;
+    uint8_t *src_i420_v_data = src_i420_data + src_y_size + src_u_size;
 
-        // -> I420
-        int i420_stride_y;
-        int dst_width;
-        int dst_height;
-        if (captureImageRotate == 0 || captureImageRotate == 180) {
-            i420_stride_y = captureImageWidth;
-            dst_width = captureImageWidth;
-            dst_height = captureImageHeight;
-        } else {
-            i420_stride_y = captureImageHeight;
-            dst_width = captureImageHeight;
-            dst_height = captureImageWidth;
-        }
+    // -> I420
+    int i420_stride_y;
+    int dst_width;
+    int dst_height;
+    if (captureImageRotate == 0 || captureImageRotate == 180) {
+        i420_stride_y = captureImageWidth;
+        dst_width = captureImageWidth;
+        dst_height = captureImageHeight;
+    } else {
+        i420_stride_y = captureImageHeight;
+        dst_width = captureImageHeight;
+        dst_height = captureImageWidth;
+    }
 
-        libyuv::Android420ToI420(
-                src_y, src_stride_y,
-                src_u, src_stride_u,
-                src_v, src_stride_v,
-                2,
-                src_i420_y_data, i420_stride_y,
-                src_i420_u_data, i420_stride_y >> 1,
-                src_i420_v_data, i420_stride_y >> 1,
-                captureImageWidth, captureImageHeight);
+    libyuv::Android420ToI420(
+            src_y, src_stride_y,
+            src_u, src_stride_u,
+            src_v, src_stride_v,
+            2,
+            src_i420_y_data, i420_stride_y,
+            src_i420_u_data, i420_stride_y >> 1,
+            src_i420_v_data, i420_stride_y >> 1,
+            captureImageWidth, captureImageHeight);
 
-        // -> BGR
-        eagleeye::Matrix<eagleeye::Array<unsigned char,3>> bgr_data(dst_height, dst_width);
-        uint8_t* bgr_data_ptr = bgr_data.cpu<uint8_t>();
-        libyuv::I420ToRGB24(
-            src_i420_y_data, i420_stride_y, 
-            src_i420_u_data, (i420_stride_y>>1),
-            src_i420_v_data, (i420_stride_y>>1),
-            bgr_data_ptr, dst_width*3,
-            dst_width,
-            dst_height);
+    // -> BGR
+    eagleeye::Matrix<eagleeye::Array<unsigned char,3>> bgr_data(dst_height, dst_width);
+    uint8_t* bgr_data_ptr = bgr_data.cpu<uint8_t>();
+    libyuv::I420ToRGB24(
+        src_i420_y_data, i420_stride_y, 
+        src_i420_u_data, (i420_stride_y>>1),
+        src_i420_v_data, (i420_stride_y>>1),
+        bgr_data_ptr, dst_width*3,
+        dst_width,
+        dst_height);
 
-        free(src_i420_data);
-        AImage_delete(image);
+    free(src_i420_data);
+    AImage_delete(image);
 
-        // 加入队列
-		std::unique_lock<std::mutex> locker(androidCameraMu);
-        if(androidCameraQueue.size() > 3){
-			androidCameraQueue.pop();
-		}
+    EAGLEEYE_LOGE("AAAAA");
+    // 加入队列
+    std::unique_lock<std::mutex> locker(androidCameraMu);
+    if(androidCameraQueue.size() > 3){
+        androidCameraQueue.pop();
+    }
+    EAGLEEYE_LOGE("BBBBB");
+    androidCameraQueue.push(bgr_data);
+    EAGLEEYE_LOGE("CCCCC");
+    locker.unlock();
+    EAGLEEYE_LOGE("DDDDD");
 
-        androidCameraQueue.push(bgr_data);
-        locker.unlock();
-
-		// notify
-		androidCameraCond.notify_all();
-    });
-    processor.detach();
+    // notify
+    androidCameraCond.notify_all();
+    EAGLEEYE_LOGE("EEEEE");
 }
 
 AImageReader* createYUVReader(){
+    EAGLEEYE_LOGD("aaa");
     AImageReader* reader = nullptr;
     media_status_t status = AImageReader_new(640, 480, AIMAGE_FORMAT_YUV_420_888,
                      2, &reader);
 
+    EAGLEEYE_LOGD("bbb");
     //if (status != AMEDIA_OK)
         // Handle errors here
 
@@ -206,7 +208,10 @@ AImageReader* createYUVReader(){
             .onImageAvailable = imageCallback,
     };
 
+    EAGLEEYE_LOGD("ccc");
     AImageReader_setImageListener(reader, &listener);
+
+    EAGLEEYE_LOGD("ddd");
     return reader;
 }
 
@@ -253,68 +258,68 @@ static ACameraCaptureSession_captureCallbacks captureCallbacks {
 
 static void printCamProps(ACameraManager *cameraManager, const char *id){
     // exposure range
-    std::cout<<"A"<<std::endl;
-    ACameraMetadata *metadataObj;
-    ACameraManager_getCameraCharacteristics(cameraManager, id, &metadataObj);
+    // std::cout<<"A"<<std::endl;
+    // ACameraMetadata *metadataObj;
+    // ACameraManager_getCameraCharacteristics(cameraManager, id, &metadataObj);
 
-    std::cout<<"B"<<std::endl;
-    ACameraMetadata_const_entry entry = {0};
-    ACameraMetadata_getConstEntry(metadataObj,
-                                  ACAMERA_SENSOR_INFO_EXPOSURE_TIME_RANGE, &entry);
+    // std::cout<<"B"<<std::endl;
+    // ACameraMetadata_const_entry entry = {0};
+    // ACameraMetadata_getConstEntry(metadataObj,
+    //                               ACAMERA_SENSOR_INFO_EXPOSURE_TIME_RANGE, &entry);
 
-    std::cout<<"C"<<std::endl;
-    int64_t minExposure = entry.data.i64[0];
-    int64_t maxExposure = entry.data.i64[1];
-    EAGLEEYE_LOGD("camProps: minExposure=%lld vs maxExposure=%lld", minExposure, maxExposure);
-    ////////////////////////////////////////////////////////////////
+    // std::cout<<"C"<<std::endl;
+    // int64_t minExposure = entry.data.i64[0];
+    // int64_t maxExposure = entry.data.i64[1];
+    // EAGLEEYE_LOGD("camProps: minExposure=%lld vs maxExposure=%lld", minExposure, maxExposure);
+    // ////////////////////////////////////////////////////////////////
 
-    // sensitivity
-    std::cout<<"D"<<std::endl;
-    ACameraMetadata_getConstEntry(metadataObj,
-                                  ACAMERA_SENSOR_INFO_SENSITIVITY_RANGE, &entry);
+    // // sensitivity
+    // std::cout<<"D"<<std::endl;
+    // ACameraMetadata_getConstEntry(metadataObj,
+    //                               ACAMERA_SENSOR_INFO_SENSITIVITY_RANGE, &entry);
 
-    std::cout<<"E"<<std::endl;
-    int32_t minSensitivity = entry.data.i32[0];
-    int32_t maxSensitivity = entry.data.i32[1];
+    // std::cout<<"E"<<std::endl;
+    // int32_t minSensitivity = entry.data.i32[0];
+    // int32_t maxSensitivity = entry.data.i32[1];
 
-    std::cout<<"F"<<std::endl;
-    EAGLEEYE_LOGD("camProps: minSensitivity=%d vs maxSensitivity=%d", minSensitivity, maxSensitivity);
-    ////////////////////////////////////////////////////////////////
+    // std::cout<<"F"<<std::endl;
+    // EAGLEEYE_LOGD("camProps: minSensitivity=%d vs maxSensitivity=%d", minSensitivity, maxSensitivity);
+    // ////////////////////////////////////////////////////////////////
 
-    std::cout<<"G"<<std::endl;
-    // YUV format
-    ACameraMetadata_getConstEntry(metadataObj,
-                                  ACAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS, &entry);
+    // std::cout<<"G"<<std::endl;
+    // // YUV format
+    // ACameraMetadata_getConstEntry(metadataObj,
+    //                               ACAMERA_SCALER_AVAILABLE_STREAM_CONFIGURATIONS, &entry);
 
-    std::cout<<"H"<<std::endl;
-    for (int i = 0; i < entry.count; i += 4){
-        // We are only interested in output streams, so skip input stream
-        int32_t input = entry.data.i32[i + 3];
-        if (input)
-            continue;
+    // std::cout<<"H"<<std::endl;
+    // for (int i = 0; i < entry.count; i += 4){
+    //     // We are only interested in output streams, so skip input stream
+    //     int32_t input = entry.data.i32[i + 3];
+    //     if (input)
+    //         continue;
 
-        int32_t format = entry.data.i32[i + 0];
-        if (format == AIMAGE_FORMAT_YUV_420_888){
-            int32_t width = entry.data.i32[i + 1];
-            int32_t height = entry.data.i32[i + 2];
-            EAGLEEYE_LOGD("camProps: maxWidth=%d vs maxHeight=%d", width, height);
-        }
-    }
-    std::cout<<"I"<<std::endl;
+    //     int32_t format = entry.data.i32[i + 0];
+    //     if (format == AIMAGE_FORMAT_YUV_420_888){
+    //         int32_t width = entry.data.i32[i + 1];
+    //         int32_t height = entry.data.i32[i + 2];
+    //         EAGLEEYE_LOGD("camProps: maxWidth=%d vs maxHeight=%d", width, height);
+    //     }
+    // }
+    // std::cout<<"I"<<std::endl;
 
-    // cam facing
-    ACameraMetadata_getConstEntry(metadataObj,
-                                  ACAMERA_SENSOR_ORIENTATION, &entry);
+    // // cam facing
+    // ACameraMetadata_getConstEntry(metadataObj,
+    //                               ACAMERA_SENSOR_ORIENTATION, &entry);
 
-    std::cout<<"G"<<std::endl;
-    captureImageRotate = entry.data.i32[0];
-    EAGLEEYE_LOGD("camProps: %d", captureImageRotate);
-    std::cout<<"K"<<std::endl;
+    // std::cout<<"G"<<std::endl;
+    // captureImageRotate = entry.data.i32[0];
+    // EAGLEEYE_LOGD("camProps: %d", captureImageRotate);
+    // std::cout<<"K"<<std::endl;
 }
 
 
 static std::string getBackFacingCamId(ACameraManager *cameraManager){
-    std::cout<<"in get backfacing camid"<<std::endl;
+    EAGLEEYE_LOGD("in get backfacing camid");
     ACameraIdList *cameraIds = nullptr;
     ACameraManager_getCameraIdList(cameraManager, &cameraIds);
 
@@ -324,23 +329,23 @@ static std::string getBackFacingCamId(ACameraManager *cameraManager){
     for (int i = 0; i < cameraIds->numCameras; ++i){
         const char *id = cameraIds->cameraIds[i];
 
-        std::cout<<"i "<<i<<std::endl;
         ACameraMetadata *metadataObj;
         ACameraManager_getCameraCharacteristics(cameraManager, id, &metadataObj);
 
-        std::cout<<"a"<<std::endl;
         ACameraMetadata_const_entry lensInfo = {0};
         ACameraMetadata_getConstEntry(metadataObj, ACAMERA_LENS_FACING, &lensInfo);
 
-        std::cout<<"b"<<std::endl;
         auto facing = static_cast<acamera_metadata_enum_android_lens_facing_t>(
                 lensInfo.data.u8[0]);
 
-        // Found a back-facing camera?
-        if (facing == ACAMERA_LENS_FACING_BACK){
-            backId = id;
-            break;
-        }
+        // // Found a back-facing camera?
+        // if (facing == ACAMERA_LENS_FACING_BACK){
+        //     backId = id;
+        //     break;
+        // }
+        backId = id;
+        EAGLEEYE_LOGD("why backid %s", backId.c_str());
+        break;
     }
 
     ACameraManager_deleteCameraIdList(cameraIds);
@@ -406,11 +411,11 @@ static bool initCam(){
             EAGLEEYE_LOGE("Dont found camera.");
             return false;
         }
-        std::cout<<"start open camera "<<id<<std::endl;
+        EAGLEEYE_LOGD("start open camera ");
         ACameraManager_openCamera(cameraManager, id.c_str(), &cameraDeviceCallbacks, &cameraDevice);
-        std::cout<<"finish open camera "<<std::endl;
+        EAGLEEYE_LOGD("finish open camera");
         printCamProps(cameraManager, id.c_str());
-        std::cout<<"print cam prop"<<std::endl;
+        EAGLEEYE_LOGD("print cam prop");
     }
     else{
         auto id = getFrontFacingCamId(cameraManager);
@@ -426,33 +431,29 @@ static bool initCam(){
     // textureWindow = ANativeWindow_fromSurface(env, surface);
 
     // Prepare request for texture target
-    std::cout<<"1111"<<std::endl;
     ACameraDevice_createCaptureRequest(cameraDevice, TEMPLATE_PREVIEW, &request);
 
-    std::cout<<"2222"<<std::endl;
     // // Prepare outputs for session
     // ACaptureSessionOutput_create(textureWindow, &textureOutput);
     ACaptureSessionOutputContainer_create(&outputs);
     // ACaptureSessionOutputContainer_add(outputs, textureOutput);
-    
-    std::cout<<"3333"<<std::endl;
 
     // Enable ImageReader example in CMakeLists.txt. This will additionally
     // make image data available in imageCallback().
     imageReader = createYUVReader();
-    std::cout<<"4444"<<std::endl;
     imageWindow = createSurface(imageReader);
     ANativeWindow_acquire(imageWindow);
-    std::cout<<"5555"<<std::endl;
     ACameraOutputTarget_create(imageWindow, &imageTarget);
-    std::cout<<"66666"<<std::endl;
+
+    EAGLEEYE_LOGD("66666");
     ACaptureRequest_addTarget(request, imageTarget);
-    std::cout<<"7777"<<std::endl;
+    EAGLEEYE_LOGD("7777");
+
     ACaptureSessionOutput_create(imageWindow, &imageOutput);
-    std::cout<<"8888"<<std::endl;
+    EAGLEEYE_LOGD("8888");
     ACaptureSessionOutputContainer_add(outputs, imageOutput);
 
-    std::cout<<"9999"<<std::endl;
+    EAGLEEYE_LOGD("9999");
 
     // // Prepare target surface
     // ANativeWindow_acquire(textureWindow);
@@ -462,10 +463,9 @@ static bool initCam(){
     // Create the session
     ACameraDevice_createCaptureSession(cameraDevice, outputs, &sessionStateCallbacks, &textureSession);
 
-    std::cout<<"xxxx"<<std::endl;
     // Start capturing continuously
     ACameraCaptureSession_setRepeatingRequest(textureSession, &captureCallbacks, 1, &request, nullptr);
-    std::cout<<"yyyyy"<<std::endl;
+    EAGLEEYE_LOGD("yyyy");
     return true;
 }
 
@@ -500,10 +500,11 @@ void AndroidCameraNode::executeNodeInfo(){
         m_is_camera_open = initCam();
     }
     if(!m_is_camera_open){
+        EAGLEEYE_LOGE("not open");
         return;
     }
 
-    std::cout<<"1"<<std::endl;
+    EAGLEEYE_LOGD("1");
     std::unique_lock<std::mutex> locker(androidCameraMu);
     while(androidCameraQueue.size() == 0){
         androidCameraCond.wait(locker);
@@ -512,7 +513,8 @@ void AndroidCameraNode::executeNodeInfo(){
         }
     }
     
-    std::cout<<"2"<<std::endl;
+    EAGLEEYE_LOGD("2");
+
     Matrix<Array<unsigned char, 3>> data = androidCameraQueue.front();	
     androidCameraQueue.pop();
     locker.unlock();
@@ -538,6 +540,13 @@ void AndroidCameraNode::setCameraFacing(std::string facing){
 void AndroidCameraNode::getCameraFacing(std::string& facing){
     facing = this->m_camera_facing;
 }
+
+
+void AndroidCameraNode::processUnitInfo(){
+    Superclass::processUnitInfo();
+    modified();
+}
+
 }
 
 

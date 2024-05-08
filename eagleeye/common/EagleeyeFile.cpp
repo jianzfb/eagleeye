@@ -141,7 +141,7 @@ bool isfileexist(const char* path){
 	}
 }
 
-bool traverseFiles(const char* folder){
+bool traverseFiles(const char* folder, std::vector<std::string>& file_list){
 	    DIR *dp = NULL;
         struct dirent *dirp;
         if ((dp = opendir(folder)) == NULL) {
@@ -154,12 +154,11 @@ bool traverseFiles(const char* folder){
             if(dirp->d_type & DT_DIR){
                 // 文件夹
                 std::string dir_name = dirp->d_name;
-				EAGLEEYE_LOGI("(folder) %s", dir_name.c_str());
             }
 			else if(dirp->d_type & DT_REG){
 				// 文件
 				std::string file_name = dirp->d_name;
-				EAGLEEYE_LOGI("(file) %s", file_name.c_str());
+                file_list.push_back(file_name);
 			}
         }
 

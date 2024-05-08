@@ -86,7 +86,7 @@ void NNNode::executeNodeInfo(){
             // 需要保证 NNGraph输出 HxWx4
             ImageSignal<Array<unsigned char, 4>>* image_sig = (ImageSignal<Array<unsigned char, 4>>*)(this->getOutputPort(sig_i));
             Matrix<Array<unsigned char, 4>> image = image_sig->getData();
-            
+
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
                 image = Matrix<Array<unsigned char, 4>>(std::get<1>(p)[0], std::get<1>(p)[1]);
             }
@@ -94,11 +94,11 @@ void NNNode::executeNodeInfo(){
             memcpy(image.dataptr(), std::get<0>(p), sizeof(unsigned char)*std::get<1>(p)[0]*std::get<1>(p)[1]*4);
             image_sig->setData(image);
         }
-        else if(tt == EAGLEEYE_SIGNAL_GRAY_IMAGE || tt == EAGLEEYE_SIGNAL_MASK){
+        else if(tt == EAGLEEYE_SIGNAL_GRAY_IMAGE || tt == EAGLEEYE_SIGNAL_MASK || tt == EAGLEEYE_SIGNAL_UCMATRIX){
             // 需要保证 NNGraph输出 HxW
             ImageSignal<unsigned char>* image_sig = (ImageSignal<unsigned char>*)(this->getOutputPort(sig_i));
             Matrix<unsigned char> image = image_sig->getData();
-            
+
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
                 image = Matrix<unsigned char>(std::get<1>(p)[0], std::get<1>(p)[1]);
             } 
@@ -113,7 +113,7 @@ void NNNode::executeNodeInfo(){
             bool is_true = (*data) > 0 ? true : false;
             boolean_sig->setData(is_true);
         }
-        else if(tt == EAGLEEYE_SIGNAL_CLS || tt == EAGLEEYE_SIGNAL_STATE){
+        else if(tt == EAGLEEYE_SIGNAL_CLS || tt == EAGLEEYE_SIGNAL_STATE || tt == EAGLEEYE_SIGNAL_IMATRIX){
             ImageSignal<int>* image_sig = (ImageSignal<int>*)(this->getOutputPort(sig_i));
             Matrix<int> image = image_sig->getData();
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){
@@ -123,7 +123,7 @@ void NNNode::executeNodeInfo(){
             memcpy(image.dataptr(),std::get<0>(p), sizeof(int)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             image_sig->setData(image);
         }
-        else if(tt == EAGLEEYE_SIGNAL_DET || tt == EAGLEEYE_SIGNAL_DET_EXT || tt == EAGLEEYE_SIGNAL_POS_2D || tt == EAGLEEYE_SIGNAL_POS_3D){
+        else if(tt == EAGLEEYE_SIGNAL_DET || tt == EAGLEEYE_SIGNAL_DET_EXT || tt == EAGLEEYE_SIGNAL_POS_2D || tt == EAGLEEYE_SIGNAL_POS_3D || tt == EAGLEEYE_SIGNAL_FMATRIX){
             ImageSignal<float>* image_sig = (ImageSignal<float>*)(this->getOutputPort(sig_i));
             Matrix<float> image = image_sig->getData();
             if(image.rows() != std::get<1>(p)[0] || image.cols() != std::get<1>(p)[1]){

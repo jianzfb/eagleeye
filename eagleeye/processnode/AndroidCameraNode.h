@@ -25,7 +25,8 @@ public:
 	 *	@brief parse video data
 	 */
 	virtual void executeNodeInfo();
-
+    virtual void processUnitInfo();
+    
     /**
      *  @brief 
      */
