@@ -85,7 +85,7 @@ bool eagleeye_init_module(std::vector<std::string>& pipeline_names, const char* 
         std::string sperator="/";
         std::vector<std::string> kv = split(plugin_list[index], sperator);
         std::string plugin_path_parent = std::string(plugin_folder) + "/" + kv[0];
-        traverseFiles(plugin_path_parent.c_str());
+        // traverseFiles(plugin_path_parent.c_str());
 
         // 加载注册及初始化函数
         EAGLEEYE_LOGD("Get register plugin func.");

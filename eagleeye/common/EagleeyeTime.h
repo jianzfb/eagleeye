@@ -1,6 +1,6 @@
 #ifndef _EAGLEEYETIME_H_
 #define _EAGLEEYETIME_H_
-#include<sys/time.h>
+#include <sys/time.h>
 #include "eagleeye/common/EagleeyeLog.h"
 #include <string>
 
