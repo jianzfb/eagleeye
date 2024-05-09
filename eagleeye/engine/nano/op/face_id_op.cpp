@@ -39,13 +39,23 @@ int FaceIdOp::init(std::map<std::string, std::vector<float>> params){
 }
 
 int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
-    // input: NxD face feature
+    // input: memory name, NxD face feature
     // output: N face id 
     const char* memory_name_ptr = input[0].cpu<char>();
     char* memory_name_str_ptr = (char*)malloc(input[0].dims().production() + 1);
     memset(memory_name_str_ptr, '\0', input[0].dims().production() + 1);
     memcpy(memory_name_str_ptr, memory_name_ptr, input[0].dims().production());
     std::string memory_name = memory_name_str_ptr;
+
+    if(input[1].empty()){
+        this->m_outputs[0] = Tensor(
+            std::vector<int64_t>{0, 16},
+            EAGLEEYE_UCHAR,
+            DataFormat::AUTO,
+            CPU_BUFFER
+        );        
+        return 0;
+    }
 
     int query_face_num = input[1].dims()[0];
     this->m_outputs[0] = Tensor(
