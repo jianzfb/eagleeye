@@ -1,6 +1,7 @@
 #ifndef _EAGLEEYEFILE_H_
 #define _EAGLEEYEFILE_H_
-
+#include <vector>
+#include <string>
 
 namespace eagleeye{
 /**
@@ -41,13 +42,13 @@ bool isfileexist(const char* path);
 /**
  * @brief traverse files in folder
  */ 
-bool traverseFiles(const char* folder);
+bool traverseFiles(const char* folder, std::vector<std::string>& file_list);
 
 /**
-* @brief save png file
+* @brief save/load png file
 */
 void savepng(const char* file_path, unsigned char* data, int height, int width, int stride, int channel);
-
+void loadpng(const char* file_path, unsigned char*& data, int& height, int& width, int& channel);
 }
 
 #endif

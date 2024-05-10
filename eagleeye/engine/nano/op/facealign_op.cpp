@@ -15,7 +15,6 @@
 #include "im2d_single.h"
 #endif
 
-
 namespace eagleeye{
 namespace dataflow{
 FaceAlignOp::FaceAlignOp(){
@@ -81,10 +80,8 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
 
     if(bbox.dims()[0] == 0){
         EAGLEEYE_LOGD("No face.");
-        if(this->m_outputs[0].numel() != this->m_target_h*this->m_target_w*image_c){
-            Dim out_dim(std::vector<int64_t>{this->m_target_h, this->m_target_w, image_c});
-            this->m_outputs[0] = Tensor(out_dim.data(),image.type(),image.format(),CPU_BUFFER);
-        }
+        this->m_outputs[0] = 
+            Tensor(std::vector<int64_t>{0, this->m_target_w, image_c}, image.type(), image.format(),CPU_BUFFER);
         return 0;
     }
     float* bbox_ptr = bbox.cpu<float>();

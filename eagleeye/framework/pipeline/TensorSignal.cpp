@@ -56,8 +56,6 @@ void TensorSignal::getSignalContent(void*& data, size_t*& data_size, int& data_d
     data_dims = this->m_data.dims().size();
     data_type = this->m_data.type();
 	data_size = (size_t*)(&(this->m_data.dims().data()[0]));
-
-	float* data_ptr = (float*)data;
 }
 
 } // namespace eagleeye
