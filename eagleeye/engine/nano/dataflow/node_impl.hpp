@@ -115,7 +115,7 @@ public:
 
 private:
   int fireImpl(index_sequence<>, EagleeyeRuntime runtime, int32_t& elapsed_time) {
-    long start_time = EagleeyeTime::getCurrentTime();
+    long start_time = m_time_statistics.start();
     std::vector<typename F::Type> empty;
     int rtn_code = -1;
     switch(runtime.type()){
@@ -129,8 +129,7 @@ private:
         rtn_code = (&m_handler)->runOnCpu(empty);
         break;
     }
-    long end_time = EagleeyeTime::getCurrentTime();
-    EAGLEEYE_LOGD("Run %s with %d us on %s.", name.c_str(), (end_time-start_time),runtime.device().c_str());
+    long end_time = m_time_statistics.finish("Run %s with on %s.", name.c_str(), runtime.device().c_str());
     elapsed_time = (int32_t)(end_time-start_time);
     return rtn_code;
   }
@@ -144,7 +143,7 @@ private:
       ordered_input = std::vector<typename F::Type>{unordered_input[inv_order_[Is]] ...};
     }
 
-    long start_time = EagleeyeTime::getCurrentTime();
+    long start_time = m_time_statistics.start();
     int rtn_code = -1;
     switch(runtime.type()){
       case EAGLEEYE_CPU:
@@ -158,8 +157,7 @@ private:
         break;
     }
 
-    long end_time = EagleeyeTime::getCurrentTime();
-    EAGLEEYE_LOGD("Run %s with %d us on %s.", name.c_str(), (end_time-start_time),runtime.device().c_str());
+    long end_time = m_time_statistics.finish("Run %s with on %s.", name.c_str(),runtime.device().c_str());
     elapsed_time = (int32_t)(end_time-start_time);
     
     return rtn_code;
@@ -167,6 +165,7 @@ private:
 
 private:
   F m_handler;
+  EagleeyeTimeStatics m_time_statistics;
 };
 
 namespace impl {
