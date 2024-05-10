@@ -63,6 +63,7 @@ bool MessageCenter::insert(std::string key, std::shared_ptr<Message> message){
 bool MessageCenter::create(std::string key){
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_lock_map.find(key) != m_lock_map.end()){
+        m_lock_map[key]->status = true;
         return true;
     }
 

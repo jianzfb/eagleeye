@@ -174,26 +174,7 @@ RTSPReadNode::RTSPReadNode(){
 }
 
 RTSPReadNode::~RTSPReadNode(){
-#ifdef EAGLEEYE_CUDA
-    if (m_pCodecCtx->hw_device_ctx != NULL){
-        av_buffer_unref(&(m_pCodecCtx->hw_device_ctx));
-        m_pCodecCtx->hw_device_ctx = NULL;
-    }
-
-    if (m_hw_device_ctx != NULL){
-        av_buffer_unref(&m_hw_device_ctx);
-        m_hw_device_ctx = NULL;
-    }
-#endif
-
-    avcodec_close(m_pCodecCtx);
-    avcodec_free_context(&m_pCodecCtx);
-    if(m_format_ctx != NULL){
-        avformat_close_input(&m_format_ctx);
-        avformat_free_context(m_format_ctx);
-    }
     this->m_exit_flag = true;
-
     std::unique_lock<std::mutex> in_locker(this->m_postprocess_mu);
 #ifndef EAGLEEYE_RKCHIP
     m_postprocess_queue.push(std::make_pair<AVFrame*, __int64_t>(NULL, 0));
@@ -218,6 +199,32 @@ RTSPReadNode::~RTSPReadNode(){
     }
     out_locker.unlock();    
 
+    if(m_pCodecCtx != NULL){
+        avcodec_free_context(&m_pCodecCtx);
+        m_pCodecCtx = NULL;
+    }
+    if(m_format_ctx != NULL){
+        avformat_close_input(&m_format_ctx);
+        m_format_ctx = NULL;
+    }
+    #ifdef EAGLEEYE_CUDA
+    if (m_hw_device_ctx != NULL){
+        av_buffer_unref(&m_hw_device_ctx);
+        m_hw_device_ctx = NULL;
+    }
+    while (m_postprocess_queue.size() > 0)
+    {
+        std::pair<AVFrame*, __int64_t> info = this->m_postprocess_queue.front();
+        auto *pframe = info.first;
+        auto pts = info.second;
+        this->m_postprocess_queue.pop();
+        if(pframe == NULL){
+            continue;
+        }
+        av_frame_free(&pframe);
+    }
+    #endif
+
 #ifdef EAGLEEYE_RKCHIP
     // 销毁RK资源
     if (m_frm_grp != NULL) {
@@ -229,6 +236,26 @@ RTSPReadNode::~RTSPReadNode(){
     MppApi* mpp_api = (MppApi*)m_mpp_api;
     mpp_api->reset(mpp_ctx);
     mpp_destroy(mpp_ctx);
+
+    while (true)
+    {
+        MppFrame mpp_frame = NULL;
+        {
+            std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
+            if(this->m_postprocess_mpp_queue.size() == 0){
+                break;
+            }
+
+            void* t = this->m_postprocess_mpp_queue.front();
+            this->m_postprocess_mpp_queue.pop();
+            if(t == NULL){
+                continue;
+            }
+            mpp_frame = (MppFrame)t;
+        }
+        mpp_frame_deinit(&mpp_frame);
+    }
+    
 #endif
 }
 
@@ -904,9 +931,13 @@ void RTSPReadNode::setFilePath(std::string file_path){
 
     av_dict_set(&format_opts, "stimeout", m_overtime.c_str(), 0); //设置链接超时时间（us）
     av_dict_set(&format_opts, "rtsp_transport", m_rtsp_transport.c_str(), 0); //设置推流的方式，默认udp。
+    av_dict_set(&format_opts, "timeout", "6000000", 0);                         //在进行网络操作时允许的最大等待时间。1秒
     av_dict_set(&format_opts, "max_analyze_duration", "10", 0);
     av_dict_set(&format_opts, "probesize", "2048", 0);
+    auto start_time = std::chrono::system_clock::now();
+    std::unique_ptr<AVDictionary *, decltype(av_dict_free) *> free_guard{&format_opts, av_dict_free};
     ret = avformat_open_input(&m_format_ctx, file_path.c_str(), nullptr, &format_opts);
+    auto end_time = std::chrono::system_clock::now();
     if (ret != 0) {
         EAGLEEYE_LOGE("Fail to open url: %s, return value: %d", file_path.c_str(), ret);
         this->m_is_rtsp_stream_pull_error = true;

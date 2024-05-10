@@ -3,6 +3,9 @@
 #include "eagleeye/common/EagleeyeTime.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "libyuv.h"
+#ifdef EAGLEEYE_MINIO
+#include "miniocpp/client.h"
+#endif
 
 #ifdef EAGLEEYE_RKCHIP
 #include "im2d_version.h"
@@ -61,6 +64,13 @@ SnapeshotNode::SnapeshotNode(){
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
     EAGLEEYE_MONITOR_VAR(std::string, setPrefix, getPrefix, "prefix","","");
     EAGLEEYE_MONITOR_VAR(std::string, setFolder, getFolder, "folder","","");
+
+    EAGLEEYE_MONITOR_VAR(std::string, setBaseURL, getBaseURL, "base_url","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setAccessKey, getAccessKey, "access_key","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setSecretKey, getSecretKey, "secret_key","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setBucketName, getBucketName, "bucket_name","","");
+    EAGLEEYE_MONITOR_VAR(bool, setIsUpload, getIsUpload, "is_upload","","");
+    EAGLEEYE_MONITOR_VAR(bool, setIsSecure, getIsSecure, "is_secure","","");
 
     m_pkt_buf = NULL;
     m_frame_buf = NULL;
@@ -499,6 +509,14 @@ void SnapeshotNode::executeNodeInfo(){
 #endif
 
     m_output_file.close();
+
+#ifdef EAGLEEYE_MINIO
+    // 运行至此，说明已经保存文件
+    if(m_is_upload){
+        this->uploader(this->m_file_path);
+    }
+#endif //EAGLEEYE_MINIO
+
     this->m_snapshot_count += 1;
 }
 
@@ -544,5 +562,150 @@ void SnapeshotNode::setSerial(bool is_serial){
 
 int SnapeshotNode::getSerialNum(){
     return m_snapshot_count;
+}
+
+void SnapeshotNode::setBaseURL(std::string url){
+    this->m_base_url = url;
+}
+
+void SnapeshotNode::getBaseURL(std::string& url){
+    url = this->m_base_url;
+}
+
+void SnapeshotNode::setAccessKey(std::string access_key){
+    this->m_access_key = access_key;
+}
+
+void SnapeshotNode::getAccessKey(std::string& access_key){
+    access_key = this->m_access_key;
+}
+
+void SnapeshotNode::setSecretKey(std::string secret_key){
+    this->m_secret_key = secret_key;
+}
+
+void SnapeshotNode::getSecretKey(std::string& secret_key){
+    secret_key = this->m_secret_key;
+}
+
+void SnapeshotNode::setBucketName(std::string bucket_name){
+    this->m_bucket_name = bucket_name;
+}
+
+void SnapeshotNode::getBucketName(std::string& bucket_name){
+    bucket_name = this->m_bucket_name;
+}
+
+void SnapeshotNode::setIsUpload(bool upload){
+    this->m_is_upload = upload;
+}
+
+void SnapeshotNode::getIsUpload(bool& upload){
+    upload = this->m_is_upload;
+}
+
+void SnapeshotNode::setIsSecure(bool secure){
+    this->m_is_secure = secure;
+}
+
+void SnapeshotNode::getIsSecure(bool& secure){
+    secure = this->m_is_secure;
+}
+
+bool SnapeshotNode::uploader(const std::string &src_file){
+#ifdef EAGLEEYE_MINIO
+    if(src_file.empty()){
+        EAGLEEYE_LOGE("error src file = %s ",src_file);
+    }
+    //0. makr clent
+    std::shared_ptr<minio::s3::Client> client = nullptr;
+    minio::s3::BaseUrl base_url(m_base_url, m_is_secure);
+    minio::creds::StaticProvider provider(m_access_key,m_secret_key);
+    try
+    {
+        client =std::make_shared<minio::s3::Client>(base_url, &provider);
+    }
+    catch(const std::exception& e)
+    {
+        EAGLEEYE_LOGE("creat client error  = %s", e.what());
+        return false;
+    }
+
+    if(client == nullptr){
+        EAGLEEYE_LOGE("creat client error ");
+        return false;
+    }
+
+    //1. check bucket
+    bool exist = false;
+    try{
+        minio::s3::BucketExistsArgs args;
+        args.bucket = m_bucket_name;
+        minio::s3::BucketExistsResponse resp = client->BucketExists(args);
+        if (!resp) {
+            EAGLEEYE_LOGE("unable to do bucket existence check: error = %s", resp.Error());
+            return false;
+        }
+        exist = resp.exist;
+    }
+    catch(const std::exception& e)
+    {
+        EAGLEEYE_LOGE("BucketExists throw error = %s", e.what());
+        return false;
+    }
+
+    //2. make bucket
+    if(not exist){
+        try{
+            minio::s3::MakeBucketArgs args;
+            args.bucket = m_bucket_name;
+            minio::s3::MakeBucketResponse resp = client->MakeBucket(args);
+            if (!resp) {
+                EAGLEEYE_LOGE("unable to create bucket, error = %s ", resp.Error());
+                return false;
+            }
+        }
+        catch(const std::exception& e){
+            EAGLEEYE_LOGE("MakeBucket throw error = %s",e.what());
+            return false;
+        }
+    }
+
+    //3. upload
+    auto getDestFileName = [](const std::string &src_file){
+        auto found = src_file.find_last_of("/\\");
+        if(found == std::string::npos){
+            return src_file;
+        }
+        return src_file.substr(found+1);
+    };
+    std::string dst_file = getDestFileName(src_file);
+    if(dst_file.empty()){
+        EAGLEEYE_LOGE("failed upload object [%s]");
+        return false;
+    }
+
+    try{
+        minio::s3::UploadObjectArgs args;
+        args.bucket = m_bucket_name;
+        args.object = dst_file;
+        args.filename = src_file;
+        args.content_type = "video/mp4";
+
+        minio::s3::UploadObjectResponse resp = client->UploadObject(args);
+        if (!resp) {
+            EAGLEEYE_LOGE("unable to upload object [%s], error = %s",src_file, resp.Error());
+            return false;
+        }   
+    }
+    catch(const std::exception& e)
+    {
+        EAGLEEYE_LOGE("UploadObject throw error = %s", e.what());
+        return false;
+    }
+    return true;
+#else
+    return true;
+#endif
 }
 }
