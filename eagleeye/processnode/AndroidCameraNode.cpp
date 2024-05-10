@@ -28,15 +28,9 @@ static ACameraManager* cameraManager = nullptr;
 
 static ACameraDevice* cameraDevice = nullptr;
 
-// static ACameraOutputTarget* textureTarget = nullptr;
-
 static ACaptureRequest* request = nullptr;
 
-// static ANativeWindow* textureWindow = nullptr;
-
 static ACameraCaptureSession* textureSession = nullptr;
-
-static ACaptureSessionOutput* textureOutput = nullptr;
 
 static ANativeWindow* imageWindow = nullptr;
 
@@ -45,9 +39,6 @@ static ACameraOutputTarget* imageTarget = nullptr;
 static AImageReader* imageReader = nullptr;
 
 static ACaptureSessionOutput* imageOutput = nullptr;
-
-static ACaptureSessionOutput* output = nullptr;
-
 static ACaptureSessionOutputContainer* outputs = nullptr;
 
 static int captureImageWidth = 640;
@@ -65,19 +56,12 @@ static std::queue<eagleeye::Matrix<eagleeye::Array<unsigned char, 3>>> androidCa
  */
 
 static void onDisconnected(void* context, ACameraDevice* device){
-    EAGLEEYE_LOGD("onDisconnected");
+    EAGLEEYE_LOGD("Device Disconnected.");
 }
 
 static void onError(void* context, ACameraDevice* device, int error){
-    EAGLEEYE_LOGD("error %d", error);
+    EAGLEEYE_LOGD("Device Error %d.", error);
 }
-
-static ACameraDevice_stateCallbacks cameraDeviceCallbacks = {
-        .context = nullptr,
-        .onDisconnected = onDisconnected,
-        .onError = onError,
-};
-
 
 /**
  * Session state callbacks
@@ -95,21 +79,12 @@ static void onSessionClosed(void* context, ACameraCaptureSession *session){
     EAGLEEYE_LOGD("onSessionClosed()");
 }
 
-static ACameraCaptureSession_stateCallbacks sessionStateCallbacks {
-        .context = nullptr,
-        .onActive = onSessionActive,
-        .onReady = onSessionReady,
-        .onClosed = onSessionClosed
-};
-
 /**
  * Image reader setup. If you want to use AImageReader, enable this in CMakeLists.txt.
  */
 static void imageCallback(void* context, AImageReader* reader){
     AImage *image = nullptr;
     auto status = AImageReader_acquireNextImage(reader, &image);
-    EAGLEEYE_LOGD("imageCallback()");
-    // Check status here ...
 
     uint8_t *data = nullptr;
     int len = 0;
@@ -176,42 +151,27 @@ static void imageCallback(void* context, AImageReader* reader){
     free(src_i420_data);
     AImage_delete(image);
 
-    EAGLEEYE_LOGE("AAAAA");
     // 加入队列
     std::unique_lock<std::mutex> locker(androidCameraMu);
     if(androidCameraQueue.size() > 3){
         androidCameraQueue.pop();
     }
-    EAGLEEYE_LOGE("BBBBB");
     androidCameraQueue.push(bgr_data);
-    EAGLEEYE_LOGE("CCCCC");
     locker.unlock();
-    EAGLEEYE_LOGE("DDDDD");
 
     // notify
     androidCameraCond.notify_all();
-    EAGLEEYE_LOGE("EEEEE");
 }
 
 AImageReader* createYUVReader(){
-    EAGLEEYE_LOGD("aaa");
     AImageReader* reader = nullptr;
-    media_status_t status = AImageReader_new(640, 480, AIMAGE_FORMAT_YUV_420_888,
-                     2, &reader);
-
-    EAGLEEYE_LOGD("bbb");
-    //if (status != AMEDIA_OK)
-        // Handle errors here
-
+    AImageReader_new(640, 480, AIMAGE_FORMAT_YUV_420_888, 2, &reader);
     AImageReader_ImageListener listener{
             .context = nullptr,
             .onImageAvailable = imageCallback,
     };
 
-    EAGLEEYE_LOGD("ccc");
     AImageReader_setImageListener(reader, &listener);
-
-    EAGLEEYE_LOGD("ddd");
     return reader;
 }
 
@@ -240,7 +200,7 @@ void onCaptureSequenceAborted(void* context, ACameraCaptureSession* session,
 void onCaptureCompleted (
         void* context, ACameraCaptureSession* session,
         ACaptureRequest* request, const ACameraMetadata* result){
-    EAGLEEYE_LOGD("Capture completed");
+    EAGLEEYE_LOGD("onCaptureCompleted");
 }
 
 static ACameraCaptureSession_captureCallbacks captureCallbacks {
@@ -253,8 +213,6 @@ static ACameraCaptureSession_captureCallbacks captureCallbacks {
         .onCaptureSequenceAborted = onCaptureSequenceAborted,
         .onCaptureBufferLost = nullptr,
 };
-
-
 
 static void printCamProps(ACameraManager *cameraManager, const char *id){
     // exposure range
@@ -319,13 +277,11 @@ static void printCamProps(ACameraManager *cameraManager, const char *id){
 
 
 static std::string getBackFacingCamId(ACameraManager *cameraManager){
-    EAGLEEYE_LOGD("in get backfacing camid");
     ACameraIdList *cameraIds = nullptr;
     ACameraManager_getCameraIdList(cameraManager, &cameraIds);
+    EAGLEEYE_LOGD("Found camera count %d.", cameraIds->numCameras);
 
     std::string backId;
-
-    EAGLEEYE_LOGD("found camera count %d", cameraIds->numCameras);
     for (int i = 0; i < cameraIds->numCameras; ++i){
         const char *id = cameraIds->cameraIds[i];
 
@@ -338,13 +294,12 @@ static std::string getBackFacingCamId(ACameraManager *cameraManager){
         auto facing = static_cast<acamera_metadata_enum_android_lens_facing_t>(
                 lensInfo.data.u8[0]);
 
-        // // Found a back-facing camera?
-        // if (facing == ACAMERA_LENS_FACING_BACK){
-        //     backId = id;
-        //     break;
-        // }
+        // Found a back-facing camera?
+        if (facing == ACAMERA_LENS_FACING_BACK){
+            backId = id;
+            break;
+        }
         backId = id;
-        EAGLEEYE_LOGD("why backid %s", backId.c_str());
         break;
     }
 
@@ -355,10 +310,9 @@ static std::string getBackFacingCamId(ACameraManager *cameraManager){
 static std::string getFrontFacingCamId(ACameraManager *cameraManager){
     ACameraIdList *cameraIds = nullptr;
     ACameraManager_getCameraIdList(cameraManager, &cameraIds);
+    EAGLEEYE_LOGD("Found camera count %d.", cameraIds->numCameras);
 
-    std::string frontId;
-
-    EAGLEEYE_LOGD("found camera count %d", cameraIds->numCameras);
+    std::string frontId;    
     for (int i = 0; i < cameraIds->numCameras; ++i){
         const char *id = cameraIds->cameraIds[i];
 
@@ -383,60 +337,93 @@ static std::string getFrontFacingCamId(ACameraManager *cameraManager){
 }
 
 static void exitCamera(){
-    if (cameraManager){
-        // Stop recording to SurfaceTexture and do some cleanup
+    // clear
+    if(textureSession != nullptr){
         ACameraCaptureSession_stopRepeating(textureSession);
         ACameraCaptureSession_close(textureSession);
+        textureSession = nullptr;
+    }
+
+    if(outputs != nullptr){
         ACaptureSessionOutputContainer_free(outputs);
-        ACaptureSessionOutput_free(output);
+        outputs = nullptr;
+    }
+    if(imageOutput != nullptr){
+        ACaptureSessionOutput_free(imageOutput);
+        imageOutput = nullptr;
+    }
 
+    if(request != nullptr){
+        ACaptureRequest_removeTarget(request, imageTarget);
+        ACaptureRequest_free(request);
+        request = nullptr;
+    }
+
+    if(imageTarget != nullptr){
+        ACameraOutputTarget_free(imageTarget);
+        imageTarget = nullptr;
+    }
+
+    if(cameraDevice != nullptr){
         ACameraDevice_close(cameraDevice);
-        ACameraManager_delete(cameraManager);
-        cameraManager = nullptr;
+        cameraDevice = nullptr;
+    }
 
+    if(imageReader != nullptr){
         AImageReader_delete(imageReader);
         imageReader = nullptr;
+    }
 
-        // // Capture request for SurfaceTexture
-        // ANativeWindow_release(textureWindow);
-        ACaptureRequest_free(request);
+    if(cameraManager != nullptr){
+        ACameraManager_delete(cameraManager);
+        cameraManager = nullptr;
     }
 }
 
 static bool initCam(){
+    ACameraDevice_stateCallbacks cameraDeviceCallbacks = {
+            .context = nullptr,
+            .onDisconnected = onDisconnected,
+            .onError = onError,
+    };
+
     cameraManager = ACameraManager_create();
     if(cameraFacing == "back"){
         auto id = getBackFacingCamId(cameraManager);
         if(id == ""){
-            EAGLEEYE_LOGE("Dont found camera.");
+            EAGLEEYE_LOGE("Dont found back camera.");
             return false;
         }
-        EAGLEEYE_LOGD("start open camera ");
-        ACameraManager_openCamera(cameraManager, id.c_str(), &cameraDeviceCallbacks, &cameraDevice);
-        EAGLEEYE_LOGD("finish open camera");
+        EAGLEEYE_LOGD("Start open back camera ");
+        camera_status_t status = ACameraManager_openCamera(cameraManager, id.c_str(), &cameraDeviceCallbacks, &cameraDevice);
+        if(status != ACAMERA_OK){
+            EAGLEEYE_LOGE("Fail to open back camera %s.", id.c_str());
+            return false;
+        }
+        EAGLEEYE_LOGD("Finish open back camera %s.", id.c_str());
         printCamProps(cameraManager, id.c_str());
-        EAGLEEYE_LOGD("print cam prop");
     }
     else{
         auto id = getFrontFacingCamId(cameraManager);
         if(id == ""){
-            EAGLEEYE_LOGE("Dont found camera.");
+            EAGLEEYE_LOGE("Dont found front camera.");
             return false;
         }        
-        ACameraManager_openCamera(cameraManager, id.c_str(), &cameraDeviceCallbacks, &cameraDevice);
+        EAGLEEYE_LOGD("Start open front camera ");
+        camera_status_t status = ACameraManager_openCamera(cameraManager, id.c_str(), &cameraDeviceCallbacks, &cameraDevice);
+        if(status != ACAMERA_OK){
+            EAGLEEYE_LOGE("Fail to open front camera %s.", id.c_str());
+            return false;
+        }
+        EAGLEEYE_LOGD("Finish open front camera %s.", id.c_str());
         printCamProps(cameraManager, id.c_str());
     }
 
-    // Prepare surface
-    // textureWindow = ANativeWindow_fromSurface(env, surface);
-
     // Prepare request for texture target
-    ACameraDevice_createCaptureRequest(cameraDevice, TEMPLATE_PREVIEW, &request);
-
-    // // Prepare outputs for session
-    // ACaptureSessionOutput_create(textureWindow, &textureOutput);
-    ACaptureSessionOutputContainer_create(&outputs);
-    // ACaptureSessionOutputContainer_add(outputs, textureOutput);
+    camera_status_t status = ACameraDevice_createCaptureRequest(cameraDevice, TEMPLATE_PREVIEW, &request);
+    if(status != ACAMERA_OK){
+        return false;
+    }
 
     // Enable ImageReader example in CMakeLists.txt. This will additionally
     // make image data available in imageCallback().
@@ -444,28 +431,42 @@ static bool initCam(){
     imageWindow = createSurface(imageReader);
     ANativeWindow_acquire(imageWindow);
     ACameraOutputTarget_create(imageWindow, &imageTarget);
+    status = ACaptureRequest_addTarget(request, imageTarget);
+    if(status != ACAMERA_OK){
+        return false;
+    }
 
-    EAGLEEYE_LOGD("66666");
-    ACaptureRequest_addTarget(request, imageTarget);
-    EAGLEEYE_LOGD("7777");
-
-    ACaptureSessionOutput_create(imageWindow, &imageOutput);
-    EAGLEEYE_LOGD("8888");
-    ACaptureSessionOutputContainer_add(outputs, imageOutput);
-
-    EAGLEEYE_LOGD("9999");
-
-    // // Prepare target surface
-    // ANativeWindow_acquire(textureWindow);
-    // ACameraOutputTarget_create(textureWindow, &textureTarget);
-    // ACaptureRequest_addTarget(request, textureTarget);
+    // Prepare outputs for session
+    status = ACaptureSessionOutputContainer_create(&outputs);
+    if(status != ACAMERA_OK){
+        return false;
+    }
+    status = ACaptureSessionOutput_create(imageWindow, &imageOutput);
+    if(status != ACAMERA_OK){
+        return false;
+    }
+    status = ACaptureSessionOutputContainer_add(outputs, imageOutput);
+    if(status != ACAMERA_OK){
+        return false;
+    }
 
     // Create the session
-    ACameraDevice_createCaptureSession(cameraDevice, outputs, &sessionStateCallbacks, &textureSession);
+    static ACameraCaptureSession_stateCallbacks sessionStateCallbacks {
+            .context = nullptr,
+            .onActive = onSessionActive,
+            .onReady = onSessionReady,
+            .onClosed = onSessionClosed
+    };
+    status = ACameraDevice_createCaptureSession(cameraDevice, outputs, &sessionStateCallbacks, &textureSession);
+    if(status != ACAMERA_OK){
+        return false;
+    }
 
     // Start capturing continuously
-    ACameraCaptureSession_setRepeatingRequest(textureSession, &captureCallbacks, 1, &request, nullptr);
-    EAGLEEYE_LOGD("yyyy");
+    status = ACameraCaptureSession_setRepeatingRequest(textureSession, &captureCallbacks, 1, &request, nullptr);
+    if(status != ACAMERA_OK){
+        return false;
+    }
     return true;
 }
 
@@ -500,11 +501,12 @@ void AndroidCameraNode::executeNodeInfo(){
         m_is_camera_open = initCam();
     }
     if(!m_is_camera_open){
-        EAGLEEYE_LOGE("not open");
+        EAGLEEYE_LOGE("Camera not open.");
+        exitCamera();
         return;
     }
 
-    EAGLEEYE_LOGD("1");
+    // 等待相机预览流队列
     std::unique_lock<std::mutex> locker(androidCameraMu);
     while(androidCameraQueue.size() == 0){
         androidCameraCond.wait(locker);
@@ -512,8 +514,6 @@ void AndroidCameraNode::executeNodeInfo(){
             break;
         }
     }
-    
-    EAGLEEYE_LOGD("2");
 
     Matrix<Array<unsigned char, 3>> data = androidCameraQueue.front();	
     androidCameraQueue.pop();
@@ -533,21 +533,31 @@ void AndroidCameraNode::setCameraFacing(std::string facing){
         return;
     }
 
+    if(m_camera_facing == facing){
+        // 切换目标相机于当前激活的相同
+        EAGLEEYE_LOGD("Camera same, dont need switch.");
+        return;
+    }
+
+    if(m_is_camera_open){
+        // 关闭相机，并重制状态
+        exitCamera();
+        m_is_camera_open = false;
+    }
+
     this->m_camera_facing = facing;
     cameraFacing = this->m_camera_facing;
+    modified();
 }
 
 void AndroidCameraNode::getCameraFacing(std::string& facing){
     facing = this->m_camera_facing;
 }
 
-
 void AndroidCameraNode::processUnitInfo(){
     Superclass::processUnitInfo();
     modified();
 }
-
 }
-
 
 #endif

@@ -190,6 +190,16 @@ public:
         // 运行
         if(input.size() == 0 || input[0].dims()[0] == 0){
             // do nothing
+            for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
+                output_shape[0] = 0;
+                this->m_outputs[output_i] = Tensor(
+                    output_shape,
+                    m_output_types[output_i],
+                    DataFormat::AUTO,
+                    CPU_BUFFER
+                );
+            }
             return 0;
         }
 

@@ -52,13 +52,10 @@ void TensorSignal::copy(AnySignal* sig){
 }
 
 void TensorSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
-	std::cout<<">>>>>"<<std::endl;
     data = (void*)this->m_data.cpu();
     data_dims = this->m_data.dims().size();
     data_type = this->m_data.type();
 	data_size = (size_t*)(&(this->m_data.dims().data()[0]));
-	std::cout<<"data "<<data<<std::endl;
-	std::cout<<"<<<<<"<<std::endl;
 }
 
 } // namespace eagleeye

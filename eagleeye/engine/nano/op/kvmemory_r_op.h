@@ -9,9 +9,9 @@
 
 namespace eagleeye{
 namespace dataflow{
-class KVMemoryROp:public BaseOp<1, 1>, DynamicCreator<KVMemoryROp>{
+class KVMemoryROp:public BaseOp<2, 1>, DynamicCreator<KVMemoryROp>{
 public:
-    using BaseOp<1, 1>::init;
+    using BaseOp<2, 1>::init;
     KVMemoryROp();
     KVMemoryROp(const KVMemoryROp& op);
     virtual ~KVMemoryROp();
@@ -22,12 +22,6 @@ public:
 
     virtual int runOnCpu(const std::vector<Tensor>& input);
     virtual int runOnGpu(const std::vector<Tensor>& input);
-
-protected:
-    std::string m_memory_name;
-    std::string m_cache_folder;
-    std::string m_cache_memory_folder;
-    bool m_in_memory;
 };
 }
 }

@@ -1,18 +1,15 @@
 #include "eagleeye/engine/nano/op/kvmemory_r_op.h"
-#include "eagleeye/engine/nano/op/kvmemory_w_op.h"
+#include "eagleeye/engine/nano/op/kvmemory_op.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/common/EagleeyeIO.h"
 #include "eagleeye/common/EagleeyeFile.h"
+#include <stdio.h>
 #include <fstream>
 
 namespace eagleeye{
 namespace dataflow{
 KVMemoryROp::KVMemoryROp(){
-    m_memory_name = "memory";
-    m_cache_folder = "./cache";
-    m_cache_memory_folder = "";
-    m_in_memory = false;
 }
 
 KVMemoryROp::KVMemoryROp(const KVMemoryROp& op){
@@ -22,76 +19,85 @@ KVMemoryROp::~KVMemoryROp(){
 }
 
 int KVMemoryROp::init(std::map<std::string, std::vector<std::string>> params){
-    if(params.find("name") != params.end()){
-        m_memory_name = params["name"][0];
-    }
-    if(params.find("model_folder") != params.end()){
-        m_cache_folder = params["model_folder"][0];
-    }
     return 0;
 }
 
 int KVMemoryROp::init(std::map<std::string, std::vector<float>> params){
-    if(params.find("in_memory") != params.end()){
-        m_in_memory = bool(int(params["in_memory"][0]));
-    }
     return 0;
 }
 
 int KVMemoryROp::runOnCpu(const std::vector<Tensor>& input){
-    // input: key
+    // input: memory, key
     // output: value
-    if(m_cache_memory_folder == ""){
-        if(endswith(m_cache_folder, "/")){
-           m_cache_memory_folder = m_cache_folder + m_memory_name;
-        }
-        else{
-            m_cache_memory_folder = m_cache_folder + "/" + m_memory_name;
-        }
-    }
-
-    if(!isdirexist(m_cache_memory_folder.c_str())){
-        createdirectory(m_cache_memory_folder.c_str());
-    }
-    if(input[0].empty() || input[0].dims()[0] == 0){
+    if(input[1].empty() || input[1].dims()[0] == 0 || (input[1].dims()[1] != 16 && input[1].dims()[1] != 32)){
         this->m_outputs[0] = Tensor();
         return 0;
     }
 
-    const char* key = input[0].cpu<char>();
-    int key_size = input[0].dims()[0];
+    // memory name
+    const char* memory_name_ptr = input[0].cpu<char>();
+    char* memory_name_str_ptr = (char*)malloc(input[0].dims().production() + 1);
+    memset(memory_name_str_ptr, '\0', input[0].dims().production() + 1);
+    memcpy(memory_name_str_ptr, memory_name_ptr, input[0].dims().production());
+    std::string memory_name = memory_name_str_ptr;
+    free(memory_name_str_ptr);
+
+    if(KVMemoryOp::m_g_memory.find(memory_name) == KVMemoryOp::m_g_memory.end()){
+        this->m_outputs[0] = Tensor();
+        return 0;
+    }
+
+    // key
+    const char* key = input[1].cpu<char>();
+    int key_size = input[1].dims()[1];
     char* key_str_ptr = (char*)malloc(key_size+1);
     memset(key_str_ptr, '\0', key_size+1);
-    key_str_ptr[key_size] = '\0';
+    memcpy(key_str_ptr, key, key_size);
     std::string key_str = key_str_ptr;
+    free(key_str_ptr);
 
-    if(m_in_memory){
-        if(KVMemoryWOp::m_g_memory[m_memory_name].find(key_str) == KVMemoryWOp::m_g_memory[m_memory_name].end()){
+    if(key_size == 16){
+        // 匹配，返回
+        std::vector<Tensor> tensor_list;
+        std::map<std::string, Tensor>::iterator iter, iend(KVMemoryOp::m_g_memory[memory_name].end());
+        for(iter=KVMemoryOp::m_g_memory[memory_name].begin(); iter!=iend; ++iter){
+            if(strncmp(iter->first.c_str(), key_str.c_str(), 16) == 0){
+                tensor_list.push_back(iter->second);
+            }
+        }
+        if(tensor_list.size() == 0){
             this->m_outputs[0] = Tensor();
-            free(key_str_ptr);
+            return 0;
+        }
+        int64_t tensor_n = tensor_list.size();
+        int64_t feature_dim = tensor_list[0].dims().production();
+        std::vector<int64_t> stack_tensor_shape = {tensor_n};
+        for(int i=0; i<tensor_list[0].dims().size(); ++i){
+            stack_tensor_shape.push_back(tensor_list[0].dims()[i]);
+        }
+
+        Tensor stack_tensor(
+            stack_tensor_shape,
+            tensor_list[0].type(),
+            DataFormat::AUTO,
+            CPU_BUFFER
+        );
+        for(int tensor_i=0; tensor_i<tensor_list.size(); ++tensor_i){
+            char* offset_ptr = stack_tensor.cpu<char>() + tensor_i * feature_dim * stack_tensor.elemsize();
+            char* src_ptr = tensor_list[tensor_i].cpu<char>();
+            memcpy(offset_ptr, src_ptr, sizeof(char)*feature_dim*stack_tensor.elemsize());
+        }
+        this->m_outputs[0] = stack_tensor;
+    }
+    else{
+        // 精确匹配
+        if(KVMemoryOp::m_g_memory[memory_name].find(key_str) == KVMemoryOp::m_g_memory[memory_name].end()){
+            this->m_outputs[0] = Tensor();
             return 0;
         }
 
-        this->m_outputs[0] = KVMemoryWOp::m_g_memory[m_memory_name][key_str];
-        free(key_str_ptr);
-        return 0;
+        this->m_outputs[0] = KVMemoryOp::m_g_memory[memory_name][key_str];
     }
-
-    std::string key_mem_filename = m_cache_memory_folder + "/" + key_str;
-    if(!isfileexist(key_mem_filename.c_str())){
-        this->m_outputs[0] = Tensor();
-        free(key_str_ptr);
-        return 0;
-    }
-
-    EagleeyeIO yard_io;
-    yard_io.createReadHandle(c_file_path, READ_BINARY_MODE);
-    Tensor value;
-    yard_io.read(value);
-    yard_io.destroyHandle();
-
-    this->m_outputs[0] = value;
-    free(key_str_ptr);
     return 0;
 }
 
