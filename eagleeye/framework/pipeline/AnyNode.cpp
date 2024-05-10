@@ -523,14 +523,13 @@ void AnyNode::processUnitInfo()
 	if (isNeedProcessed()){
 		//execute task
 		//now we can use all info of m_input_signals
-		EAGLEEYE_LOGD("start run execute node (%s)", getUnitName());
-		long start_time = EagleeyeTime::getCurrentTime();
+		EAGLEEYE_LOGV("start run execute node (%s)", getUnitName());
+		m_time_statistics.start();
 		executeNodeInfo();
-		long end_time = EagleeyeTime::getCurrentTime();
 
 		//clear some compute resource
 		clearSomething();
-		EAGLEEYE_LOGI("finish run node (%s) -- (%s) (%d us)\n",getClassIdentity(),getUnitName(), int(end_time-start_time));
+		m_time_statistics.finish("run node %s-%s",getClassIdentity(), getUnitName());
 
 		//all info of m_output_signals has been generated
 		//we should change their time stamp
@@ -786,7 +785,7 @@ void AnyNode::exit(){
 	m_exit_flag = false;
 
 	// log
-	EAGLEEYE_LOGD("node %s exit", this->getUnitName());
+	EAGLEEYE_LOGV("node %s exit", this->getUnitName());
 }
 
 void AnyNode::init(){
@@ -812,7 +811,7 @@ void AnyNode::init(){
 	m_init_flag = false;
 	m_init_once = true;
 	// log
-	EAGLEEYE_LOGD("node %s init", this->getUnitName());
+	EAGLEEYE_LOGV("node %s init", this->getUnitName());
 }
 
 void AnyNode::findIn(AnySignal* ptr, std::vector<std::pair<AnyNode*,int>>& ll){

@@ -17,6 +17,7 @@ void _log_print_info (const char* tag, const char* a, const int b, const char* c
 	va_start (ap, format);
 	vfprintf (stdout, format, ap);
 	va_end (ap);
+	fflush(stdout);
 
 	printf("\n");
 }
@@ -30,6 +31,7 @@ void _log_print_debug (const char* tag, const char* a, const int b, const char* 
 	va_start (ap, format);
 	vfprintf (stdout, format, ap);
 	va_end (ap);
+	fflush(stdout);
 
 	printf("\n");
 }
@@ -43,12 +45,27 @@ void _log_print_error (const char* tag, const char* a, const int b, const char* 
 	va_start (ap, format);
 	vfprintf (stdout, format, ap);
 	va_end (ap);
+	fflush(stdout);
 
 	printf("\n");
 }
 
-static bool s_need_verbosity_init = false;
-static VERBOSITY_LEVEL s_verbosity_level = L_VERBOSE;
+void _log_print_verbose (const char* tag, const char* a, const int b, const char* c, const char *format, ...){
+	if (!isVerbosityLevelEnabled (L_VERBOSE)) return;
+
+	printf("[%s] E [%s(%d)-%s]->\t", tag, a, b, c);
+	va_list ap;
+
+	va_start (ap, format);
+	vfprintf (stdout, format, ap);
+	va_end (ap);
+	fflush(stdout);
+
+	printf("\n");
+}
+
+static bool s_need_verbosity_init = true;
+static VERBOSITY_LEVEL s_verbosity_level = L_DEBUG;
 
 bool isVerbosityLevelEnabled (VERBOSITY_LEVEL level){
 	if (s_need_verbosity_init) initVerbosityLevel ();
@@ -56,7 +73,7 @@ bool isVerbosityLevelEnabled (VERBOSITY_LEVEL level){
 }
 
 bool initVerbosityLevel (){
-	s_verbosity_level = L_INFO; // Default value
+	s_verbosity_level = L_DEBUG; // Default value
 	char* vi_verbosity_level = std::getenv("EAGLEEYE_VERBOSITY_LEVEL");
 	if (vi_verbosity_level)
 	{

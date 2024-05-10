@@ -774,7 +774,7 @@ void AnyPipeline::setInput(const char* node_name, void* data, MetaData meta){
         EAGLEEYE_LOGE("Node name is empty.");
         return;
     }
-    EAGLEEYE_LOGD("Set pipeline input %s.", node_name);
+    EAGLEEYE_LOGV("Set pipeline input %s.", node_name);
     std::string input_key = std::string(node_name);    
     int port = 0;
     if(input_key.find("/") != std::string::npos){
@@ -790,7 +790,7 @@ void AnyPipeline::setInput(const char* node_name, void* data, MetaData meta){
 
     this->m_input_nodes[input_key]->getOutputPort(port)->setData(data, meta);
     this->m_input_nodes[input_key]->modified();
-    EAGLEEYE_LOGD("Finish set signal content.");
+    EAGLEEYE_LOGV("Finish set signal content.");
 }
 
 void AnyPipeline::setInput(const char* node_name, std::string from_pipeline_name, std::string from_node_name){

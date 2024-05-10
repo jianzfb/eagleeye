@@ -2,6 +2,7 @@
 #define _ANYNODE_H_
 
 #include "eagleeye/common/EagleeyeMacro.h"
+#include "eagleeye/common/EagleeyeTime.h"
 #include "eagleeye/framework/pipeline/AnyUnit.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/framework/EagleeyeTimeStamp.h"
@@ -472,6 +473,7 @@ private:
 
 	AnyPipeline* m_pipeline;
 	static std::string m_resource_folder;
+	EagleeyeTimeStatics m_time_statistics;
 };
 }
 
