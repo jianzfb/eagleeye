@@ -64,11 +64,12 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
         DataFormat::AUTO,
         CPU_BUFFER
     );
+
     // 初始化
     for(int face_i=0; face_i<query_face_num; ++face_i){
         unsigned char* face_id_ptr = this->m_outputs[0].cpu<unsigned char>() + face_i*16;
         memset(face_id_ptr, '\0', 16);
-    }    
+    }
     if(KVMemoryOp::m_g_info.find(memory_name) == KVMemoryOp::m_g_info.end()){
         // no face gallery
         return 0;

@@ -39,7 +39,6 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
     memset(memory_name_str_ptr, '\0', input[0].dims().production() + 1);
     memcpy(memory_name_str_ptr, memory_name_ptr, input[0].dims().production());
     std::string memory_name = memory_name_str_ptr;
-    std::cout<<"memory_name "<<memory_name<<std::endl;
 
     if(m_cache_memory_folder == ""){
         if(endswith(m_cache_folder, "/")){
@@ -52,11 +51,10 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
     if(!isdirexist(m_cache_memory_folder.c_str())){
         createdirectory(m_cache_memory_folder.c_str());
     }
-    std::cout<<"m_cache_memory_folder "<<m_cache_memory_folder<<std::endl;
 
     if(input[3].empty() || input[3].dims()[0] == 0){
+        // 非有效记录，直接跳过
         // do nothing
-        std::cout<<"CCC"<<std::endl;
         this->m_outputs[0] = Tensor(
             std::vector<int64_t>{0},
             EAGLEEYE_UCHAR,
@@ -70,7 +68,7 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
     gettimeofday(&now_tv,NULL);
     int operator_status = input[1].cpu<int>()[0];
     if(operator_status == 0){
-        std::cout<<"AAA"<<std::endl;
+        // 无效操作，直接跳过
         // do nothing
         this->m_outputs[0] = Tensor(
             std::vector<int64_t>{0},
@@ -80,7 +78,6 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
         );
         return 0;
     }
-    std::cout<<"BBBB"<<std::endl;
 
     if(operator_status == 1){
         // add
@@ -90,7 +87,7 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
             group_str = std::to_string(now_tv.tv_sec * 1000000 + now_tv.tv_usec);
         }
         else{
-            // 使用指定编码
+            // 静态编码(16位地址)
             const char* key = input[2].cpu<char>();
             int key_size = input[2].dims()[1];
             key_size = key_size <= 16 ?  key_size : 16;
@@ -103,6 +100,7 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
             free(group_str_ptr);
         }
 
+        // 扩展编码(16位地址)
         std::string ext_str = std::to_string(now_tv.tv_sec * 1000000 + now_tv.tv_usec);
         std::string key_str = group_str + ext_str;
         std::string key_mem_filename = m_cache_memory_folder + "/" + key_str;
@@ -115,18 +113,13 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
         yard_io.write(input[3]);
         yard_io.destroyHandle();
 
-        std::cout<<"11111"<<std::endl;
-        std::cout<<"key_str "<<key_str.size()<<std::endl;
-        std::cout<<"key_str "<<key_str<<std::endl;
         this->m_outputs[0] = Tensor(
             std::vector<int64_t>{(int64_t)(key_str.size())},
             EAGLEEYE_UCHAR,
             DataFormat::AUTO,
             CPU_BUFFER
         );
-        std::cout<<"22222"<<std::endl;
         memcpy(this->m_outputs[0].cpu<char>(), key_str.c_str(), key_str.size());
-        std::cout<<"AAAA "<<this->m_outputs[0].cpu()<<std::endl;
     }
     else{
         // del

@@ -157,11 +157,8 @@ void NNNode::executeNodeInfo(){
         }
         else{
             // Tensor
-            std::cout<<"HHHHHH"<<std::endl;
-            std::cout<<"SHOW "<<std::get<0>(p)<<std::endl;
             TensorSignal* tensor_sig = (TensorSignal*)(this->getOutputPort(sig_i));
             tensor_sig->setData(Tensor(std::get<1>(p), std::get<2>(p), DataFormat::AUTO, std::get<0>(p)));
-            std::cout<<"MMMMMM"<<std::endl;
         }
     }
 }
