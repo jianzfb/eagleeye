@@ -5,6 +5,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include "eagleeye/common/EagleeyeFactory.h"
+#include "eagleeye/common/EagleeyeRegisterCenter.h"
 #ifdef EAGLEEYE_OPENGL
 #include "eagleeye/common/EagleeyeShader.h"
 #endif
@@ -482,4 +483,23 @@ bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag){
     AnyPipeline::onRenderSurfaceMouse(mouse_x, mouse_y, mouse_flag);
     return true;
 }
+
+bool eagleeye_pipeline_server_start(std::string request, std::function<void(std::string)> callback){
+    // 1.step 解析request
+    // {"pipeline": "", "params": {}}
+    
+
+    // 2.step 从注册中心发现/创建管线
+
+    // 3.step 配置管线参数
+
+    // 4.step 配置管线回调
+
+    return true;
+}
+
+bool eagleeye_pipeline_server_stop(const char* pipline_name){
+    return true;
+}
+
 }
