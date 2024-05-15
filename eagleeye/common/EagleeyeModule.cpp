@@ -12,6 +12,7 @@
 #include <dlfcn.h>
 #include <dirent.h>
 #include <cstring>
+#include "eagleeye/common/CJsonObject.hpp"
 
 namespace eagleeye{
 void _getAllPluginsFromDirectory(std::string path, std::vector<std::string> &files) {
@@ -484,21 +485,179 @@ bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag){
     return true;
 }
 
-bool eagleeye_pipeline_server_start(std::string request, std::function<void(std::string)> callback){
-    // 1.step 解析request
-    // {"pipeline": "", "params": {}}
-    
+std::map<std::string, INITIALIZE_PLUGIN_FUNC> pipeline_init_map;
+bool eagleeye_pipeline_server_init(std::string folder, std::map<std::string, INITIALIZE_PLUGIN_FUNC> info){
+    if(info.size() > 0){
+        pipeline_init_map = info;
+        return true;
+    }
 
-    // 2.step 从注册中心发现/创建管线
+    EAGLEEYE_LOGD("Traverse to find all plugin in %s.", folder.c_str());
+    std::vector<std::string> plugin_list;
+    _getAllPluginsFromDirectory(folder, plugin_list);
 
-    // 3.step 配置管线参数
+    for(int index=0; index<plugin_list.size(); ++index){
+        std::string plugin_path = std::string(folder) + "/" + plugin_list[index];
+        // 加载so
+        EAGLEEYE_LOGD("Load plugin %s from path %s.", plugin_list[index].c_str(), plugin_path.c_str());
+        void* handle = dlopen(plugin_path.c_str(), RTLD_LAZY);
+        if(!handle){        
+            EAGLEEYE_LOGD("Dlopen error, message (%s).",dlerror());
+            continue;
+        }
 
-    // 4.step 配置管线回调
+        // 插件目录结构
+        std::string sperator="/";
+        std::vector<std::string> kv = split(plugin_list[index], sperator);
+        std::string plugin_path_parent = std::string(plugin_folder) + "/" + kv[0];
+
+        // 加载注册及初始化函数
+        REGISTER_PLUGIN_FUNC plugin_register_func = NULL; 
+        INITIALIZE_PLUGIN_FUNC plugin_initialize_func = NULL;
+
+        EAGLEEYE_LOGD("Get initialize plugin func.");
+        std::string init_func_name = "eagleeye_"+kv[0]+"_pipeline_initialize";
+        plugin_initialize_func = (INITIALIZE_PLUGIN_FUNC)dlsym(handle, init_func_name.c_str());
+        if(!plugin_initialize_func){
+            EAGLEEYE_LOGD("Dlsym error, message (%s)",dlerror());
+            dlclose(handle);
+            continue;
+        }
+
+        pipeline_init_map[kv[0]] = plugin_initialize_func;
+    }
 
     return true;
 }
 
-bool eagleeye_pipeline_server_stop(const char* pipline_name){
+bool eagleeye_pipeline_server_start(std::string request, std::function<void(std::string)> callback, int timeout){
+    // 1.step 解析request
+    // {"pipeline": "", "params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], "key": ""}
+    neb::CJsonObject config_obj(content);
+    std::string pipeline_name;
+    config_obj.Get("pipeline", pipeline_name);
+    if(pipeline_name == ""){
+        EAGLEEYE_LOGE("pipeline not in request.");
+        return false;
+    }
+
+    std::string key;
+    config_obj.Get("key", key);
+    if(key == ""){
+        EAGLEEYE_LOGE("key not in request.");
+        return false;
+    }
+
+    neb::CJsonObject param_info;
+    config_obj.Get('params', param_info);
+
+    // 2.step 注册
+    if(RegisterCenter::getInstance()->hasObjWithPrefix(key)){
+        // 清理现存的所有算法管线
+        EAGLEEYE_LOGD("Clear exist %s related pipelins", key.c_str());
+        RegisterCenter::getInstance()->destroyObjWithPrefix(key);
+    }
+
+    AnyPipeline* pipeline = new AnyPipeline();
+    pipeline->setPipelineName(pipeline_name.c_str());
+    if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
+        EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
+        return false;
+    }
+    // 初始化
+    pipeline_init_map[pipeline_name](pipeline);
+    const char* config_folder = NULL;
+    pipeline->initialize(config_folder, nullptr, true);
+
+    // 注册到中心
+    bool is_success_register = RegisterCenter::getInstance()->registerObj(
+        key, 
+        pipeline, 
+        [](std::string pipeline_key, void* pipeline_obj){
+            // 1.step 删除管线
+            EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
+            AnyPipeline* waiting_del_pipeline = (AnyPipeline*)pipeline_obj;
+            delete waiting_del_pipeline;
+        }
+    );
+    if(!is_success_register){
+        EAGLEEYE_LOGE("Register pipeline fail.");
+        return false;
+    }
+
+    // 3.step 配置管线参数
+    if(!param_info.IsEmpty()){
+        // 存在需要配置参数
+        for(int i=0; i<param_info.GetArraySize(); ++i){
+            CJsonObject node_param_info = param_info[i];
+
+            std::string node_name;
+            node_param_info.Get("node", node_name);
+            std::string param_name;
+            node_param_info.Get("name", param_name);
+            std::string param_type;
+            node_param_info.Get("type", param_type);
+            // "string"/"float"/"double"/"int"/"bool"
+            if(param_type == "string"){
+                std::string param_value;
+                bool is_ok = node_param_info.Get('value', param_value);
+                if(is_ok){
+                    pipeline->setParameter(node_name, param_name, &param_value);
+                }
+            }
+            else if(param_type == "float"){
+                float param_value = 0.0f;
+                bool is_ok = node_param_info.Get('value', param_value);
+                if(is_ok){
+                    pipeline->setParameter(node_name, param_name, &param_value);
+                }
+            }
+            else if(param_type == "double"){
+                double param_value = 0.0;
+                bool is_ok = node_param_info.Get('value', param_value);
+                if(is_ok){
+                    pipeline->setParameter(node_name, param_name, &param_value);
+                }
+            }
+            else if(param_type == "int"){
+                int param_value = 0;
+                bool is_ok = node_param_info.Get('value', param_value);
+                if(is_ok){
+                    pipeline->setParameter(node_name, param_name, &param_value);
+                }
+            }
+            else if(param_type == "bool"){
+                bool param_value = false;
+                bool is_ok = node_param_info.Get('value', param_value);
+                if(is_ok){
+                    pipeline->setParameter(node_name, param_name, &param_value);
+                }
+            }
+        }
+    }
+
+    // 4.step 配置管线回调
+    pipeline->setCallback(callback);
+    return true;
+}
+
+bool eagleeye_pipeline_server_stop(std::string request){
+    neb::CJsonObject config_obj(content);
+    std::string pipeline_name;
+    config_obj.Get("pipeline", pipeline_name);
+    if(pipeline_name == ""){
+        EAGLEEYE_LOGE("pipeline not in request.");
+        return false;
+    }
+
+    std::string key;
+    config_obj.Get("key", key);
+    if(key == ""){
+        EAGLEEYE_LOGE("key not in request.");
+        return false;
+    }
+
+    RegisterCenter::getInstance()->destroyObj(key);
     return true;
 }
 

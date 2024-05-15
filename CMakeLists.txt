@@ -221,7 +221,9 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SnapshotNode.cpp
     eagleeye/render/RenderContext.cpp
     eagleeye/processnode/AndroidCameraNode.cpp
-    eagleeye/processnode/PipelineNode.cpp)
+    eagleeye/processnode/PipelineNode.cpp
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/StringReplyNode.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
@@ -379,7 +381,9 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeCameraCenter.cpp
     eagleeye/processnode/ImageSelect.cpp
     eagleeye/processnode/AndroidCameraNode.cpp
-    eagleeye/processnode/PipelineNode.cpp)
+    eagleeye/processnode/PipelineNode.cpp
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/StringReplyNode.cpp)
 endif()
 
 # code related with arm

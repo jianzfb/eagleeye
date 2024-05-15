@@ -244,6 +244,12 @@ public:
     void setCallback(const char* node_name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
 
     /**
+     * @brief Set the Pipeline callback
+     * @param callback
+     */
+    void setCallback(std::function<void(std::string)> callback)
+
+    /**
      * @brief Set the Pipeline Input 
      * 
      * @param node_name 
