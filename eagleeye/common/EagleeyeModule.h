@@ -336,17 +336,19 @@ bool eagleeye_on_surface_change(int width, int height, int rotate=0, bool mirror
 bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag);
 
 
-/**
- * @brief pipeline server interface
- */
-bool eagleeye_pipeline_server_start(const char* pipeline_name, std::string request);
-bool eagleeye_pipeline_server_stop(const char* pipeline);
-
-
 // 注册插件函数类型
 typedef const char* (*REGISTER_PLUGIN_FUNC)();
 // 初始化插件函数类型
 typedef void* (*INITIALIZE_PLUGIN_FUNC)(void*);
+
+/**
+ * @brief pipeline server interface
+ */
+
+bool eagleeye_pipeline_server_init(std::string folder, std::map<std::string, INITIALIZE_PLUGIN_FUNC> info);
+bool eagleeye_pipeline_server_start(std::string request, std::function<void(std::string)> callback, int timeout=0);
+bool eagleeye_pipeline_server_stop(std::string request);
+
 /**
  * @brief add custom pipeline
  * 
@@ -438,7 +440,8 @@ extern "C" { \
 	void* eagleeye_##pipeline##_pipeline_initialize(void* extern_pipeline=NULL) { \
         AnyPipeline* pipeline = NULL; \
         if(extern_pipeline == NULL){ \
-            pipeline =  AnyPipeline::getInstance(#pipeline); \
+            pipeline =  new AnyPipeline(); \
+            pipeline->setPipelineName(#pipeline); \
         } \
         else{ \
             pipeline = (AnyPipeline*)extern_pipeline; \

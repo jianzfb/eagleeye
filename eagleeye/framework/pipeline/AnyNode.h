@@ -355,6 +355,7 @@ public:
 	 * @brief set callback
 	 */
 	virtual void setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){};
+	virtual void setCallback(std::function<void(std::string)> callback) {};
 
 	/**
 	 * @brief Set the Resource Folder object

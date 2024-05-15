@@ -703,6 +703,13 @@ void AnyPipeline::setCallback(const char* node_name, std::function<void(AnyNode*
     node->setCallback(callback);
 }
 
+void AnyPipeline::setCallback(std::function<void(std::string)> callback){
+    std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
+    for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
+        iter->second->setCallback(callback);
+    }
+}
+
 void AnyPipeline::setInput(const char* node_name, 
                            void* data, 
                            const size_t* data_size, 
