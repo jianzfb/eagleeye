@@ -530,66 +530,78 @@ bool eagleeye_pipeline_server_init(std::string folder, std::map<std::string, INI
     return true;
 }
 
-bool eagleeye_pipeline_server_start(std::string request, std::function<void(std::string)> callback, int timeout){
+bool eagleeye_pipeline_server_start(std::string server_config, std::function<void(std::vector<AnySignal*>, AnyPipeline*)> ext_pipeline){
     // 1.step 解析request
-    // {"pipeline": "", "params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], "key": ""}
-    neb::CJsonObject config_obj(content);
+    // {
+    //      "pipeline": "", 
+    //      "server_params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], 
+    //      "server_id": "",
+    //      "server_mode": "callback",
+    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
+    // }
+    neb::CJsonObject config_obj(server_config);
     std::string pipeline_name;
-    config_obj.Get("pipeline", pipeline_name);
-    if(pipeline_name == ""){
-        EAGLEEYE_LOGE("pipeline not in request.");
-        return false;
-    }
-
-    std::string key;
-    config_obj.Get("key", key);
-    if(key == ""){
-        EAGLEEYE_LOGE("key not in request.");
-        return false;
-    }
-
-    neb::CJsonObject param_info;
-    config_obj.Get('params', param_info);
+    config_obj.Get("pipeline_name", pipeline_name);
+    std::string server_id;
+    config_obj.Get("server_id", server_id);
+    std::string server_mode;
+    config_obj.Get("server_mode", server_mode);
+    neb::CJsonObject server_params;
+    config_obj.Get("server_params", server_params);
+    neb::CJsonObject data_source;
+    config_obj.Get("data_source", data_source);
 
     // 2.step 注册
-    if(RegisterCenter::getInstance()->hasObjWithPrefix(key)){
+    if(server_id != "" && RegisterCenter::getInstance()->hasObjWithPrefix(server_id)){
         // 清理现存的所有算法管线
-        EAGLEEYE_LOGD("Clear exist %s related pipelins", key.c_str());
-        RegisterCenter::getInstance()->destroyObjWithPrefix(key);
+        EAGLEEYE_LOGD("Clear exist %s related pipelins", server_id.c_str());
+        RegisterCenter::getInstance()->destroyObjWithPrefix(server_id);
     }
 
-    AnyPipeline* pipeline = new AnyPipeline();
-    pipeline->setPipelineName(pipeline_name.c_str());
-    if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
-        EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
-        return false;
-    }
-    // 初始化
-    pipeline_init_map[pipeline_name](pipeline);
-    const char* config_folder = NULL;
-    pipeline->initialize(config_folder, nullptr, true);
+    // 3.step 配置数据源
+    if(!data_source.IsEmpty()){
 
-    // 注册到中心
-    bool is_success_register = RegisterCenter::getInstance()->registerObj(
-        key, 
-        pipeline, 
-        [](std::string pipeline_key, void* pipeline_obj){
-            // 1.step 删除管线
-            EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
-            AnyPipeline* waiting_del_pipeline = (AnyPipeline*)pipeline_obj;
-            delete waiting_del_pipeline;
+    }
+
+    if(server_mode == "callback"){
+        // 引入AutoPipeline
+    }
+    else{
+        // 直接构建
+        AnyPipeline* pipeline = new AnyPipeline();
+        pipeline->setPipelineName(pipeline_name.c_str());
+        if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
+            EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
+            return false;
         }
-    );
-    if(!is_success_register){
-        EAGLEEYE_LOGE("Register pipeline fail.");
-        return false;
+
+        // 初始化
+        pipeline_init_map[pipeline_name](pipeline);
+        const char* config_folder = NULL;
+        pipeline->initialize(config_folder, nullptr, true);
+
+        // 注册到中心
+        bool is_success_register = RegisterCenter::getInstance()->registerObj(
+            key, 
+            pipeline, 
+            [](std::string pipeline_key, void* pipeline_obj){
+                // 1.step 删除管线
+                EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
+                AnyPipeline* waiting_del_pipeline = (AnyPipeline*)pipeline_obj;
+                delete waiting_del_pipeline;
+            }
+        );
+        if(!is_success_register){
+            EAGLEEYE_LOGE("Register pipeline fail.");
+            return false;
+        }        
     }
 
     // 3.step 配置管线参数
-    if(!param_info.IsEmpty()){
+    if(!server_params.IsEmpty()){
         // 存在需要配置参数
-        for(int i=0; i<param_info.GetArraySize(); ++i){
-            CJsonObject node_param_info = param_info[i];
+        for(int i=0; i<server_params.GetArraySize(); ++i){
+            CJsonObject node_param_info = server_params[i];
 
             std::string node_name;
             node_param_info.Get("node", node_name);
@@ -637,12 +649,16 @@ bool eagleeye_pipeline_server_start(std::string request, std::function<void(std:
     }
 
     // 4.step 配置管线回调
-    pipeline->setCallback(callback);
+    // pipeline->setCallback(callback);
     return true;
 }
 
+bool eagleeye_pipeline_server_call(std::string request, std::string reply){
+    return false;
+}
+
 bool eagleeye_pipeline_server_stop(std::string request){
-    neb::CJsonObject config_obj(content);
+    neb::CJsonObject config_obj(request);
     std::string pipeline_name;
     config_obj.Get("pipeline", pipeline_name);
     if(pipeline_name == ""){
@@ -650,14 +666,14 @@ bool eagleeye_pipeline_server_stop(std::string request){
         return false;
     }
 
-    std::string key;
-    config_obj.Get("key", key);
-    if(key == ""){
-        EAGLEEYE_LOGE("key not in request.");
+    std::string server_id;
+    config_obj.Get("server_id", server_id);
+    if(server_id == ""){
+        EAGLEEYE_LOGE("server_id not in request.");
         return false;
     }
 
-    RegisterCenter::getInstance()->destroyObj(key);
+    RegisterCenter::getInstance()->destroyObj(server_id);
     return true;
 }
 
