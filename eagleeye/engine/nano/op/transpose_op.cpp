@@ -1,6 +1,6 @@
 #include "eagleeye/engine/nano/op/transpose_op.h"
 #include <string>
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include <arm_neon.h>
 #endif
 
@@ -120,7 +120,7 @@ void TransposeCompute_(const std::vector<int64_t>& axis,
   }
 }
 
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 void arm_transpose_mat(const float* din,
                    float* dout,
                    const int num,
@@ -245,7 +245,7 @@ int TransposeOp::runOnCpu(const std::vector<Tensor>& input){
     if(m_trans_mat){
         float* din = (float*)input[0].cpu();
         float* dout = (float*)this->m_outputs[0].cpu();
-#if defined(__ANDROID__) || defined(ANDROID)          
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)          
         arm_transpose_mat(din, dout, m_trans_num, m_trans_w, m_trans_h);
 #endif
         return 0;

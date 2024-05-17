@@ -42,6 +42,18 @@ elseif(DEFINED X86_ABI)
     endif()
 
     link_libraries(-lz)
+elseif(DEFINED ARM_ABI)
+    message(STATUS "CONFIGURE arm")
+    add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${ARM_ABI})
+    set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ARM_ABI})
+    set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ARM_ABI})
+
+    if(BUILD_PYTHON_MODULE)
+        include(FindPythonByEnv)
+        add_subdirectory(${eagleeye_SOURCE_DIR}/eagleeye/3rd/pybind11)
+    endif()
+    link_libraries(-lz)
 else()
     # OSX
     message(STATUS "CONFIGURE OSX")
@@ -383,7 +395,7 @@ set(EAGLEEYE_SRC
 endif()
 
 # code related with arm
-if(DEFINED ANDROID_ABI)
+if(DEFINED ANDROID_ABI OR DEFINED ARM_ABI)
     set(EAGLEEYE_SRC 
         ${EAGLEEYE_SRC} 
         eagleeye/engine/math/arm/elementwise.cc
@@ -538,11 +550,19 @@ if(DEFINED RKCHIP)
     include_directories(${RKCHIP}/mpp/osal/inc/)
     include_directories(${RKCHIP}/librga/include)
 
-    target_link_libraries(eagleeye 
-                            ${RKCHIP}/mpp/build/android/mpp/librockchip_mpp.so
-                            ${RKCHIP}/mpp/build/android/utils/libutils.a
-                            ${RKCHIP}/mpp/build/android/osal/libosal.a
-                            ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
+    if(DEFINED ANDROID_ABI)
+        target_link_libraries(eagleeye 
+                                ${RKCHIP}/mpp/build/android/mpp/librockchip_mpp.so
+                                ${RKCHIP}/mpp/build/android/utils/libutils.a
+                                ${RKCHIP}/mpp/build/android/osal/libosal.a
+                                ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
+    elseif(DEFINED ARM_ABI)
+        target_link_libraries(eagleeye 
+                        ${RKCHIP}/mpp/build/linux/aarch64/mpp/librockchip_mpp.so
+                        ${RKCHIP}/mpp/build/linux/aarch64/utils/libutils.a
+                        ${RKCHIP}/mpp/build/linux/aarch64/osal/libosal.a
+                        ${RKCHIP}/librga/libs/Linux/gcc-aarch64/librga.so)
+    endif()
 endif()
 
 if(pnglib_FOUND)
@@ -576,6 +596,9 @@ if(DEFINED ANDROID_ABI)
     set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
 elseif(DEFINED X86_ABI)
     set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/linux/${X86_ABI}/libyuv.so)
+    set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
+elseif(DEFINED ARM_ABI)
+    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/linux/${ARM_ABI}/libyuv.so)
     set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
 else()
     set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/osx/${OSX_ABI}/libyuv.dylib)

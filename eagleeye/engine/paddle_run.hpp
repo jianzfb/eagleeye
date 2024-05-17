@@ -129,7 +129,7 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
     config.set_model_from_file(nb_path);
 
 	if(this->m_device == "GPU"){
-#if defined(__ANDROID__) || defined(ANDROID)		
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)		
 		bool is_opencl_backend_valid = paddle::lite_api::IsOpenCLBackendValid();		
 		if (!is_opencl_backend_valid) {
 			EAGLEEYE_LOGE("Unsupport opencl nb model.");

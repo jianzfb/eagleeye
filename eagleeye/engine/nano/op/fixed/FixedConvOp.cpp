@@ -1,5 +1,5 @@
 #include "eagleeye/engine/nano/op/FixedConvOp.h"
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #endif
 
@@ -119,7 +119,7 @@ bool FixedConvOp::Forward_SingleGroup(FixedType *in_data,
     const int data_norm_move = CNN_CONV_DATA_NORM_MOVE;
     const int norm_half_add_value = CNN_CONV_DATA_NORM_VALUE/2;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int max_abs_value = 0;
 	int search_start = 0;
 	int search_end = input_size;

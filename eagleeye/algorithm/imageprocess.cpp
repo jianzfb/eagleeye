@@ -1,11 +1,11 @@
 #include "eagleeye/algorithm/imageprocess.h"
-#ifdef EAGLEEYE_NEON_OPTIMIZATION    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
 #include <arm_neon.h>
 #endif
 
 namespace eagleeye
 {
-#ifdef EAGLEEYE_NEON_OPTIMIZATION    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
 struct MinMaxVec8u{   
     typedef uint8x16_t ElemType;
     inline void load(float* data, uint8x16_t& target, float32x4_t& scale){

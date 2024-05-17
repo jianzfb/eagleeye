@@ -1,5 +1,5 @@
 #include "eagleeye/engine/nano/op/reduce_op.h"
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include "eagleeye/engine/math/arm/reduce_max.h"
 #include "eagleeye/engine/math/arm/reduce_min.h"
 #include "eagleeye/engine/math/arm/reduce_mean.h"
@@ -147,7 +147,7 @@ int ReduceOp::runOnCpu(const std::vector<Tensor>& input){
         x_h = x_dim[2]; x_w = x_dim[3];
     }
 
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
     if(this->m_reduce_n){
         switch (this->m_op_type){
         case REDUCE_MIN:

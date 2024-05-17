@@ -37,7 +37,7 @@ private:
     std::mutex m_mu;
 
     void startTimerThread(int timeout_seconds);
-    std::atomic_bool m_run_check = false;
+    std::atomic_bool m_run_check{false};
     std::future<void> m_future;
 
 }; 
