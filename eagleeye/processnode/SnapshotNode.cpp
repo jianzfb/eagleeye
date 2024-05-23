@@ -146,6 +146,11 @@ void SnapeshotNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,3>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
         m_c3_image = input_img_signal->getData(image_meta_data);
+        if(m_c3_image.empty()){
+            // empty, directly return
+            this->getOutputPort(0)->meta().is_snapshot_frame = false;
+            return;
+        }
         if(!m_c3_image.isContinuous()){
             m_c3_image = m_c3_image.clone();
         }
@@ -177,6 +182,11 @@ void SnapeshotNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,4>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,4>>*)(this->getInputPort(0));
         m_c4_image = input_img_signal->getData(image_meta_data);
+        if(m_c4_image.empty()){
+            // empty, directly return
+            this->getOutputPort(0)->meta().is_snapshot_frame = false;
+            return;
+        }
         if(!m_c4_image.isContinuous()){
             m_c4_image = m_c4_image.clone();
         }
