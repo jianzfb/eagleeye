@@ -242,6 +242,7 @@ void SnapeshotNode::executeNodeInfo(){
 
     // open file
     m_output_file.open(m_file_path.c_str(), std::ios::binary);
+    EAGLEEYE_LOGD("open snapshot %s at %d", m_file_path.c_str(), int(EagleeyeTime::getCurrentTime()));
 
     if(!this->m_is_init){
 #ifdef EAGLEEYE_RKCHIP
@@ -519,6 +520,8 @@ void SnapeshotNode::executeNodeInfo(){
 #endif
 
     m_output_file.close();
+    EAGLEEYE_LOGD("finish snapshot %s at %d", m_file_path.c_str(), int(EagleeyeTime::getCurrentTime()));
+
 
 #ifdef EAGLEEYE_MINIO
     // 运行至此，说明已经保存文件
