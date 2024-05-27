@@ -536,7 +536,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
     //      "pipeline": "", 
     //      "server_params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], 
     //      "timestamp": "",
-    //      "server_mode": "callback",
+    //      "server_id": "",
     //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
     // }
     neb::CJsonObject config_obj(server_config);
@@ -559,12 +559,13 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
         RegisterCenter::getInstance()->destroyObjWithPrefix(server_id);
     }
 
-    // 2.2.step 创建管线
-    if(!(data_source.IsEmpty())){
-        // 回调模式（AutoNode + AutoPipeline）
-        // 创建AutoNode，解析数据源
+    // 3.step 配置数据源
+    if(!data_source.IsEmpty()){
 
-        // 创建AutoPipeline，执行管线
+    }
+
+    if(server_mode == "callback"){
+        // 引入AutoPipeline
     }
     else{
         // 直接构建
