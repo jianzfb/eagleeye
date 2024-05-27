@@ -535,7 +535,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
     // {
     //      "pipeline": "", 
     //      "server_params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], 
-    //      "server_id": "",
+    //      "timestamp": "",
     //      "server_mode": "callback",
     //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
     // }
@@ -544,27 +544,27 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
     config_obj.Get("pipeline_name", pipeline_name);
     std::string server_id;
     config_obj.Get("server_id", server_id);
-    std::string server_mode;
-    config_obj.Get("server_mode", server_mode);
+    std::string timestamp;
+    config_obj.Get("timestamp", timestamp);
     neb::CJsonObject server_params;
     config_obj.Get("server_params", server_params);
     neb::CJsonObject data_source;
     config_obj.Get("data_source", data_source);
 
     // 2.step 注册
+    // 2.1.step 清理存在的
     if(server_id != "" && RegisterCenter::getInstance()->hasObjWithPrefix(server_id)){
         // 清理现存的所有算法管线
         EAGLEEYE_LOGD("Clear exist %s related pipelins", server_id.c_str());
         RegisterCenter::getInstance()->destroyObjWithPrefix(server_id);
     }
 
-    // 3.step 配置数据源
-    if(!data_source.IsEmpty()){
+    // 2.2.step 创建管线
+    if(!(data_source.IsEmpty())){
+        // 回调模式（AutoNode + AutoPipeline）
+        // 创建AutoNode，解析数据源
 
-    }
-
-    if(server_mode == "callback"){
-        // 引入AutoPipeline
+        // 创建AutoPipeline，执行管线
     }
     else{
         // 直接构建
@@ -580,7 +580,58 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
         const char* config_folder = NULL;
         pipeline->initialize(config_folder, nullptr, true);
 
+        // 配置管线参数
+        if(!server_params.IsEmpty()){
+            for(int i=0; i<server_params.GetArraySize(); ++i){
+                CJsonObject node_param_info = server_params[i];
+
+                std::string node_name;
+                node_param_info.Get("node", node_name);
+                std::string param_name;
+                node_param_info.Get("name", param_name);
+                std::string param_type;
+                node_param_info.Get("type", param_type);
+                // "string"/"float"/"double"/"int"/"bool"
+                if(param_type == "string"){
+                    std::string param_value;
+                    bool is_ok = node_param_info.Get('value', param_value);
+                    if(is_ok){
+                        pipeline->setParameter(node_name, param_name, &param_value);
+                    }
+                }
+                else if(param_type == "float"){
+                    float param_value = 0.0f;
+                    bool is_ok = node_param_info.Get('value', param_value);
+                    if(is_ok){
+                        pipeline->setParameter(node_name, param_name, &param_value);
+                    }
+                }
+                else if(param_type == "double"){
+                    double param_value = 0.0;
+                    bool is_ok = node_param_info.Get('value', param_value);
+                    if(is_ok){
+                        pipeline->setParameter(node_name, param_name, &param_value);
+                    }
+                }
+                else if(param_type == "int"){
+                    int param_value = 0;
+                    bool is_ok = node_param_info.Get('value', param_value);
+                    if(is_ok){
+                        pipeline->setParameter(node_name, param_name, &param_value);
+                    }
+                }
+                else if(param_type == "bool"){
+                    bool param_value = false;
+                    bool is_ok = node_param_info.Get('value', param_value);
+                    if(is_ok){
+                        pipeline->setParameter(node_name, param_name, &param_value);
+                    }
+                }
+            }
+        }
+
         // 注册到中心
+        std::string key = server_id + "/" + timestamp;
         bool is_success_register = RegisterCenter::getInstance()->registerObj(
             key, 
             pipeline, 
@@ -595,57 +646,6 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
             EAGLEEYE_LOGE("Register pipeline fail.");
             return false;
         }        
-    }
-
-    // 3.step 配置管线参数
-    if(!server_params.IsEmpty()){
-        // 存在需要配置参数
-        for(int i=0; i<server_params.GetArraySize(); ++i){
-            CJsonObject node_param_info = server_params[i];
-
-            std::string node_name;
-            node_param_info.Get("node", node_name);
-            std::string param_name;
-            node_param_info.Get("name", param_name);
-            std::string param_type;
-            node_param_info.Get("type", param_type);
-            // "string"/"float"/"double"/"int"/"bool"
-            if(param_type == "string"){
-                std::string param_value;
-                bool is_ok = node_param_info.Get('value', param_value);
-                if(is_ok){
-                    pipeline->setParameter(node_name, param_name, &param_value);
-                }
-            }
-            else if(param_type == "float"){
-                float param_value = 0.0f;
-                bool is_ok = node_param_info.Get('value', param_value);
-                if(is_ok){
-                    pipeline->setParameter(node_name, param_name, &param_value);
-                }
-            }
-            else if(param_type == "double"){
-                double param_value = 0.0;
-                bool is_ok = node_param_info.Get('value', param_value);
-                if(is_ok){
-                    pipeline->setParameter(node_name, param_name, &param_value);
-                }
-            }
-            else if(param_type == "int"){
-                int param_value = 0;
-                bool is_ok = node_param_info.Get('value', param_value);
-                if(is_ok){
-                    pipeline->setParameter(node_name, param_name, &param_value);
-                }
-            }
-            else if(param_type == "bool"){
-                bool param_value = false;
-                bool is_ok = node_param_info.Get('value', param_value);
-                if(is_ok){
-                    pipeline->setParameter(node_name, param_name, &param_value);
-                }
-            }
-        }
     }
 
     // 4.step 配置管线回调
