@@ -61,8 +61,35 @@ void ForNode::setUnitName(const char* unit_name){
 void ForNode::setFolder(const std::string folder){
     m_auto_node->setFolder(folder);
 }
+
 void ForNode::getFolder(std::string& folder){
     // do nothing
     m_auto_node->getFolder(folder);
+}
+
+void ForNode::getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool){
+	if(m_get_monitor_flag){
+		return;
+	}
+
+    // inner node monitor
+    std::map<std::string,std::vector<AnyMonitor*>> collect;
+    m_auto_node->getPipelineMonitors(collect);
+    std::map<std::string,std::vector<AnyMonitor*>>::iterator iter, iend(collect.end());
+    for(iter = collect.begin(); iter != iend; ++iter){
+        pipeline_monitor_pool[iter->first] = iter->second;
+    }
+
+    // self monitor
+    pipeline_monitor_pool[getUnitName()] = m_unit_monitor_pool;
+
+	//traverse the whole pipeline
+    m_get_monitor_flag = true;
+	std::vector<AnySignal*>::iterator signal_iter,signal_iend(m_input_signals.end());
+	for (signal_iter = m_input_signals.begin();signal_iter != signal_iend; ++signal_iter){
+		if ((*signal_iter))
+			(*signal_iter)->getPipelineMonitors(pipeline_monitor_pool);
+	}
+    m_get_monitor_flag = false;
 }
 }
