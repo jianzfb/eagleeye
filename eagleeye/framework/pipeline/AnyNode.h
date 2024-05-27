@@ -450,6 +450,7 @@ protected:
 	NodeCategory m_node_category;
 
 	std::vector<AnyNode*> m_aux_nodes;
+	bool m_get_monitor_flag;	// ...
 
 private:
 	AnyNode(const AnyNode&);
@@ -463,7 +464,6 @@ private:
 
 	bool m_init_once;			// only init once flag
 
-	bool m_get_monitor_flag;	// ...
 	// bool m_feadback_flag;		// ...
 	bool m_finish_flag;
 	bool m_load_config_flag;	// ...
