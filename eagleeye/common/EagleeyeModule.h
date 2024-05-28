@@ -345,10 +345,12 @@ typedef void* (*INITIALIZE_PLUGIN_FUNC)(void*);
  * @brief pipeline server interface
  */
 
-bool eagleeye_pipeline_server_init(std::string folder, std::map<std::string, INITIALIZE_PLUGIN_FUNC> info);
-bool eagleeye_pipeline_server_start(std::string server_config, std::function<void(std::vector<AnySignal*>, AnyPipeline*)> ext_pipeline=nullptr);
-bool eagleeye_pipeline_server_call(std::string request, std::string reply);
-bool eagleeye_pipeline_server_stop(std::string request);
+bool eagleeye_pipeline_server_init(std::string folder);
+bool eagleeye_pipeline_server_start(std::string server_config, std::string& server_key);
+bool eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string reply, int timeout=3);
+bool eagleeye_pipeline_server_render(std::string server_key);
+bool eagleeye_pipeline_server_stop(std::string server_key);
+
 
 /**
  * @brief add custom pipeline

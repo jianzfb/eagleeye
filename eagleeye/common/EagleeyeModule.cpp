@@ -6,6 +6,9 @@
 #include "eagleeye/runtime/gpu/opencl_runtime.h"
 #include "eagleeye/common/EagleeyeFactory.h"
 #include "eagleeye/common/EagleeyeRegisterCenter.h"
+#include "eagleeye/common/EagleeyeCameraCenter.h"
+#include "eagleeye/common/EagleeyeMessageCenter.h"
+#include "eagleeye/processnode/AutoPipeline.h"
 #ifdef EAGLEEYE_OPENGL
 #include "eagleeye/common/EagleeyeShader.h"
 #endif
@@ -486,12 +489,7 @@ bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag){
 }
 
 std::map<std::string, INITIALIZE_PLUGIN_FUNC> pipeline_init_map;
-bool eagleeye_pipeline_server_init(std::string folder, std::map<std::string, INITIALIZE_PLUGIN_FUNC> info){
-    if(info.size() > 0){
-        pipeline_init_map = info;
-        return true;
-    }
-
+bool eagleeye_pipeline_server_init(std::string folder){
     EAGLEEYE_LOGD("Traverse to find all plugin in %s.", folder.c_str());
     std::vector<std::string> plugin_list;
     _getAllPluginsFromDirectory(folder, plugin_list);
@@ -509,7 +507,7 @@ bool eagleeye_pipeline_server_init(std::string folder, std::map<std::string, INI
         // 插件目录结构
         std::string sperator="/";
         std::vector<std::string> kv = split(plugin_list[index], sperator);
-        std::string plugin_path_parent = std::string(plugin_folder) + "/" + kv[0];
+        std::string plugin_path_parent = std::string(folder) + "/" + kv[0];
 
         // 加载注册及初始化函数
         REGISTER_PLUGIN_FUNC plugin_register_func = NULL; 
@@ -530,45 +528,237 @@ bool eagleeye_pipeline_server_init(std::string folder, std::map<std::string, INI
     return true;
 }
 
-bool eagleeye_pipeline_server_start(std::string server_config, std::function<void(std::vector<AnySignal*>, AnyPipeline*)> ext_pipeline){
+bool eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<AnyNode*(std::vector<AnySignal*>, AnyNode*)> render_config_func){
     // 1.step 解析request
     // {
-    //      "pipeline": "", 
+    //      "pipeline_name": "", 
     //      "server_params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], 
-    //      "timestamp": "",
+    //      "server_timestamp": "",
     //      "server_id": "",
-    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
+    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR", "mode": "RTSP/NATIVE", "platform": ""}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
     // }
     neb::CJsonObject config_obj(server_config);
     std::string pipeline_name;
     config_obj.Get("pipeline_name", pipeline_name);
     std::string server_id;
     config_obj.Get("server_id", server_id);
-    std::string timestamp;
-    config_obj.Get("timestamp", timestamp);
+    std::string server_timestamp;
+    config_obj.Get("server_timestamp", server_timestamp);
     neb::CJsonObject server_params;
     config_obj.Get("server_params", server_params);
     neb::CJsonObject data_source;
     config_obj.Get("data_source", data_source);
 
-    // 2.step 注册
-    // 2.1.step 清理存在的
+    EAGLEEYE_LOGD("Receive server_id %s, server_timestamp %s, pipeline_name %s", server_id.c_str(), server_timestamp.c_str(), pipeline_name.c_str());
+
+    // 2.step 清理存在的服务
     if(server_id != "" && RegisterCenter::getInstance()->hasObjWithPrefix(server_id)){
         // 清理现存的所有算法管线
         EAGLEEYE_LOGD("Clear exist %s related pipelins", server_id.c_str());
         RegisterCenter::getInstance()->destroyObjWithPrefix(server_id);
     }
 
-    // 3.step 配置数据源
+    // 3.step 根据模式构建管线执行
     if(!data_source.IsEmpty()){
+        // 回调构建 (AutoNode + AutoPipeline)
+        // AutoNode 封装数据读取
+        std::vector<std::string> source_list;
+        for(int source_i=0; source_i<data_source.GetArraySize(); ++source_i){
+            neb::CJsonObject source_cfg;
+            data_source.Get(source_i, source_cfg);
+            std::string source_type;
+            source_cfg.Get("type", source_type);
+            std::string source_address;
+            source_cfg.Get("address", source_address);
+            std::string source_format;
+            source_cfg.Get("format", source_format);
 
-    }
+            EAGLEEYE_LOGD("Data source %d, type=%s, address=%s", source_i, source_type.c_str(), source_address.c_str());
 
-    if(server_mode == "callback"){
-        // 引入AutoPipeline
+            if(source_type == "camera"){
+                std::string source_mode;
+                source_cfg.Get("mode", source_mode);
+                std::string source_platform;
+                source_cfg.Get("platform", source_platform);
+
+                if(source_mode == "RTSP"){
+                    EAGLEEYE_LOGD("Create RTSP source (BGR).");
+                    CameraCenter::getInstance()->addCamera(source_address, 1);
+                    source_list.push_back(source_address);
+                }
+                else if(source_mode == "NATIVE"){
+                    EAGLEEYE_LOGE("Not support NATIVE camera now.");
+                    return false;
+                }
+            }
+            else if(source_type == "video"){
+                EAGLEEYE_LOGE("Not support video now.");
+                return false;
+            }
+        }
+
+        // AutoPipeline 封装管线处理
+        if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
+            EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
+            return false;
+        }
+
+        AnyNode* auto_pipeline_node = new AutoPipeline(
+            [&](){
+                AnyPipeline* pipeline = new AnyPipeline();
+                pipeline->setPipelineName(pipeline_name.c_str());
+
+                // 初始化管线
+                pipeline_init_map[pipeline_name](pipeline);
+                const char* config_folder = NULL;
+                pipeline->initialize(config_folder, nullptr, true);
+
+                // 配置管线参数
+                if(!server_params.IsEmpty()){
+                    for(int i=0; i<server_params.GetArraySize(); ++i){
+                        neb::CJsonObject node_param_info = server_params[i];
+
+                        std::string node_name;
+                        node_param_info.Get("node", node_name);
+                        std::string param_name;
+                        node_param_info.Get("name", param_name);
+                        std::string param_type;
+                        node_param_info.Get("type", param_type);
+                        // "string"/"float"/"double"/"int"/"bool"
+                        if(param_type == "string"){
+                            std::string param_value;
+                            bool is_ok = node_param_info.Get('value', param_value);
+                            if(is_ok){
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "float"){
+                            float param_value = 0.0f;
+                            bool is_ok = node_param_info.Get('value', param_value);
+                            if(is_ok){
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "double"){
+                            double param_value = 0.0;
+                            bool is_ok = node_param_info.Get('value', param_value);
+                            if(is_ok){
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "int"){
+                            int param_value = 0;
+                            bool is_ok = node_param_info.Get('value', param_value);
+                            if(is_ok){
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "bool"){
+                            bool param_value = false;
+                            bool is_ok = node_param_info.Get('value', param_value);
+                            if(is_ok){
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                    }
+                }
+
+                // 自定义回调
+                // 需要在管线内部完成构建
+
+                return pipeline;
+            },
+            std::vector<std::pair<std::string, int>>({}),
+            1
+        );
+
+        // 关联 AutoNode -> AutoPipeline
+        auto_pipeline_node->setNumberOfInputSignals(source_list.size());
+        std::vector<AnySignal*> source_sigs;
+        bool is_ok = true;
+        for(int source_i=0; source_i<source_list.size(); ++source_i){
+            AnyNode* source_node = CameraCenter::getInstance()->getCamera(source_list[source_i]);
+            if(source_node == NULL){
+                is_ok = false;
+                break;
+            }
+            AnySignal* source_sig = source_node->getOutputPort(0);
+            auto_pipeline_node->setInputPort(source_sig, source_i);
+            source_sigs.push_back(source_sig);
+        }
+        if(!is_ok){
+            // 数据源存在问题，退出，清理
+            delete auto_pipeline_node;
+            return false;
+        }
+
+        // 关联 RenderNode
+        if(render_config_func != nullptr){
+            std::string render_key = server_id + "/" + server_timestamp + "/render";
+            AnyNode* render_node = render_config_func(source_sigs, auto_pipeline_node);
+            RegisterCenter::getInstance()->registerObj(
+                render_key,
+                render_node,
+                [](std::string k, void* obj){
+                    // 删除渲染
+                    EAGLEEYE_LOGD("Delete render node %s", k.c_str());
+                    AnyNode* node = (AnyNode*)obj;
+                    node->exit();
+
+                    for(int sig_i=0; sig_i<node->getNumberOfInputSignals(); ++sig_i){
+                        node->clearInputPort(sig_i);
+                    }
+                    delete node;
+                }
+            );
+        }
+
+        // 启动 AutoPipeline
+        auto_pipeline_node->init();
+
+        // 注册管线到管线管理中心
+        std::string key = server_id + "/" + server_timestamp;
+        bool is_success_register = RegisterCenter::getInstance()->registerObj(
+            key, 
+            auto_pipeline_node, 
+            [source_list](std::string pipeline_key, void* pipeline_obj){
+                // 1.step 删除管线
+                EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
+                AnyNode* node = (AnyNode*)pipeline_obj;
+                node->exit();
+
+                for(int sig_i=0; sig_i<node->getNumberOfInputSignals(); ++sig_i){
+                    node->clearInputPort(sig_i);
+                }
+                delete node;
+
+                // 2.step 清空相机占用
+                EAGLEEYE_LOGD("Clear pipeline %s occupy camera", pipeline_key.c_str());
+                for(int camera_i=0; camera_i<source_list.size(); camera_i+=1){
+                    EAGLEEYE_LOGD("Clear camera %d -> %s", camera_i, source_list[camera_i].c_str());
+                    CameraCenter::getInstance()->removeCamera(source_list[camera_i]);
+                }
+
+                // 3.step 清空消息队列
+                EAGLEEYE_LOGD("Clear message %s", pipeline_key.c_str());
+                MessageCenter::getInstance()->clear(pipeline_key);
+            },
+            "mode/callback"
+        );
+
+        if(!is_success_register){
+            EAGLEEYE_LOGE("Register pipeline fail.");
+            return false;            
+        }
+        server_key = key;
     }
     else{
         // 直接构建
+        if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
+            EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
+            return false;
+        }  
+
         AnyPipeline* pipeline = new AnyPipeline();
         pipeline->setPipelineName(pipeline_name.c_str());
         if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
@@ -576,7 +766,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
             return false;
         }
 
-        // 初始化
+        // 初始化管线      
         pipeline_init_map[pipeline_name](pipeline);
         const char* config_folder = NULL;
         pipeline->initialize(config_folder, nullptr, true);
@@ -584,7 +774,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
         // 配置管线参数
         if(!server_params.IsEmpty()){
             for(int i=0; i<server_params.GetArraySize(); ++i){
-                CJsonObject node_param_info = server_params[i];
+                neb::CJsonObject node_param_info = server_params[i];
 
                 std::string node_name;
                 node_param_info.Get("node", node_name);
@@ -597,45 +787,45 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
                     std::string param_value;
                     bool is_ok = node_param_info.Get('value', param_value);
                     if(is_ok){
-                        pipeline->setParameter(node_name, param_name, &param_value);
+                        pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
                     }
                 }
                 else if(param_type == "float"){
                     float param_value = 0.0f;
                     bool is_ok = node_param_info.Get('value', param_value);
                     if(is_ok){
-                        pipeline->setParameter(node_name, param_name, &param_value);
+                        pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
                     }
                 }
                 else if(param_type == "double"){
                     double param_value = 0.0;
                     bool is_ok = node_param_info.Get('value', param_value);
                     if(is_ok){
-                        pipeline->setParameter(node_name, param_name, &param_value);
+                        pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
                     }
                 }
                 else if(param_type == "int"){
                     int param_value = 0;
                     bool is_ok = node_param_info.Get('value', param_value);
                     if(is_ok){
-                        pipeline->setParameter(node_name, param_name, &param_value);
+                        pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
                     }
                 }
                 else if(param_type == "bool"){
                     bool param_value = false;
                     bool is_ok = node_param_info.Get('value', param_value);
                     if(is_ok){
-                        pipeline->setParameter(node_name, param_name, &param_value);
+                        pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
                     }
                 }
             }
         }
 
         // 注册到中心
-        std::string key = server_id + "/" + timestamp;
+        std::string key = server_id + "/" + server_timestamp;
         bool is_success_register = RegisterCenter::getInstance()->registerObj(
-            key, 
-            pipeline, 
+            key,
+            pipeline,
             [](std::string pipeline_key, void* pipeline_obj){
                 // 1.step 删除管线
                 EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
@@ -646,36 +836,110 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::function<voi
         if(!is_success_register){
             EAGLEEYE_LOGE("Register pipeline fail.");
             return false;
-        }        
+        }
+
+        server_key = key;
     }
 
-    // 4.step 配置管线回调
-    // pipeline->setCallback(callback);
     return true;
 }
 
-bool eagleeye_pipeline_server_call(std::string request, std::string reply){
-    return false;
-}
-
-bool eagleeye_pipeline_server_stop(std::string request){
-    neb::CJsonObject config_obj(request);
-    std::string pipeline_name;
-    config_obj.Get("pipeline", pipeline_name);
-    if(pipeline_name == ""){
-        EAGLEEYE_LOGE("pipeline not in request.");
+bool eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string reply, int timeout){
+    void* pipeline_obj = RegisterCenter::getInstance()->getObj(server_key);
+    if(pipeline_obj == NULL){
         return false;
     }
+    // 管线模式
+    std::string mode = RegisterCenter::getInstance()->getInfo(server_key);
 
-    std::string server_id;
-    config_obj.Get("server_id", server_id);
-    if(server_id == ""){
-        EAGLEEYE_LOGE("server_id not in request.");
-        return false;
+    // 执行
+    if(mode == "mode/callback"){
+        // 回调模式（接收reply, 返回reply）
+        std::shared_ptr<Message> message = MessageCenter::getInstance()->get(server_key);
+        if(message.get() == nullptr){
+            return false;
+        }
+
+        reply = message->serialize();
     }
+    else{
+        // 直建模式（处理request，返回reply）
+        // {
+        //      "data": [{"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, {"type": "string", "content": ""}, {"type": "float", "content": "", "width":0, "height":0}]
+        // }
 
-    RegisterCenter::getInstance()->destroyObj(server_id);
+        AnyPipeline* pipeline = (AnyPipeline*)pipeline_obj;
+        // 1.step 解析request
+        neb::CJsonObject request_obj(request);   
+        neb::CJsonObject data_info;
+        request_obj.Get("data", data_info);
+        for(int data_i=0; data_i<data_info.GetArraySize(); ++data_i){
+            neb::CJsonObject data_cfg;
+            data_info.Get(data_i, data_cfg);
+            std::string data_type = "";
+            data_cfg.Get("type", data_type);
+
+            std::string data_i_placeholder = "placeholder_"+std::to_string(data_i);
+            if(data_type == "image"){
+                int width = 0;
+                int height = 0;
+                int channel = 0;
+                data_cfg.Get("width", width);
+                data_cfg.Get("height", height);
+                data_cfg.Get("channel", channel);
+                std::vector<size_t> data_size = {(size_t)height, (size_t)width, (size_t)channel};
+
+                int64 data_content;   // 内存地址
+                data_cfg.Get("content", data_content);
+                void* data_content_ptr = (void*)(data_content);
+                if(channel == 3){
+                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), 3, 0, 8);
+                }
+                else if(channel == 4){
+                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), 3, 0, 9);
+                }
+            }
+        }
+
+        // 2.step 运行
+        pipeline->start();
+
+        // 3.step 获得结果，并序列化
+        std::vector<std::string> output_nodes;
+        std::vector<std::string> output_types;
+        std::vector<std::string> output_targets;
+        pipeline->getPipelineOutputs(output_nodes, output_types, output_targets);
+        for(int signal_i=0; signal_i<output_nodes.size(); ++signal_i){
+            if(output_types[signal_i] == "EAGLEEYE_SIGNAL_STRING" || output_types[signal_i] == "EAGLEEYE_SIGNAL_TEXT"){
+                void* temp_content;
+                size_t* temp_size;
+                int temp_dims;
+                int temp_type;
+                pipeline->getOutput(output_nodes[signal_i].c_str(), temp_content, temp_size, temp_dims, temp_type);
+
+                reply = *((std::string*)temp_content);
+                break;
+            }
+        }
+    }
     return true;
 }
 
+bool eagleeye_pipeline_server_render(std::string server_key){
+    // render key:
+    std::string server_render_key = server_key + "/render";
+    void* pipeline_render_obj = RegisterCenter::getInstance()->getObj(server_render_key);
+    if(pipeline_render_obj == NULL){
+        return false;
+    }
+
+    AnyPipeline* pipeline_render = (AnyPipeline*)pipeline_render_obj;
+    pipeline_render->start();
+    return true;
+}
+
+bool eagleeye_pipeline_server_stop(std::string server_key){
+    RegisterCenter::getInstance()->destroyObj(server_key);
+    return true;
+}
 }

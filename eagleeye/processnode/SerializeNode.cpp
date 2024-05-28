@@ -1,5 +1,7 @@
 #include "eagleeye/processnode/SerializeNode.h"
 #include "eagleeye/framework/pipeline/StringSignal.h"
+#include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/basic/Matrix.h"
 #include "eagleeye/common/CJsonObject.hpp"
 
 namespace eagleeye{
@@ -12,7 +14,7 @@ SerializeNode::~SerializeNode(){
 }
 
 void SerializeNode::executeNodeInfo(){
-    CJsonObject json_obj;
+    neb::CJsonObject json_obj;
     for(int sig_i=0; sig_i<this->getNumberOfInputSignals(); ++sig_i){
         AnySignal* input_sig = this->getInputPort(sig_i);
         if(input_sig->getSignalCategory() == SIGNAL_CATEGORY_STRING){
@@ -83,7 +85,7 @@ void SerializeNode::executeNodeInfo(){
                 tensor_obj.Add("dims", shape_obj);
 
                 std::string key = std::to_string(sig_i);
-                json_obj.Add(key, matrix_obj);
+                json_obj.Add(key, tensor_obj);
             }
             else if(data.type() == EAGLEEYE_INT){
                 int* data_ptr = data.cpu<int>();
@@ -104,7 +106,7 @@ void SerializeNode::executeNodeInfo(){
                 tensor_obj.Add("dims", shape_obj);
 
                 std::string key = std::to_string(sig_i);
-                json_obj.Add(key, matrix_obj);                
+                json_obj.Add(key, tensor_obj);                
             }
         }
     }

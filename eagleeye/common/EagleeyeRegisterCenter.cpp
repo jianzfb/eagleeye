@@ -41,7 +41,15 @@ void* RegisterCenter::getObj(std::string key){
     return m_register_map[key].first;
 }
 
-bool RegisterCenter::registerObj(std::string key, void* obj, std::function<void(std::string, void*)> destroy_func){
+std::string RegisterCenter::getInfo(std::string key){
+    std::unique_lock<std::mutex> locker(m_mu);
+    if(m_register_info.find(key) == m_register_info.end()){
+        return "";
+    }
+    return m_register_info[key];
+}
+
+bool RegisterCenter::registerObj(std::string key, void* obj, std::function<void(std::string, void*)> destroy_func, std::string info){
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_register_map.find(key) != m_register_map.end()){
         return false;
@@ -49,6 +57,7 @@ bool RegisterCenter::registerObj(std::string key, void* obj, std::function<void(
 
     m_register_map[key] = std::make_pair(obj, destroy_func);
     m_register_start_time[key] = std::chrono::steady_clock::now();
+    m_register_info[key] = info;
     return true;
 }
 
@@ -63,6 +72,7 @@ bool RegisterCenter::destroyObj(std::string key){
     destroy_obj_func(key, obj);
     m_register_map.erase(key);
     m_register_start_time.erase(key);
+    m_register_info.erase(key);
     return true;
 }
 
@@ -76,6 +86,7 @@ bool RegisterCenter::destroyObjWithPrefix(std::string prefix){
             destroy_obj_func(iter->first, obj);
             m_register_map.erase(iter->first);
             m_register_start_time.erase(iter->first);
+            m_register_info.erase(iter->first);
         }
     }
 
