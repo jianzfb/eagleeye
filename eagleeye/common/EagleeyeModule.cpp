@@ -528,7 +528,7 @@ bool eagleeye_pipeline_server_init(std::string folder){
     return true;
 }
 
-bool eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<AnyNode*(std::vector<AnySignal*>, AnyNode*)> render_config_func){
+bool eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<void*(std::vector<void*>, void*)> render_config_func){
     // 1.step 解析request
     // {
     //      "pipeline_name": "", 
@@ -674,7 +674,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
 
         // 关联 AutoNode -> AutoPipeline
         auto_pipeline_node->setNumberOfInputSignals(source_list.size());
-        std::vector<AnySignal*> source_sigs;
+        std::vector<void*> source_sigs;
         bool is_ok = true;
         for(int source_i=0; source_i<source_list.size(); ++source_i){
             AnyNode* source_node = CameraCenter::getInstance()->getCamera(source_list[source_i]);
@@ -695,7 +695,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         // 关联 RenderNode
         if(render_config_func != nullptr){
             std::string render_key = server_id + "/" + server_timestamp + "/render";
-            AnyNode* render_node = render_config_func(source_sigs, auto_pipeline_node);
+            AnyNode* render_node = (AnyNode*)(render_config_func(source_sigs, auto_pipeline_node));
             RegisterCenter::getInstance()->registerObj(
                 render_key,
                 render_node,
@@ -844,7 +844,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
     return true;
 }
 
-bool eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string reply, int timeout){
+bool eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout){
     void* pipeline_obj = RegisterCenter::getInstance()->getObj(server_key);
     if(pipeline_obj == NULL){
         return false;
@@ -865,7 +865,10 @@ bool eagleeye_pipeline_server_call(std::string server_key, std::string request, 
     else{
         // 直建模式（处理request，返回reply）
         // {
-        //      "data": [{"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, {"type": "string", "content": ""}, {"type": "float", "content": "", "width":0, "height":0}]
+        //      "data": [
+        //          {"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, 
+        //          {"type": "string", "content": "", "size": 0}, 
+        //          {"type": "matrix", "content": "", "width":0, "height":0, "elem": "float"}]
         // }
 
         AnyPipeline* pipeline = (AnyPipeline*)pipeline_obj;

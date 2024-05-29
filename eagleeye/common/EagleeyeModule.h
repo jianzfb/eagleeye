@@ -2,6 +2,7 @@
 #define _EAGLEEYE_MODULE_H_
 #include <string>
 #include <vector>
+#include <functional>
 struct EagleeyeMeta{
 	double fps;				// frame rate for video
 	int nb_frames;			// frame number for video
@@ -346,8 +347,8 @@ typedef void* (*INITIALIZE_PLUGIN_FUNC)(void*);
  */
 
 bool eagleeye_pipeline_server_init(std::string folder);
-bool eagleeye_pipeline_server_start(std::string server_config, std::string& server_key);
-bool eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string reply, int timeout=3);
+bool eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<void*(std::vector<void*>, void*)> render_config_func);
+bool eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout=3);
 bool eagleeye_pipeline_server_render(std::string server_key);
 bool eagleeye_pipeline_server_stop(std::string server_key);
 
