@@ -286,18 +286,20 @@ bool eagleeye_pipeline_get_monitor_config(const char* pipeline_name,
 bool eagleeye_pipeline_get_input_config(const char* pipeline_name,
                                         std::vector<std::string>& input_nodes,
                                         std::vector<std::string>& input_types,
+                                        std::vector<std::string>& input_category,
                                         std::vector<std::string>& input_sources){
     // get pipeline input   
-    AnyPipeline::getInstance(pipeline_name)->getPipelineInputs(input_nodes, input_types, input_sources);
+    AnyPipeline::getInstance(pipeline_name)->getPipelineInputs(input_nodes, input_types, input_category, input_sources);
     return true;
 }
 
 bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
                                          std::vector<std::string>& output_nodes,
                                          std::vector<std::string>& output_types,
+                                         std::vector<std::string>& output_category,
                                          std::vector<std::string>& output_targets){
     // get pipeline output
-    AnyPipeline::getInstance(pipeline_name)->getPipelineOutputs(output_nodes, output_types, output_targets);
+    AnyPipeline::getInstance(pipeline_name)->getPipelineOutputs(output_nodes, output_types, output_category, output_targets);
     return true;
 }
 
@@ -583,7 +585,12 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
 
                 if(source_mode == "RTSP"){
                     EAGLEEYE_LOGD("Create RTSP source (BGR).");
-                    CameraCenter::getInstance()->addCamera(source_address, 1);
+                    if(source_format == "BGR"){
+                        CameraCenter::getInstance()->addCamera(source_address, 1);
+                    }
+                    else{
+                        CameraCenter::getInstance()->addCamera(source_address, 0);
+                    }
                     source_list.push_back(source_address);
                 }
                 else if(source_mode == "NATIVE"){
@@ -603,10 +610,11 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
             return false;
         }
 
+        std::string key = server_id + "/" + server_timestamp;
         AnyNode* auto_pipeline_node = new AutoPipeline(
             [&](){
                 AnyPipeline* pipeline = new AnyPipeline();
-                pipeline->setPipelineName(pipeline_name.c_str());
+                pipeline->setPipelineName(key.c_str());
 
                 // 初始化管线
                 pipeline_init_map[pipeline_name](pipeline);
@@ -717,7 +725,6 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         auto_pipeline_node->init();
 
         // 注册管线到管线管理中心
-        std::string key = server_id + "/" + server_timestamp;
         bool is_success_register = RegisterCenter::getInstance()->registerObj(
             key, 
             auto_pipeline_node, 
@@ -759,14 +766,15 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
             return false;
         }  
 
+        std::string key = server_id + "/" + server_timestamp;
         AnyPipeline* pipeline = new AnyPipeline();
-        pipeline->setPipelineName(pipeline_name.c_str());
+        pipeline->setPipelineName(key.c_str());
         if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
             EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
             return false;
         }
 
-        // 初始化管线      
+        // 初始化管线
         pipeline_init_map[pipeline_name](pipeline);
         const char* config_folder = NULL;
         pipeline->initialize(config_folder, nullptr, true);
@@ -822,7 +830,6 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         }
 
         // 注册到中心
-        std::string key = server_id + "/" + server_timestamp;
         bool is_success_register = RegisterCenter::getInstance()->registerObj(
             key,
             pipeline,
@@ -867,8 +874,10 @@ bool eagleeye_pipeline_server_call(std::string server_key, std::string request, 
         // {
         //      "data": [
         //          {"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, 
-        //          {"type": "string", "content": "", "size": 0}, 
-        //          {"type": "matrix", "content": "", "width":0, "height":0, "elem": "float"}]
+        //          {"type": "string", "content": ""}, 
+        //          {"type": "matrix/float", "content": "", "width":0, "height":0},
+        //          {"type": "matrix/int32", "content": "", "width":0, "height":0}
+        //       ]
         // }
 
         AnyPipeline* pipeline = (AnyPipeline*)pipeline_obj;
@@ -892,15 +901,49 @@ bool eagleeye_pipeline_server_call(std::string server_key, std::string request, 
                 data_cfg.Get("channel", channel);
                 std::vector<size_t> data_size = {(size_t)height, (size_t)width, (size_t)channel};
 
+                std::cout<<"width "<<width<<" height "<<height<<" channel "<<channel<<std::endl;
                 int64 data_content;   // 内存地址
                 data_cfg.Get("content", data_content);
                 void* data_content_ptr = (void*)(data_content);
                 if(channel == 3){
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), 3, 0, 8);
+                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 8);
                 }
                 else if(channel == 4){
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), 3, 0, 9);
+                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 9);
                 }
+            }
+            else if(data_type == "string"){
+                std::string data;
+                data_cfg.Get("content", data);
+                void* data_content_ptr = (void*)(&data);
+                std::vector<size_t> data_size = {(size_t)1, (size_t)data.size()};
+                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, -1);
+            }
+            else if(data_type == "matrix/float"){
+                int width = 0;
+                int height = 0;
+                data_cfg.Get("width", width);
+                data_cfg.Get("height", height);
+                std::vector<size_t> data_size = {(size_t)height, (size_t)width};
+
+                int64 data_content;   // 内存地址
+                data_cfg.Get("content", data_content);
+                void* data_content_ptr = (void*)(data_content);
+
+                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 6);
+            }
+            else if(data_type == "matrix/int32"){
+                int width = 0;
+                int height = 0;
+                data_cfg.Get("width", width);
+                data_cfg.Get("height", height);
+                std::vector<size_t> data_size = {(size_t)height, (size_t)width};
+
+                int64 data_content;   // 内存地址
+                data_cfg.Get("content", data_content);
+                void* data_content_ptr = (void*)(data_content);
+
+                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 4);
             }
         }
 
@@ -910,10 +953,12 @@ bool eagleeye_pipeline_server_call(std::string server_key, std::string request, 
         // 3.step 获得结果，并序列化
         std::vector<std::string> output_nodes;
         std::vector<std::string> output_types;
+        std::vector<std::string> output_categorys;
         std::vector<std::string> output_targets;
-        pipeline->getPipelineOutputs(output_nodes, output_types, output_targets);
+        pipeline->getPipelineOutputs(output_nodes, output_types, output_categorys, output_targets);
         for(int signal_i=0; signal_i<output_nodes.size(); ++signal_i){
-            if(output_types[signal_i] == "EAGLEEYE_SIGNAL_STRING" || output_types[signal_i] == "EAGLEEYE_SIGNAL_TEXT"){
+            // SIGNAL_CATEGORY_STRING - 2
+            if(output_categorys[signal_i] == "2"){
                 void* temp_content;
                 size_t* temp_size;
                 int temp_dims;

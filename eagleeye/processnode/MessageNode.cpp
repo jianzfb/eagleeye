@@ -1,27 +1,33 @@
-#include "eagleeye/processnode/SerializeNode.h"
+#include "eagleeye/processnode/MessageNode.h"
+#include "eagleeye/framework/pipeline/AnyPipeline.h"
 #include "eagleeye/framework/pipeline/StringSignal.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/common/CJsonObject.hpp"
+#include "eagleeye/common/EagleeyeMessage.h"
+#include "eagleeye/common/EagleeyeMessageCenter.h"
 
 namespace eagleeye{
-SerializeNode::SerializeNode(){
+MessageNode::MessageNode(){
     this->setNumberOfOutputSignals(1);
     this->setOutputPort(new StringSignal(), 0);
 }
 
-SerializeNode::~SerializeNode(){
+MessageNode::~MessageNode(){
 }
 
-void SerializeNode::executeNodeInfo(){
-    neb::CJsonObject json_obj;
+void MessageNode::executeNodeInfo(){
+    // neb::CJsonObject json_obj;
+    std::string pipeline_name = this->getPipeline()->getPipelineName();
+    std::shared_ptr<Message> message = std::shared_ptr<Message>(new Message(EagleeyeTime::getCurrentTime(), true), [](Message* d) { delete d; });
+
     for(int sig_i=0; sig_i<this->getNumberOfInputSignals(); ++sig_i){
         AnySignal* input_sig = this->getInputPort(sig_i);
         if(input_sig->getSignalCategory() == SIGNAL_CATEGORY_STRING){
             std::string key = std::to_string(sig_i);
             StringSignal* str_sig = (StringSignal*)input_sig;
             std::string value = str_sig->getData();
-            json_obj.Add(key, value);
+            message->set(key, value);
         }
         else if(input_sig->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
             if(input_sig->getValueType() == EAGLEEYE_FLOAT){
@@ -39,9 +45,9 @@ void SerializeNode::executeNodeInfo(){
                 matrix_obj.Add("data", data_obj);
                 matrix_obj.Add("rows", rows);
                 matrix_obj.Add("cols", cols);
-                
+
                 std::string key = std::to_string(sig_i);
-                json_obj.Add(key, matrix_obj);
+                message->set(key, matrix_obj);
             }
             else if(input_sig->getValueType() == EAGLEEYE_INT){
                 ImageSignal<int>* data_sig = (ImageSignal<int>*)input_sig;
@@ -60,7 +66,7 @@ void SerializeNode::executeNodeInfo(){
                 matrix_obj.Add("cols", cols);
                 
                 std::string key = std::to_string(sig_i);
-                json_obj.Add(key, matrix_obj);
+                message->set(key, matrix_obj);
             }
         }
         else if(input_sig->getSignalCategory() == SIGNAL_CATEGORY_TENSOR){
@@ -85,7 +91,7 @@ void SerializeNode::executeNodeInfo(){
                 tensor_obj.Add("dims", shape_obj);
 
                 std::string key = std::to_string(sig_i);
-                json_obj.Add(key, tensor_obj);
+                message->set(key, tensor_obj);
             }
             else if(data.type() == EAGLEEYE_INT){
                 int* data_ptr = data.cpu<int>();
@@ -106,7 +112,7 @@ void SerializeNode::executeNodeInfo(){
                 tensor_obj.Add("dims", shape_obj);
 
                 std::string key = std::to_string(sig_i);
-                json_obj.Add(key, tensor_obj);                
+                message->set(key, tensor_obj); 
             }
             else if(data.type() == EAGLEEYE_UCHAR){
                 unsigned char* data_ptr = data.cpu<unsigned char>();
@@ -127,13 +133,13 @@ void SerializeNode::executeNodeInfo(){
                 tensor_obj.Add("dims", shape_obj);
 
                 std::string key = std::to_string(sig_i);
-                json_obj.Add(key, tensor_obj);                
-            }            
+                message->set(key, tensor_obj);          
+            }             
         }
     }
 
-    std::string str = json_obj.ToFormattedString();
     StringSignal* str_sig = (StringSignal*)this->getOutputPort(0);
-    str_sig->setData(str);
+    str_sig->setData(message->serialize());
+    MessageCenter::getInstance()->insert(pipeline_name, message);
 }
 }

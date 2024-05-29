@@ -233,6 +233,10 @@ void AnyPipeline::getPipelineName(char* name){
     memcpy(name, this->m_name.c_str(), sizeof(char)*this->m_name.length());
 }
 
+std::string AnyPipeline::getPipelineName(){
+    return this->m_name;
+}
+
 const char* AnyPipeline::getPipelineVersion(){
     std::map<std::string, std::string>::iterator iter,iend(AnyPipeline::m_pipeline_version.end());
     for(iter = AnyPipeline::m_pipeline_version.begin(); iter!=iend; ++iter){
@@ -939,37 +943,44 @@ void AnyPipeline::getNodeOutput(const char* node_name, void*& data, size_t*& dat
 
 void AnyPipeline::getPipelineInputs(std::vector<std::string>& input_nodes, 
                                     std::vector<std::string>& input_types, 
+                                    std::vector<std::string>& input_categorys, 
                                     std::vector<std::string>& input_sources){
     // input_key - type - source
     std::map<std::string, AnyNode*>::iterator iter,iend(this->m_input_nodes.end());
     for(iter = this->m_input_nodes.begin(); iter != iend; ++iter){
         input_nodes.push_back(iter->first);
         input_types.push_back(iter->second->getOutputPort(0)->getSignalTypeName());
+        input_categorys.push_back(std::to_string(int(iter->second->getOutputPort(0)->getSignalCategory())));
         input_sources.push_back(iter->second->getOutputPort(0)->getSignalTarget());
     }
 }
 
 void AnyPipeline::getPipelineOutputs(std::vector<std::string>& output_nodes,
                                      std::vector<std::string>& output_types,
+                                     std::vector<std::string>& output_categorys,
                                      std::vector<std::string>& output_targets){
     // output_key - type - target
     std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
     for(iter = this->m_output_nodes.begin(); iter != iend; ++iter){
         output_nodes.push_back(iter->first);
         std::string signal_type = "";
+        std::string signal_category = "";
         std::string signal_target = "";
         for(int index = 0; index<iter->second->getNumberOfOutputSignals(); ++index){
             if(index != iter->second->getNumberOfOutputSignals() - 1){
                 signal_type += std::string(iter->second->getOutputPort(index)->getSignalTypeName()) + "/";
+                signal_category += std::to_string(int(iter->second->getOutputPort(index)->getSignalCategory())) + "/";
                 signal_target += std::string(iter->second->getOutputPort(index)->getSignalTarget()) + "/";
             }
             else{
                 signal_type += std::string(iter->second->getOutputPort(index)->getSignalTypeName());
+                signal_category += std::to_string(int(iter->second->getOutputPort(index)->getSignalCategory()));
                 signal_target += std::string(iter->second->getOutputPort(index)->getSignalTarget());
             }
         }
 
         output_types.push_back(signal_type);
+        output_categorys.push_back(signal_category);
         output_targets.push_back(signal_target);
     }
 }

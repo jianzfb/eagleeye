@@ -224,7 +224,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/PipelineNode.cpp
     eagleeye/processnode/CacheNode.cpp
     eagleeye/processnode/ForNode.cpp
-    eagleeye/processnode/SerializeNode.cpp)
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/MessageNode.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
@@ -386,7 +387,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/CacheNode.cpp
     eagleeye/processnode/ForNode.cpp
     eagleeye/processnode/PipelineNode.cpp
-    eagleeye/processnode/SerializeNode.cpp)
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/MessageNode.cpp)
 endif()
 
 # code related with arm
