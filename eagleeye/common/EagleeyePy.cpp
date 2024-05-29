@@ -422,10 +422,8 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
         std::map<std::string, std::vector<std::string>> op_param_2;
         for (auto param_2_item : param_2){
             std::string var_name = py::cast<std::string>(param_2_item.first);
-            for(auto value: param_2_item.second){
-                std::string str_value = py::cast<std::string>(value);
-                op_param_2[var_name].push_back(str_value);
-            }
+            std::string var_value = py::cast<std::string>(param_2_item.second);
+            op_param_2[var_name].push_back(var_value);
         }
 
         // param_3 std::map<std::string, std::vector<std::vector<float>>> 
