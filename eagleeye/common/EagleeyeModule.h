@@ -346,11 +346,19 @@ typedef void* (*INITIALIZE_PLUGIN_FUNC)(void*);
  * @brief pipeline server interface
  */
 
-bool eagleeye_pipeline_server_init(std::string folder);
-bool eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<void*(std::vector<void*>, void*)> render_config_func);
-bool eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout=3);
-bool eagleeye_pipeline_server_render(std::string server_key);
-bool eagleeye_pipeline_server_stop(std::string server_key);
+enum ServerStatus{
+    SERVER_UNKOWN = -1,
+    SERVER_SUCCESS,
+    SERVER_TIMEOUT,
+    SERVER_NOT_SUPPORT,
+    SERVER_NOT_EXIST,
+    SERVER_ABNORMAL
+};
+ServerStatus eagleeye_pipeline_server_init(std::string folder);
+ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<void*(std::vector<void*>, void*)> render_config_func);
+ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout=3);
+ServerStatus eagleeye_pipeline_server_render(std::string server_key);
+ServerStatus eagleeye_pipeline_server_stop(std::string server_key);
 
 
 /**
