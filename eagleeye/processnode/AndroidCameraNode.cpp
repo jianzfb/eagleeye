@@ -518,7 +518,8 @@ namespace eagleeye{
 AndroidCameraNode::AndroidCameraNode(){
     m_is_camera_open = false;
     this->setNumberOfOutputSignals(2);  // image signal, timestamp signal
-    EAGLEEYE_MONITOR_VAR(std::string, setCameraFacing, getCameraFacing, "camera","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setCameraFacing, getCameraFacing, "camera_facing","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setCameraID, getCameraID, "camera_id","","");
 
     this->setOutputPort(new ImageSignal<Array<unsigned char,3>>(),0);
     this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);
@@ -530,8 +531,10 @@ AndroidCameraNode::AndroidCameraNode(){
     this->getOutputPort(1)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
 
     m_camera_facing = "back";
+    m_image_format = 1;
     cameraFacing = m_camera_facing;
     m_timestamp = 0.0;
+    m_is_pull_error = false;
 }
 
 AndroidCameraNode::~AndroidCameraNode(){
@@ -596,6 +599,23 @@ void AndroidCameraNode::setCameraFacing(std::string facing){
 
 void AndroidCameraNode::getCameraFacing(std::string& facing){
     facing = this->m_camera_facing;
+}
+
+
+void AndroidCameraNode::setCameraID(std::string camera_id){
+    m_camera_id = camera_id;
+}
+
+void AndroidCameraNode::getCameraID(std::string& camera_id){
+    camera_id = m_camera_id;
+}
+
+void AndroidCameraNode::setImageFormat(int image_format){
+    m_image_format = image_format;
+}
+
+void AndroidCameraNode::getImageFormat(int& image_format){
+    image_format = m_image_format;
 }
 
 void AndroidCameraNode::processUnitInfo(){

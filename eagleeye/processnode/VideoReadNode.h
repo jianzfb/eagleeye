@@ -44,13 +44,6 @@ public:
 	 */
 	virtual void executeNodeInfo();
 
-    // /**
-    //  * @brief feadback 
-    //  * 
-    //  * @param node_state_map 
-    //  */
-	// virtual void feadback(std::map<std::string, int>& node_state_map);
-
     virtual bool finish();
 
     /**
@@ -68,6 +61,11 @@ public:
      */
     void setFramesNumber(int num);
     void getFramesNumber(int& num);
+
+    void setImageFormat(int image_format);
+    void getImageFormat(int& image_format);
+
+    bool isPullError(){return m_is_pull_error;};
 
 private:
     VideoReadNode(const VideoReadNode&);
@@ -89,6 +87,9 @@ private:
     bool m_decoder_finish;
     bool m_first_call;
     int m_rotate_degree;
+
+    int m_image_format;
+    bool m_is_pull_error;
 }; 
 }
 #endif

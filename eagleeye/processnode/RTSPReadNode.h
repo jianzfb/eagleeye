@@ -50,6 +50,7 @@ public:
      * @brief 是否rtsp流拉流正常
      */
     bool isRTSPStreamPullError(){return m_is_rtsp_stream_pull_error;}
+    bool isPullError(){return this->isRTSPStreamPullError();}
 
 private:
     RTSPReadNode(const RTSPReadNode&);

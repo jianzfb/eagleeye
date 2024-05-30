@@ -537,7 +537,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
     //      "server_params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], 
     //      "server_timestamp": "",
     //      "server_id": "",
-    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR", "mode": "RTSP/NATIVE", "platform": ""}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
+    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR", "mode": "NETWORK/USB/ANDROID_USB"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
     // }
     neb::CJsonObject config_obj(server_config);
     std::string pipeline_name;
@@ -580,27 +580,43 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
             if(source_type == "camera"){
                 std::string source_mode;
                 source_cfg.Get("mode", source_mode);
-                std::string source_platform;
-                source_cfg.Get("platform", source_platform);
-
-                if(source_mode == "RTSP"){
-                    EAGLEEYE_LOGD("Create RTSP source (BGR).");
+                if(source_mode == "NETWORK"){
                     if(source_format == "BGR"){
-                        CameraCenter::getInstance()->addCamera(source_address, 1);
+                        EAGLEEYE_LOGD("Create RTSP source (BGR).");
+                        CameraCenter::getInstance()->addCamera(source_address, 1, CAMERA_NETWORK);
                     }
                     else{
-                        CameraCenter::getInstance()->addCamera(source_address, 0);
+                        EAGLEEYE_LOGD("Create RTSP source (RGB).");
+                        CameraCenter::getInstance()->addCamera(source_address, 0, CAMERA_NETWORK);
                     }
                     source_list.push_back(source_address);
                 }
-                else if(source_mode == "NATIVE"){
-                    EAGLEEYE_LOGE("Not support NATIVE camera now.");
+                else if(source_mode == "USB"){
+                    EAGLEEYE_LOGE("Not support USB camera now.");
                     return false;
+                }
+                else if(source_mode == "ANDROID_USB"){
+                    if(source_format == "BGR"){
+                        EAGLEEYE_LOGD("Create android usb camera source (BGR).");
+                        CameraCenter::getInstance()->addCamera(source_address, 1, CAMERA_ANDROID_USB);
+                    }
+                    else{
+                        EAGLEEYE_LOGD("Create android usb camera source (RGB).");
+                        CameraCenter::getInstance()->addCamera(source_address, 0, CAMERA_ANDROID_USB);
+                    }
+                    source_list.push_back(source_address);
                 }
             }
             else if(source_type == "video"){
-                EAGLEEYE_LOGE("Not support video now.");
-                return false;
+                    if(source_format == "BGR"){
+                        EAGLEEYE_LOGD("Create video source (BGR).");                        
+                        CameraCenter::getInstance()->addCamera(source_address, 1, CAMERA_VIDEO);
+                    }
+                    else{
+                        EAGLEEYE_LOGD("Create video source (RGB).");                        
+                        CameraCenter::getInstance()->addCamera(source_address, 0, CAMERA_VIDEO);
+                    }
+                    source_list.push_back(source_address);
             }
         }
 
@@ -611,6 +627,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         }
 
         std::string key = server_id + "/" + server_timestamp;
+        EAGLEEYE_LOGD("Construct pipeline.");
         AnyNode* auto_pipeline_node = new AutoPipeline(
             [&](){
                 AnyPipeline* pipeline = new AnyPipeline();
@@ -696,6 +713,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         }
         if(!is_ok){
             // 数据源存在问题，退出，清理
+            EAGLEEYE_LOGE("Fail bind data source to pipeline.");
             delete auto_pipeline_node;
             return false;
         }
@@ -703,6 +721,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         // 关联 RenderNode
         if(render_config_func != nullptr){
             std::string render_key = server_id + "/" + server_timestamp + "/render";
+            EAGLEEYE_LOGD("Construct render pipeline with config_func, and register as %s.", render_key.c_str());
             AnyNode* render_node = (AnyNode*)(render_config_func(source_sigs, auto_pipeline_node));
             RegisterCenter::getInstance()->registerObj(
                 render_key,
@@ -725,6 +744,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         auto_pipeline_node->init();
 
         // 注册管线到管线管理中心
+        EAGLEEYE_LOGD("Register pipeline as %s.", key.c_str());
         bool is_success_register = RegisterCenter::getInstance()->registerObj(
             key, 
             auto_pipeline_node, 
@@ -830,6 +850,7 @@ bool eagleeye_pipeline_server_start(std::string server_config, std::string& serv
         }
 
         // 注册到中心
+        EAGLEEYE_LOGD("Register pipeline as %s.", key.c_str());
         bool is_success_register = RegisterCenter::getInstance()->registerObj(
             key,
             pipeline,
