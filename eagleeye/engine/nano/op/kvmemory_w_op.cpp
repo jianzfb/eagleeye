@@ -54,10 +54,11 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
     }
 
     if(input[3].empty() || input[3].dims()[0] == 0){
+        EAGLEEYE_LOGE("KVMemoryWOp runOnCpu, invalid input[3], input[3].dims()[0] = %d", input[3].dims()[0]);
         // 非有效记录，直接跳过
         // do nothing
         this->m_outputs[0] = Tensor(
-            std::vector<int64_t>{0},
+            std::vector<int64_t>{0,1},
             EAGLEEYE_UCHAR,
             DataFormat::AUTO,
             CPU_BUFFER
@@ -71,8 +72,9 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
     if(operator_status == 0){
         // 无效操作，直接跳过
         // do nothing
+        EAGLEEYE_LOGD("KVMemoryWOp runOnCpu, invalid operator_status = %d", operator_status);
         this->m_outputs[0] = Tensor(
-            std::vector<int64_t>{0},
+            std::vector<int64_t>{0,1},
             EAGLEEYE_UCHAR,
             DataFormat::AUTO,
             CPU_BUFFER
@@ -81,6 +83,7 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
     }
 
     if(operator_status == 1){
+        EAGLEEYE_LOGD("KVMemoryWOp runOnCpu, add operator_status = %d", operator_status);
         // add
         std::string group_str;
         if(input[2].empty() || input[2].dims()[0] == 0 || (input[2].dims()[1] != 16 && input[2].dims()[1] != 32)){
@@ -115,7 +118,7 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
         yard_io.destroyHandle();
 
         this->m_outputs[0] = Tensor(
-            std::vector<int64_t>{(int64_t)(key_str.size())},
+            std::vector<int64_t>{1, (int64_t)(key_str.size())},
             EAGLEEYE_UCHAR,
             DataFormat::AUTO,
             CPU_BUFFER
@@ -123,41 +126,100 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
         memcpy(this->m_outputs[0].cpu<char>(), key_str.c_str(), key_str.size());
     }
     else{
+        EAGLEEYE_LOGD("KVMemoryWOp runOnCpu, del operator_status = %d", operator_status);
         // del
         const char* key = input[2].cpu<char>();
         int key_size = input[2].dims()[1];
-        char* key_str_ptr = (char*)malloc(key_size+1);
-        memset(key_str_ptr, '\0', key_size+1);
-        memcpy(key_str_ptr, key, key_size);
-        std::string key_str = key_str_ptr;
-        std::string key_mem_filename = m_cache_memory_folder + "/" + key_str;
+        if(key_size == 32){
+            EAGLEEYE_LOGD("delete one face");
+            char* key_str_ptr = (char*)malloc(key_size+1);
+            memset(key_str_ptr, '\0', key_size+1);
+            memcpy(key_str_ptr, key, key_size);
+            std::string key_str = key_str_ptr;
+            std::string key_mem_filename = m_cache_memory_folder + "/" + key_str;
 
-        std::string group_str = key_str.substr(0, 16);
-        if(KVMemoryOp::m_g_memory[memory_name].find(key_str) != KVMemoryOp::m_g_memory[memory_name].end()){
-            KVMemoryOp::m_g_memory[memory_name].erase(key_str);
+            std::string group_str = key_str.substr(0, 16);
+            if(KVMemoryOp::m_g_memory[memory_name].find(key_str) != KVMemoryOp::m_g_memory[memory_name].end()){
+                KVMemoryOp::m_g_memory[memory_name].erase(key_str);
 
-            std::vector<std::string> update_list;
-            for(int i=0; i<KVMemoryOp::m_g_info[memory_name][group_str].size(); ++i){
-                if(KVMemoryOp::m_g_info[memory_name][group_str][i] != key_str){
-                    update_list.push_back(KVMemoryOp::m_g_info[memory_name][group_str][i]);
+                std::vector<std::string> update_list;
+                for(int i=0; i<KVMemoryOp::m_g_info[memory_name][group_str].size(); ++i){
+                    if(KVMemoryOp::m_g_info[memory_name][group_str][i] != key_str){
+                        update_list.push_back(KVMemoryOp::m_g_info[memory_name][group_str][i]);
+                    }
+                }
+                KVMemoryOp::m_g_info[memory_name][group_str] = update_list;
+                KVMemoryOp::m_g_time[memory_name] = now_tv.tv_sec * 1000000 + now_tv.tv_usec;
+            }
+
+            if(isfileexist(key_mem_filename.c_str())){
+                deletefile(key_mem_filename.c_str());
+            }
+            free(key_str_ptr);
+
+            this->m_outputs[0] = Tensor(
+                std::vector<int64_t>{1, (int64_t)(key_str.size())},
+                EAGLEEYE_UCHAR,
+                DataFormat::AUTO,
+                CPU_BUFFER
+            );
+            memcpy(this->m_outputs[0].cpu<char>(), key_str.c_str(), key_str.size()); 
+        }
+        else{
+            EAGLEEYE_LOGD("delete one group");
+            if(key_size != 16){
+                EAGLEEYE_LOGE("error key size [%d]", key_size);
+                this->m_outputs[0] = Tensor(
+                    std::vector<int64_t>{0,1},
+                    EAGLEEYE_UCHAR,
+                    DataFormat::AUTO,
+                    CPU_BUFFER
+                );
+                return 0;                
+            }
+            std::string group_str(key,16);
+
+            // check group exist
+            if(KVMemoryOp::m_g_info.count(memory_name) == 0 || KVMemoryOp::m_g_info[memory_name].count(group_str) == 0){
+                EAGLEEYE_LOGE("face library has no memory_name = [%s] group_name = [%s]", memory_name.c_str(), group_str.c_str());
+                this->m_outputs[0] = Tensor(
+                    std::vector<int64_t>{0,1},
+                    EAGLEEYE_UCHAR,
+                    DataFormat::AUTO,
+                    CPU_BUFFER
+                );
+                return 0;       
+            }
+
+            //get all face in group and delete group
+            std::vector<std::string> face_id_to_delete = KVMemoryOp::m_g_info[memory_name][group_str];
+            EAGLEEYE_LOGD("group [%d] size [%d]", KVMemoryOp::m_g_info[memory_name][group_str].size());
+            KVMemoryOp::m_g_info[memory_name].erase(group_str);
+            for(const auto &face_id:face_id_to_delete){
+                KVMemoryOp::m_g_memory[memory_name].erase(face_id);
+                
+                //delete file
+                std::string key_mem_filename = m_cache_memory_folder + "/" + face_id;
+                EAGLEEYE_LOGD("face id = %s", face_id.c_str());
+                if(isfileexist(key_mem_filename.c_str())){
+                    deletefile(key_mem_filename.c_str());
                 }
             }
-            KVMemoryOp::m_g_info[memory_name][group_str] = update_list;
+
+            //update time of memory
             KVMemoryOp::m_g_time[memory_name] = now_tv.tv_sec * 1000000 + now_tv.tv_usec;
+            constexpr static std::int64_t person_face_id_size = 32;
+            this->m_outputs[0] = Tensor(
+                std::vector<int64_t>{(int64_t)(face_id_to_delete.size()), person_face_id_size},
+                EAGLEEYE_UCHAR,
+                DataFormat::AUTO,
+                CPU_BUFFER
+            );
+            for(int i = 0;i<face_id_to_delete.size();++i){
+                char* dst = this->m_outputs[0].cpu<char>() + i * person_face_id_size;
+                memcpy(dst, face_id_to_delete[i].c_str(), person_face_id_size); 
+            }
         }
-
-        if(isfileexist(key_mem_filename.c_str())){
-            deletefile(key_mem_filename.c_str());
-        }
-        free(key_str_ptr);
-
-        this->m_outputs[0] = Tensor(
-            std::vector<int64_t>{(int64_t)(key_str.size())},
-            EAGLEEYE_UCHAR,
-            DataFormat::AUTO,
-            CPU_BUFFER
-        );
-        memcpy(this->m_outputs[0].cpu<char>(), key_str.c_str(), key_str.size()); 
     }
     return 0;
 }
