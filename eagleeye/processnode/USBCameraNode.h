@@ -35,6 +35,13 @@ private:
     int m_image_format;
     bool m_is_pull_error;
     bool m_is_camera_open;
+
+    bool m_is_init_error;
+
+    void* m_context;
+    void* m_device_handle;
+
+    
 }; 
 }
 #endif
