@@ -6,11 +6,12 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include <GLES3/gl3.h>
 
 
 namespace eagleeye{
-class ImageBlend:public RenderNode{
+class ImageBlend:public RenderNode, DynamicNodeCreator<ImageBlend>{
 public:
     typedef ImageBlend                      Self;
     typedef RenderNode                      Superclass;

@@ -78,7 +78,9 @@ public:
 	 *	@brief some functions about input signals
 	 */
 	virtual void addInputPort(AnySignal* sig);
+	void addInputPort(void* sig);
 	virtual void setInputPort(AnySignal* sig,int index=0);
+	void setInputPort(void* sig, int index=0);
 	virtual void removeInputPort(AnySignal* sig);
 	virtual void removeInputPort(int index);
 	void clearInputPort(int index);

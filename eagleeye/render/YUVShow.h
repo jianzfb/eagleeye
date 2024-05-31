@@ -1,11 +1,11 @@
 #ifndef _EAGLEEYE_YUVSHOW_H_
 #define _EAGLEEYE_YUVSHOW_H_
 #include "eagleeye/render/RenderNode.h"
-
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 namespace eagleeye
 {
-class YUVShow: public RenderNode{
+class YUVShow: public RenderNode, DynamicNodeCreator<YUVShow>{
 public:
     typedef YUVShow             Self;
     typedef RenderNode          Superclass; 

@@ -33,9 +33,6 @@ public:
     void setCameraFacing(std::string facing);
     void getCameraFacing(std::string& facing);
 
-    void setCameraID(std::string camera_id);
-    void getCameraID(std::string& camera_id);
-
     void setImageFormat(int image_format);
     void getImageFormat(int& image_format);
 
@@ -48,7 +45,6 @@ private:
     bool m_is_camera_open;
     std::string m_camera_facing;
     double m_timestamp;
-    std::string m_camera_id;
     int m_image_format;
 
     bool m_is_pull_error;

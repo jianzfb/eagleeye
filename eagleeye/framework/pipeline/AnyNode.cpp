@@ -88,6 +88,10 @@ void AnyNode::addInputPort(AnySignal* sig)
 	modified();
 }
 
+void AnyNode::addInputPort(void* sig){
+	this->addInputPort((AnySignal*)sig);
+}
+
 void AnyNode::setInputPort(AnySignal* sig,int index)
 {
 	if(m_input_signals[index] != NULL){
@@ -100,6 +104,10 @@ void AnyNode::setInputPort(AnySignal* sig,int index)
 		sig->incrementOutDegree();
 	}
 	modified();
+}
+
+void AnyNode::setInputPort(void* sig,int index){
+	this->setInputPort((AnySignal*)sig, index);
 }
 
 void AnyNode::clearInputPort(int index){

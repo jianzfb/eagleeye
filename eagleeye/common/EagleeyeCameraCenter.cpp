@@ -30,7 +30,7 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
 #else
     if(camera_type != CAMERA_NETWORK && 
         camera_type != CAMERA_USB &&
-        camera_type != CAMERA_ANDROID_USB &&
+        camera_type != CAMERA_ANDROID_NATIVE &&
         camera_type != CAMERA_VIDEO){
         EAGLEEYE_LOGE("Camera center only support network camera, usb camera, and video");
         return false;
@@ -57,10 +57,10 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
                 AnyNode* camera_node = NULL;
                 return camera_node;
             }
-            else if(camera_type == CAMERA_ANDROID_USB){
+            else if(camera_type == CAMERA_ANDROID_NATIVE){
 #if defined(__ANDROID__) || defined(ANDROID)
                 AndroidCameraNode* camera_node = new AndroidCameraNode();
-                camera_node->setCameraID(camera_address);
+                camera_node->setCameraFacing(camera_address);
                 camera_node->setImageFormat(pixel_format);
                 return (AnyNode*)camera_node;
 #else
@@ -91,7 +91,7 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
             return false;
         }
     }
-    else if(camera_type == CAMERA_ANDROID_USB){
+    else if(camera_type == CAMERA_ANDROID_NATIVE){
 #if defined(__ANDROID__) || defined(ANDROID)        
         AndroidCameraNode* inner_rts_node = (AndroidCameraNode*)(camera_source->getInnerIns());
         if(inner_rts_node->isPullError()){
@@ -146,16 +146,16 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format, Camer
                 AnyNode* camera_node = NULL;
                 return (AnyNode*)camera_node;
             }
-            else if(camera_type == CAMERA_ANDROID_USB){
+            else if(camera_type == CAMERA_ANDROID_NATIVE){
 #if defined(__ANDROID__) || defined(ANDROID)
                 AndroidCameraNode* camera_node = new AndroidCameraNode();
-                camera_node->setCameraID(camera_address);
+                camera_node->setCameraFacing(camera_address);
                 camera_node->setImageFormat(pixel_format);
                 return (AnyNode*)camera_node;
 #else
                 AnyNode* camera_node = NULL;
                 return camera_node;
-#endif 
+#endif
             }
             else if(camera_type == CAMERA_VIDEO){
                 VideoReadNode* video_node = new VideoReadNode();
@@ -180,7 +180,7 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format, Camer
             return false;
         }
     }
-    else if(camera_type == CAMERA_ANDROID_USB){
+    else if(camera_type == CAMERA_ANDROID_NATIVE){
 #if defined(__ANDROID__) || defined(ANDROID)
         AndroidCameraNode* inner_rts_node = (AndroidCameraNode*)(camera_source->getInnerIns());
         if(inner_rts_node->isPullError()){
