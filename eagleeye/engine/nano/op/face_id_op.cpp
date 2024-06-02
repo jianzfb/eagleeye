@@ -14,7 +14,7 @@ typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Ei
 FaceIdOp::FaceIdOp(){
     m_cache_folder = "./cache";
     m_cache_memory_folder = "";
-    m_score_thres = 0.45f;
+    m_score_thres = 0.6f;
     m_face_gallery_update_time = 0;
 }
 
@@ -166,15 +166,14 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
                 selected_face_id[query_face_i] = person_name;
             }
         }
-
-        for(int face_i=0; face_i<query_face_num; ++face_i){
-            unsigned char* face_id_ptr = this->m_outputs[0].cpu<unsigned char>() + face_i*16;
-            if(selected_face_id[face_i] != ""){
-                memcpy(face_id_ptr, person_name.c_str(), 16);
-            }
-        }
     }
 
+    for(int face_i=0; face_i<query_face_num; ++face_i){
+        unsigned char* face_id_ptr = this->m_outputs[0].cpu<unsigned char>() + face_i*16;
+        if(selected_face_id[face_i] != ""){
+            memcpy(face_id_ptr, selected_face_id[face_i].c_str(), 16);
+        }
+    }
     return 0;
 }
 
