@@ -5,3 +5,6 @@
 	path = eagleeye/3rd/eigen
 	url = https://gitlab.com/libeigen/eigen.git
 	branch = 3.3
+[submodule "eagleeye/3rd/libyuv"]
+	path = eagleeye/3rd/libyuv
+	url = https://chromium.googlesource.com/libyuv/libyuv
