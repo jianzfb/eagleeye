@@ -8,3 +8,7 @@
 [submodule "eagleeye/3rd/libyuv"]
 	path = eagleeye/3rd/libyuv
 	url = https://chromium.googlesource.com/libyuv/libyuv
+[submodule "eagleeye/3rd/libpng"]
+	path = eagleeye/3rd/libpng
+	url = https://github.com/pnggroup/libpng.git
+	branch = libpng16
