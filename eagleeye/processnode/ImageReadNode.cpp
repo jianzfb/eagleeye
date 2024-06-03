@@ -4,7 +4,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/common/EagleeyeStr.h"
-#include "eagleeye/3rd/pnglib/png.h"
+#include "png.h"
 namespace eagleeye
 {
 ImageReadNode::ImageReadNode(){
