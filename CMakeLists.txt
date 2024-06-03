@@ -85,7 +85,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
-    # eagleeye/processnode/VideoReadNode.cpp
+    eagleeye/processnode/VideoReadNode.cpp
     eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
@@ -233,7 +233,11 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SnapshotNode.cpp
     eagleeye/render/RenderContext.cpp
     eagleeye/processnode/AndroidCameraNode.cpp
-    eagleeye/processnode/PipelineNode.cpp)
+    eagleeye/processnode/PipelineNode.cpp
+    eagleeye/processnode/CacheNode.cpp
+    eagleeye/processnode/ForNode.cpp
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/MessageNode.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
@@ -245,7 +249,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
-    # eagleeye/processnode/VideoReadNode.cpp
+    eagleeye/processnode/VideoReadNode.cpp
     eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
@@ -391,7 +395,12 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeCameraCenter.cpp
     eagleeye/processnode/ImageSelect.cpp
     eagleeye/processnode/AndroidCameraNode.cpp
-    eagleeye/processnode/PipelineNode.cpp)
+    eagleeye/processnode/PipelineNode.cpp    
+    eagleeye/processnode/CacheNode.cpp
+    eagleeye/processnode/ForNode.cpp
+    eagleeye/processnode/PipelineNode.cpp
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/MessageNode.cpp)
 endif()
 
 # code related with arm

@@ -6,13 +6,14 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include <GLES3/gl3.h>
 #include "eagleeye/render/ImageShow.h"
 #include <vector>
 
 namespace eagleeye
 {
-class ImageContainer:public RenderNode{
+class ImageContainer:public RenderNode, DynamicNodeCreator<ImageContainer>{
 public:
     typedef ImageContainer                   Self;
     typedef RenderNode                  Superclass;

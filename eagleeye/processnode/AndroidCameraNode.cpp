@@ -46,6 +46,8 @@ static int captureImageHeight = 480;
 static int captureImageRotate = 0;
 
 static std::string cameraFacing = "back";
+static std::string cameraId = "";
+static int imageFormat = 1;         // 0: RGB, 1: BGR
 
 static std::mutex androidCameraMu;
 static std::condition_variable androidCameraCond;
@@ -137,16 +139,29 @@ static void imageCallback(void* context, AImageReader* reader){
             src_i420_v_data, i420_stride_y >> 1,
             captureImageWidth, captureImageHeight);
 
-    // -> BGR
+    // -> BGR/RGB
     eagleeye::Matrix<eagleeye::Array<unsigned char,3>> bgr_data(dst_height, dst_width);
     uint8_t* bgr_data_ptr = bgr_data.cpu<uint8_t>();
-    libyuv::I420ToRGB24(
-        src_i420_y_data, i420_stride_y, 
-        src_i420_u_data, (i420_stride_y>>1),
-        src_i420_v_data, (i420_stride_y>>1),
-        bgr_data_ptr, dst_width*3,
-        dst_width,
-        dst_height);
+    if(imageFormat == 1){
+        // BGR
+        libyuv::I420ToRGB24(
+            src_i420_y_data, i420_stride_y, 
+            src_i420_u_data, (i420_stride_y>>1),
+            src_i420_v_data, (i420_stride_y>>1),
+            bgr_data_ptr, dst_width*3,
+            dst_width,
+            dst_height);
+    }
+    else{
+        // RGB
+        libyuv::I420ToRAW(
+            src_i420_y_data, i420_stride_y, 
+            src_i420_u_data, (i420_stride_y>>1),
+            src_i420_v_data, (i420_stride_y>>1),
+            bgr_data_ptr, dst_width*3,
+            dst_width,
+            dst_height);
+    }
 
     free(src_i420_data);
     AImage_delete(image);
@@ -518,7 +533,7 @@ namespace eagleeye{
 AndroidCameraNode::AndroidCameraNode(){
     m_is_camera_open = false;
     this->setNumberOfOutputSignals(2);  // image signal, timestamp signal
-    EAGLEEYE_MONITOR_VAR(std::string, setCameraFacing, getCameraFacing, "camera","","");
+    EAGLEEYE_MONITOR_VAR(std::string, setCameraFacing, getCameraFacing, "camera_facing","","");
 
     this->setOutputPort(new ImageSignal<Array<unsigned char,3>>(),0);
     this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);
@@ -529,9 +544,13 @@ AndroidCameraNode::AndroidCameraNode(){
     this->setOutputPort(timestamp_sig,1);
     this->getOutputPort(1)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
 
+    m_image_format = 1;
+    imageFormat = m_image_format;
+
     m_camera_facing = "back";
     cameraFacing = m_camera_facing;
     m_timestamp = 0.0;
+    m_is_pull_error = false;
 }
 
 AndroidCameraNode::~AndroidCameraNode(){
@@ -539,12 +558,13 @@ AndroidCameraNode::~AndroidCameraNode(){
 }
 
 void AndroidCameraNode::executeNodeInfo(){
-    // 执行一次拉去一帧
+    // 执行一次拉取一帧
     if(!m_is_camera_open){
         // 打开摄像头
         m_is_camera_open = initCam();
     }
     if(!m_is_camera_open){
+        // 摄像头打开失败
         EAGLEEYE_LOGE("Camera not open.");
         exitCamera();
         return;
@@ -553,7 +573,13 @@ void AndroidCameraNode::executeNodeInfo(){
     // 等待相机预览流队列
     std::unique_lock<std::mutex> locker(androidCameraMu);
     while(androidCameraQueue.size() == 0){
-        androidCameraCond.wait(locker);
+        if(androidCameraCond.wait_for(locker, std::chrono::seconds(10)) == std::cv_status::timeout){
+            // 拉取失败
+            m_is_pull_error = true;
+            EAGLEEYE_LOGE("Camera frame pull error.");
+            return;
+        }
+
         if(androidCameraQueue.size() > 0){
             break;
         }
@@ -595,7 +621,16 @@ void AndroidCameraNode::setCameraFacing(std::string facing){
 }
 
 void AndroidCameraNode::getCameraFacing(std::string& facing){
-    facing = this->m_camera_facing;
+    facing = this->m_camera_facing;    
+}
+
+void AndroidCameraNode::setImageFormat(int image_format){
+    m_image_format = image_format;
+    imageFormat = image_format;
+}
+
+void AndroidCameraNode::getImageFormat(int& image_format){
+    image_format = m_image_format;
 }
 
 void AndroidCameraNode::processUnitInfo(){

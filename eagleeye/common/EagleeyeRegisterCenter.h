@@ -23,7 +23,8 @@ public:
     bool hasObj(std::string key);
 
     void* getObj(std::string key);
-    bool registerObj(std::string key, void* obj, std::function<void(std::string,void*)> destroy_func);
+    std::string getInfo(std::string key);
+    bool registerObj(std::string key, void* obj, std::function<void(std::string,void*)> destroy_func, std::string info="");
     bool destroyObjWithPrefix(std::string prefix);
     bool destroyObj(std::string key);
     void enableTimeout(int timeout_seconds);
@@ -32,6 +33,7 @@ private:
     RegisterCenter();
     std::map<std::string, std::pair<void*, std::function<void(std::string, void*)>>> m_register_map;
     std::map<std::string, std::chrono::steady_clock::time_point> m_register_start_time;
+    std::map<std::string, std::string> m_register_info;
     static std::shared_ptr<RegisterCenter> m_instance;
 
     std::mutex m_mu;

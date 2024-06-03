@@ -27,7 +27,7 @@ public:
     static MessageCenter* getInstance();
 
     // 基于key消费队列消息
-    std::shared_ptr<Message> get(std::string key);
+    std::shared_ptr<Message> get(std::string key, int timeout=0);
 
     // 基于key插入消息进入队列
     bool insert(std::string key, std::shared_ptr<Message> message);

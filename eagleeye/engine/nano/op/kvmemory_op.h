@@ -28,13 +28,13 @@ public:
     static std::map<std::string, std::map<std::string, Tensor>> m_g_memory;
     static std::map<std::string, std::map<std::string, std::vector<std::string>>> m_g_info;
     static std::map<std::string, long> m_g_time;
+    static bool m_is_init;
 
 protected:
     std::string m_memory_name;
     std::string m_cache_folder;
     std::string m_cache_memory_folder;
 
-    bool m_is_init;
 };
 }
 }

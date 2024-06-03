@@ -1,4 +1,7 @@
 #include "eagleeye/common/EagleeyeCameraCenter.h"
+#include "eagleeye/processnode/AndroidCameraNode.h"
+#include "eagleeye/processnode/RTSPReadNode.h"
+#include "eagleeye/processnode/VideoReadNode.h"
 #include "eagleeye/common/EagleeyeLog.h"
 
 
@@ -21,10 +24,22 @@ bool CameraCenter::isExist(std::string camera_address){
     return true;
 }
 
-bool CameraCenter::activeCamera(std::string camera_address, int pixel_format){
+bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, CameraType camera_type){
 #ifndef EAGLEEYE_FFMPEG
     return false;
 #else
+    if(camera_type != CAMERA_NETWORK && 
+        camera_type != CAMERA_USB &&
+        camera_type != CAMERA_ANDROID_NATIVE &&
+        camera_type != CAMERA_VIDEO){
+        EAGLEEYE_LOGE("Camera center only support network camera, usb camera, and video");
+        return false;
+    }
+    if(camera_type == CAMERA_USB){
+        EAGLEEYE_LOGE("USB camera would be coming in future.");
+        return false;
+    }
+
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_camera_map.find(camera_address) != m_camera_map.end()){
         return true;
@@ -32,10 +47,33 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format){
 
     AutoNode* camera_source = new AutoNode(
         [&](){
-            RTSPReadNode* rts_node = new RTSPReadNode(); 
-            rts_node->setFilePath(camera_address);
-            rts_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
-            return rts_node;
+            if(camera_type == CAMERA_NETWORK){
+                RTSPReadNode* rts_node = new RTSPReadNode(); 
+                rts_node->setFilePath(camera_address);
+                rts_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
+                return (AnyNode*)rts_node;
+            }
+            else if(camera_type == CAMERA_USB){
+                AnyNode* camera_node = NULL;
+                return camera_node;
+            }
+            else if(camera_type == CAMERA_ANDROID_NATIVE){
+#if defined(__ANDROID__) || defined(ANDROID)
+                AndroidCameraNode* camera_node = new AndroidCameraNode();
+                camera_node->setCameraFacing(camera_address);
+                camera_node->setImageFormat(pixel_format);
+                return (AnyNode*)camera_node;
+#else
+                AnyNode* camera_node = NULL;
+                return camera_node;
+#endif 
+            }
+            else if(camera_type == CAMERA_VIDEO){
+                VideoReadNode* video_node = new VideoReadNode();
+                video_node->setFilePath(camera_address);
+                video_node->setImageFormat(pixel_format);
+                return (AnyNode*)video_node;
+            }
         },
         1,
         false
@@ -43,39 +81,88 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format){
     camera_source->setPersistent(true);
     camera_source->init();
 
-    RTSPReadNode* inner_rts_node = (RTSPReadNode*)(camera_source->getInnerIns());
-    if(inner_rts_node->isRTSPStreamPullError()){
-        // 错误，删除对象
-        camera_source->setPersistent(false);
-        camera_source->exit();
-        delete camera_source;
+    if(camera_type == CAMERA_NETWORK){
+        RTSPReadNode* inner_rts_node = (RTSPReadNode*)(camera_source->getInnerIns());
+        if(inner_rts_node->isPullError()){
+            // 错误，删除对象
+            camera_source->setPersistent(false);
+            camera_source->exit();
+            delete camera_source;
+            return false;
+        }
+    }
+    else if(camera_type == CAMERA_ANDROID_NATIVE){
+#if defined(__ANDROID__) || defined(ANDROID)        
+        AndroidCameraNode* inner_rts_node = (AndroidCameraNode*)(camera_source->getInnerIns());
+        if(inner_rts_node->isPullError()){
+            // 错误，删除对象
+            camera_source->setPersistent(false);
+            camera_source->exit();
+            delete camera_source;
+            return false;
+        }
+#else
         return false;
+#endif
+    }
+    else if(camera_type == CAMERA_VIDEO){
+        VideoReadNode* inner_rts_node = (VideoReadNode*)(camera_source->getInnerIns());
+        if(inner_rts_node->isPullError()){
+            // 错误，删除对象
+            camera_source->setPersistent(false);
+            camera_source->exit();
+            delete camera_source;
+            return false;
+        }
     }
 
     // 激活相机，不计入占用计数
-    m_camera_map[camera_address] = std::make_pair((AnyNode*)camera_source, 0);
+    m_camera_map[camera_address] = std::make_tuple((AnyNode*)camera_source, 0, camera_type);
     return true;
 #endif
 }
 
-bool CameraCenter::addCamera(std::string camera_address, int pixel_format){
+bool CameraCenter::addCamera(std::string camera_address, int pixel_format, CameraType camera_type){
 #ifndef EAGLEEYE_FFMPEG
     return false;
 #else
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_camera_map.find(camera_address) != m_camera_map.end()){
         // 占用计数 +1
-        m_camera_map[camera_address].second += 1;
-        EAGLEEYE_LOGD("Camera %s use +1 (now %d)", camera_address.c_str(), m_camera_map[camera_address].second);
+        std::get<1>(m_camera_map[camera_address]) += 1;
+        EAGLEEYE_LOGD("Camera %s use +1 (now %d)", camera_address.c_str(), std::get<1>(m_camera_map[camera_address]));
         return true;
     }
 
     AutoNode* camera_source = new AutoNode(
         [&](){
-            RTSPReadNode* rts_node = new RTSPReadNode(); 
-            rts_node->setFilePath(camera_address);
-            rts_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
-            return rts_node;
+            if(camera_type == CAMERA_NETWORK){
+                RTSPReadNode* rts_node = new RTSPReadNode(); 
+                rts_node->setFilePath(camera_address);
+                rts_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
+                return (AnyNode*)rts_node;
+            }
+            else if(camera_type == CAMERA_USB){
+                AnyNode* camera_node = NULL;
+                return (AnyNode*)camera_node;
+            }
+            else if(camera_type == CAMERA_ANDROID_NATIVE){
+#if defined(__ANDROID__) || defined(ANDROID)
+                AndroidCameraNode* camera_node = new AndroidCameraNode();
+                camera_node->setCameraFacing(camera_address);
+                camera_node->setImageFormat(pixel_format);
+                return (AnyNode*)camera_node;
+#else
+                AnyNode* camera_node = NULL;
+                return camera_node;
+#endif
+            }
+            else if(camera_type == CAMERA_VIDEO){
+                VideoReadNode* video_node = new VideoReadNode();
+                video_node->setFilePath(camera_address);
+                video_node->setImageFormat(pixel_format);
+                return (AnyNode*)video_node;
+            }
         },
         1,
         false
@@ -83,17 +170,43 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format){
     camera_source->setPersistent(true);
     camera_source->init();
 
-    RTSPReadNode* inner_rts_node = (RTSPReadNode*)(camera_source->getInnerIns());
-    if(inner_rts_node->isRTSPStreamPullError()){
-        // 错误，删除对象
-        camera_source->setPersistent(false);
-        camera_source->exit();
-        delete camera_source;
+    if(camera_type == CAMERA_NETWORK){
+        RTSPReadNode* inner_rts_node = (RTSPReadNode*)(camera_source->getInnerIns());
+        if(inner_rts_node->isPullError()){
+            // 错误，删除对象
+            camera_source->setPersistent(false);
+            camera_source->exit();
+            delete camera_source;
+            return false;
+        }
+    }
+    else if(camera_type == CAMERA_ANDROID_NATIVE){
+#if defined(__ANDROID__) || defined(ANDROID)
+        AndroidCameraNode* inner_rts_node = (AndroidCameraNode*)(camera_source->getInnerIns());
+        if(inner_rts_node->isPullError()){
+            // 错误，删除对象
+            camera_source->setPersistent(false);
+            camera_source->exit();
+            delete camera_source;
+            return false;
+        }
+#else
         return false;
+#endif
+    }
+    else if(camera_type == CAMERA_VIDEO){
+        VideoReadNode* inner_rts_node = (VideoReadNode*)(camera_source->getInnerIns());
+        if(inner_rts_node->isPullError()){
+            // 错误，删除对象
+            camera_source->setPersistent(false);
+            camera_source->exit();
+            delete camera_source;
+            return false;
+        }
     }
 
     // 占用计数 +1
-    m_camera_map[camera_address] = std::make_pair((AnyNode*)camera_source, 1);
+    m_camera_map[camera_address] = std::make_tuple((AnyNode*)camera_source, 1, camera_type);
     EAGLEEYE_LOGD("Camera %s use +1 (now %d)", camera_address.c_str(), 1);
     return true;
 #endif
@@ -106,9 +219,9 @@ bool CameraCenter::removeCamera(std::string camera_address){
         return false;
     }
 
-    m_camera_map[camera_address].second -= 1;
-    if(m_camera_map[camera_address].second <= 0){
-        AutoNode* camera_node = (AutoNode*)(m_camera_map[camera_address].first);
+    std::get<1>(m_camera_map[camera_address]) -= 1;
+    if(std::get<1>(m_camera_map[camera_address]) <= 0){
+        AutoNode* camera_node = (AutoNode*)(std::get<0>(m_camera_map[camera_address]));
         camera_node->setPersistent(false);
         camera_node->exit();
         delete camera_node;
@@ -117,7 +230,6 @@ bool CameraCenter::removeCamera(std::string camera_address){
     return true;
 }
 
-
 AnyNode* CameraCenter::getCamera(std::string camera_address){
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_camera_map.find(camera_address) == m_camera_map.end()){
@@ -125,8 +237,6 @@ AnyNode* CameraCenter::getCamera(std::string camera_address){
         return NULL;
     }
 
-    return m_camera_map[camera_address].first;
+    return std::get<0>(m_camera_map[camera_address]);
 }
-
-
 }

@@ -12,6 +12,7 @@ namespace dataflow{
 std::map<std::string, std::map<std::string, Tensor>> KVMemoryOp::m_g_memory;
 std::map<std::string, std::map<std::string, std::vector<std::string>>> KVMemoryOp::m_g_info;
 std::map<std::string, long> KVMemoryOp::m_g_time;
+bool KVMemoryOp::m_is_init;
 
 KVMemoryOp::KVMemoryOp(){
     m_memory_name = "memory";

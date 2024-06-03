@@ -33,6 +33,11 @@ public:
     void setCameraFacing(std::string facing);
     void getCameraFacing(std::string& facing);
 
+    void setImageFormat(int image_format);
+    void getImageFormat(int& image_format);
+
+    bool isPullError(){return m_is_pull_error;};
+
 private:
     AndroidCameraNode(const AndroidCameraNode&);
     void operator=(const AndroidCameraNode&);
@@ -40,6 +45,9 @@ private:
     bool m_is_camera_open;
     std::string m_camera_facing;
     double m_timestamp;
+    int m_image_format;
+
+    bool m_is_pull_error;
 };
 }
 

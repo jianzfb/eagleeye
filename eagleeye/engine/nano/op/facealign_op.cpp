@@ -105,6 +105,8 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
     face_w = x1 - x0;
     face_h = y1 - y0;
     if(face_w == 0 || face_h == 0){
+        this->m_outputs[0] = 
+            Tensor(std::vector<int64_t>{0, this->m_target_w, image_c}, image.type(), image.format(),CPU_BUFFER);        
         return 0;
     }
 

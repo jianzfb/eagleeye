@@ -6,11 +6,13 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include <GLES3/gl3.h>
+
 
 namespace eagleeye
 {
-class ShapeNode:public RenderNode{
+class ShapeNode:public RenderNode, DynamicNodeCreator<ShapeNode>{
 public:
     typedef ShapeNode                   Self;
     typedef RenderNode                  Superclass;

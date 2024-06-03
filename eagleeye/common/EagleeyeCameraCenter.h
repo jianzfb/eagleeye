@@ -8,17 +8,23 @@
 #include <memory>
 #include <mutex>
 #include "eagleeye/processnode/AutoNode.h"
-#include "eagleeye/processnode/RTSPReadNode.h"
 
 namespace eagleeye{
+enum CameraType{
+    CAMERA_NETWORK = 0,
+    CAMERA_USB,
+    CAMERA_ANDROID_NATIVE,
+    CAMERA_VIDEO,
+};
+
 class CameraCenter{
 public:
     virtual ~CameraCenter();
     static CameraCenter* getInstance();
 
     bool isExist(std::string camera_address);
-    bool activeCamera(std::string camera_address, int pixel_format=1);
-    bool addCamera(std::string camera_address, int pixel_format=1);
+    bool activeCamera(std::string camera_address, int pixel_format=1, CameraType camera_type=CAMERA_NETWORK);
+    bool addCamera(std::string camera_address, int pixel_format=1, CameraType camera_type=CAMERA_NETWORK);
     bool removeCamera(std::string camera_address);
 
     AnyNode* getCamera(std::string camera_address);
@@ -26,10 +32,11 @@ public:
 private:
     CameraCenter();
 
-    std::map<std::string, std::pair<AnyNode*, int>> m_camera_map;
+    std::map<std::string, std::tuple<AnyNode*, int, CameraType>> m_camera_map;
     std::mutex m_mu;
 
     static std::shared_ptr<CameraCenter> m_instance;
+
 };
 }
 #endif

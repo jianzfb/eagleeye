@@ -146,6 +146,11 @@ void SnapeshotNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,3>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
         m_c3_image = input_img_signal->getData(image_meta_data);
+        if(m_c3_image.empty()){
+            // empty, directly return
+            this->getOutputPort(0)->meta().is_snapshot_frame = false;
+            return;
+        }
         if(!m_c3_image.isContinuous()){
             m_c3_image = m_c3_image.clone();
         }
@@ -177,6 +182,11 @@ void SnapeshotNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,4>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,4>>*)(this->getInputPort(0));
         m_c4_image = input_img_signal->getData(image_meta_data);
+        if(m_c4_image.empty()){
+            // empty, directly return
+            this->getOutputPort(0)->meta().is_snapshot_frame = false;
+            return;
+        }
         if(!m_c4_image.isContinuous()){
             m_c4_image = m_c4_image.clone();
         }
@@ -232,6 +242,7 @@ void SnapeshotNode::executeNodeInfo(){
 
     // open file
     m_output_file.open(m_file_path.c_str(), std::ios::binary);
+    EAGLEEYE_LOGD("open snapshot %s at %d", m_file_path.c_str(), int(EagleeyeTime::getCurrentTime()));
 
     if(!this->m_is_init){
 #ifdef EAGLEEYE_RKCHIP
@@ -509,6 +520,8 @@ void SnapeshotNode::executeNodeInfo(){
 #endif
 
     m_output_file.close();
+    EAGLEEYE_LOGD("finish snapshot %s at %d", m_file_path.c_str(), int(EagleeyeTime::getCurrentTime()));
+
 
 #ifdef EAGLEEYE_MINIO
     // 运行至此，说明已经保存文件

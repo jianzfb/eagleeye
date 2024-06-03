@@ -6,10 +6,11 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
+#include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
 
 namespace eagleeye{
-class AutoRenderRegion:public RenderNode{
+class AutoRenderRegion:public RenderNode, DynamicNodeCreator<AutoRenderRegion>{
 public:
     typedef AutoRenderRegion                     Self;
     typedef RenderNode                              Superclass;

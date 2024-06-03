@@ -90,6 +90,7 @@ public:
      * @param name 
      */
     void getPipelineName(char* name);
+    std::string getPipelineName();
 
     /**
      * @brief Get the Pipeline Version object
@@ -310,6 +311,7 @@ public:
      */
     void getPipelineInputs(std::vector<std::string>& input_nodes, 
                            std::vector<std::string>& input_types, 
+                           std::vector<std::string>& input_categorys, 
                            std::vector<std::string>& input_sources);
     
     /**
@@ -321,6 +323,7 @@ public:
      */
     void getPipelineOutputs(std::vector<std::string>& output_nodes,
                             std::vector<std::string>& output_types,
+                            std::vector<std::string>& output_categorys,
                             std::vector<std::string>& output_targets);
     
     /**

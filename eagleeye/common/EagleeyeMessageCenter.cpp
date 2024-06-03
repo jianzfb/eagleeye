@@ -10,7 +10,7 @@ MessageCenter* MessageCenter::getInstance(){
   return m_instance.get();
 }
 
-std::shared_ptr<Message> MessageCenter::get(std::string key){
+std::shared_ptr<Message> MessageCenter::get(std::string key, int timeout){
     // 获得消息
     {
         std::unique_lock<std::mutex> locker(m_mu);
@@ -21,11 +21,21 @@ std::shared_ptr<Message> MessageCenter::get(std::string key){
 
     std::unique_lock<std::mutex> message_locker(m_lock_map[key]->mu);
     while(m_message_map[key].size() == 0 && m_lock_map[key]->status){
-        m_lock_map[key]->cond.wait(message_locker);
+        if(timeout <= 0){
+            m_lock_map[key]->cond.wait(message_locker);
+        }
+        else{
+            if(m_lock_map[key]->cond.wait_for(message_locker, std::chrono::seconds(timeout)) == std::cv_status::timeout){
+                // 超时，不再等待
+                return std::shared_ptr<Message>();
+            }
+        }
+        
         if((m_message_map[key].size() > 0) || (!(m_lock_map[key]->status))){
             break;
         }
     }
+
     if(!m_lock_map[key]->status){
         message_locker.unlock();
         return std::shared_ptr<Message>();
