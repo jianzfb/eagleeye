@@ -494,7 +494,12 @@ void USBCameraNode::setCameraId(std::string camera_id){
     }
     m_format_ctx = avformat_alloc_context();
 
-    const AVInputFormat *pInputFormat = av_find_input_format("v4l2"); // 或者其他与你的摄像头相匹配的格式
+    const AVInputFormat *pInputFormat = av_find_input_format("video4linux2"); // 或者其他与你的摄像头相匹配的格式
+    if(pInputFormat == NULL){
+        EAGLEEYE_LOGE("Fail find v4l2");
+        m_is_pull_error = true;        
+        return;
+    }
     AVDictionary *options = nullptr;
  
     // 设置设备名称，这里假设是 /dev/video0

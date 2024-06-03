@@ -602,8 +602,15 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
                     source_list.push_back(source_address);
                 }
                 else if(source_mode == "USB"){
-                    EAGLEEYE_LOGE("Not support USB camera now.");
-                    return SERVER_NOT_SUPPORT;
+                    if(source_format == "BGR"){
+                        EAGLEEYE_LOGD("Create USB camera source (BGR).");
+                        CameraCenter::getInstance()->addCamera(source_address, 1, CAMERA_USB);
+                    }
+                    else{
+                        EAGLEEYE_LOGD("Create USB camera source (RGB).");
+                        CameraCenter::getInstance()->addCamera(source_address, 0, CAMERA_USB);
+                    }
+                    source_list.push_back(source_address);
                 }
                 else if(source_mode == "ANDROID_NATIVE"){
                     if(source_format == "BGR"){
@@ -1014,7 +1021,7 @@ ServerStatus eagleeye_pipeline_server_render(std::string server_key){
         return SERVER_NOT_EXIST;
     }
 
-    AnyPipeline* pipeline_render = (AnyPipeline*)pipeline_render_obj;
+    AnyNode* pipeline_render = (AnyNode*)pipeline_render_obj;
     pipeline_render->start();
     return SERVER_SUCCESS;
 }
@@ -1026,6 +1033,7 @@ ServerStatus eagleeye_pipeline_server_stop(std::string server_key){
 
 void* eagleeye_create_node(std::string node_cls_name){
     AnyNode* op = CreateNode<>(node_cls_name);
+    op->setUnitName(node_cls_name.c_str());
     return op;
 }
 

@@ -1,6 +1,7 @@
 #include "eagleeye/common/EagleeyeCameraCenter.h"
 #include "eagleeye/processnode/AndroidCameraNode.h"
 #include "eagleeye/processnode/RTSPReadNode.h"
+#include "eagleeye/processnode/USBCameraNode.h"
 #include "eagleeye/processnode/VideoReadNode.h"
 #include "eagleeye/common/EagleeyeLog.h"
 
@@ -35,10 +36,6 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
         EAGLEEYE_LOGE("Camera center only support network camera, usb camera, and video");
         return false;
     }
-    if(camera_type == CAMERA_USB){
-        EAGLEEYE_LOGE("USB camera would be coming in future.");
-        return false;
-    }
 
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_camera_map.find(camera_address) != m_camera_map.end()){
@@ -54,8 +51,10 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
                 return (AnyNode*)rts_node;
             }
             else if(camera_type == CAMERA_USB){
-                AnyNode* camera_node = NULL;
-                return camera_node;
+                USBCameraNode* camera_node = new USBCameraNode(); 
+                camera_node->setCameraId(camera_address);
+                camera_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
+                return (AnyNode*)camera_node;
             }
             else if(camera_type == CAMERA_ANDROID_NATIVE){
 #if defined(__ANDROID__) || defined(ANDROID)
@@ -143,7 +142,9 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format, Camer
                 return (AnyNode*)rts_node;
             }
             else if(camera_type == CAMERA_USB){
-                AnyNode* camera_node = NULL;
+                USBCameraNode* camera_node = new USBCameraNode(); 
+                camera_node->setCameraId(camera_address);
+                camera_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
                 return (AnyNode*)camera_node;
             }
             else if(camera_type == CAMERA_ANDROID_NATIVE){
