@@ -9,6 +9,17 @@ PipelineNode::PipelineNode(std::function<AnyPipeline*()> pipeline_generator, std
     m_auto_pipeline = pipeline_generator();
 
     // 设置输出端口
+    if(pipeline_node.size() == 0){
+        std::vector<std::string> output_nodes;
+        std::vector<std::string> output_types;
+        std::vector<std::string> output_categorys;
+        std::vector<std::string> output_targets;
+
+        m_auto_pipeline->getPipelineOutputs(output_nodes, output_types, output_categorys, output_targets);
+        for(int signal_i=0; signal_i<output_nodes.size(); ++signal_i){
+            pipeline_node.push_back(std::make_pair(output_nodes[signal_i], 0));
+        }
+    }    
     this->setNumberOfOutputSignals(pipeline_node.size());
     for(int signal_i=0; signal_i<pipeline_node.size(); ++signal_i){
         std::string node_name = pipeline_node[signal_i].first;
