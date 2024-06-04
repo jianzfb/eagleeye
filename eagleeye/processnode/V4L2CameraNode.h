@@ -30,6 +30,8 @@ public:
 
     void setImageFormat(int image_format);
     void setImageRotation(int image_rotation);
+
+    void setPreviewSize(int width, int height);
     bool isPullError(){return m_is_pull_error;};
 
 private:
@@ -41,16 +43,13 @@ private:
     void cameraUninit();
     void cameraClose();
 
-    void cameraStartStreaming();
-    void cameraStopStreaming();
-    int cameraGrabRawFrame(void *raw_base);
-    void convert(void *r, void *p, unsigned int rSize);
-	// int cameraSetPreviewSize(int width, int height, int pixformat);
-    // void receiveAndProcess();
+    void startCameraStreaming();
+    void stopCameraStreaming();
+    int grabCameraRawFrame(void *raw_base);
+
+    bool isSupportPreviewSize(unsigned int& width, unsigned int& height, unsigned int pixelformat);
 
     std::string m_camera_id;
-    // int m_camera_index;
-    // int m_image_format;
     bool m_is_pull_error;
     bool m_is_camera_open;
     bool m_is_init_error;
@@ -66,6 +65,12 @@ private:
     int start;
     unsigned char *mem;
     struct v4l2_buffer buf;
+
+    unsigned char* raw;         // 缓存来自相机的原始数据
+    int raw_size;               // 缓存大小
+
+    int m_preview_width;
+    int m_preview_height;
 }; 
 }
 #endif

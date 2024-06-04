@@ -2,6 +2,7 @@
 #include "eagleeye/processnode/AndroidCameraNode.h"
 #include "eagleeye/processnode/RTSPReadNode.h"
 #include "eagleeye/processnode/USBCameraNode.h"
+#include "eagleeye/processnode/V4L2CameraNode.h"
 #include "eagleeye/processnode/VideoReadNode.h"
 #include "eagleeye/common/EagleeyeLog.h"
 
@@ -31,6 +32,7 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
 #else
     if(camera_type != CAMERA_NETWORK && 
         camera_type != CAMERA_USB &&
+        camera_type != CAMERA_V4L2 &&
         camera_type != CAMERA_ANDROID_NATIVE &&
         camera_type != CAMERA_VIDEO){
         EAGLEEYE_LOGE("Camera center only support network camera, usb camera, and video");
@@ -56,6 +58,12 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
                 camera_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
                 return (AnyNode*)camera_node;
             }
+            else if(camera_type == CAMERA_V4L2){
+                V4L2CameraNode* camera_node = new V4L2CameraNode(); 
+                camera_node->setCameraId(camera_address);
+                camera_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
+                return (AnyNode*)camera_node;
+            }            
             else if(camera_type == CAMERA_ANDROID_NATIVE){
 #if defined(__ANDROID__) || defined(ANDROID)
                 AndroidCameraNode* camera_node = new AndroidCameraNode();
@@ -147,6 +155,12 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format, Camer
                 camera_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
                 return (AnyNode*)camera_node;
             }
+            else if(camera_type == CAMERA_V4L2){
+                V4L2CameraNode* camera_node = new V4L2CameraNode(); 
+                camera_node->setCameraId(camera_address);
+                camera_node->setImageFormat(pixel_format);     // 0: rgb, 1: bgr, 2: rgba, 3: bgra
+                return (AnyNode*)camera_node;
+            }
             else if(camera_type == CAMERA_ANDROID_NATIVE){
 #if defined(__ANDROID__) || defined(ANDROID)
                 AndroidCameraNode* camera_node = new AndroidCameraNode();
@@ -169,6 +183,7 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format, Camer
         false
     );
     camera_source->setPersistent(true);
+    camera_source->setUnitName("Camera");
     camera_source->init();
 
     if(camera_type == CAMERA_NETWORK){

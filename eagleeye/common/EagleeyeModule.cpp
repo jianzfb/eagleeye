@@ -549,7 +549,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     //      "server_params": [{"node": "node_name", "name": "param_name", "value": "param_value", "type": "string"/"float"/"double"/"int"/"bool"}], 
     //      "server_timestamp": "",
     //      "server_id": "",
-    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR", "mode": "NETWORK/USB/ANDROID_NATIVE", "flag": "front"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
+    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR", "mode": "NETWORK/USB/ANDROID_NATIVE/V4L2", "flag": "front"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
     // }
     neb::CJsonObject config_obj(server_config);
     std::string pipeline_name;
@@ -612,6 +612,17 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
                     }
                     source_list.push_back(source_address);
                 }
+                else if(source_mode == "V4L2"){
+                    if(source_format == "BGR"){
+                        EAGLEEYE_LOGD("Create V4L2 camera source (BGR).");
+                        CameraCenter::getInstance()->addCamera(source_address, 1, CAMERA_V4L2);
+                    }
+                    else{
+                        EAGLEEYE_LOGD("Create V4L2 camera source (RGB).");
+                        CameraCenter::getInstance()->addCamera(source_address, 0, CAMERA_V4L2);
+                    }
+                    source_list.push_back(source_address);
+                }                
                 else if(source_mode == "ANDROID_NATIVE"){
                     if(source_format == "BGR"){
                         EAGLEEYE_LOGD("Create android native camera source (BGR).");

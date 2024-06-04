@@ -19,15 +19,6 @@
 #include <sys/mman.h>
 #include <linux/videodev2.h>
 
-#ifndef MAX
-#define MAX(a, b) ({__typeof__(a) _a = (a); __typeof__(b) _b = (b); _a > _b ? _a : _b; })
-#define MIN(a, b) ({__typeof__(a) _a = (a); __typeof__(b) _b = (b); _a < _b ? _a : _b; })
-#endif
-
-// This value is 2 ^ 18 - 1, and is used to clamp the RGB values before their ranges
-// are normalized to eight bits.
-static const int kMaxChannelValue = 262143;
-
 namespace eagleeye{
 V4L2CameraNode::V4L2CameraNode(){
     m_is_camera_open = false;
@@ -53,85 +44,25 @@ V4L2CameraNode::V4L2CameraNode(){
     this->setImageRotation(0);
 
     start = 0;
+    raw = NULL;
+    raw_size = 0;
+
+    m_preview_width = 0;
+    m_preview_height = 0;
 }
 
 V4L2CameraNode::~V4L2CameraNode(){
-    this->cameraStopStreaming();
+    this->stopCameraStreaming();
+    this->cameraUninit();
     this->cameraClose();
-}
 
-static inline uint32_t YUV2RGB(int nY, int nU, int nV) {
-    nY -= 16;
-    nU -= 128;
-    nV -= 128;
-    if (nY < 0) nY = 0;
-
-    // This is the floating point equivalent. We do the conversion in integer
-    // because some Android devices do not have floating point in hardware.
-    // nR = (int)(1.164 * nY + 2.018 * nU);
-    // nG = (int)(1.164 * nY - 0.813 * nV - 0.391 * nU);
-    // nB = (int)(1.164 * nY + 1.596 * nV);
-
-    int nR = 1192 * nY + 1634 * nV;
-    int nG = 1192 * nY - 833 * nV - 400 * nU;
-    int nB = 1192 * nY + 2066 * nU;
-
-    nR = MIN(kMaxChannelValue, MAX(0, nR));
-    nG = MIN(kMaxChannelValue, MAX(0, nG));
-    nB = MIN(kMaxChannelValue, MAX(0, nB));
-
-    nR = (nR >> 10) & 0xff;
-    nG = (nG >> 10) & 0xff;
-    nB = (nB >> 10) & 0xff;
-
-    return 0xff000000 | (nR << 16) | (nG << 8) | nB;
-}
-
-
-void V4L2CameraNode::convert(void *r, void *p, unsigned int rSize)
-{
-    unsigned char *raw = (unsigned char *)r;
-    unsigned char *preview = (unsigned char *)p;
-
-    /* TODO: Convert YUYV to ARGB. */
-    if (pixelformat == V4L2_PIX_FMT_YUYV) {
-        int size = width * height * 2;
-        int in;
-        int out;
-
-        unsigned char y1;
-        unsigned char u;
-        unsigned char y2;
-        unsigned char v;
-
-        uint32_t argb;
-        for(in = 0, out = 0; in < size; in += 4, out += 8) {
-            y1 = raw[in];
-            u = raw[in + 1];
-            y2 = raw[in + 2];
-            v = raw[in + 3];
-
-            //android　ARGB_8888 像素数据在内存中其实是以R G B A R G B A …的顺序排布的
-            argb = YUV2RGB(y1,u,v);
-            preview[out] = (argb >> 16) & 0xff;;
-            preview[out + 1] = (argb >> 8) & 0xff;
-            preview[out + 2] = argb & 0xff;
-            // preview[out + 3] = 0xff;
-
-            argb = YUV2RGB(y2,u,v);
-            preview[out + 3] = (argb >> 16) & 0xff;
-            preview[out + 4] = (argb >> 8) & 0xff;
-            preview[out + 5] = argb & 0xff;
-            // preview[out + 7] = 0xff;
-        }
+    if(raw != NULL){
+        delete[] raw;
+        raw_size = 0;
     }
-
-    return;
 }
 
-
-int V4L2CameraNode::cameraGrabRawFrame(void *raw_base)
-{
+int V4L2CameraNode::grabCameraRawFrame(void *raw_base){
     int ret;
     int data_size;
 
@@ -160,54 +91,74 @@ int V4L2CameraNode::cameraGrabRawFrame(void *raw_base)
     return data_size;
 }
 
-// void V4L2CameraNode::receiveAndProcess(){
-//     unsigned char *raw = new unsigned char[buf.length];
-//     EAGLEEYE_LOGE("_start raw buf.length %d", buf.length);
-//     Matrix<Array<unsigned char,3>> bgr_data(dst_height, dst_width);
-
-//     int size;
-//     int format = -1;
-//     while (start) {
-//         size = cameraGrabRawFrame(raw);
-
-//         if (size < 0) {
-//             usleep(1000);
-//             continue;
-//         }
-//         convert(raw, bgr_data.cpu<unsigned char>(), size);
-
-//         std::unique_lock<std::mutex> locker(gCameraFrameMu);
-//         if(gCameraFrameQueue.size() > 3){
-//             gCameraFrameQueue.pop();
-//         }
-//         gCameraFrameQueue.push(bgr_data);
-//         locker.unlock();
-//         // notify
-//         androidCameraCond.notify_all();        
-//     }
-
-//     delete[] raw;
-// }
-
 void V4L2CameraNode::executeNodeInfo(){
-    unsigned char *raw = new unsigned char[buf.length];
-    EAGLEEYE_LOGE("_start raw buf.length %d", buf.length);
+    if(!this->m_is_camera_open){
+        EAGLEEYE_LOGE("Camera %s not open, return directly.", m_camera_id.c_str());
+        return;
+    }
+
+    if(this->m_is_init_error){
+        EAGLEEYE_LOGE("Camera init fail, return directly.");
+        return;
+    }
+
+    if(raw == NULL || raw_size != buf.length){
+        if(raw != NULL){
+            delete[] raw;
+        }
+        raw = new unsigned char[buf.length];
+        raw_size = buf.length;
+    }
     Matrix<Array<unsigned char,3>> data(height, width);
+    unsigned char* bgr_data_ptr = data.cpu<unsigned char>();
 
     int size;
     int format = -1;
-    while (start) {
-        size = cameraGrabRawFrame(raw);
-        if (size < 0) {
+    auto *src_i420_data = (uint8_t *) malloc(sizeof(uint8_t) * width * height * 3 / 2);
+    while(start){
+        size = grabCameraRawFrame(raw);
+        if(size < 0){
             usleep(1000);
             this->m_is_pull_error = true;
             continue;
         }
-        convert(raw, data.cpu<unsigned char>(), size);
+
+        int src_y_size = width * height;
+        int src_u_size = (width >> 1) * (height >> 1);
+        uint8_t *src_i420_y_data = src_i420_data;
+        uint8_t *src_i420_u_data = src_i420_data + src_y_size;
+        uint8_t *src_i420_v_data = src_i420_data + src_y_size + src_u_size;
+        int i420_stride_y = width;
+        libyuv::YUY2ToI420(
+                raw,
+                width * 2,
+                src_i420_y_data, i420_stride_y,
+                src_i420_u_data, i420_stride_y >> 1,
+                src_i420_v_data, i420_stride_y >> 1,
+                width, height);
+
+        if(m_output_image_format == 0){
+            // RGB
+            libyuv::I420ToRAW(
+                src_i420_y_data, i420_stride_y, 
+                src_i420_u_data, (i420_stride_y>>1),
+                src_i420_v_data, (i420_stride_y>>1),
+                bgr_data_ptr, width*3,
+                width, height);
+        }
+        else{
+            // BGR
+            libyuv::I420ToRGB24(
+                src_i420_y_data, i420_stride_y, 
+                src_i420_u_data, (i420_stride_y>>1),
+                src_i420_v_data, (i420_stride_y>>1),
+                bgr_data_ptr, width*3,
+                width, height);
+        }
         break;    
     }
+    free(src_i420_data);
     this->m_is_pull_error = false;
-    delete[] raw;
 
     // image data
     ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
@@ -233,7 +184,17 @@ void V4L2CameraNode::setCameraId(std::string camera_id){
         EAGLEEYE_LOGE("Active camera id is %s, dont need to reopen", camera_id.c_str());
         return;
     }
-    int ret = this->cameraOpen(camera_id.c_str(), 640, 480, V4L2_PIX_FMT_YUYV);
+    if(m_is_camera_open || (!m_is_init_error)){
+        // 关闭已经开启的相机
+        this->stopCameraStreaming();
+        this->cameraUninit();
+        this->cameraClose();
+
+        m_is_camera_open = false;
+        m_is_init_error = false;
+    }
+
+    int ret = this->cameraOpen(camera_id.c_str(), m_preview_width, m_preview_height, V4L2_PIX_FMT_YUYV);
     if(ret < 0){
         m_is_camera_open = false;
         return;
@@ -246,8 +207,7 @@ void V4L2CameraNode::setCameraId(std::string camera_id){
         return;
     }
     m_is_init_error = false;
-
-    this->cameraStartStreaming();
+    this->startCameraStreaming();
 }
 
 void V4L2CameraNode::getCameraId(std::string& camera_id){
@@ -291,10 +251,7 @@ void V4L2CameraNode::setImageRotation(int image_rotation){
 }
 
 
-int V4L2CameraNode::cameraOpen(const char *filename,
-                      unsigned int w,
-                      unsigned int h,
-                      unsigned int p){
+int V4L2CameraNode::cameraOpen(const char *filename, unsigned int w, unsigned int h, unsigned int p){
     int ret;
     struct v4l2_format format;
 
@@ -304,6 +261,12 @@ int V4L2CameraNode::cameraOpen(const char *filename,
         return -1;
     }
 
+    // 检查是否支持申请尺寸
+    if(!isSupportPreviewSize(w,h,p)){
+        EAGLEEYE_LOGE("Error width %d, height %d not support", w, h);
+        return -1;
+    }
+    
     width = w;
     height = h;
     pixelformat = p;
@@ -377,7 +340,7 @@ void V4L2CameraNode::cameraClose(){
     close(fd);
 }
 
-void V4L2CameraNode::cameraStartStreaming(){
+void V4L2CameraNode::startCameraStreaming(){
     enum v4l2_buf_type type;
     int ret;
 
@@ -393,8 +356,8 @@ void V4L2CameraNode::cameraStartStreaming(){
     start = true;
 }
 
-void V4L2CameraNode::cameraStopStreaming(){
-        enum v4l2_buf_type type;
+void V4L2CameraNode::stopCameraStreaming(){
+    enum v4l2_buf_type type;
     int ret;
 
     if (!start) return;
@@ -410,30 +373,45 @@ void V4L2CameraNode::cameraStopStreaming(){
     start = false;
 }
 
-// int V4L2CameraNode::cameraSetPreviewSize(int width, int height, int pixformat){
-//     int ret;
-//     struct v4l2_format format;
+void V4L2CameraNode::setPreviewSize(int width, int height){
+    this->m_preview_width=width;
+    this->m_preview_height=height;
+}
 
-//     EAGLEEYE_LOGD("setPreviewSize %d, %d, %d", width, height, pixformat);
-//     this->width = width;
-//     this->height = height;
-//     this->pixelformat = pixformat;
+bool V4L2CameraNode::isSupportPreviewSize(unsigned int& width, unsigned int& height, unsigned int pixelformat){
+    struct v4l2_fmtdesc fmtd;	        //存的是摄像头支持的传输格式
+    struct v4l2_frmsizeenum  frmsize;	//存的是摄像头对应的图片格式所支持的分辨率
+    bool is_found = false;
+    for (int i = 0; ; i++){
+        fmtd.index = i;
+        fmtd.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        if (ioctl(fd, VIDIOC_ENUM_FMT, &fmtd) < 0)
+            break;
 
-//     format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-//     format.fmt.pix.width = width;
-//     format.fmt.pix.height = height;
-//     format.fmt.pix.pixelformat = pixelformat;
+        for (int j = 0; ; j++){
+            frmsize.index = j;
+            frmsize.pixel_format = fmtd.pixelformat;
+            if (ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsize) < 0)
+                break;
 
-//     // MUST set
-//     format.fmt.pix.field = V4L2_FIELD_ANY;
+            if(fmtd.pixelformat != pixelformat){
+                continue;
+            }
+    
+            EAGLEEYE_LOGD("check v4l2 camera w = %d, h = %d", frmsize.discrete.width, frmsize.discrete.height);
+            if(width == 0 || height == 0){
+                // 使用默认宽高
+                EAGLEEYE_LOGD("Use default camera w = %d, h = %d", frmsize.discrete.width, frmsize.discrete.height);
+                width = frmsize.discrete.width;
+                height = frmsize.discrete.height;
+            }
+            if(frmsize.discrete.width == width && frmsize.discrete.height == height){
+                is_found = true;
+                break;
+            }
+        }
+    }
 
-//     ret = ioctl(fd, VIDIOC_S_FMT, &format);
-//     if (ret < 0) {
-//         EAGLEEYE_LOGE("Unable to set format: %s", strerror(errno));
-//         return -1;
-//     }
-
-//     return 0;
-// }
-
+    return is_found;
+}
 }

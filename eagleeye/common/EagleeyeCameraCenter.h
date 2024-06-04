@@ -13,6 +13,7 @@ namespace eagleeye{
 enum CameraType{
     CAMERA_NETWORK = 0,
     CAMERA_USB,
+    CAMERA_V4L2,
     CAMERA_ANDROID_NATIVE,
     CAMERA_VIDEO,
 };
