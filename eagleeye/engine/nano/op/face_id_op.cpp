@@ -15,6 +15,7 @@ FaceIdOp::FaceIdOp(){
     m_cache_folder = "./cache";
     m_cache_memory_folder = "";
     m_score_thres = 0.55f;
+
     m_face_gallery_update_time = 0;
 }
 
