@@ -380,6 +380,35 @@ static std::string getOtherFacingCamId(ACameraManager *cameraManager){
     return frontId;
 }
 
+static std::string getCamId(ACameraManager *cameraManager, std::string camera_index){
+    ACameraIdList *cameraIds = nullptr;
+    ACameraManager_getCameraIdList(cameraManager, &cameraIds);
+    EAGLEEYE_LOGD("Found camera count %d.", cameraIds->numCameras);
+
+    EAGLEEYE_LOGD("Check camera_index %s", camera_index.c_str());
+    std::string frontId;    
+    for (int i = 0; i < cameraIds->numCameras; ++i){
+        if(std::to_string(i) != camera_index){
+            continue;
+        }
+        const char *id = cameraIds->cameraIds[i];
+
+        ACameraMetadata *metadataObj;
+        ACameraManager_getCameraCharacteristics(cameraManager, id, &metadataObj);
+
+        ACameraMetadata_const_entry lensInfo = {0};
+        ACameraMetadata_getConstEntry(metadataObj, ACAMERA_LENS_FACING, &lensInfo);
+
+        auto facing = static_cast<acamera_metadata_enum_android_lens_facing_t>(
+                lensInfo.data.u8[0]);
+        frontId = id;
+        break;
+    }
+
+    ACameraManager_deleteCameraIdList(cameraIds);
+    return frontId;
+}
+
 static void exitCamera(){
     // clear
     if(textureSession != nullptr){
@@ -438,7 +467,7 @@ static bool initCam(){
             EAGLEEYE_LOGE("Dont found back camera.");
             return false;
         }
-        EAGLEEYE_LOGD("Start open back camera ");
+        EAGLEEYE_LOGD("Start open back camera ID %s", id.c_str());
         camera_status_t status = ACameraManager_openCamera(cameraManager, id.c_str(), &cameraDeviceCallbacks, &cameraDevice);
         if(status != ACAMERA_OK){
             EAGLEEYE_LOGE("Fail to open back camera %s.", id.c_str());
@@ -447,7 +476,7 @@ static bool initCam(){
         EAGLEEYE_LOGD("Finish open back camera %s.", id.c_str());
         printCamProps(cameraManager, id.c_str());
     }
-    else if(cameraFacing == "font"){
+    else if(cameraFacing == "front"){
         auto id = getFrontFacingCamId(cameraManager);
         if(id == ""){
             EAGLEEYE_LOGE("Dont found front camera.");
@@ -462,7 +491,7 @@ static bool initCam(){
         EAGLEEYE_LOGD("Finish open front camera %s.", id.c_str());
         printCamProps(cameraManager, id.c_str());
     }
-    else{
+    else if(cameraFacing == "other"){
         auto id = getOtherFacingCamId(cameraManager);
         if(id == ""){
             EAGLEEYE_LOGE("Dont found other camera.");
@@ -475,6 +504,21 @@ static bool initCam(){
             return false;
         }
         EAGLEEYE_LOGD("Finish open other camera %s.", id.c_str());
+        printCamProps(cameraManager, id.c_str());
+    }
+    else{
+        auto id = getCamId(cameraManager, cameraFacing);
+        if(id == ""){
+            EAGLEEYE_LOGE("Dont found %s camera.", cameraFacing.c_str());
+            return false;
+        }
+        EAGLEEYE_LOGD("Start open %s camera(%s).", cameraFacing.c_str(), id.c_str());
+        camera_status_t status = ACameraManager_openCamera(cameraManager, id.c_str(), &cameraDeviceCallbacks, &cameraDevice);
+        if(status != ACAMERA_OK){
+            EAGLEEYE_LOGE("Fail to open other camera %s.", cameraFacing.c_str());
+            return false;
+        }
+        EAGLEEYE_LOGD("Finish open %s camera(%s).", cameraFacing.c_str(), id.c_str());
         printCamProps(cameraManager, id.c_str());
     }
 
@@ -554,6 +598,7 @@ AndroidCameraNode::AndroidCameraNode(){
 }
 
 AndroidCameraNode::~AndroidCameraNode(){
+    EAGLEEYE_LOGD("delete andriod camera");
     exitCamera();
 }
 
@@ -598,11 +643,6 @@ void AndroidCameraNode::executeNodeInfo(){
 }
 
 void AndroidCameraNode::setCameraFacing(std::string facing){
-    if(facing != "back" && facing != "front" && facing != "other"){
-        EAGLEEYE_LOGE("Camera only support back/front");
-        return;
-    }
-
     if(m_camera_facing == facing){
         // 切换目标相机于当前激活的相同
         EAGLEEYE_LOGD("Camera same, dont need switch.");
