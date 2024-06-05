@@ -1,5 +1,5 @@
 #include "eagleeye/engine/nano/op/facealign_op.h"
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include "eagleeye/engine/math/arm/interpolate.h"
 #else
 #include "eagleeye/engine/math/x86/interpolate.h"
@@ -181,7 +181,7 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
         }
 
         unsigned char* output_ptr = this->m_outputs[0].cpu<unsigned char>();
-#if defined(__ANDROID__) || defined(ANDROID)    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
         math::arm::bilinear_rgb_8u_3d_interp(
             image_ptr,
             output_ptr,
@@ -212,7 +212,7 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
 
         unsigned char* output_ptr = this->m_outputs[0].cpu<unsigned char>();
 
-#if defined(__ANDROID__) || defined(ANDROID)    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
         math::arm::bilinear_gray_8u_1d_interp(
             image_ptr,
             output_ptr,

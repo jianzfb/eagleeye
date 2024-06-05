@@ -2,7 +2,7 @@
 #include "eagleeye/engine/nano/op/FixedConvOp.h"
 #include <math.h>
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #endif
 
@@ -76,7 +76,7 @@ void GetMultiOutputChannelResult3x3_2_32Bit(FixedConvType *fixed_weight, FixedCo
 
     j = search_img_start;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int8x8_t *weight_ptr_neon;
     int8x8_t in_value_neon;
     int16x8_t mul_value_0, mul_value_1, out_value_neon_16Bit;
@@ -470,7 +470,7 @@ void GetMultiOutputChannelResult3x3_2_32Bit(FixedConvType *fixed_weight, FixedCo
         }
     }
     EAGLEEYE_SAFEFREE(new_fixed_weight);
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     EAGLEEYE_SAFEFREE(weight_ptr_neon);
 #endif
 }
@@ -489,7 +489,7 @@ void GetOneOutputChannelResult3x3_32Bit(FixedConvType *weight_ptr, FixedConvType
 
     j = search_img_start;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int8x8_t *weight_ptr_neon;
     int loop_size = input_channel*9;
 
@@ -701,7 +701,7 @@ void GetOneOutputChannelResult3x3_32Bit(FixedConvType *weight_ptr, FixedConvType
             p_out_buf[j] = ((value_0 * adjust_div_value + norm_half_add_value) >> data_norm_move_const) + bias_value;
         }
     }
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if (weight_ptr_neon)
 		free(weight_ptr_neon);
 #endif
@@ -757,7 +757,7 @@ void GetMultiOutputChannelResult1x1_4_32Bit(FixedConvType *fixed_weight, FixedCo
 
     j = search_img_start;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int8x8_t *weight_ptr_neon;
     int8x8_t in_value_neon;
     int16x8_t mul_value_0, mul_value_1, mul_value_2, mul_value_3,out_value_neon_16Bit;
@@ -979,7 +979,7 @@ void GetMultiOutputChannelResult1x1_4_32Bit(FixedConvType *fixed_weight, FixedCo
         }
     }
     EAGLEEYE_SAFEFREE(new_fixed_weight);
-#ifdef EAGLEEYE_NEON_OPTIMIZATION11
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)11
     EAGLEEYE_SAFEFREE(weight_ptr_neon);
 #endif
 }
@@ -998,7 +998,7 @@ void GetOneOutputChannelResult1x1_32Bit(FixedConvType *weight_ptr, FixedConvType
 
     j = search_img_start;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int8x8_t *weight_ptr_neon;
     int loop_size = input_channel;
 
@@ -1090,7 +1090,7 @@ void GetOneOutputChannelResult1x1_32Bit(FixedConvType *weight_ptr, FixedConvType
             p_out_buf[j] = ((value_0 * adjust_div_value + norm_half_add_value) >> data_norm_move_const) + bias_value;
         }
     }
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if (weight_ptr_neon)
 		free(weight_ptr_neon);
 #endif
@@ -1131,7 +1131,7 @@ void GetMultiOutputChannelResult3x3_Stride2_2_32Bit(FixedConvType *fixed_weight,
         k1 += 9;
     }
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int8x8_t *weight_ptr_neon = NULL;
     int search_8_end = output_width / 8 * 8;
     int8x8x2_t in_value_neon;
@@ -1482,7 +1482,7 @@ void GetOneOutputChannelResult3x3_Stride2_32Bit(FixedConvType *weight_ptr, Fixed
     const int data_norm_move_const = CNN_CONV_DATA_NORM_MOVE;
     int expand_size = expand_width*expand_height;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int8x8_t *weight_ptr_neon;
      int search_8_end = output_width / 16 * 16;
 
@@ -1794,7 +1794,7 @@ bool GetOneOutputChannelResult_Stride2_32Bit(FixedConvType *weight_ptr, FixedCon
 {
     int i = 0, j = 0, k = 0, m = 0;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int8x8_t *weight_ptr_neon = NULL;
     int8x8x2_t in_value_neon_8;
     int8x16x2_t in_value_neon_0, in_value_neon_1;
@@ -1980,7 +1980,7 @@ bool im2col_cpu_Fixed(FixedConvType** input_ptr, int channels, int width, int he
 void ConvMatrixMulti_32Bit(FixedConvType *fixed_weight, int row1, int col1, FixedConvType *data_col, int row2, int col2, FixedType *net_output_data,
                            int *adjust_div_value, int norm_half_add_value, FixedBiasType *fixed_bias_value)
 {
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int i = 0, j = 0, k = 0;
     int8x8_t in_value_neon_m1_0, in_value_neon_m1_1, in_value_neon_m1_2, in_value_neon_m1_3, in_value_neon_m2_0, in_value_neon_m2_1;
     int16x8_t mul_value_neon;
@@ -2162,7 +2162,7 @@ bool RunConvForward_KernelLoop(FixedConvType *expand_input_data, int input_chann
                             pad_size, pad_size, w_stride_, h_stride_, 1, data_col);
 
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if(bool_16Bit_32Bit_Add){
         ConvMatrixMulti_16Bit(fixed_weight, row1, col1, data_col, row2, col2, net_output_data, adjust_div_value, norm_half_add_value, fixed_bias_value);
     }
@@ -2743,7 +2743,7 @@ bool RunConvForward_ImageLoop(FixedConvType *expand_input_data, int input_channe
             }
     }
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if (w_stride_ == 1 && h_stride_ == 1 && kernel_size == 1)
     {
         int loop_size = input_channel*kernel_size_sq;

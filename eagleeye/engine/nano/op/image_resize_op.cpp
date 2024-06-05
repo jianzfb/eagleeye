@@ -1,5 +1,5 @@
 #include "eagleeye/engine/nano/op/image_resize_op.h"
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include "eagleeye/engine/math/arm/interpolate.h"
 #else
 #include "eagleeye/engine/math/x86/interpolate.h"
@@ -179,7 +179,7 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
 
     unsigned char* x_ptr = (unsigned char*)x.cpu();
     unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
-#if defined(__ANDROID__) || defined(ANDROID)      
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)      
     if(channels == 3){
         // 三通道图
 // #pragma omp parallel for
@@ -340,7 +340,7 @@ int ResizeWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
 
     unsigned char* x_ptr = (unsigned char*)x.cpu();
     unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
-#if defined(__ANDROID__) || defined(ANDROID)      
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)      
     if(channels == 3){
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {

@@ -1,6 +1,6 @@
 #include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/common/EagleeyeLog.h"
-#include "eagleeye/3rd/pnglib/png.h"
+#include "png.h"
 #include <dirent.h>
 #include <fcntl.h>
 #include <sys/mman.h>

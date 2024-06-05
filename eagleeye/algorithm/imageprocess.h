@@ -7,7 +7,7 @@
 
 namespace eagleeye
 {
-#ifdef EAGLEEYE_NEON_OPTIMIZATION    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
 Matrix<float> medianFilterK5(Matrix<float> data);
 #endif    
 } // namespace eagleeye

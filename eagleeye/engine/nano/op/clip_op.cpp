@@ -1,5 +1,5 @@
 #include "eagleeye/engine/nano/op/clip_op.h"
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include "eagleeye/engine/math/arm/clip.h"
 #endif
 namespace eagleeye{
@@ -50,7 +50,7 @@ int ClipOp::runOnCpu(const std::vector<Tensor>& input){
     float* dout = (float*)this->m_outputs[0].cpu();
     out_dim = this->m_outputs[0].dims();
 
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     math::arm::clip_fp32(din, out_dim.production(), m_min_v, m_max_v, dout);
 #endif
     return 0;

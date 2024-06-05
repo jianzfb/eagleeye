@@ -958,7 +958,7 @@ bool VideoWriteNode::h264Muxing(char* packet, std::uint64_t packet_size){
         EAGLEEYE_LOGE("av_write_frame ret = %d", ret);
         return false;
     }
-    EAGLEEYE_LOGE("h264Muxing success");
+    EAGLEEYE_LOGV("h264Muxing success");
     return true;
 
 #else

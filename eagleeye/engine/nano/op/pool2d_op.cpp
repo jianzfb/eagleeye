@@ -1,6 +1,6 @@
 #include "eagleeye/engine/nano/op/pool2d_op.h"
 
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include "eagleeye/engine/math/arm/pooling.h"
 #endif
 
@@ -72,7 +72,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
         // pooling2x2s2p0_max
         // pooling2x2s2p0_avg
         if(m_pool_type == MAXPool2D){
-#if defined(__ANDROID__) || defined(ANDROID)            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)            
             math::arm::pooling2x2s2p0_max(
                 x_data, 
                 o_data, 
@@ -83,7 +83,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
         }
         else{
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
             math::arm::pooling2x2s2p0_avg(
                 x_data, 
                 o_data, 
@@ -100,7 +100,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
         // pooling2x2s2p1_max
         // pooling2x2s2p1_avg
         if(m_pool_type == MAXPool2D){
-#if defined(__ANDROID__) || defined(ANDROID)            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)            
             math::arm::pooling2x2s2p1_max(
                 x_data, 
                 o_data, 
@@ -111,7 +111,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
         }
         else{
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
             math::arm::pooling2x2s2p1_avg(
                 x_data, 
                 o_data, 
@@ -128,7 +128,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
         // pooling3x3s1p1_max
         // pooling3x3s1p1_avg
         if(m_pool_type == MAXPool2D){
-#if defined(__ANDROID__) || defined(ANDROID)            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)            
             math::arm::pooling3x3s1p1_max(
                 x_data, 
                 o_data, 
@@ -139,7 +139,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
         }
         else{
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
             math::arm::pooling3x3s1p1_avg(
                 x_data, 
                 o_data, 
@@ -156,7 +156,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
         // pooling3x3s2p1_max
         // pooling3x3s2p1_avg
         if(m_pool_type == MAXPool2D){
-#if defined(__ANDROID__) || defined(ANDROID)            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)            
             math::arm::pooling3x3s2p1_max(
                 x_data, 
                 o_data, 
@@ -167,7 +167,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
         }
         else{
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
             math::arm::pooling3x3s2p1_avg(
                 x_data, 
                 o_data, 
@@ -184,7 +184,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
         // pooling3x3s1p0_max
         // pooling3x3s1p0_avg
         if(m_pool_type == MAXPool2D){
-#if defined(__ANDROID__) || defined(ANDROID)            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)            
             math::arm::pooling3x3s1p0_max(
                 x_data, 
                 o_data, 
@@ -195,7 +195,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
         }
         else{
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
             math::arm::pooling3x3s1p0_avg(
                 x_data, 
                 o_data, 
@@ -212,7 +212,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
         // pooling3x3s2p1_max
         // pooling3x3s2p1_avg
         if(m_pool_type == MAXPool2D){
-#if defined(__ANDROID__) || defined(ANDROID)            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)            
             math::arm::pooling3x3s2p1_max(
                 x_data, 
                 o_data, 
@@ -223,7 +223,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
         }
         else{
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
             math::arm::pooling3x3s2p1_avg(
                 x_data, 
                 o_data, 
@@ -240,7 +240,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
         // pooling3x3s2p0_max
         // pooling3x3s2p0_avg
         if(m_pool_type == MAXPool2D){
-#if defined(__ANDROID__) || defined(ANDROID)            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)            
             math::arm::pooling3x3s2p0_max(
                 x_data, 
                 o_data, 
@@ -251,7 +251,7 @@ int Pool2dOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
         }
         else{
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
             math::arm::pooling3x3s2p0_avg(
                 x_data, 
                 o_data, 

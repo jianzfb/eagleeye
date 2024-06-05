@@ -24,7 +24,7 @@
  *
  *  (this is the zlib license)
  */
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 
 #include <arm_neon.h>
 

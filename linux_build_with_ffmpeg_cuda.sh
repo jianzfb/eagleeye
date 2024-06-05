@@ -18,7 +18,7 @@ else
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DFFMPEG=/root/.3rd/ffmpeg/ffmpeg -DCUDA:BOOL=ON -DMINIO:BOOL=ON -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 
 fi
-make
+make -j 4
 cd ..
 
 # 3.step 安装
@@ -52,9 +52,9 @@ mkdir 3rd
 cp -r ../eagleeye/3rd/eigen 3rd/
 cp -r ../eagleeye/3rd/pybind11 3rd/
 
-# 第三方依赖.so
-cp -r  ../eagleeye/3rd/libyuv/lib/linux/X86-64/* libs/X86-64/
 cd ..
 
 # 5.step 脚本工具
 cp -r scripts linux-install/
+
+ldconfig

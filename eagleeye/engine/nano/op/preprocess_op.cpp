@@ -1,6 +1,6 @@
 #include "eagleeye/engine/nano/op/preprocess_op.h"
 #include <stdint.h>
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include "eagleeye/engine/math/arm/preprocess.h"
 #endif
 namespace eagleeye{
@@ -82,7 +82,7 @@ int PreprocessOp::runOnCpu(const std::vector<Tensor>& input){
     uint8_t* src_ptr = (uint8_t*)(x.cpu());
     float* output_ptr = (float*)(this->m_outputs[0].cpu());
     if(this->m_reverse_channel){
-#if defined(__ANDROID__) || defined(ANDROID)        
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)        
         math::arm::bgrToRgbTensorCHW(
             src_ptr,
             output_ptr,
@@ -94,7 +94,7 @@ int PreprocessOp::runOnCpu(const std::vector<Tensor>& input){
 #endif
     }
     else{
-#if defined(__ANDROID__) || defined(ANDROID)        
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)        
         math::arm::bgrToTensorCHW(
             src_ptr,
             output_ptr,
