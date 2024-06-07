@@ -25,6 +25,7 @@ FaceAlignOp::FaceAlignOp(){
     m_tgt_ptr = NULL;
 
     this->m_margin = 10;
+    this->m_margin_ratio = 0.15;
 }
 FaceAlignOp::FaceAlignOp(int target_h, int target_w, int margin){
     this->m_target_h = target_h;
@@ -53,14 +54,16 @@ int FaceAlignOp::init(std::map<std::string, std::vector<float>> params){
     if(params.find("target_h") != params.end()){
         this->m_target_h = params["target_h"][0];
     }
-
     if(params.find("target_w") != params.end()){
         this->m_target_w = params["target_w"][0];
     }
 
     if(params.find("margin") != params.end()){
         this->m_margin = params["margin"][0];
-    }    
+    }
+    if(params.find("margin_ratio") != params.end()){
+        this->m_margin_ratio = params["margin_ratio"][0];
+    }
     return 0;
 }
 
@@ -84,22 +87,30 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
             Tensor(std::vector<int64_t>{0, this->m_target_w, image_c}, image.type(), image.format(),CPU_BUFFER);
         return 0;
     }
+
     float* bbox_ptr = bbox.cpu<float>();
     float face_cx = (bbox_ptr[0]+bbox_ptr[2])/2.0f;
     float face_cy = (bbox_ptr[1]+bbox_ptr[3])/2.0f;
     float face_w = bbox_ptr[2]-bbox_ptr[0];
     float face_h = bbox_ptr[3]-bbox_ptr[1];
+
     float face_half_size = std::max(face_w, face_h) / 2;
-    face_half_size = face_half_size + this->m_margin;
+    float margin = m_margin;
+    float face_half_width = face_half_size + margin;
+    float face_half_height = face_half_size + margin;
+    if(this->m_margin_ratio > 0){
+        face_half_width = face_half_size + m_margin_ratio * face_w;
+        face_half_height = face_half_size + m_margin_ratio * face_h;
+    }
 
     // 保证4宽度对齐（对于一些硬件加速使用）
-    int x0 = int(face_cx - face_half_size + 0.5f);
+    int x0 = int(face_cx - face_half_width + 0.5f);
     x0 = std::max(x0, 0) / 4 * 4;
-    int y0 = int(face_cy - face_half_size + 0.5f);
+    int y0 = int(face_cy - face_half_height + 0.5f);
     y0 = std::max(y0, 0) / 4 * 4;
-    int x1 = int(face_cx + face_half_size + 0.5f);
+    int x1 = int(face_cx + face_half_width + 0.5f);
     x1 = (std::min(x1+3, image_w)) / 4 * 4;
-    int y1 = int(face_cy + face_half_size + 0.5f);
+    int y1 = int(face_cy + face_half_height + 0.5f);
     y1 = (std::min(y1+3, image_h)) / 4 * 4;
 
     face_w = x1 - x0;
@@ -109,6 +120,8 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
             Tensor(std::vector<int64_t>{0, this->m_target_w, image_c}, image.type(), image.format(),CPU_BUFFER);        
         return 0;
     }
+
+    // TODO, 使用人脸关键点信息计算转正矩阵
 
 #ifdef EAGLEEYE_RKCHIP
     // ->crop -> resize

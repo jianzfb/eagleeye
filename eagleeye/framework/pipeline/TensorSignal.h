@@ -3,6 +3,10 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/basic/Tensor.h"
+#include <string>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 namespace eagleeye{
 class TensorSignal:public AnySignal{
@@ -83,7 +87,7 @@ public:
 	 * 
 	 * @return SignalCategory 
 	 */
-	virtual SignalCategory getSignalCategory(){return SIGNAL_CATEGORY_TENSOR;}
+	virtual SignalCategory getSignalCategory(){return m_sig_category;}
 
 	/**
 	 * @brief Get the Signal Content object
@@ -94,9 +98,26 @@ public:
 	 */
 	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
 
+	/**
+	 * 	@brief 转换成队列
+	 */
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
+		m_sig_category = SIGNAL_CATEGORY_TENSOR_QUEUE;
+		m_max_queue_size = max_queue_size;
+		this->m_get_then_auto_remove = get_then_auto_remove;
+	};
+
 private:
     Tensor m_data;
+	Tensor m_tmp;
+	SignalCategory m_sig_category;
 	int m_release_count;
+	bool m_get_then_auto_remove;
+
+	std::queue<Tensor> m_queue;
+	int m_max_queue_size;
+	std::mutex m_mu;
+	std::condition_variable m_cond;	
 };
 }
 #endif

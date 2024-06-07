@@ -27,6 +27,7 @@ protected:
     int m_target_h;
     int m_target_w;
     int m_margin;
+    float m_margin_ratio;
 
     int m_src_handler;
     int m_tgt_handler;
