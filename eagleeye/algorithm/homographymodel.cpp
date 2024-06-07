@@ -3,7 +3,7 @@
 #include "Eigen/SVD"
 #include "eagleeye/common/EagleeyeOpenCL.h"
 #include "eagleeye/common/EagleeyeLog.h"
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #endif
 
@@ -141,7 +141,7 @@ Matrix<float> HomographyModel::evaluate(const std::vector<std::shared_ptr<Abstra
 float HomographyModel::computeDistanceMeasure(std::shared_ptr<AbstractParameter> param, Matrix<float> model){
     auto hp = std::dynamic_pointer_cast<HomographyParam>(param);
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     float32x4x3_t l = vld3q_f32(model.dataptr());
     float* p1_ptr = hp->m_p1.dataptr();
     float* p2_ptr = hp->m_p2.dataptr();

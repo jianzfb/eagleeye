@@ -1,6 +1,6 @@
 #include "eagleeye/engine/nano/op/interpolate_op.h"
 #include "eagleeye/common/EagleeyeLog.h"
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include "eagleeye/engine/math/arm/interpolate.h"
 #endif
 
@@ -90,7 +90,7 @@ int InterpolateOp::runOnCpu(const std::vector<Tensor>& input){
     int spatial_in = in_h * in_w;
     int spatial_out = out_h * out_w;
 
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if (m_op_type == INTERPOLATE_BILINER) {
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
@@ -193,7 +193,7 @@ int InterpolateWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
     int out_w = out.dims()[3];
     int spatial_in = in_h * in_w;
     int spatial_out = out_h * out_w;
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if (m_op_type == INTERPOLATE_BILINER) {
 #pragma omp parallel for
         for (int i = 0; i < count; ++i) {

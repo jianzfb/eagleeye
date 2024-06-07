@@ -1,6 +1,6 @@
 #include "eagleeye/engine/nano/op/FixedReluOp.h"
 #include "eagleeye/common/EagleeyeMacro.h"
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #endif
 
@@ -30,7 +30,7 @@ void FixedReluOp::foward_on_cpu(std::vector<Tensor<FixedType>>& output, std::vec
     int H = input[0].dim(2);
     int W = input[0].dim(3);   
     int total_size = C*H*W; 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
         int i = 0;
     	int search_x_end = total_size / 8 * 8;
 		int16x8_t value;

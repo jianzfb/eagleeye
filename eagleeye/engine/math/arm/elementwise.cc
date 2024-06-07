@@ -4,6 +4,7 @@
 #include "eagleeye/engine/math/arm/elementwise_common_broadcast_config.h"
 #include <math.h>
 #include <algorithm>
+#include <cstring>
 // #include "lite/backends/arm/math/funcs.h"
 
 namespace eagleeye {

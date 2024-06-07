@@ -1,5 +1,5 @@
 #include "eagleeye/engine/model_engine.h"
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #pragma message( "IN ANDROID arm" )
 #include "eagleeye/engine/math/arm/preprocess.h"
 #else
@@ -164,7 +164,7 @@ void ModelEngine::bgrToTensorCHW(const uint8_t* src,
                        int height,
                        float* means,
                        float* scales) {
-#if defined(__ANDROID__) || defined(ANDROID)                         
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)                         
   math::arm::bgrToTensorCHW(src, output, width, height, means, scales);
 #else
   math::x86::bgrToTensorCHW(src, output, width, height, means, scales);
@@ -177,7 +177,7 @@ void ModelEngine::bgrToRgbTensorCHW(const uint8_t* src,
                        int height,
                        float* means,
                        float* scales) {
-#if defined(__ANDROID__) || defined(ANDROID)                            
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)                            
   math::arm::bgrToRgbTensorCHW(src, output, width, height, means, scales);
 #else
   math::x86::bgrToRgbTensorCHW(src, output, width, height, means, scales);

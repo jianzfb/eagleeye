@@ -1,5 +1,5 @@
 #include "eagleeye/engine/nano/op/pad2d_op.h"
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include "eagleeye/engine/math/arm/pad2d.h"
 #endif
 namespace eagleeye{
@@ -74,7 +74,7 @@ int Pad2dOp::runOnCpu(const std::vector<Tensor>& input){
     int oc = out_dim[1];
     int oh = out_dim[2];
     int ow = out_dim[3];
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
   if (m_pad_type == PAD2D_CONSTANT) {
     math::arm::pad_constant(din,
                  dout,

@@ -1,4 +1,4 @@
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #endif
 
@@ -213,7 +213,7 @@ void warpaffine_bilinear_c1(const unsigned char* src, int srcw, int srch, int sr
             if (sxy_inout == 1)
             {
                 // all inside
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                 int32x4_t _Xl = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x));
                 int32x4_t _Xh = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x + 4));
                 int32x4_t _Yl = vaddq_s32(vdupq_n_s32(Y0), vld1q_s32(bdelta.data() + x));
@@ -320,7 +320,7 @@ void warpaffine_bilinear_c1(const unsigned char* src, int srcw, int srch, int sr
                 // all outside
                 if (type != -233)
                 {
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                     uint8x8_t _border_color = vdup_n_u8(border_color[0]);
                     vst1_u8(dst0, _border_color);
 #else
@@ -518,7 +518,7 @@ void warpaffine_bilinear_c2(const unsigned char* src, int srcw, int srch, int sr
             if (sxy_inout == 1)
             {
                 // all inside
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                 int32x4_t _Xl = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x));
                 int32x4_t _Xh = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x + 4));
                 int32x4_t _Yl = vaddq_s32(vdupq_n_s32(Y0), vld1q_s32(bdelta.data() + x));
@@ -639,7 +639,7 @@ void warpaffine_bilinear_c2(const unsigned char* src, int srcw, int srch, int sr
                 // all outside
                 if (type != -233)
                 {
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                     uint8x8x2_t _border_color;
                     _border_color.val[0] = vdup_n_u8(border_color[0]);
                     _border_color.val[1] = vdup_n_u8(border_color[1]);
@@ -845,7 +845,7 @@ void warpaffine_bilinear_c3(const unsigned char* src, int srcw, int srch, int sr
             if (sxy_inout == 1)
             {
                 // all inside
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                 int32x4_t _Xl = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x));
                 int32x4_t _Xh = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x + 4));
                 int32x4_t _Yl = vaddq_s32(vdupq_n_s32(Y0), vld1q_s32(bdelta.data() + x));
@@ -1000,7 +1000,7 @@ void warpaffine_bilinear_c3(const unsigned char* src, int srcw, int srch, int sr
                 // all outside
                 if (type != -233)
                 {
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                     uint8x8x3_t _border_color;
                     _border_color.val[0] = vdup_n_u8(border_color[0]);
                     _border_color.val[1] = vdup_n_u8(border_color[1]);
@@ -1212,7 +1212,7 @@ void warpaffine_bilinear_c4(const unsigned char* src, int srcw, int srch, int sr
             if (sxy_inout == 1)
             {
                 // all inside
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                 int32x4_t _Xl = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x));
                 int32x4_t _Xh = vaddq_s32(vdupq_n_s32(X0), vld1q_s32(adelta.data() + x + 4));
                 int32x4_t _Yl = vaddq_s32(vdupq_n_s32(Y0), vld1q_s32(bdelta.data() + x));
@@ -1403,7 +1403,7 @@ void warpaffine_bilinear_c4(const unsigned char* src, int srcw, int srch, int sr
                 // all outside
                 if (type != -233)
                 {
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
                     uint8x8x4_t _border_color;
                     _border_color.val[0] = vdup_n_u8(border_color[0]);
                     _border_color.val[1] = vdup_n_u8(border_color[1]);

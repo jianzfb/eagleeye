@@ -3,6 +3,7 @@
 #include <limits>
 #include <memory>
 #include <arm_neon.h>
+#include <cstring>
 
 namespace eagleeye {
 namespace math {

@@ -1,6 +1,6 @@
 #include "eagleeye/engine/nano/op/FixedSoftmaxOp.h"
 #include "eagleeye/common/EagleeyeLog.h"
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #include "eagleeye/engine/nano/util/neon_mathfunc.h"
 #endif
@@ -44,7 +44,7 @@ void FixedSoftmaxOp::foward_on_cpu(std::vector<Tensor<FixedType>>& output, std::
     }
     
     // exp ~ (1+(\frac{x}{m}))^{m}
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #pragma omp parallel for num_threads(4)
     for (int q=0; q<C; q++)
     {

@@ -2,7 +2,7 @@
 #include "eagleeye/engine/nano/util/quantization.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #define QRBAR_SHIFTBITS    7
 #define QRBAR_ROUND0(x)  (x>>QRBAR_SHIFTBITS)
@@ -43,7 +43,7 @@ void FixedResizeOp::foward_on_cpu(std::vector<Tensor<FixedType>>& output,
     quant_sym_16b_8b(net_input,op_input_data,H,W,C);
 
     // 2.step resize
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     int offset = 0;
     int HW = H*W;
     short *coord_x, *coord_y;

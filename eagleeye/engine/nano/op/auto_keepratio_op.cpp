@@ -1,6 +1,6 @@
 #include "eagleeye/engine/nano/op/auto_keepratio_op.h"
 #include "eagleeye/common/EagleeyeRGBRotate.h"
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include "eagleeye/engine/math/arm/interpolate.h"
 #else
 #include "eagleeye/engine/math/x86/interpolate.h"
@@ -279,7 +279,7 @@ int AutoKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
 
     // resize
     unsigned char* x_ptr = (unsigned char*)input[0].cpu();
-#if defined(__ANDROID__) || defined(ANDROID)    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
         math::arm::bilinear_rgb_8u_3d_interp(
             x_ptr,
             (unsigned char*)m_resize_ptr,

@@ -10,18 +10,19 @@ git submodule init
 git submodule update
 
 # 2.step 编译
-install_dir="linux-install"
 mkdir build
 cd build
+
+# arm64编译
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON ..
-install_dir="py"
+cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a -DBUILD_PYTHON_MODULE:BOOL=ON ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a -DFFMPEG=/root/.3rd/ffmpeg/ -D RKCHIP=/root/.3rd/rk -DMINIO:BOOL=ON -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 fi
-make
+make -j 6
 cd ..
 
+install_dir="linux-arm64-v8a-install"
 # 3.step 安装
 if [ -d $install_dir ]; 
 then
@@ -38,6 +39,7 @@ else
   find ./eagleeye \( -path "./eagleeye/3rd" -o -path "./eagleeye/codegen" -o -path "./eagleeye/test" \) -prune -o -name "*.h" -type f -exec cp --parent -r {} include/ \;
 fi
 
+
 mkdir $install_dir
 cd $install_dir
 mkdir libs
@@ -46,14 +48,15 @@ mv include $install_dir/
 mv bin/* $install_dir/libs/
 rm -rf bin
 
-# 4.step 第三方库
+# 4.step 第三方库（opencl）
 cd $install_dir
-# 第三方代码库
 mkdir 3rd
+cp -r ../eagleeye/3rd/opencl 3rd/
 cp -r ../eagleeye/3rd/eigen 3rd/
-cp -r ../eagleeye/3rd/pybind11 3rd/
-
+cp -r ../eagleeye/3rd/opencv 3rd/
 cd ..
 
 # 5.step 脚本工具
-cp -r scripts $install_dir/
+cp -r scripts $install_dir
+
+ldconfig
