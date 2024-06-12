@@ -1,7 +1,7 @@
 PROJECT({{project}})
 
 cmake_minimum_required(VERSION 3.5)
-add_definitions(-std=c++11)
+add_definitions(-std=c++17)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
 
@@ -18,6 +18,7 @@ set({{project}}_SRC
 
 include_directories({{eagleeye}}/include/eagleeye/)
 include_directories({{eagleeye}}/include)
+include_directories(./proto)
 link_directories({{eagleeye}}/libs/{{'${ANDROID_ABI}'}})
 add_library({{project}} STATIC {{'${'}}{{project}}_SRC{{'}'}})  
 
