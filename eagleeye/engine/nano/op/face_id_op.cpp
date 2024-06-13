@@ -92,6 +92,7 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
         }
 
         // 重新加载人脸库
+        m_face_gallery.clear();
         std::map<std::string, std::vector<std::string>>::iterator iter, iend(KVMemoryOp::m_g_info[memory_name].end());
         for(iter = KVMemoryOp::m_g_info[memory_name].begin(); iter != iend; ++iter){
             std::vector<std::string> key_name_list = iter->second;
