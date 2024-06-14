@@ -478,6 +478,7 @@ if(DEFINED ANDROID_ABI AND DEFINED WITH_OPENGL)
         eagleeye/render/AutoRenderRegion.cpp
         eagleeye/render/RenderMapToCPU.cpp
         eagleeye/common/EagleeyeShader.cpp
+        eagleeye/render/RenderRegionNode.cpp
     )
     add_definitions(-DEAGLEEYE_OPENGL)
     ADD_SUBDIRECTORY(eagleeye/3rd/glm/)
