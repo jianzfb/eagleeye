@@ -92,6 +92,7 @@ void SubPipeline::analyze(){
     int total_input_signal_num = 0;
     int total_output_signal_num = 0;
     m_input_node_name_list.clear();
+    m_output_node_name_list.clear();
     for(int i=0; i<m_name_list.size(); ++i){
         std::string node_name = m_name_list[i];
         if(m_node_bind_input_num[node_name] == 0){
