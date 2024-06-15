@@ -3,6 +3,8 @@
 #include <iostream>
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeStr.h"
+#include "eagleeye/common/EagleeyeFile.h"
+#include "eagleeye/common/EagleeyeIO.h"
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
@@ -24,7 +26,7 @@ std::map<std::string, std::shared_ptr<AnyNode>> node_pools;
 
 void config_node_input(AnyNode*node, int port, py::object input_obj){
     auto array = pybind11::array::ensure(input_obj);
-    if (array.dtype() == pybind11::dtype::of<int32_t>()){
+    if (array.dtype().char_() == pybind11::dtype::of<int32_t>().char_()){
         py::buffer_info buf = array.request();
         TensorSignal* tensor_sig = new TensorSignal();
 
@@ -41,7 +43,7 @@ void config_node_input(AnyNode*node, int port, py::object input_obj){
         // 设置算子输入
         node->setInputPort(tensor_sig, port);
     }
-    else if(array.dtype() == pybind11::dtype::of<float>()){
+    else if(array.dtype().char_() == pybind11::dtype::of<float>().char_()){
         py::buffer_info buf = array.request();
 
         TensorSignal* tensor_sig = new TensorSignal();
@@ -58,7 +60,7 @@ void config_node_input(AnyNode*node, int port, py::object input_obj){
         // 设置算子输入
         node->setInputPort(tensor_sig, port);
     }
-    else if(array.dtype() == pybind11::dtype::of<double>()){
+    else if(array.dtype().char_() == pybind11::dtype::of<double>().char_()){
         py::buffer_info buf = array.request();
 
         TensorSignal* tensor_sig = new TensorSignal();
@@ -75,7 +77,7 @@ void config_node_input(AnyNode*node, int port, py::object input_obj){
         // 设置算子输入
         node->setInputPort(tensor_sig, port);
     }
-    else if(array.dtype() == pybind11::dtype::of<unsigned char>()){
+    else if(array.dtype().char_() == pybind11::dtype::of<unsigned char>().char_()){
         py::buffer_info buf = array.request();
         AnySignal* _sig = NULL;
         std::vector<int64_t> shape;
@@ -197,7 +199,7 @@ py::list node_execute(py::str exe_name, py::str node_name, py::str cls_name, py:
 			return output_tensors;
         }
 
-		if (array.dtype() == pybind11::dtype::of<int32_t>()){
+		if (array.dtype().char_() == pybind11::dtype::of<int32_t>().char_()){
             py::buffer_info buf = array.request();
             TensorSignal* tensor_sig = new TensorSignal();
             input_signals.push_back(tensor_sig);
@@ -215,7 +217,7 @@ py::list node_execute(py::str exe_name, py::str node_name, py::str cls_name, py:
             // 设置算子输入
             exe_node->setInputPort(tensor_sig, input_index);
 		}
-        else if(array.dtype() == pybind11::dtype::of<float>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<float>().char_()){
             py::buffer_info buf = array.request();
 
             TensorSignal* tensor_sig = new TensorSignal();
@@ -234,7 +236,7 @@ py::list node_execute(py::str exe_name, py::str node_name, py::str cls_name, py:
             // 设置算子输入
             exe_node->setInputPort(tensor_sig, input_index);
         }
-        else if(array.dtype() == pybind11::dtype::of<double>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<double>().char_()){
             py::buffer_info buf = array.request();
 
             TensorSignal* tensor_sig = new TensorSignal();
@@ -253,7 +255,7 @@ py::list node_execute(py::str exe_name, py::str node_name, py::str cls_name, py:
             // 设置算子输入
             exe_node->setInputPort(tensor_sig, input_index);
         }
-        else if(array.dtype() == pybind11::dtype::of<unsigned char>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<unsigned char>().char_()){
             py::buffer_info buf = array.request();
             AnySignal* _sig = NULL;
             std::vector<int64_t> shape;
@@ -306,7 +308,7 @@ py::list node_execute(py::str exe_name, py::str node_name, py::str cls_name, py:
             // 设置算子输入
             exe_node->setInputPort(_sig, input_index);
         }
-        else if(array.dtype() == pybind11::dtype::of<bool>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<bool>().char_()){
             py::buffer_info buf = array.request();
             bool* buf_ptr = (bool*)buf.ptr;
             bool input_data = buf_ptr[0];
@@ -383,7 +385,6 @@ py::list node_execute(py::str exe_name, py::str node_name, py::str cls_name, py:
     return output_tensors;
 }
 
-
 std::map<std::string, std::shared_ptr<Base>> op_pools;
 py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dict param_1, py::dict param_2, py::dict param_3, py::list input_tensors){
     py::list output_tensors;
@@ -421,10 +422,8 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
         std::map<std::string, std::vector<std::string>> op_param_2;
         for (auto param_2_item : param_2){
             std::string var_name = py::cast<std::string>(param_2_item.first);
-            for(auto value: param_2_item.second){
-                std::string str_value = py::cast<std::string>(value);
-                op_param_2[var_name].push_back(str_value);
-            }
+            std::string var_value = py::cast<std::string>(param_2_item.second);
+            op_param_2[var_name].push_back(var_value);
         }
 
         // param_3 std::map<std::string, std::vector<std::vector<float>>> 
@@ -458,7 +457,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
 			return output_tensors;
         }
 
-		if (array.dtype() == pybind11::dtype::of<int32_t>()){
+		if (array.dtype().char_() == pybind11::dtype::of<int32_t>().char_()){
             py::buffer_info buf = array.request();
 
             std::vector<int64_t> shape;
@@ -468,7 +467,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             Tensor temp(shape, EAGLEEYE_INT32, DataFormat::AUTO, buf.ptr);
             inputs.push_back(temp);
 		}
-        else if(array.dtype() == pybind11::dtype::of<float>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<float>().char_()){
             py::buffer_info buf = array.request();
 
             std::vector<int64_t> shape;
@@ -478,7 +477,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             Tensor temp(shape, EAGLEEYE_FLOAT32, DataFormat::AUTO, buf.ptr);
             inputs.push_back(temp);
         }
-        else if(array.dtype() == pybind11::dtype::of<double>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<double>().char_()){
             py::buffer_info buf = array.request();
 
             std::vector<int64_t> shape;
@@ -488,7 +487,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             Tensor temp(shape, EAGLEEYE_DOUBLE, DataFormat::AUTO, buf.ptr);
             inputs.push_back(temp);
         }
-        else if(array.dtype() == pybind11::dtype::of<unsigned char>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<unsigned char>().char_()){
             py::buffer_info buf = array.request();
 
             std::vector<int64_t> shape;
@@ -498,7 +497,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             Tensor temp(shape, EAGLEEYE_UCHAR, DataFormat::AUTO, buf.ptr);
             inputs.push_back(temp);
         }
-        else if(array.dtype() == pybind11::dtype::of<bool>()){
+        else if(array.dtype().char_() == pybind11::dtype::of<bool>().char_()){
             py::buffer_info buf = array.request();
 
             std::vector<int64_t> shape;
@@ -509,6 +508,7 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
             inputs.push_back(temp);
         }
 		else {
+            EAGLEEYE_LOGE("Not support input type");
 			return output_tensors;
 		}
     }
@@ -550,10 +550,458 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
 }
 
 
+py::list load_tensor_list(py::str file_path){
+    std::string c_file_path = py::cast<std::string>(file_path);
+    if(!isfileexist(c_file_path.c_str())){
+        EAGLEEYE_LOGE("File %s dont exist", c_file_path.c_str());
+        return py::list();
+    }
+
+    // 加载tensor list
+    EagleeyeIO yard_io;
+    yard_io.createReadHandle(c_file_path, READ_BINARY_MODE);
+
+    int64_t tensor_num_array[1];
+    void* tensor_num_array_ptr = (void*)tensor_num_array;
+    int tensor_num_size = 0;
+    yard_io.read(tensor_num_array_ptr, tensor_num_size);
+    std::vector<Tensor> tensor_list(tensor_num_array[0]);
+    for(int64_t tensor_i=0; tensor_i<tensor_num_array[0]; ++tensor_i){
+        // 形状
+        int64_t dim_num_array[1];
+        void* dim_num_array_ptr = (void*)dim_num_array;
+        int dim_num_size = 0;
+        yard_io.read(dim_num_array_ptr, dim_num_size);
+
+        // 
+        std::vector<int64_t> tensor_shape(dim_num_array[0]);
+        void* tensor_shape_ptr = (void*)(tensor_shape.data());
+        int tensor_shape_size = 0;
+        yard_io.read(tensor_shape_ptr, tensor_shape_size);
+
+        // 类型
+        int64_t tensor_type_array[1];
+        void* tensor_type_array_ptr = (void*)tensor_type_array;
+        int tensor_type_size = 0;
+        yard_io.read(tensor_type_array_ptr, tensor_type_size);
+
+        // 数据
+        tensor_list[tensor_i] = Tensor(
+            tensor_shape,
+            EagleeyeType(tensor_type_array[0]),
+            DataFormat::AUTO,
+            CPU_BUFFER
+        );
+
+        int tensor_data_size = 0;
+        void* tensor_ptr = tensor_list[tensor_i].cpu();
+        yard_io.read(tensor_ptr, tensor_data_size);
+    }
+    yard_io.destroyHandle();
+
+    // -> python numpy
+    py::list output_tensors;
+    for(int i=0; i<tensor_list.size(); ++i){
+        Tensor tensor = tensor_list[i];
+        std::vector<py::ssize_t> shape;
+        Dim tensor_dim = tensor.dims();
+        for(int i=0; i<tensor_dim.size(); ++i){
+            shape.push_back(tensor_dim[i]);
+        }
+
+        if(tensor.type() == EAGLEEYE_INT32){
+            auto result = py::array_t<int32_t>(py::detail::any_container<ssize_t>(shape), tensor.cpu<int32_t>());
+            output_tensors.append(result);
+        }
+        else if(tensor.type() == EAGLEEYE_FLOAT32){
+            auto result = py::array_t<float>(py::detail::any_container<ssize_t>(shape), tensor.cpu<float>());
+            output_tensors.append(result);
+        }
+        else if(tensor.type() == EAGLEEYE_DOUBLE){
+            auto result = py::array_t<double>(py::detail::any_container<ssize_t>(shape), tensor.cpu<double>());
+            output_tensors.append(result);
+        }
+        else if(tensor.type() == EAGLEEYE_UCHAR){
+            auto result = py::array_t<unsigned char>(py::detail::any_container<ssize_t>(shape), tensor.cpu<unsigned char>());
+            output_tensors.append(result);
+        }
+        else if(tensor.type() == EAGLEEYE_BOOL){
+            auto result = py::array_t<bool>(py::detail::any_container<ssize_t>(shape), tensor.cpu<bool>());
+            output_tensors.append(result);
+        }
+    }
+
+    return output_tensors;
+}
+
+bool save_tensor_list(py::str file_path, py::list tensor_list){
+    // 解析成Tensor
+    std::vector<Tensor> c_tensor_list;
+    for(py::handle t: tensor_list){
+        auto array = pybind11::array::ensure(t);
+		if (array.dtype().char_() == pybind11::dtype::of<int32_t>().char_()){
+            py::buffer_info buf = array.request();
+
+            std::vector<int64_t> shape;
+            for(int i=0; i<array.ndim(); ++i){
+                shape.push_back(buf.shape[i]);
+            }
+            Tensor temp(shape, EAGLEEYE_INT32, DataFormat::AUTO, buf.ptr);
+            c_tensor_list.push_back(temp);
+		}
+        else if(array.dtype().char_() == pybind11::dtype::of<float>().char_()){
+            py::buffer_info buf = array.request();
+
+            std::vector<int64_t> shape;
+            for(int i=0; i<array.ndim(); ++i){
+                shape.push_back(buf.shape[i]);
+            }            
+            Tensor temp(shape, EAGLEEYE_FLOAT32, DataFormat::AUTO, buf.ptr);
+            c_tensor_list.push_back(temp);
+        }
+        else if(array.dtype().char_() == pybind11::dtype::of<double>().char_()){
+            py::buffer_info buf = array.request();
+
+            std::vector<int64_t> shape;
+            for(int i=0; i<array.ndim(); ++i){
+                shape.push_back(buf.shape[i]);
+            }            
+            Tensor temp(shape, EAGLEEYE_DOUBLE, DataFormat::AUTO, buf.ptr);
+            c_tensor_list.push_back(temp);
+        }
+        else if(array.dtype().char_() == pybind11::dtype::of<unsigned char>().char_()){
+            py::buffer_info buf = array.request();
+
+            std::vector<int64_t> shape;
+            for(int i=0; i<array.ndim(); ++i){
+                shape.push_back(buf.shape[i]);
+            }            
+            Tensor temp(shape, EAGLEEYE_UCHAR, DataFormat::AUTO, buf.ptr);
+            c_tensor_list.push_back(temp);
+        }
+        else if(array.dtype().char_() == pybind11::dtype::of<bool>().char_()){
+            py::buffer_info buf = array.request();
+
+            std::vector<int64_t> shape;
+            for(int i=0; i<array.ndim(); ++i){
+                shape.push_back(buf.shape[i]);
+            }            
+            Tensor temp(shape, EAGLEEYE_BOOL, DataFormat::AUTO, buf.ptr);
+            c_tensor_list.push_back(temp);
+        }
+		else {
+			EAGLEEYE_LOGE("tensor type not support");
+            return false;
+		}
+    }
+
+    // 保存Tensor
+    EagleeyeIO yard_io;
+    std::string c_file_path = py::cast<std::string>(file_path);
+    yard_io.createWriteHandle(c_file_path.c_str(), false, WRITE_BINARY_MODE);
+    int64_t tensor_num = c_tensor_list.size();
+    // 数量
+    yard_io.write(&tensor_num, sizeof(int64_t));
+    for(int64_t tensor_i=0; tensor_i<tensor_num; ++tensor_i){
+        Tensor tt = c_tensor_list[tensor_i];
+
+        // 形状
+        int64_t dim_num = tt.dims().size();
+        yard_io.write(&dim_num, sizeof(int64_t));
+
+        std::vector<int64_t> tensor_shape = tt.dims().data();
+        yard_io.write(tensor_shape.data(), tensor_shape.size()*sizeof(int64_t));
+
+        // 类型
+        int64_t tensor_type = (int64_t)(tt.type());
+        yard_io.write(&tensor_type, sizeof(int64_t));
+
+        // 数据
+        yard_io.write(tt.cpu(), tt.blobsize());
+    }
+    yard_io.destroyHandle();
+    return true;
+}
+
+py::object load_tensor(py::str file_path){
+    std::string c_file_path = py::cast<std::string>(file_path);
+    if(!isfileexist(c_file_path.c_str())){
+        EAGLEEYE_LOGE("File %s dont exist", c_file_path.c_str());
+        return py::object();
+    }
+
+    // 加载tensor list
+    EagleeyeIO yard_io;
+    yard_io.createReadHandle(c_file_path, READ_BINARY_MODE);
+
+    // 形状
+    int64_t dim_num_array[1];
+    void* dim_num_array_ptr = (void*)dim_num_array;
+    int dim_num_size = 0;
+    yard_io.read(dim_num_array_ptr, dim_num_size);
+
+    // 
+    std::vector<int64_t> tensor_shape(dim_num_array[0]);
+    void* tensor_shape_ptr = (void*)(tensor_shape.data());
+    int tensor_shape_size = 0;
+    yard_io.read(tensor_shape_ptr, tensor_shape_size);
+
+    // 类型
+    int64_t tensor_type_array[1];
+    void* tensor_type_array_ptr = (void*)tensor_type_array;
+    int tensor_type_size = 0;
+    yard_io.read(tensor_type_array_ptr, tensor_type_size);
+
+    // 数据
+    Tensor tensor(
+        tensor_shape,
+        EagleeyeType(tensor_type_array[0]),
+        DataFormat::AUTO,
+        CPU_BUFFER
+    );
+
+    int tensor_data_size = 0;
+    void* tensor_ptr = tensor.cpu();
+    yard_io.read(tensor_ptr, tensor_data_size);
+
+    // ->numpy
+    std::vector<py::ssize_t> shape;
+    Dim tensor_dim = tensor.dims();
+    for(int i=0; i<tensor_dim.size(); ++i){
+        shape.push_back(tensor_dim[i]);
+    }
+
+    if(tensor.type() == EAGLEEYE_INT32){
+        auto result = py::array_t<int32_t>(py::detail::any_container<ssize_t>(shape), tensor.cpu<int32_t>());
+        return result;
+    }
+    else if(tensor.type() == EAGLEEYE_FLOAT32){
+        auto result = py::array_t<float>(py::detail::any_container<ssize_t>(shape), tensor.cpu<float>());
+        return result;
+    }
+    else if(tensor.type() == EAGLEEYE_DOUBLE){
+        auto result = py::array_t<double>(py::detail::any_container<ssize_t>(shape), tensor.cpu<double>());
+        return result;
+    }
+    else if(tensor.type() == EAGLEEYE_UCHAR){
+        auto result = py::array_t<unsigned char>(py::detail::any_container<ssize_t>(shape), tensor.cpu<unsigned char>());
+        return result;
+    }
+    else if(tensor.type() == EAGLEEYE_BOOL){
+        auto result = py::array_t<bool>(py::detail::any_container<ssize_t>(shape), tensor.cpu<bool>());
+        return result;
+    }
+    
+    return py::object();
+}
+
+bool save_tensor(py::str file_path, py::object t){
+    // 解析成Tensor
+    auto array = pybind11::array::ensure(t);
+    Tensor temp;
+    if (array.dtype().char_() == pybind11::dtype::of<int32_t>().char_()){
+        py::buffer_info buf = array.request();
+
+        std::vector<int64_t> shape;
+        for(int i=0; i<array.ndim(); ++i){
+            shape.push_back(buf.shape[i]);
+        }
+        temp = Tensor(shape, EAGLEEYE_INT32, DataFormat::AUTO, buf.ptr);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<float>().char_()){
+        py::buffer_info buf = array.request();
+
+        std::vector<int64_t> shape;
+        for(int i=0; i<array.ndim(); ++i){
+            shape.push_back(buf.shape[i]);
+        }            
+        temp = Tensor(shape, EAGLEEYE_FLOAT32, DataFormat::AUTO, buf.ptr);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<double>().char_()){
+        py::buffer_info buf = array.request();
+
+        std::vector<int64_t> shape;
+        for(int i=0; i<array.ndim(); ++i){
+            shape.push_back(buf.shape[i]);
+        }            
+        temp = Tensor(shape, EAGLEEYE_DOUBLE, DataFormat::AUTO, buf.ptr);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<unsigned char>().char_()){
+        py::buffer_info buf = array.request();
+
+        std::vector<int64_t> shape;
+        for(int i=0; i<array.ndim(); ++i){
+            shape.push_back(buf.shape[i]);
+        }            
+        temp = Tensor(shape, EAGLEEYE_UCHAR, DataFormat::AUTO, buf.ptr);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<bool>().char_()){
+        py::buffer_info buf = array.request();
+
+        std::vector<int64_t> shape;
+        for(int i=0; i<array.ndim(); ++i){
+            shape.push_back(buf.shape[i]);
+        }            
+        temp = Tensor(shape, EAGLEEYE_BOOL, DataFormat::AUTO, buf.ptr);
+    }
+    else {
+        EAGLEEYE_LOGE("tensor type not support");
+        return false;
+    }
+
+    // 保存Tensor
+    EagleeyeIO yard_io;
+    std::string c_file_path = py::cast<std::string>(file_path);
+    yard_io.createWriteHandle(c_file_path.c_str(), false, WRITE_BINARY_MODE);
+    // 形状
+    int64_t dim_num = temp.dims().size();
+    yard_io.write(&dim_num, sizeof(int64_t));
+
+    std::vector<int64_t> tensor_shape = temp.dims().data();
+    yard_io.write(tensor_shape.data(), tensor_shape.size()*sizeof(int64_t));
+
+    // 类型
+    int64_t tensor_type = (int64_t)(temp.type());
+    yard_io.write(&tensor_type, sizeof(int64_t));
+
+    // 数据
+    yard_io.write(temp.cpu(), temp.blobsize());
+
+    yard_io.destroyHandle();
+    return true;
+}
+
+py::object load_data(py::str file_path, py::str dtype){
+    std::string c_file_path = py::cast<std::string>(file_path);
+    if(!isfileexist(c_file_path.c_str())){
+        EAGLEEYE_LOGE("File %s dont exist", c_file_path.c_str());
+        return py::object();
+    }
+
+    std::ifstream i_file_handle;
+    i_file_handle.open(c_file_path.c_str(),std::ios::binary);
+    int size = 0;
+    i_file_handle.read((char*)(&size),sizeof(int));
+    
+    std::string c_dtype = py::cast<std::string>(dtype);
+    if(c_dtype == "float32"){
+        // float
+        py::array_t<float> info(py::detail::any_container<ssize_t>(std::vector<py::ssize_t>{size/sizeof(float)}));
+        i_file_handle.read((char*)(info.request().ptr), sizeof(char)*size);
+        i_file_handle.close();
+
+        return info;
+    }
+    else if(c_dtype == "double"){
+        // double
+        py::array_t<double> info(py::detail::any_container<ssize_t>(std::vector<py::ssize_t>{size/sizeof(double)}));
+        i_file_handle.read((char*)(info.request().ptr), sizeof(char)*size);
+        i_file_handle.close();  
+
+        return info;    
+    }
+    else if(c_dtype == "int32"){
+        // int32
+        py::array_t<int32_t> info(py::detail::any_container<ssize_t>(std::vector<py::ssize_t>{size/sizeof(int32_t)}));
+        i_file_handle.read((char*)(info.request().ptr), sizeof(char)*size);
+        i_file_handle.close();
+
+        return info;
+    }
+    else if(c_dtype == "uint8"){
+        // int32
+        py::array_t<unsigned char> info(py::detail::any_container<ssize_t>(std::vector<py::ssize_t>{size/sizeof(unsigned char)}));
+        i_file_handle.read((char*)(info.request().ptr), sizeof(char)*size);
+        i_file_handle.close();
+
+        return info;
+    }
+    else if(c_dtype == "bool"){
+        py::array_t<bool> info(py::detail::any_container<ssize_t>(std::vector<py::ssize_t>{size/sizeof(bool)}));
+        i_file_handle.read((char*)(info.request().ptr), sizeof(char)*size);
+        i_file_handle.close();
+
+        return info; 
+    }  
+    else{
+        i_file_handle.close();
+        return py::object();
+    }
+}
+
+bool save_data(py::str file_path, py::object t){
+    // 解析成Tensor
+    auto array = pybind11::array::ensure(t);
+    char* ptr = NULL;
+    int size = 0;
+    if (array.dtype().char_() == pybind11::dtype::of<int32_t>().char_()){
+        py::buffer_info buf = array.request();
+        size = 1;
+        for(int i=0; i<array.ndim(); ++i){
+            size *= buf.shape[i];
+        }
+        ptr = (char*)buf.ptr;
+        size = size * sizeof(int32_t);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<float>().char_()){
+        py::buffer_info buf = array.request();
+        size = 1;
+        for(int i=0; i<array.ndim(); ++i){
+            size *= buf.shape[i];
+        }
+        ptr = (char*)buf.ptr;
+        size = size * sizeof(float);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<double>().char_()){
+        py::buffer_info buf = array.request();
+        size = 1;
+        for(int i=0; i<array.ndim(); ++i){
+            size *= buf.shape[i];
+        }
+        ptr = (char*)buf.ptr;
+        size = size * sizeof(double);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<unsigned char>().char_()){
+        py::buffer_info buf = array.request();
+        size = 1;
+        for(int i=0; i<array.ndim(); ++i){
+            size *= buf.shape[i];
+        }
+        ptr = (char*)buf.ptr;
+        size = size * sizeof(unsigned char);
+    }
+    else if(array.dtype().char_() == pybind11::dtype::of<bool>().char_()){
+        py::buffer_info buf = array.request();
+        size = 1;
+        for(int i=0; i<array.ndim(); ++i){
+            size *= buf.shape[i];
+        }
+        ptr = (char*)buf.ptr;
+        size = size * sizeof(bool);
+    }
+    else {
+        EAGLEEYE_LOGE("data type not support");
+        return false;
+    }
+
+    std::string c_file_path = py::cast<std::string>(file_path);
+    EagleeyeIO yard_io;
+    yard_io.createWriteHandle(c_file_path, false, WRITE_BINARY_MODE);
+    yard_io.write(ptr, size);
+    yard_io.destroyHandle();
+    return true;
+}
+
 
 PYBIND11_MODULE(eagleeye, m) {
-    m.doc() = "pybind11 pipline/node/op ext"; // optional module docstring
+    m.doc() = "pybind11 pipline/node/op/io ext"; // optional module docstring
     m.def("node_execute", &node_execute);
     m.def("op_execute", &op_execute);
+    m.def("load_tensor_list", &load_tensor_list);
+    m.def("save_tensor_list", &save_tensor_list);
+    m.def("load_tensor", &load_tensor);
+    m.def("save_tensor", &save_tensor);
+    m.def("load_data", &load_data);
+    m.def("save_data", &save_data);
 }
 }

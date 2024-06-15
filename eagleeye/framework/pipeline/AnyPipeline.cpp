@@ -233,6 +233,10 @@ void AnyPipeline::getPipelineName(char* name){
     memcpy(name, this->m_name.c_str(), sizeof(char)*this->m_name.length());
 }
 
+std::string AnyPipeline::getPipelineName(){
+    return this->m_name;
+}
+
 const char* AnyPipeline::getPipelineVersion(){
     std::map<std::string, std::string>::iterator iter,iend(AnyPipeline::m_pipeline_version.end());
     for(iter = AnyPipeline::m_pipeline_version.begin(); iter!=iend; ++iter){
@@ -639,7 +643,7 @@ void AnyPipeline::setParameter(const char* node_name,
     // try 2: 模糊匹配
     if(!issuccess){
         for(iter = this->m_monitor_params.begin(); iter != iend; ++iter){
-            if(startswith(iter->first, node_name) && endswith(iter->first, param_name)){
+            if((startswith(iter->first, node_name) && endswith(iter->first, param_name)) || (endswith(iter->first, node_name) && endswith(iter->first, param_name))){
                 iter->second->setVar(value);
                 issuccess = true;
             }
@@ -774,7 +778,7 @@ void AnyPipeline::setInput(const char* node_name, void* data, MetaData meta){
         EAGLEEYE_LOGE("Node name is empty.");
         return;
     }
-    EAGLEEYE_LOGD("Set pipeline input %s.", node_name);
+    EAGLEEYE_LOGV("Set pipeline input %s.", node_name);
     std::string input_key = std::string(node_name);    
     int port = 0;
     if(input_key.find("/") != std::string::npos){
@@ -790,7 +794,7 @@ void AnyPipeline::setInput(const char* node_name, void* data, MetaData meta){
 
     this->m_input_nodes[input_key]->getOutputPort(port)->setData(data, meta);
     this->m_input_nodes[input_key]->modified();
-    EAGLEEYE_LOGD("Finish set signal content.");
+    EAGLEEYE_LOGV("Finish set signal content.");
 }
 
 void AnyPipeline::setInput(const char* node_name, std::string from_pipeline_name, std::string from_node_name){
@@ -859,6 +863,26 @@ void AnyPipeline::setInput(const char* node_name, std::string from_register_node
     this->m_input_nodes[input_key]->getOutputPort(port)->copy(register_sig);
 }
 
+void AnyPipeline::setInputPort(const char* node_name, int node_port, AnySignal* input_sig){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("Node name is empty.");
+        return;
+    }
+
+    std::string input_key = std::string(node_name);    
+    int port = node_port;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+    if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
+        EAGLEEYE_LOGE("Node %s is not input node.", node_name);
+        return;
+    }
+
+    this->m_input_nodes[input_key]->setInputPort(input_sig, port);
+}
 
 void AnyPipeline::getOutput(const char* node_name, 
                             void*& data, 
@@ -919,37 +943,44 @@ void AnyPipeline::getNodeOutput(const char* node_name, void*& data, size_t*& dat
 
 void AnyPipeline::getPipelineInputs(std::vector<std::string>& input_nodes, 
                                     std::vector<std::string>& input_types, 
+                                    std::vector<std::string>& input_categorys, 
                                     std::vector<std::string>& input_sources){
     // input_key - type - source
     std::map<std::string, AnyNode*>::iterator iter,iend(this->m_input_nodes.end());
     for(iter = this->m_input_nodes.begin(); iter != iend; ++iter){
         input_nodes.push_back(iter->first);
         input_types.push_back(iter->second->getOutputPort(0)->getSignalTypeName());
+        input_categorys.push_back(std::to_string(int(iter->second->getOutputPort(0)->getSignalCategory())));
         input_sources.push_back(iter->second->getOutputPort(0)->getSignalTarget());
     }
 }
 
 void AnyPipeline::getPipelineOutputs(std::vector<std::string>& output_nodes,
                                      std::vector<std::string>& output_types,
+                                     std::vector<std::string>& output_categorys,
                                      std::vector<std::string>& output_targets){
     // output_key - type - target
     std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
     for(iter = this->m_output_nodes.begin(); iter != iend; ++iter){
         output_nodes.push_back(iter->first);
         std::string signal_type = "";
+        std::string signal_category = "";
         std::string signal_target = "";
         for(int index = 0; index<iter->second->getNumberOfOutputSignals(); ++index){
             if(index != iter->second->getNumberOfOutputSignals() - 1){
                 signal_type += std::string(iter->second->getOutputPort(index)->getSignalTypeName()) + "/";
+                signal_category += std::to_string(int(iter->second->getOutputPort(index)->getSignalCategory())) + "/";
                 signal_target += std::string(iter->second->getOutputPort(index)->getSignalTarget()) + "/";
             }
             else{
                 signal_type += std::string(iter->second->getOutputPort(index)->getSignalTypeName());
+                signal_category += std::to_string(int(iter->second->getOutputPort(index)->getSignalCategory()));
                 signal_target += std::string(iter->second->getOutputPort(index)->getSignalTarget());
             }
         }
 
         output_types.push_back(signal_type);
+        output_categorys.push_back(signal_category);
         output_targets.push_back(signal_target);
     }
 }

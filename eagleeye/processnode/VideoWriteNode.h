@@ -17,6 +17,8 @@ class AVCodec;
 class AVCodecContext;
 class AVFrame;
 class AVPacket;
+class AVFormatContext;
+class AVStream;
 namespace eagleeye{
 class VideoWriteNode:public ImageIONode<ImageSignal<Array<unsigned char, 3>>>, DynamicNodeCreator<VideoWriteNode>{
 public:
@@ -93,14 +95,54 @@ public:
     void getFPS(int& fps);
 
     /*
+     * @brief only write once
+     */
+    void enableOnlyOnce();
+    void disableOnlyOnce();
+
+    /*
      * @brief 设置序列标记（加入序列命名）
      */
     void setSerial(bool is_serial);
 
     /**
+     * @brief 是否成功写入完成
+     */
+    bool isSuccessWrite(){return m_is_success_write;};
+
+    /**
      * @brief get serial number
      */
     int getSerialNum();
+
+    /*
+     * @brief minio
+     */
+    void setBaseURL(std::string url);
+
+    void getBaseURL(std::string& url);
+
+    void setAccessKey(std::string access_key);
+
+    void getAccessKey(std::string& access_key);
+
+    void setSecretKey(std::string secret_key);
+
+    void getSecretKey(std::string& secret_key);
+
+    void setBucketName(std::string bucket_name);
+
+    void getBucketName(std::string& bucket_name);
+
+    void setIsUpload(bool upload);
+
+    void getIsUpload(bool& upload);
+
+    void setIsSecure(bool secure);
+
+    void getIsSecure(bool& secure);
+
+    void forceWriteFinish();
 
 private:
     VideoWriteNode(const VideoWriteNode&);
@@ -111,6 +153,11 @@ private:
      * 
      */
     void writeFinish(AnySignal* out_sig=NULL);
+
+    /**
+      * @brief h264 to mp4 for rk
+      */
+    bool h264Muxing(char*packet, std::uint64_t packet_size);
 
     bool m_is_init;
     bool m_is_finish;
@@ -125,8 +172,9 @@ private:
     int m_manually_start;
     int m_manually_pause;
 
-    std::ofstream m_output_file;
-    AVCodecContext* m_codec_cxt;
+    AVFormatContext* m_fmt_context_ff = nullptr;
+    AVStream* m_stream_ff = nullptr;
+    AVCodecContext* m_codec_cxt = nullptr;
     const AVCodec* m_encoder;
     AVFrame *m_frame;
     AVPacket *m_pkt;
@@ -150,6 +198,24 @@ private:
 
     bool m_is_serial;
     int m_video_count;
+
+    //for rk h264 to mp4
+    AVFormatContext* m_fmt_context = nullptr;
+    AVStream* m_stream = nullptr;
+    AVCodecContext* m_codec_ctx = nullptr;
+    AVPacket* m_av_packet = nullptr;
+
+    //for upload for minio
+    std::string m_base_url;
+    std::string m_access_key;
+    std::string m_secret_key;
+    std::string m_bucket_name;
+    bool uploader(const std::string &src_file);
+    bool m_is_upload = false;
+    bool m_is_secure = false;
+
+    bool m_is_success_write;
+    bool m_is_only_once;
 };
 }
 #endif

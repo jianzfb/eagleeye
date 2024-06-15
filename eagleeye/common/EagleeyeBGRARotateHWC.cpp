@@ -6,7 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <algorithm>
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #endif
 
@@ -30,7 +30,7 @@ void bgra_rotate_hwc(const unsigned char* src, unsigned char* dst, int w_in, int
     }
 }
 
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 /*
 bgr1 bgr2 bgr3
 bgr4 bgr5 bgr6

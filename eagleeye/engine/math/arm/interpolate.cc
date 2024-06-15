@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <cstring>
 
 namespace eagleeye {
 namespace math {

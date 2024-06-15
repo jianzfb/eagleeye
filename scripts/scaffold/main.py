@@ -276,6 +276,7 @@ def main():
       shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'ccache.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'ccache.cmake'))
       shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'FindTensorRT.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'FindTensorRT.cmake'))
       shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'FindPythonByEnv.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'FindPythonByEnv.cmake'))
+      shutil.copy(os.path.join(os.path.dirname(__file__), 'cmake', 'grpc.cmake'), os.path.join(os.curdir, "%s_plugin"%project_name, 'cmake', 'grpc.cmake'))
 
       # 拷贝头文件
       shutil.copyfile(os.path.join(FLAGS.eagleeye(), "include", "eagleeye", "common", "EagleeyeModule.h"),
@@ -342,6 +343,16 @@ def main():
                                 paddlelite=FLAGS.paddlelite())
 
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "run.sh"), 'w') as fp:
+        fp.write(output)
+
+      # VS CODE - setup.sh
+      template = env.get_template('project_setup.template')
+      output = template.render(project=project_name,
+                                eagleeye=FLAGS.eagleeye(),
+                                abi=FLAGS.abi().split(',')[0],
+                                paddlelite=FLAGS.paddlelite())
+
+      with open(os.path.join(os.curdir, "%s_plugin"%project_name, "setup.sh"), 'w') as fp:
         fp.write(output)
 
       # 生成数据文件夹 data

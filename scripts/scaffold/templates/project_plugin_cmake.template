@@ -3,7 +3,7 @@ PROJECT({{project}})
 cmake_minimum_required(VERSION 3.5)
 
 include(cmake/ccache.cmake)
-add_definitions(-std=c++11)
+add_definitions(-std=c++17)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}     -Wall -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -O3")
 
@@ -37,6 +37,8 @@ if(BUILD_PYTHON_MODULE)
     include(FindPythonByEnv)
     add_subdirectory({{eagleeye}}/3rd/pybind11 ./pybind11)
 endif()
+
+# grpc code
 
 # core sdk
 include_directories({{eagleeye}}/include/eagleeye/)
@@ -162,6 +164,9 @@ set({{project}}_demo_SRC
     ./{{project}}_demo.cpp)
 add_executable({{project}}_demo {{'${'}}{{project}}_demo_SRC{{'}'}}) 
 target_link_libraries({{project}}_demo {{project}})
+if (DEFINED _REFLECTION)
+target_link_libraries({{project}}_demo ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF})
+endif()
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold")
 endif()
 

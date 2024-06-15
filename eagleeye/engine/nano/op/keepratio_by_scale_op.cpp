@@ -1,7 +1,7 @@
 #include "eagleeye/engine/nano/op/keepratio_by_scale_op.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include <fstream>
-#if defined(__ANDROID__) || defined(ANDROID)  
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
 #include "eagleeye/engine/math/arm/interpolate.h"
 #else
 #include "eagleeye/engine/math/x86/interpolate.h"
@@ -89,7 +89,7 @@ int KeepRatioByScaleOp::runOnCpu(const std::vector<Tensor>& input){
         unsigned char* output_ptr = this->m_outputs[0].cpu<unsigned char>();
         memset(output_ptr, 0, after_image_canvas_h*after_image_canvas_w*3);
         unsigned char* temp_ptr = this->m_temp.cpu<unsigned char>();
-#if defined(__ANDROID__) || defined(ANDROID)    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
         math::arm::bilinear_rgb_8u_3d_interp(
             image_ptr,
             temp_ptr,
@@ -133,7 +133,7 @@ int KeepRatioByScaleOp::runOnCpu(const std::vector<Tensor>& input){
         memset(output_ptr, 0, after_image_canvas_h*after_image_canvas_w);
         unsigned char* temp_ptr = this->m_temp.cpu<unsigned char>();
 
-#if defined(__ANDROID__) || defined(ANDROID)    
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)    
         math::arm::bilinear_gray_8u_1d_interp(
             image_ptr,
             temp_ptr,

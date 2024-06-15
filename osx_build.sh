@@ -21,9 +21,9 @@ make
 cd ..
 
 # 3.step 安装
-if [ -d "./install" ]; 
+if [ -d "./osx-install" ]; 
 then
-  rm -rf install
+  rm -rf osx-install
 fi
 mkdir include
 
@@ -37,16 +37,16 @@ else
 fi
 
 
-mkdir install
-cd install
+mkdir osx-install
+cd osx-install
 mkdir libs
 cd ..
-mv include install/
-mv bin/* install/libs/
+mv include osx-install/
+mv bin/* osx-install/libs/
 rm -rf bin
 
 # 4.step 第三方库
-cd install
+cd osx-install
 # 第三方代码库
 mkdir 3rd
 cp -r ../eagleeye/3rd/eigen 3rd/
@@ -56,4 +56,4 @@ cp -r  ../eagleeye/3rd/libyuv/lib/osx/X86-64/* libs/X86-64/
 cd ..
 
 # 5.step 脚本工具
-cp -r scripts install/
+cp -r scripts osx-install/

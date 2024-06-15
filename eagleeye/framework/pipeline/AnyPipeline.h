@@ -90,6 +90,7 @@ public:
      * @param name 
      */
     void getPipelineName(char* name);
+    std::string getPipelineName();
 
     /**
      * @brief Get the Pipeline Version object
@@ -275,6 +276,11 @@ public:
     void setInput(const char* node_name, std::string from_pipeline_name, std::string from_node_name);
 
     /**
+     * @brief Set the Pipeline Input
+     */
+    void setInputPort(const char* node_name, int node_port, AnySignal* input_sig);
+
+    /**
      * @brief Get the Node Output object
      * 
      * @param node_name 
@@ -305,6 +311,7 @@ public:
      */
     void getPipelineInputs(std::vector<std::string>& input_nodes, 
                            std::vector<std::string>& input_types, 
+                           std::vector<std::string>& input_categorys, 
                            std::vector<std::string>& input_sources);
     
     /**
@@ -316,6 +323,7 @@ public:
      */
     void getPipelineOutputs(std::vector<std::string>& output_nodes,
                             std::vector<std::string>& output_types,
+                            std::vector<std::string>& output_categorys,
                             std::vector<std::string>& output_targets);
     
     /**

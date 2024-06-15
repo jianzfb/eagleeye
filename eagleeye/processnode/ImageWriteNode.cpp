@@ -6,7 +6,7 @@
 #include "eagleeye/framework/pipeline/AnyMonitor.h"
 #include "eagleeye/common/EagleeyeStr.h"
 #include "eagleeye/framework/pipeline/EmptySignal.h"
-#include "eagleeye/3rd/pnglib/png.h"
+#include "png.h"
 
 namespace eagleeye
 {

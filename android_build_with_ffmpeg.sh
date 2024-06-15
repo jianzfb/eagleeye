@@ -14,9 +14,9 @@ mkdir build
 cd build
 # arm64编译
 if [ "$1"x = "app"x ]; then
-cmake -DCMAKE_BUILD_TYPE=Release -DLITE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 -DANDROID_APP=ON -DWITH_OPENGL=ON -DFFMPEG=$2 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DLITE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-24 -DANDROID_APP=ON -DWITH_OPENGL=ON -DFFMPEG=$2 ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DLITE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-23 -DWITH_OPENGL=ON -DFFMPEG=$1 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DLITE=ON -DCMAKE_TOOLCHAIN_FILE=${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_ARM_NEON=ON -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL=android-24 -DWITH_OPENGL=ON -DFFMPEG=$1 ..
 
 fi
 # arm32编译
@@ -29,9 +29,9 @@ make
 cd ..
 
 # 3.step 安装
-if [ -d "./install" ]; 
+if [ -d "./android-install" ]; 
 then
-  rm -rf install
+  rm -rf android-install
 fi
 mkdir include
 
@@ -45,16 +45,16 @@ else
 fi
 
 
-mkdir install
-cd install
+mkdir android-install
+cd android-install
 mkdir libs
 cd ..
-mv include install/
-mv bin/* install/libs/
+mv include android-install/
+mv bin/* android-install/libs/
 rm -rf bin
 
 # 4.step 第三方库（opencl）
-cd install
+cd android-install
 mkdir 3rd
 cp -r ../eagleeye/3rd/opencl 3rd/
 cp -r ../eagleeye/3rd/eigen 3rd/
@@ -63,4 +63,4 @@ cp -r ../eagleeye/3rd/libyuv 3rd/
 cd ..
 
 # 5.step 脚本工具
-cp -r scripts install/
+cp -r scripts android-install/

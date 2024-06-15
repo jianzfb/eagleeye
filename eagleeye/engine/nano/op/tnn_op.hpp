@@ -199,7 +199,7 @@ public:
         // 输入
         bool input_is_ready = true;
         for(int input_i=0; input_i<m_input_names.size(); ++input_i){
-            if(input[input_i].empty()){
+            if(input[input_i].empty() || input[input_i].dims()[0] == 0){
                 input_is_ready = false;
                 break;
             }

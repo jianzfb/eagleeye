@@ -2,6 +2,7 @@
 #define _ANYNODE_H_
 
 #include "eagleeye/common/EagleeyeMacro.h"
+#include "eagleeye/common/EagleeyeTime.h"
 #include "eagleeye/framework/pipeline/AnyUnit.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/framework/EagleeyeTimeStamp.h"
@@ -77,7 +78,9 @@ public:
 	 *	@brief some functions about input signals
 	 */
 	virtual void addInputPort(AnySignal* sig);
+	void addInputPort(void* sig);
 	virtual void setInputPort(AnySignal* sig,int index=0);
+	void setInputPort(void* sig, int index=0);
 	virtual void removeInputPort(AnySignal* sig);
 	virtual void removeInputPort(int index);
 	void clearInputPort(int index);
@@ -354,6 +357,7 @@ public:
 	 * @brief set callback
 	 */
 	virtual void setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){};
+	virtual void setCallback(std::function<void(std::string)> callback) {};
 
 	/**
 	 * @brief Set the Resource Folder object
@@ -449,6 +453,7 @@ protected:
 	NodeCategory m_node_category;
 
 	std::vector<AnyNode*> m_aux_nodes;
+	bool m_get_monitor_flag;	// ...
 
 private:
 	AnyNode(const AnyNode&);
@@ -462,7 +467,6 @@ private:
 
 	bool m_init_once;			// only init once flag
 
-	bool m_get_monitor_flag;	// ...
 	// bool m_feadback_flag;		// ...
 	bool m_finish_flag;
 	bool m_load_config_flag;	// ...
@@ -472,6 +476,7 @@ private:
 
 	AnyPipeline* m_pipeline;
 	static std::string m_resource_folder;
+	EagleeyeTimeStatics m_time_statistics;
 };
 }
 

@@ -133,11 +133,11 @@ template<typename Enabled>
 std::string ModelRun<TensorrtRun, Enabled>::serializeEngineOptions(const Options &options, const std::string& onnxModelPath) {
     const auto filenamePos = onnxModelPath.find_last_of('/') + 1;
     std::string engineName = onnxModelPath.substr(filenamePos, onnxModelPath.find_last_of('.') - filenamePos) + ".engine";
-    if(endswith(this->m_writable_path, "/")){
-        engineName = this->m_writable_path + engineName;
+    if(endswith(this->getModelFolder(), "/")){
+        engineName = this->getModelFolder() + engineName;
     }
     else{
-        engineName = this->m_writable_path + std::string("/") + engineName;
+        engineName = this->getModelFolder() + std::string("/") + engineName;
     }
 
     // Add the GPU device name to the file to ensure that the model is only used on devices with the exact same GPU

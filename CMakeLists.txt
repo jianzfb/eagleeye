@@ -42,6 +42,18 @@ elseif(DEFINED X86_ABI)
     endif()
 
     link_libraries(-lz)
+elseif(DEFINED ARM_ABI)
+    message(STATUS "CONFIGURE arm")
+    add_definitions(-DEAGLEEYE_NEON_OPTIMIZATION)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${eagleeye_SOURCE_DIR}/bin/${ARM_ABI})
+    set(EXECUTABLE_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ARM_ABI})
+    set(LIBRARY_OUTPUT_PATH ${eagleeye_SOURCE_DIR}/bin/${ARM_ABI})
+
+    if(BUILD_PYTHON_MODULE)
+        include(FindPythonByEnv)
+        add_subdirectory(${eagleeye_SOURCE_DIR}/eagleeye/3rd/pybind11)
+    endif()
+    link_libraries(-lz)
 else()
     # OSX
     message(STATUS "CONFIGURE OSX")
@@ -60,6 +72,7 @@ endif()
 include_directories(${eagleeye_SOURCE_DIR})
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/eigen)
+link_directories(${EXECUTABLE_OUTPUT_PATH})
 
 
 if(DEFINED LITE)
@@ -73,7 +86,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
-    # eagleeye/processnode/VideoReadNode.cpp
+    eagleeye/processnode/VideoReadNode.cpp
     eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
@@ -203,16 +216,31 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
     eagleeye/engine/nano/op/image_rotate_op.cpp
     eagleeye/engine/nano/op/auto_keepratio_op.cpp    
+    eagleeye/engine/nano/op/face_id_op.cpp
+    eagleeye/engine/nano/op/kvmemory_w_op.cpp
+    eagleeye/engine/nano/op/kvmemory_r_op.cpp
+    eagleeye/engine/nano/op/kvmemory_op.cpp
     eagleeye/engine/math/common/pixel_affine.cpp
     eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
+    eagleeye/common/EagleeyeMessageCenter.cpp
+    eagleeye/common/EagleeyeRegisterCenter.cpp
+    eagleeye/common/EagleeyeCameraCenter.cpp
     eagleeye/processnode/ImageSelect.cpp
     eagleeye/processnode/RTSPReadNode.cpp
     eagleeye/processnode/SnapshotNode.cpp
-    eagleeye/render/RenderContext.cpp)
+    eagleeye/render/RenderContext.cpp
+    eagleeye/processnode/AndroidCameraNode.cpp
+    eagleeye/processnode/PipelineNode.cpp
+    eagleeye/processnode/CacheNode.cpp
+    eagleeye/processnode/ForNode.cpp
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/MessageNode.cpp
+    eagleeye/processnode/USBCameraNode.cpp
+    eagleeye/processnode/V4L2CameraNode.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
@@ -224,7 +252,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ParallelNode.cpp
     eagleeye/processnode/IfElseNode.cpp
     eagleeye/processnode/SkipNode.cpp
-    # eagleeye/processnode/VideoReadNode.cpp
+    eagleeye/processnode/VideoReadNode.cpp
     eagleeye/processnode/VideoWriteNode.cpp
     eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
@@ -355,17 +383,33 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/inv_keepratio_layout_op.cpp
     eagleeye/engine/nano/op/image_rotate_op.cpp
     eagleeye/engine/nano/op/auto_keepratio_op.cpp
+    eagleeye/engine/nano/op/face_id_op.cpp
+    eagleeye/engine/nano/op/kvmemory_w_op.cpp
+    eagleeye/engine/nano/op/kvmemory_r_op.cpp
+    eagleeye/engine/nano/op/kvmemory_op.cpp
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
     eagleeye/processnode/RTSPReadNode.cpp
     eagleeye/processnode/SnapshotNode.cpp
     eagleeye/common/EagleeyeImageUti.cpp
-    eagleeye/processnode/ImageSelect.cpp)
+    eagleeye/common/EagleeyeMessageCenter.cpp
+    eagleeye/common/EagleeyeRegisterCenter.cpp
+    eagleeye/common/EagleeyeCameraCenter.cpp
+    eagleeye/processnode/ImageSelect.cpp
+    eagleeye/processnode/AndroidCameraNode.cpp
+    eagleeye/processnode/PipelineNode.cpp    
+    eagleeye/processnode/CacheNode.cpp
+    eagleeye/processnode/ForNode.cpp
+    eagleeye/processnode/PipelineNode.cpp
+    eagleeye/processnode/SerializeNode.cpp
+    eagleeye/processnode/MessageNode.cpp
+    eagleeye/processnode/USBCameraNode.cpp
+    eagleeye/processnode/V4L2CameraNode.cpp)
 endif()
 
 # code related with arm
-if(DEFINED ANDROID_ABI)
+if(DEFINED ANDROID_ABI OR DEFINED ARM_ABI)
     set(EAGLEEYE_SRC 
         ${EAGLEEYE_SRC} 
         eagleeye/engine/math/arm/elementwise.cc
@@ -442,12 +486,6 @@ if(DEFINED ANDROID_ABI AND DEFINED WITH_OPENGL)
     include_directories(${GLES3_INCLUDE_DIR})    
 endif()
 
-find_package(pnglib)
-if(pnglib_FOUND)
-    message(STATUS "message find pnglib")
-    include_directories(${pnglib_INCLUDE_DIRS})
-endif()
-
 
 if(BUILD_PYTHON_MODULE)
     set(EAGLEEYE_SRC 
@@ -469,6 +507,22 @@ if(OpenMP_CXX_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+if(CUDA)
+    add_definitions(-DEAGLEEYE_CUDA)
+    message(STATUS "Define CUDA")
+    include_directories("/usr/local/cuda-12.1/targets/x86_64-linux/include")
+    find_library(CUDART cudart PATHS /usr/local/cuda-12.1/lib64/)
+    target_link_libraries(eagleeye ${CUDART})
+    find_library(EXEC_NPPICC nppicc PATHS /usr/local/cuda-12.1/lib64/)
+    target_link_libraries(eagleeye ${EXEC_NPPICC})
+endif()
+
+if(MINIO)
+    add_definitions(-DEAGLEEYE_MINIO)
+    message(STATUS "Define MINIO")
+    find_package(miniocpp REQUIRED)
+    target_link_libraries(eagleeye miniocpp::miniocpp)
+endif()
 
 if(DEFINED FFMPEG)
     message(STATUS "Define FFMPEG")
@@ -482,7 +536,7 @@ if(DEFINED FFMPEG)
                                 ${FFMPEG}/install/lib/libavformat.so
                                 ${FFMPEG}/install/lib/libavutil.so
                                 ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)    
+                                ${FFMPEG}/install/lib/libswscale.so)
     else()
         target_link_libraries(eagleeye 
                                 ${FFMPEG}/install/lib/libavcodec.so
@@ -504,30 +558,21 @@ if(DEFINED RKCHIP)
     include_directories(${RKCHIP}/mpp/osal/inc/)
     include_directories(${RKCHIP}/librga/include)
 
-    if(BUILD_PYTHON_MODULE)
-        target_link_libraries(eagleeye PRIVATE
-                                ${RKCHIP}/mpp/mpp/libmpp.so
-                                ${RKCHIP}/mpp/utils/libutils.a
-                                ${RKCHIP}/mpp/osal/libosal.a
-                                ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)    
-    else()
+    if(DEFINED ANDROID_ABI)
         target_link_libraries(eagleeye 
-                                ${RKCHIP}/mpp/mpp/libmpp.so
-                                ${RKCHIP}/mpp/utils/libutils.a
-                                ${RKCHIP}/mpp/osal/libosal.a
+                                ${RKCHIP}/mpp/build/android/mpp/librockchip_mpp.so
+                                ${RKCHIP}/mpp/build/android/utils/libutils.a
+                                ${RKCHIP}/mpp/build/android/osal/libosal.a
                                 ${RKCHIP}/librga/libs/AndroidNdk/arm64-v8a/librga.so)
-    endif()
-
-
-endif()
-
-if(pnglib_FOUND)
-    if(BUILD_PYTHON_MODULE)
-        target_link_libraries(eagleeye PRIVATE ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
-    else()
-       target_link_libraries(eagleeye ${LIBRARY_OUTPUT_PATH}/${pnglib_LIBRARIES})
+    elseif(DEFINED ARM_ABI)
+        target_link_libraries(eagleeye 
+                        ${RKCHIP}/mpp/build/linux/aarch64/mpp/librockchip_mpp.so
+                        ${RKCHIP}/mpp/build/linux/aarch64/utils/libutils.a
+                        ${RKCHIP}/mpp/build/linux/aarch64/osal/libosal.a
+                        ${RKCHIP}/librga/libs/Linux/gcc-aarch64/librga.so)
     endif()
 endif()
+
 
 if(WITH_OPENCL)
     if(DEFINED ANDROID_ABI)
@@ -547,30 +592,62 @@ if(DEFINED ANDROID_ABI AND DEFINED WITH_OPENGL)
     target_link_libraries(eagleeye EGL)
 endif()
 
-if(DEFINED ANDROID_ABI)
-    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/${ANDROID_ABI}/libyuv.so)
-    set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
-elseif(DEFINED X86_ABI)
-    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/linux/${X86_ABI}/libyuv.so)
-    set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
-else()
-    set(LIBYUV_SDK_LIB_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/lib/osx/${OSX_ABI}/libyuv.dylib)
-    set(LIBYUV_SDK_INCLUDE_PATH ${eagleeye_SOURCE_DIR}/eagleeye/3rd/libyuv/include)
+set(HAD_LIBYUV TRUE)
+if(HAD_LIBYUV)
+    set(LIBYUV_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eagleeye/3rd/libyuv)
+    if(DEFINED ANDROID_ABI)
+        set(LIBYUV_BINARY_DIR ${LIBYUV_SOURCE_DIR}/${ANDROID_ABI})
+    elseif(DEFINED X86_ABI)
+        set(LIBYUV_BINARY_DIR ${LIBYUV_SOURCE_DIR}/${X86_ABI})
+    elseif(DEFINED ARM_ABI)
+        set(LIBYUV_BINARY_DIR ${LIBYUV_SOURCE_DIR}/${ARM_ABI})
+    else()
+        set(LIBYUV_BINARY_DIR ${LIBYUV_SOURCE_DIR}/${OSX_ABI})
+    endif()
+    message(STATUS "libyuv output dir: ${LIBYUV_BINARY_DIR}")
+    add_subdirectory(${LIBYUV_SOURCE_DIR} ${LIBYUV_BINARY_DIR})
+    target_include_directories(eagleeye PRIVATE ${LIBYUV_SOURCE_DIR}/include)
+    INCLUDE (FindJPEG)
+    if(BUILD_PYTHON_MODULE)
+        if (JPEG_FOUND)
+            target_link_libraries(eagleeye PRIVATE yuv_shared libjpeg.so)
+        else()
+            target_link_libraries(eagleeye PRIVATE yuv_shared)
+        endif()
+    else()
+        if (JPEG_FOUND)
+            target_link_libraries(eagleeye yuv_shared libjpeg.so)
+        else()
+            target_link_libraries(eagleeye yuv_shared)
+        endif()
+    endif()
 endif()
 
-
-add_library(libyuv SHARED IMPORTED)
-set_target_properties(libyuv PROPERTIES IMPORTED_LOCATION ${LIBYUV_SDK_LIB_PATH})
-include_directories(${LIBYUV_SDK_INCLUDE_PATH})
-
-if(BUILD_PYTHON_MODULE)
-    target_link_libraries(eagleeye PRIVATE libyuv)
-else()
-    target_link_libraries(eagleeye libyuv)
+set(HAS_LIBPNG TRUE)
+if(HAS_LIBPNG)
+    set(LIBPNG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eagleeye/3rd/libpng)
+    if(DEFINED ANDROID_ABI)
+        set(LIBPNG_BIN_DIR ${LIBPNG_SOURCE_DIR}/${ANDROID_ABI})
+    elseif(DEFINED X86_ABI)
+        set(LIBPNG_BIN_DIR ${LIBPNG_SOURCE_DIR}/${X86_ABI})
+    elseif(DEFINED ARM_ABI)
+        set(LIBPNG_BIN_DIR ${LIBPNG_SOURCE_DIR}/${ARM_ABI})
+    else()
+        set(LIBPNG_BIN_DIR ${LIBPNG_SOURCE_DIR}/${OSX_ABI})
+    endif()
+    message(STATUS "libpng output dir: ${LIBPNG_BIN_DIR}")
+    add_subdirectory(${LIBPNG_SOURCE_DIR} ${LIBPNG_BIN_DIR})
+    target_include_directories(eagleeye PRIVATE ${LIBPNG_SOURCE_DIR})
+    target_include_directories(eagleeye PRIVATE ${LIBPNG_BIN_DIR})
+    if(BUILD_PYTHON_MODULE)
+        target_link_libraries(eagleeye PRIVATE png_shared)
+    else()
+        target_link_libraries(eagleeye png_shared)
+    endif()
 endif()
 
 if(DEFINED ANDROID_ABI)
     # android, dont support build_python_module
-    target_link_libraries(eagleeye log)
+    target_link_libraries(eagleeye log mediandk android camera2ndk)
 endif()
 

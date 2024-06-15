@@ -2,7 +2,7 @@
 #include "eagleeye/basic/MatrixMath.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/common/EagleeyeTime.h"
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include "eagleeye/engine/math/arm/interpolate.h"
 #endif
 #include <cmath>
@@ -15,7 +15,7 @@ Matrix<Array<unsigned char, 3>> resize(const Matrix<Array<unsigned char, 3>> img
 	img.offset(offset_r, offset_c);
 
     unsigned char* dst_ptr = (unsigned char*)dst.dataptr();
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     math::arm::bilinear_rgb_8u_3d_interp((unsigned char*)img.dataptr(), dst_ptr,img.cols(), img.rows(),offset_c,offset_r,img.stride(),after_c, after_r);
 #else
 	EAGLEEYE_LOGE("Dont support.");
@@ -30,7 +30,7 @@ Matrix<unsigned char> resize(const Matrix<unsigned char>  img, int after_r,int a
 
     const unsigned char* img_ptr = img.dataptr();
     unsigned char* dst_ptr = dst.dataptr();
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     math::arm::bilinear_gray_8u_1d_interp(img_ptr, dst_ptr,img.cols(), img.rows(),offset_c,offset_r,img.stride(),after_c, after_r);  
 #else
 	EAGLEEYE_LOGE("Dont support.");
@@ -48,7 +48,7 @@ Matrix<float> resize(const Matrix<float>  img,
 
     const float* img_ptr = img.dataptr();
     float* dst_ptr = dst.dataptr();
-#if defined(__ANDROID__) || defined(ANDROID)	
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)	
 	math::arm::bilinear_32f_c1_interp(img_ptr, dst_ptr, img.cols(), img.rows(),offset_c, offset_r, img.stride(), after_c, after_r);
 #else
 	EAGLEEYE_LOGE("Dont support.");
@@ -116,7 +116,7 @@ void resize(const Matrix<Array<unsigned char, 3>> input,
 	int after_r = output.rows();
 
     unsigned char* dst_ptr = (unsigned char*)output.dataptr();
-#if defined(__ANDROID__) || defined(ANDROID)	
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)	
     math::arm::bilinear_rgb_8u_3d_interp((unsigned char*)input.dataptr(), 
 								dst_ptr,
 									input.cols(), 
@@ -140,7 +140,7 @@ void resize(const Matrix<Array<unsigned char, 3>> input,
 	unsigned int offset_r, offset_c;
 	input.offset(offset_r, offset_c);
 
-#if defined(__ANDROID__) || defined(ANDROID)
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
     math::arm::bilinear_rgb_8u_3d_interp((unsigned char*)input.dataptr(), 
 									output,
 									input.cols(), 
@@ -165,7 +165,7 @@ void resize(const Matrix<float> input,
 
     const float* img_ptr = input.dataptr();
     float* dst_ptr = output.dataptr();
-#if defined(__ANDROID__) || defined(ANDROID)	
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)	
 	math::arm::bilinear_32f_c1_interp(img_ptr, 
 							dst_ptr, 
 							input.cols(), 
@@ -189,7 +189,7 @@ void resize(const Matrix<float> input,
 	input.offset(offset_r, offset_c);
 
     const float* img_ptr = input.dataptr();
-#if defined(__ANDROID__) || defined(ANDROID)	
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)	
 	math::arm::bilinear_32f_c1_interp(img_ptr, 
 							output, 
 							input.cols(), 

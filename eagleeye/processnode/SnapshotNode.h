@@ -12,6 +12,10 @@
 #include <iostream>
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 
+class AVCodec;
+class AVCodecContext;
+class AVFrame;
+class AVPacket;
 namespace eagleeye{
 class SnapeshotNode:public AnyNode, DynamicNodeCreator<SnapeshotNode>{
 public:
@@ -60,10 +64,38 @@ public:
      */
     int getSerialNum();
 
+    /*
+     * @brief minio
+     */
+    void setBaseURL(std::string url);
+
+    void getBaseURL(std::string& url);
+
+    void setAccessKey(std::string access_key);
+
+    void getAccessKey(std::string& access_key);
+
+    void setSecretKey(std::string secret_key);
+
+    void getSecretKey(std::string& secret_key);
+
+    void setBucketName(std::string bucket_name);
+
+    void getBucketName(std::string& bucket_name);
+
+    void setIsUpload(bool upload);
+
+    void getIsUpload(bool& upload);
+
+    void setIsSecure(bool secure);
+
+    void getIsSecure(bool& secure);
+
 private:
     SnapeshotNode(const SnapeshotNode&);
     void operator=(const SnapeshotNode&);
     Matrix<Array<unsigned char, 4>> m_c4_image;
+    Matrix<Array<unsigned char, 3>> m_c3_image;
 
     int m_frame_size;
     int m_header_size;
@@ -85,6 +117,21 @@ private:
 
     bool m_is_serial;
     int m_snapshot_count;
+
+    // FFMPEG
+    AVCodecContext* m_codec_cxt;
+    const AVCodec* m_encoder;
+    AVFrame *m_frame;
+    AVPacket *m_pkt;
+
+    //for upload for minio
+    std::string m_base_url;
+    std::string m_access_key;
+    std::string m_secret_key;
+    std::string m_bucket_name;
+    bool uploader(const std::string &src_file);
+    bool m_is_upload = false;
+    bool m_is_secure = false;    
 };
 }
 

@@ -1,5 +1,5 @@
 #include "eagleeye/engine/nano/util/quantization.h"
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
 #include <arm_neon.h>
 #endif
 
@@ -51,7 +51,7 @@ void quant_sym_16b_8b(FixedType* data_in,
         FixedType *ptr_in = data_in + offset;
         FixedOpType *ptr_out = data_out + offset;
 
-#ifdef EAGLEEYE_NEON_OPTIMIZATION
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)
         int32x4_t mul_neon;
         int32x4_t half_value_neon = vdupq_n_u32(QUANTIZER_HALF_DATA_NORM_VALUE);
         int16x8_t in_neon, out_neon;
@@ -107,7 +107,7 @@ void quant_sym_16b_8b(FixedType* data_in,
 //         signed char *ptr_in = data_in + offset;
 //         short *ptr_out = data_out + offset;
 
-// #ifdef EAGLEEYE_NEON_OPTIMIZATION
+// #if defined (__ARM_NEON) || defined (__ARM_NEON__)
 //         if(adjust_multi_value < data_norm_value){
 //             int32x4_t mul_neon;
 //             int32x4_t half_value_neon = vdupq_n_s32(norm_half_add_value);

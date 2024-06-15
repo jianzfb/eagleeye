@@ -238,4 +238,54 @@ bool EagleeyeIO::read(void*& info,int& size)
 
 	return false;
 }
+
+bool EagleeyeIO::write(Tensor tensor){
+	// 形状
+	int64_t dim_num = tensor.dims().size();
+	this->write(&dim_num, sizeof(int64_t));
+
+	std::vector<int64_t> tensor_shape = tensor.dims().data();
+	this->write(tensor_shape.data(), tensor_shape.size()*sizeof(int64_t));
+
+	// 类型
+	int64_t tensor_type = (int64_t)(tensor.type());
+	this->write(&tensor_type, sizeof(int64_t));
+
+	// 数据
+	this->write(tensor.cpu(), tensor.blobsize());
+	return true;
+}
+
+bool EagleeyeIO::read(Tensor& tensor){
+	// 形状
+	int64_t dim_num_array[1];
+	void* dim_num_array_ptr = (void*)dim_num_array;
+	int dim_num_size = 0;
+	this->read(dim_num_array_ptr, dim_num_size);
+
+	// 
+	std::vector<int64_t> tensor_shape(dim_num_array[0]);
+	void* tensor_shape_ptr = (void*)(tensor_shape.data());
+	int tensor_shape_size = 0;
+	this->read(tensor_shape_ptr, tensor_shape_size);
+
+	// 类型
+	int64_t tensor_type_array[1];
+	void* tensor_type_array_ptr = (void*)tensor_type_array;
+	int tensor_type_size = 0;
+	this->read(tensor_type_array_ptr, tensor_type_size);
+
+	// 数据
+	tensor = Tensor(
+		tensor_shape,
+		EagleeyeType(tensor_type_array[0]),
+		DataFormat::AUTO,
+		CPU_BUFFER
+	);
+
+	int tensor_data_size = 0;
+	void* tensor_ptr = tensor.cpu();
+	this->read(tensor_ptr, tensor_data_size);
+	return true;
+}
 }

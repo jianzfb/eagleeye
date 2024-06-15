@@ -15,6 +15,7 @@
 #define EAGLEEYE_LOGI(...) __android_log_print(ANDROID_LOG_INFO,EAGLEEYE_LOG_TAG,__VA_ARGS__)
 #define EAGLEEYE_LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, EAGLEEYE_LOG_TAG, __VA_ARGS__)
 #define EAGLEEYE_LOGE(...) __android_log_print(ANDROID_LOG_ERROR,EAGLEEYE_LOG_TAG,__VA_ARGS__)
+#define EAGLEEYE_LOGV(...) __android_log_print(ANDROID_LOG_VERBOSE,EAGLEEYE_LOG_TAG,__VA_ARGS__)
 #else
 namespace eagleeye{
 enum VERBOSITY_LEVEL{
@@ -29,6 +30,7 @@ enum VERBOSITY_LEVEL{
 void _log_print_info(const char* tag, const char* a, const int b, const char* c, const char *format, ...);
 void _log_print_debug(const char* tag, const char* a, const int b, const char* c, const char *format, ...);
 void _log_print_error(const char* tag, const char* a, const int b, const char* c, const char *format, ...);
+void _log_print_verbose(const char* tag, const char* a, const int b, const char* c, const char *format, ...);
 
 /** initialize verbosity level. */
 bool initVerbosityLevel ();
@@ -39,11 +41,13 @@ bool isVerbosityLevelEnabled (VERBOSITY_LEVEL severity);
 #define EAGLEEYE_LOGI(...) eagleeye::_log_print_info(EAGLEEYE_LOG_TAG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define EAGLEEYE_LOGD(...) eagleeye::_log_print_debug(EAGLEEYE_LOG_TAG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define EAGLEEYE_LOGE(...) eagleeye::_log_print_error(EAGLEEYE_LOG_TAG, __FILE__, __LINE__, __FUNCTION__,__VA_ARGS__)
+#define EAGLEEYE_LOGV(...) eagleeye::_log_print_verbose(EAGLEEYE_LOG_TAG, __FILE__, __LINE__, __FUNCTION__,__VA_ARGS__)
 #endif
 #else
 	#define EAGLEEYE_LOGI(...) 
 	#define EAGLEEYE_LOGD(...) 
 	#define EAGLEEYE_LOGE(...) 
+	#define EAGLEEYE_LOGV(...) 
 	#define EAGLEEYE_ASSERT(condition, ...) ((void)0)
 #endif
 

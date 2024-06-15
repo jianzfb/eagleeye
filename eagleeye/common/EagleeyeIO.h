@@ -5,6 +5,7 @@
 #include "eagleeye/basic/Array.h"
 #include "eagleeye/basic/DynamicArray.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/basic/Tensor.h"
 #include <string>
 #include <fstream>
 
@@ -39,7 +40,9 @@ enum EagleeyeIOMode
 class EagleeyeIO
 {
 public:
-	EagleeyeIO(){std::locale::global(std::locale(""));};
+	EagleeyeIO(){
+		// std::locale::global(std::locale(""));
+	};
 	virtual ~EagleeyeIO(){};
 
 	/**
@@ -85,6 +88,9 @@ public:
 	bool write(const Matrix<T>& mat);
 	template<class T>
 	bool read(Matrix<T>& mat);
+
+	bool write(Tensor tensor);
+	bool read(Tensor& tensor);
 
 	/**
 	 *	@brief write/read common type

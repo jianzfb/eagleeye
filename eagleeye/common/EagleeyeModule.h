@@ -2,6 +2,7 @@
 #define _EAGLEEYE_MODULE_H_
 #include <string>
 #include <vector>
+#include <functional>
 struct EagleeyeMeta{
 	double fps;				// frame rate for video
 	int nb_frames;			// frame number for video
@@ -335,10 +336,47 @@ bool eagleeye_on_surface_change(int width, int height, int rotate=0, bool mirror
  */ 
 bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag);
 
+
 // 注册插件函数类型
 typedef const char* (*REGISTER_PLUGIN_FUNC)();
 // 初始化插件函数类型
 typedef void* (*INITIALIZE_PLUGIN_FUNC)(void*);
+
+/**
+ * @brief pipeline server interface
+ */
+
+enum ServerStatus{
+    SERVER_UNKOWN = -1,
+    SERVER_SUCCESS,
+    SERVER_TIMEOUT,
+    SERVER_NOT_SUPPORT,
+    SERVER_NOT_EXIST,
+    SERVER_ABNORMAL,
+    SERVER_ERROR
+};
+ServerStatus eagleeye_pipeline_server_init(std::string folder);
+ServerStatus eagleeye_pipeline_server_register(std::string server_name, INITIALIZE_PLUGIN_FUNC server_initialize_func);
+ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<void*(std::vector<void*>, void*)> render_config_func);
+ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout=3);
+ServerStatus eagleeye_pipeline_server_render(std::string server_key);
+ServerStatus eagleeye_pipeline_server_stop(std::string server_key);
+
+/**
+ *  @brief create compute node
+ */
+void* eagleeye_create_node(std::string node_cls_name);
+
+/**
+ *  @brief destroy compute node
+ */
+bool eagleeye_destroy_node(void* node_obj);
+
+/**
+ *  @brief bind sig to node/port
+ */
+void eagleeye_bind_node(void* node_obj, int node_port, void* sig);
+
 /**
  * @brief add custom pipeline
  * 
@@ -430,7 +468,8 @@ extern "C" { \
 	void* eagleeye_##pipeline##_pipeline_initialize(void* extern_pipeline=NULL) { \
         AnyPipeline* pipeline = NULL; \
         if(extern_pipeline == NULL){ \
-            pipeline =  AnyPipeline::getInstance(#pipeline); \
+            pipeline =  new AnyPipeline(); \
+            pipeline->setPipelineName(#pipeline); \
         } \
         else{ \
             pipeline = (AnyPipeline*)extern_pipeline; \
