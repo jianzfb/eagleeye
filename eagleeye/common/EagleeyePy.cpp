@@ -457,8 +457,6 @@ py::list op_execute(py::str exe_name, py::str op_name, py::str cls_name, py::dic
 			return output_tensors;
         }
 
-        std::cout<<"char "<<array.dtype().char_()<<std::endl;
-
 		if (array.dtype().char_() == pybind11::dtype::of<int32_t>().char_()){
             py::buffer_info buf = array.request();
 
