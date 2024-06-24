@@ -166,6 +166,7 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
             if(max_score > m_score_thres && selected_face_score[query_face_i] < max_score){
                 selected_face_score[query_face_i] = max_score;
                 selected_face_id[query_face_i] = person_name;
+                EAGLEEYE_LOGD("select face [%s] score [%f], thres [%f], select face score [%f]", person_name.c_str(), max_score, m_score_thres, selected_face_score[query_face_i]);
             }
         }
     }
