@@ -45,7 +45,7 @@ public:
 	/**
 	 *	@brief start pipeline run
 	 */
-	bool start();
+	virtual bool start();
 
 	/**
 	 * 	@brief waiting pipeline run
@@ -387,6 +387,8 @@ public:
 	 * @brief stop node (AutoNode, AutoPipeline有效)
 	 */
 	virtual bool stop(bool block=false, bool force=false){};
+
+	void resetInitOnce(){m_init_once = false;}
 
 protected:
 	/**

@@ -60,7 +60,7 @@ void ImageShow::executeNodeInfo(){
 	}
 
 	// 渲染过程
-	EAGLEEYE_LOGD("Image width %d height %d.", img_width, img_height);
+	EAGLEEYE_LOGD("ImageShow Image width %d height %d.", img_width, img_height);
     if(m_Program == GL_NONE || m_TextureId == GL_NONE) return;
 
 	// 计算归一化坐标

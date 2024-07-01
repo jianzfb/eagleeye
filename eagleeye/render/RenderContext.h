@@ -75,6 +75,9 @@ public:
     void registerListeningMouse(AnyMonitor* listening_func);
     void cancelListeningMouse(AnyMonitor* listening_func);
 
+    void setInit(bool is_init);
+    bool getInit();
+
 private:
 	int m_ScreenW;
 	int m_ScreenH;
@@ -87,6 +90,8 @@ private:
     int m_mouse_y;
 
     std::vector<AnyMonitor*> m_listening_funcs;
+
+    bool m_is_init;
 };    
 } // namespace eagleeye
 

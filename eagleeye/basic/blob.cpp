@@ -272,7 +272,7 @@ Blob::Blob(const std::vector<int64_t> shape,
         }
         else if(copy){
             this->m_cpu_data = 
-                std::shared_ptr<unsigned char>((unsigned char*)data, 
+                std::shared_ptr<unsigned char>(new unsigned char[m_size], 
                                                 [](unsigned char* arr){ delete [] arr; });
             memcpy(this->m_cpu_data.get(), data, m_size);
         }

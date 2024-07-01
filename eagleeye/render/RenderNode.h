@@ -40,7 +40,9 @@ public:
     /**
      * @brief init gl 
      */ 
-    virtual void init();
+    virtual void init() override;
+
+    virtual bool start() override;
 
 protected:
     int m_screen_w;
