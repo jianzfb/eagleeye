@@ -31,7 +31,9 @@ void IdentityNode::setInputPort(AnySignal* sig,int index){
     }
 
     Superclass::setInputPort(sig, index);
-    this->setOutputPort(sig->make(), index);
+    if(this->getOutputPort(index) == NULL){
+        this->setOutputPort(sig->make(), index);
+    }
 }
 
 
