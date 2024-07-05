@@ -19,8 +19,19 @@ RenderNode::~RenderNode(){
 } 
 
 void RenderNode::init(){
+    //EAGLEEYE_LOGD("RenderNode init");
+    if(AnyPipeline::getRenderContext()->getInit() == false)
+    {
+        Superclass::resetInitOnce();
+    }
     Superclass::init();
     glClearColor(1.0f,1.0f,1.0f, 1.0f);
+}
+
+bool RenderNode::start(){
+    Superclass::start();
+    AnyPipeline::getRenderContext()->setInit(true);
+    return true;
 }
 
 int RenderNode::getScreenW(){

@@ -18,6 +18,7 @@ RenderContext::RenderContext(){
     this->m_mouse_action = -1;  // -1 默认状态; 2 抬起状态;0 按下状态; 1 移动状态
     this->m_mouse_x = 0;
     this->m_mouse_y = 0;
+    this->m_is_init = false;
 }
 RenderContext::~RenderContext(){
 
@@ -29,6 +30,7 @@ void RenderContext::onCreated(){
 #endif
     this->m_rotate = 0;
     this->m_mirror = false;
+    this->setInit(false);
 }
 
 void RenderContext::onChanged(int width, int height, int rotate, bool mirror){
@@ -165,4 +167,12 @@ void RenderContext::cancelListeningMouse(AnyMonitor* listening_func){
         m_listening_funcs = remained_funcs;
     }
 }
-} // namespace eagleeye
+
+void RenderContext::setInit(bool is_init){
+    this->m_is_init = is_init;
+}
+
+bool RenderContext::getInit(){
+    return this->m_is_init;
+}
+}// namespace eagleeye
