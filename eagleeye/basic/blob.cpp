@@ -627,7 +627,7 @@ bool Blob::update(void* data, MemoryType mem_type, std::string option){
     }
     if(this->empty()){
         // 如果为空，直接返回
-        return NULL;
+        return false;
     }
 
     // copy

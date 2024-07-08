@@ -152,7 +152,7 @@ void NNNode::executeNodeInfo(){
             }
 
             if(std::get<1>(p)[0]*std::get<1>(p)[1] > 0){
-                memcpy(image.dataptr(), std::get<0>(p), sizeof(float)*std::get<1>(p)[0]*std::get<1>(p)[1]);
+                memcpy(image.dataptr(), std::get<0>(p), sizeof(double)*std::get<1>(p)[0]*std::get<1>(p)[1]);
             }
             image_sig->setData(image);
         }
