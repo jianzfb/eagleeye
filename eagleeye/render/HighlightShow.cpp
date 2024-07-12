@@ -174,13 +174,16 @@ void HighlightShow::executeNodeInfo(){
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);    
 	}
 	if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_RGB_IMAGE){
+		GLUtils::setInt(m_Program, "is_rgb", 1);
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img_width, img_height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_ptr);
 	}
 	else if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_BGR_IMAGE){
 		// TODO 对BGR格式渲染存在问题，需要修改shader进行兼容
+		GLUtils::setInt(m_Program, "is_rgb", 0);
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img_width, img_height, 0, GL_RGB, GL_UNSIGNED_BYTE, img_ptr);
 	}
 	else if(this->getInputPort(0)->getSignalType() == EAGLEEYE_SIGNAL_GRAY_IMAGE){
+		GLUtils::setInt(m_Program, "is_rgb", 1);
 	    glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, img_width, img_height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, img_ptr);
 	}
 	if(img_width % 4 != 0){
@@ -286,6 +289,7 @@ void HighlightShow::init(){
             "#extension GL_EXT_texture_buffer : require\n"
 			"precision mediump float;\n"
             "in vec2 v_texCoord;\n"
+			"uniform int is_rgb;\n"
 			"vec3 colormap[10]=vec3[10](vec3(0.2081, 0.1663, 0.5292),vec3(0.1802, 0.2832, 0.7634),vec3(0.0116, 0.4203, 0.8805),vec3(0.0761, 0.4974, 0.8418),vec3(0.0408, 0.5874, 0.8217),vec3(0.0238, 0.6585, 0.7696),vec3(0.1258, 0.7049, 0.6775),vec3(0.3177, 0.7394, 0.563),vec3(0.5418, 0.749, 0.4613),vec3(0.7261, 0.7405, 0.3874)); \n"
             "layout(location = 0) out vec4 outColor;\n"
             "uniform sampler2D u_texture;\n"
@@ -295,13 +299,19 @@ void HighlightShow::init(){
             "    vec4 rgb_v = texture(u_texture, v_texCoord); \n"
             "    vec4 mask_v = texture(m_texture, v_texCoord); \n"
 			"    int label = int(mask_v.r * 255.0); \n"
+			"    if(is_rgb != 1){ \n"
+			"        vec4 c = texture(u_texture, v_texCoord);\n"
+			"        rgb_v = c; \n"
+			"        rgb_v.r = c.b; \n"
+			"        rgb_v.b = c.r; \n"
+			"    }\n"
             "    if(label > 0){ \n"
 			"        vec3 label_color = colormap[label%10]; \n"
             "        rgb_v.r = clamp(rgb_v.r*0.2 + label_color.r*0.8,0.0,1.0); \n"
 			"		 rgb_v.g = clamp(rgb_v.g*0.2 + label_color.g*0.8,0.0,1.0); \n"
 			"        rgb_v.b = clamp(rgb_v.b*0.2 + label_color.b*0.8,0.0,1.0); \n"
             "    } \n"
-			"    outColor = rgb_v;  \n"
+			"    outColor = rgb_v; 	\n"
             "}";
 
 	this->create("HighlightShow", vShaderStr, fShaderStr);
