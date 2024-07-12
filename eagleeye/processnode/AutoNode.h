@@ -16,7 +16,7 @@ public:
     typedef AnyNode                 Superclass;
     EAGLEEYE_CLASSIDENTITY(AutoNode);
 
-    AutoNode(std::function<AnyNode*()> generator=nullptr, int queue_size=1, bool get_then_auto_remove=true);
+    AutoNode(std::function<AnyNode*()> generator=nullptr, int queue_size=1, bool get_then_auto_remove=true, bool copy_input = true);
     virtual ~AutoNode();
 
     /**
@@ -106,6 +106,9 @@ private:
     AutoNode(const AutoNode&);
     void operator=(const AutoNode&);
 
+    void run_in_copy_input();
+    void run_in_no_copy_input();
+
     AnyNode* m_auto_node;
     bool m_thread_status;
     std::thread m_auto_thread;
@@ -113,6 +116,7 @@ private:
     bool m_persistent_flag;
     double m_last_timestamp;
     std::function<void(AnyNode*, std::vector<AnySignal*>)> m_callback;
+    bool m_copy_input;
 };
 }
 #endif

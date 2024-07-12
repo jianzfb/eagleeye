@@ -20,7 +20,7 @@ public:
      */
     EAGLEEYE_CLASSIDENTITY(SubPipeline);
 
-    SubPipeline();
+    SubPipeline(bool copy_input = true);
     virtual ~SubPipeline();
 
     /**
@@ -89,6 +89,11 @@ protected:
 private:
     SubPipeline(const SubPipeline&);
     void operator=(const SubPipeline&);
+
+    void executeNodeInCopyInputMode();
+    void executeNodeInNoCopyInputMode();
+
+    bool m_copy_input;
 };
 }
 #endif
