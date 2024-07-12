@@ -5,7 +5,9 @@
 #include "eagleeye/common/EagleeyeLog.h"
 namespace eagleeye
 {
-SubPipeline::SubPipeline(){}
+SubPipeline::SubPipeline(bool copy_input){
+    m_copy_input = copy_input;
+}
 
 SubPipeline::~SubPipeline(){
     std::map<std::string, AnyNode*>::iterator iter, iend(this->m_subpipeline.end());
@@ -19,7 +21,7 @@ SubPipeline::~SubPipeline(){
     }
 }
 
-void SubPipeline::executeNodeInfo(){
+void SubPipeline::executeNodeInCopyInputMode(){
     // 1.step copy input
     if(this->m_placeholders.size() == 0){
         int input_port_i = 0;
@@ -53,6 +55,45 @@ void SubPipeline::executeNodeInfo(){
             this->getOutputPort(output_port_i)->setSignalType(m_subpipeline[name]->getOutputPort(j)->getSignalType());
             output_port_i += 1;
         }
+    }
+}
+
+void SubPipeline::executeNodeInNoCopyInputMode(){
+    // 1.step copy input
+    int input_port_i = 0;
+    for(int i=0; i<m_input_node_name_list.size(); ++i){
+        std::string name = m_input_node_name_list[i];
+        for(int j=0; j<m_subpipeline[name]->getNumberOfInputSignals(); ++j){
+            this->m_subpipeline[name]->setInputPort(getInputPort(input_port_i), j);
+            input_port_i += 1;
+        }
+    }
+
+
+    // 2.step run subpipeline
+    for(int i=0; i<m_output_node_name_list.size(); ++i){
+        std::string name = m_output_node_name_list[i];
+        m_subpipeline[name]->start();
+    }
+
+    // 3.step copy output
+    int output_port_i = 0;
+    for(int i=0; i<m_output_node_name_list.size(); ++i){
+        std::string name = m_output_node_name_list[i];
+        for(int j=0; j<m_subpipeline[name]->getNumberOfOutputSignals(); ++j){
+            this->getOutputPort(output_port_i)->copy(m_subpipeline[name]->getOutputPort(j));
+            this->getOutputPort(output_port_i)->setSignalType(m_subpipeline[name]->getOutputPort(j)->getSignalType());
+            output_port_i += 1;
+        }
+    }
+}
+
+void SubPipeline::executeNodeInfo(){
+    if(m_copy_input){
+        executeNodeInCopyInputMode();
+    }
+    else{
+        executeNodeInNoCopyInputMode();
     }
 }
 

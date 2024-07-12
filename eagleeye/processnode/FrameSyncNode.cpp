@@ -126,6 +126,7 @@ void FrameSyncNode::run(){
         for(int signal_i=0; signal_i<signal_num; ++signal_i){
             while(this->m_frame_cache_queue[signal_i].size() >= m_max_cache_frame_num){
                 locker.unlock();
+                this->m_cond.notify_all();
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));    // 单位ms
                 locker = std::unique_lock<std::mutex>(this->m_mu);
             }
@@ -139,6 +140,13 @@ void FrameSyncNode::run(){
         this->m_cond.notify_all();
     }
 }
+
+
+void FrameSyncNode::processUnitInfo(){
+    Superclass::processUnitInfo();
+    modified();
+}
+
 
 void FrameSyncNode::preexit(){
     // prepare exit

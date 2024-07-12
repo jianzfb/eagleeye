@@ -5,7 +5,7 @@
 
 namespace eagleeye
 {
-AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get_then_auto_remove){
+AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get_then_auto_remove, bool copy_input){
     m_auto_node = generator();
     // 设置输出端口
     int signal_num = m_auto_node->getNumberOfOutputSignals();
@@ -25,6 +25,8 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
     this->m_last_timestamp = 0.0;
     this->m_callback = nullptr;
     this->m_persistent_flag = false;
+    this->m_copy_input = copy_input;
+    EAGLEEYE_LOGD("auto node run in copy_inpu mode = [%d]", m_copy_input);
 }
 
 AutoNode::~AutoNode(){
@@ -52,6 +54,15 @@ void AutoNode::executeNodeInfo(){
 }
 
 void AutoNode::run(){
+    if(m_copy_input){
+        run_in_copy_input();
+    }
+    else{
+        run_in_no_copy_input();
+    }
+}
+
+void AutoNode::run_in_copy_input(){
     std::vector<AnySignal*> signal_list;
     for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
         AnySignal* signal_cp = this->getInputPort(signal_i)->make();
@@ -120,6 +131,46 @@ void AutoNode::run(){
     }
     for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
         delete signal_list[signal_i];
+    }
+}
+
+void AutoNode::run_in_no_copy_input(){
+    int signal_num = this->getNumberOfInputSignals();
+    for(int signal_i  = 0; signal_i < signal_num; ++signal_i){
+        m_auto_node->setInputPort(getInputPort(signal_i), signal_i);        
+    }
+    while (true){
+        if(!this->m_thread_status){
+            break;
+        }
+
+
+        // 1. start run auto node
+        bool running_ischange = m_auto_node->start();
+        if(!running_ischange){
+            continue;
+        }
+
+        // 3.step get output
+        signal_num = m_auto_node->getNumberOfOutputSignals();
+        bool is_auto_stop = false;
+        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+            this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));
+            if(m_auto_node->getOutputPort(signal_i)->meta().is_end_frame){
+                is_auto_stop = true;
+            }
+        }
+
+        // 4.step callback
+        if(this->m_callback != nullptr){           
+            this->m_callback(this, this->m_output_signals);
+        }
+
+        // 5.step 检查自动结束条件
+        if(is_auto_stop){
+            m_thread_status = false;
+            break;
+        }
     }
 }
 

@@ -23,6 +23,7 @@ public:
      */
     FrameSyncNode();
     virtual ~FrameSyncNode();
+    virtual void processUnitInfo() override;
 
     virtual void executeNodeInfo();
 
