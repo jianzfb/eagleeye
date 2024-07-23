@@ -10,18 +10,17 @@ git submodule init
 git submodule update
 
 # 2.step 编译
-install_dir="linux-install"
 mkdir build
 cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON ..
-install_dir="py"
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON -DFFMPEG=$2 ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=X86-64 -DLITE=ON ..
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DFFMPEG=$1 ..
 fi
 make
 cd ..
 
+install_dir="linux-x86-64-install"
 # 3.step 安装
 if [ -d $install_dir ]; 
 then
@@ -53,6 +52,8 @@ mkdir 3rd
 cp -r ../eagleeye/3rd/eigen 3rd/
 cp -r ../eagleeye/3rd/pybind11 3rd/
 
+# 第三方依赖.so
+cp -r  ../eagleeye/3rd/libyuv/lib/linux/X86-64/* libs/X86-64/
 cd ..
 
 # 5.step 脚本工具
