@@ -538,20 +538,31 @@ if(DEFINED FFMPEG)
 
     if(BUILD_PYTHON_MODULE)
         target_link_libraries(eagleeye PRIVATE
-                                ${FFMPEG}/install/lib/libavcodec.so
-                                ${FFMPEG}/install/lib/libavfilter.so
-                                ${FFMPEG}/install/lib/libavformat.so
-                                ${FFMPEG}/install/lib/libavutil.so
-                                ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)
+                                ${FFMPEG}/linux-install/lib/libavcodec.so
+                                ${FFMPEG}/linux-install/lib/libavfilter.so
+                                ${FFMPEG}/linux-install/lib/libavformat.so
+                                ${FFMPEG}/linux-install/lib/libavutil.so
+                                ${FFMPEG}/linux-install/lib/libswresample.so
+                                ${FFMPEG}/linux-install/lib/libswscale.so)
     else()
-        target_link_libraries(eagleeye 
-                                ${FFMPEG}/install/lib/libavcodec.so
-                                ${FFMPEG}/install/lib/libavfilter.so
-                                ${FFMPEG}/install/lib/libavformat.so
-                                ${FFMPEG}/install/lib/libavutil.so
-                                ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)
+        if(DEFINED ANDROID_ABI)
+            target_link_libraries(eagleeye 
+                                    ${FFMPEG}/android-install/lib/libavcodec.so
+                                    ${FFMPEG}/android-install/lib/libavfilter.so
+                                    ${FFMPEG}/android-install/lib/libavformat.so
+                                    ${FFMPEG}/android-install/lib/libavutil.so
+                                    ${FFMPEG}/android-install/lib/libswresample.so
+                                    ${FFMPEG}/android-install/lib/libswscale.so)
+        else()
+            target_link_libraries(eagleeye 
+                                    ${FFMPEG}/linux-install/lib/libavcodec.so
+                                    ${FFMPEG}/linux-install/lib/libavfilter.so
+                                    ${FFMPEG}/linux-install/lib/libavformat.so
+                                    ${FFMPEG}/linux-install/lib/libavutil.so
+                                    ${FFMPEG}/linux-install/lib/libswresample.so
+                                    ${FFMPEG}/linux-install/lib/libswscale.so)
+        endif()
+
     endif()
 endif()
 
