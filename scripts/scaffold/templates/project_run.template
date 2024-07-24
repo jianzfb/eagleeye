@@ -1,4 +1,4 @@
-{% if abi == "arm64-v8a" or  abi == "armeabi-v7a" %}
+{% if (abi == "arm64-v8a" or  abi == "armeabi-v7a") and platform == "android" %}
 adb shell "cd /data/local/tmp/{{project}}; export LD_LIBRARY_PATH=.; ./{{project}}_demo file ${@:2}"
 adb pull /data/local/tmp/{{project}}/data/output ./data/
 {% else %}

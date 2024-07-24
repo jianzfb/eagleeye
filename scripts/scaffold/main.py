@@ -21,6 +21,7 @@ flags.DEFINE_string("signature",None, "projct signature")
 flags.DEFINE_string("eagleeye", "", "eagleeye path")
 flags.DEFINE_string("opencv", "", "opencv path")
 flags.DEFINE_string("abi", "arm64-v8a,armeabi-v7a,x86-64,x86", "abi")
+flags.DEFINE_string("platform", "android", "platform")
 flags.DEFINE_string("build_type","Release","set build type")
 flags.DEFINE_string("api_level","android-23", "android api level")
 flags.DEFINE_string("inputport", "", "input port list")
@@ -54,7 +55,7 @@ def main():
         if not os.path.exists(os.path.join(os.curdir, "%s_project"%node_name)):
           os.mkdir(os.path.join(os.curdir, "%s_project"%node_name))
           project_folder = os.path.join(os.curdir, "%s_project"%node_name)
-      
+
       # 生成节点模板
       # 生成node.h
       template = env.get_template('project_node_h.template')
@@ -122,13 +123,13 @@ def main():
                 project_name = f
                 print("Finding default project %s"%project_name)
                 break
-        
+
         for abi in FLAGS.abi().split(','):
           package_folder = os.path.join(os.curdir, "package", abi)
           if not os.path.exists(os.path.join(package_folder, project_name, 'lib%s.so'%project_name)):
             print("Package %s/%s dont exist."%(project_name, abi))
             sys.exit(-1)
-          
+
           if not os.path.exists(os.path.join(package_folder, project_name, 'resource')):
             os.makedirs(os.path.join(package_folder, project_name, 'resource'))
 
@@ -151,7 +152,7 @@ def main():
                     # 自动生成的路径
                     monitor_node, _, _ , _ , file_name = abcde
                     v_value['image'] = "/".join(["images", monitor_node, file_name.split('-')[-1]])
-                  
+
                   file_name = abcde[-1]
                   # 检查图片是否存在
                   if not os.path.exists(os.path.join(package_folder, project_name, 'resource', v_value['image'])):
@@ -285,6 +286,7 @@ def main():
       # 生成build.sh
       template = env.get_template('project_shell.template')
       output = template.render(build_abis=FLAGS.abi().split(','),
+                              platform=FLAGS.platform(),
                               build_type=FLAGS.build_type(),
                               api_level=FLAGS.api_level(),
                               project=project_name)
@@ -340,6 +342,7 @@ def main():
       output = template.render(project=project_name,
                                 eagleeye=FLAGS.eagleeye(),
                                 abi=FLAGS.abi().split(',')[0],
+                                platform=FLAGS.platform(),
                                 paddlelite=FLAGS.paddlelite())
 
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "run.sh"), 'w') as fp:
@@ -350,6 +353,7 @@ def main():
       output = template.render(project=project_name,
                                 eagleeye=FLAGS.eagleeye(),
                                 abi=FLAGS.abi().split(',')[0],
+                                platform=FLAGS.platform(),
                                 paddlelite=FLAGS.paddlelite())
 
       with open(os.path.join(os.curdir, "%s_plugin"%project_name, "setup.sh"), 'w') as fp:

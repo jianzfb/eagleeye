@@ -468,7 +468,7 @@ extern "C" { \
 	void* eagleeye_##pipeline##_pipeline_initialize(void* extern_pipeline=NULL) { \
         AnyPipeline* pipeline = NULL; \
         if(extern_pipeline == NULL){ \
-            pipeline = AnyPipeline::getInstance(#pipeline) \
+            pipeline = AnyPipeline::getInstance(#pipeline); \
         } \
         else{ \
             pipeline = (AnyPipeline*)extern_pipeline; \
