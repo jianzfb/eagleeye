@@ -14,4 +14,5 @@ adb push {{paddlelite}}/{{abi}}/lib/* /data/local/tmp/{{project}}/
 {% else %}
 cp -r {{eagleeye}}/libs/{{abi}}/* bin/{{abi}}/
 cp -r ./3rd/{{abi}}/* bin/{{abi}}/
+cp -r ./models bin/{{abi}}/
 {% endif %}
