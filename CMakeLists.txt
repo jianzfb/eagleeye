@@ -111,6 +111,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeIni.cpp
     eagleeye/common/cJSON.cpp
     eagleeye/common/CJsonObject.cpp
+    eagleeye/common/base64.cpp
     eagleeye/common/EagleeyeFactory.cpp
     eagleeye/common/EagleeyeNodeManager.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
@@ -282,6 +283,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeIni.cpp
     eagleeye/common/cJSON.cpp
     eagleeye/common/CJsonObject.cpp
+    eagleeye/common/base64.cpp
     eagleeye/common/EagleeyeFactory.cpp
     eagleeye/common/EagleeyeNodeManager.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
