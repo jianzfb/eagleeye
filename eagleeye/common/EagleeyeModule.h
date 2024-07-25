@@ -355,7 +355,7 @@ enum ServerStatus{
     SERVER_ABNORMAL,
     SERVER_ERROR
 };
-ServerStatus eagleeye_pipeline_server_init(std::string folder);
+ServerStatus eagleeye_pipeline_server_init(std::string folder, std::vector<std::string> predefined_plugin_names=std::vector<std::string>());
 ServerStatus eagleeye_pipeline_server_register(std::string server_name, INITIALIZE_PLUGIN_FUNC server_initialize_func);
 ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<void*(std::vector<void*>, void*)> render_config_func);
 ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout=3);
