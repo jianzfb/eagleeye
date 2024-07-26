@@ -592,7 +592,6 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         EAGLEEYE_LOGD("Clear exist %s related pipelins", server_id.c_str());
         RegisterCenter::getInstance()->destroyObjWithPrefix(server_id);
     }
-    std::cout<<"hello the world"<<std::endl;
 
     // 3.step 构建数据源
     std::vector<std::string> source_list;

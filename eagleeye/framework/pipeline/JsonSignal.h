@@ -1,7 +1,8 @@
-#ifndef _EAGLEEYE_STRINGSIGNAL_H_
-#define _EAGLEEYE_STRINGSIGNAL_H_
+#ifndef _EAGLEEYE_JSONSIGNAL_H_
+#define _EAGLEEYE_JSONSIGNAL_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
+#include "eagleeye/common/CJsonObject.hpp"
 #include <string>
 #include <queue>
 #include <mutex>
@@ -9,22 +10,15 @@
 
 namespace eagleeye{
 class AnyNode;
-class StringSignal:public AnySignal{
+class JsonSignal:public AnySignal{
 public:
-    typedef StringSignal                Self;
+    typedef JsonSignal                  Self;
     typedef AnySignal                   Superclass;
 
 	typedef std::string					DataType;
 
-	StringSignal(std::string ini_str="");
-	virtual ~StringSignal();
-
-	/**
-	 * @brief Set the Init object
-	 * 
-	 * @param ini_str 
-	 */
-	void setInit(std::string ini_str);
+	JsonSignal();
+	virtual ~JsonSignal();
 
 	/**
 	 *	@brief copy info
@@ -44,11 +38,11 @@ public:
 	 * @return AnySignal* 
 	 */
 	virtual AnySignal* make(){
-		return new StringSignal();
+		return new JsonSignal();
 	}
 
 	/**
-	 *	@brief print StringSignal info
+	 *	@brief print JsonSignal info
 	 */
 	virtual void printUnit();
 
@@ -65,6 +59,13 @@ public:
 	 * @param data 
 	 */
 	void setData(DataType data);
+
+	/**
+	 * @brief Set the Data object
+	 * 
+	 * @param data 
+	 */
+    void setKV(std::string key, std::string value);
 
 	/**
 	 *	@brief clear Info signal content
@@ -121,18 +122,19 @@ public:
 	};
 
 private:
-    std::string m_str;
 	std::string m_tmp_cache;
-	std::queue<std::string> m_queue;	
+	std::queue<std::string> m_queue;
+	std::string m_info;
 	SignalCategory m_sig_category;
 
 	std::mutex m_mu;
 	std::condition_variable m_cond;
 
 	size_t m_data_size[1];
-	std::string m_ini_str;
 	int m_release_count;
 	int m_max_queue_size;
+
+    neb::CJsonObject m_json_obj;
 };
 
 }
