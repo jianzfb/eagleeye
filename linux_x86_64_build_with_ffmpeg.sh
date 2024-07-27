@@ -15,7 +15,7 @@ cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON -DFFMPEG=/root/.3rd/ffmpeg ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DFFMPEG=$1 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DFFMPEG=/root/.3rd/ffmpeg ..
 fi
 make
 cd ..
@@ -52,8 +52,6 @@ mkdir 3rd
 cp -r ../eagleeye/3rd/eigen 3rd/
 cp -r ../eagleeye/3rd/pybind11 3rd/
 
-# 第三方依赖.so
-cp -r  ../eagleeye/3rd/libyuv/lib/linux/X86-64/* libs/X86-64/
 cd ..
 
 # 5.step 脚本工具
