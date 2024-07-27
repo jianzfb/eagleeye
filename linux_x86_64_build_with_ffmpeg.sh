@@ -13,7 +13,7 @@ git submodule update
 mkdir build
 cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON -DFFMPEG=$2 ..
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON -DFFMPEG=/root/.3rd/ffmpeg ..
 else
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DFFMPEG=$1 ..
 fi
