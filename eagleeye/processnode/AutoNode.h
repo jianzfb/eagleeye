@@ -31,7 +31,7 @@ public:
 	virtual void executeNodeInfo();
 
     virtual void exit() override;
-    
+
     /**
      * @brief (pre/post) exit
      * 
