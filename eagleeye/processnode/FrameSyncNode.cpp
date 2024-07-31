@@ -130,6 +130,7 @@ void FrameSyncNode::run(){
         this->m_cond.notify_all();
 
         if(all_cache_queue_full){
+            EAGLEEYE_LOGD("warning!!, all queue is full, please check");
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
