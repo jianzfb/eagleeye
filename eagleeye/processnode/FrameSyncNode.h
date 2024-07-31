@@ -37,7 +37,6 @@ public:
     virtual void preexit();
     virtual void postexit();
 
-    virtual void processUnitInfo() override;
 protected:
     /**
      * @brief run in independent thread
