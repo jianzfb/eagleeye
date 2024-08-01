@@ -861,10 +861,6 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         AnyPipeline* pipeline = new AnyPipeline();
         pipeline->setPipelineName(key.c_str());
 
-        std::cout<<">>>>>"<<std::endl;
-        std::cout<<"pp "<<(void*)(pipeline)<<std::endl;
-        std::cout<<"<<<<<"<<std::endl;
-
         // 初始化管线
         pipeline_init_map[pipeline_name](pipeline);
         const char* config_folder = NULL;
@@ -968,12 +964,8 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
                 // 2.step 管线
                 else{
                     EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
-                    std::cout<<"A"<<std::endl;
-                    std::cout<<"pipeline_obj "<<pipeline_obj<<std::endl;
                     AnyPipeline* waiting_del_pipeline = (AnyPipeline*)pipeline_obj;
-                    std::cout<<"B"<<std::endl;
                     delete waiting_del_pipeline;
-                    std::cout<<"C"<<std::endl;
                 }
             }
         );

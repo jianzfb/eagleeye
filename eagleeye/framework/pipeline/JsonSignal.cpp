@@ -5,12 +5,15 @@
 
 namespace eagleeye
 {
-JsonSignal::JsonSignal(){
+JsonSignal::JsonSignal(std::string record_name, bool is_record_in_message_center){
 	this->m_sig_category = SIGNAL_CATEGORY_STRING;
 
 	this->m_release_count = 1;
 	this->m_max_queue_size = 5;
-}   
+	this->m_record_name = record_name;
+	this->m_is_record_in_message_center = is_record_in_message_center;
+}
+
 JsonSignal::~JsonSignal(){
 }
 
@@ -27,6 +30,8 @@ void JsonSignal::copy(AnySignal* sig){
 
 	JsonSignal* from_sig = (JsonSignal*)(sig);
 	this->setData(from_sig->getData());
+
+	// ignore record_name and is_record_in_message_center
 }
 
 void JsonSignal::printUnit(){
@@ -106,6 +111,77 @@ void JsonSignal::setData(JsonSignal::DataType data){
 
 void JsonSignal::setKV(std::string key, std::string value){
 	m_json_obj.ReplaceAdd(key, value);
+}
+
+void JsonSignal::setKList(std::string key, std::vector<int> value){
+	if(value.size() > 0){
+		neb::CJsonObject obj;
+		for(int i=0; i<value.size(); ++i){
+			obj.Add(value[i]);
+		}
+
+		m_json_obj.ReplaceAdd(key, obj);          
+		return;  
+	}
+
+	m_json_obj.AddEmptySubArray(key);
+}
+
+void JsonSignal::setKList(std::string key, std::vector<float> value){
+	if(value.size() > 0){
+		neb::CJsonObject obj;
+		for(int i=0; i<value.size(); ++i){
+			obj.Add(value[i]);
+		}
+
+		m_json_obj.ReplaceAdd(key, obj);
+		return;
+	}
+
+	m_json_obj.AddEmptySubArray(key);
+}
+
+void JsonSignal::setKList(std::string key, std::vector<double> value){
+	if(value.size() > 0){
+		neb::CJsonObject obj;
+		for(int i=0; i<value.size(); ++i){
+			obj.Add(value[i]);
+		}
+
+		m_json_obj.ReplaceAdd(key, obj);
+		return;
+	}
+
+	m_json_obj.AddEmptySubArray(key);
+}    
+
+void JsonSignal::setKList(std::string key, std::vector<std::string> value){
+	if(value.size() > 0){
+		neb::CJsonObject obj;
+		for(int i=0; i<value.size(); ++i){
+			obj.Add(value[i]);
+		}
+
+		m_json_obj.ReplaceAdd(key, obj);
+		return;
+	}
+
+	m_json_obj.AddEmptySubArray(key);
+}
+
+void JsonSignal::flush(){
+	if(m_record_name == ""){
+		return;
+	}
+	if(!m_is_record_in_message_center){
+		return;
+	}
+
+	std::shared_ptr<Message> message(
+		new Message(EagleeyeTime::getCurrentTime()), [](Message* m){delete m;}
+	);
+	message->copy(m_json_obj.ToString());
+	MessageCenter::getInstance()->insert(m_record_name, message);
 }
 
 void JsonSignal::setData(void* data, MetaData meta){

@@ -3,6 +3,8 @@
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/framework/pipeline/AnySignal.h"
 #include "eagleeye/common/CJsonObject.hpp"
+#include "eagleeye/common/EagleeyeMessageCenter.h"
+#include "eagleeye/common/EagleeyeMessage.h"
 #include <string>
 #include <queue>
 #include <mutex>
@@ -17,7 +19,7 @@ public:
 
 	typedef std::string					DataType;
 
-	JsonSignal();
+	JsonSignal(std::string record_name="", bool is_record_in_message_center=false);
 	virtual ~JsonSignal();
 
 	/**
@@ -68,6 +70,16 @@ public:
     void setKV(std::string key, std::string value);
 
 	/**
+	 * @brief Set the Data object
+	 * 
+	 * @param data 
+	 */
+    void setKList(std::string key, std::vector<int> value);
+    void setKList(std::string key, std::vector<float> value);
+    void setKList(std::string key, std::vector<double> value);
+    void setKList(std::string key, std::vector<std::string> value);
+
+	/**
 	 *	@brief clear Info signal content
 	 */
 	virtual void makeempty(bool auto_empty=true);
@@ -104,6 +116,11 @@ public:
 	virtual void setData(void* data, MetaData meta);
 
 	/**
+	 *	@brief flush to message center
+	 */
+	void flush();
+
+	/**
 	 * @brief Get the Signal Content object
 	 * 
 	 * @param data 
@@ -135,6 +152,8 @@ private:
 	int m_max_queue_size;
 
     neb::CJsonObject m_json_obj;
+	std::string m_record_name;
+	bool m_is_record_in_message_center;
 };
 
 }
