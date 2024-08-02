@@ -3,7 +3,7 @@ namespace eagleeye{
 FrameSyncNode::FrameSyncNode(){
     this->m_thread_status = true;
     this->m_is_ini = false;
-    this->m_max_cache_frame_num = 300;  // 最大允许差别10s (10*30)
+    this->m_max_cache_frame_num = 90;  // 最大允许差别3s (3*30)
     m_sync_time_delta = 0.05;           // 0.05s同步误差
 }
 FrameSyncNode::~FrameSyncNode(){
@@ -35,14 +35,12 @@ void FrameSyncNode::executeNodeInfo(){
         double min_timestamp = std::numeric_limits<double>::max();
         int min_signal_i = -1;
         double max_timestamp = std::numeric_limits<double>::min();
-        for(int signal_i=0; signal_i<input_num; ++signal_i){
-            while(this->m_meta_cache_queue[signal_i].size() == 0){
-                this->m_cond.wait(locker);
-                if(this->m_meta_cache_queue[signal_i].size() > 0){
-                    break;
-                }
-            }
 
+        while(std::any_of(this->m_meta_cache_queue.begin(), this->m_meta_cache_queue.end(), [](const std::queue<MetaData>& q){return q.empty();})){
+            this->m_cond.wait(locker);
+            EAGLEEYE_LOGD("m_meta_cache_queue has empty queue, wait ...");
+        }
+        for(int signal_i=0; signal_i<input_num; ++signal_i){
             Matrix<Array<unsigned char, 3>> signal_frame = this->m_frame_cache_queue[signal_i].front();
             MetaData signal_meta = this->m_meta_cache_queue[signal_i].front();
             if(min_timestamp >= signal_meta.timestamp){
@@ -64,6 +62,7 @@ void FrameSyncNode::executeNodeInfo(){
             // 成功发现同步帧
             for(int signal_i=0; signal_i<input_num; ++signal_i){
                 while(this->m_meta_cache_queue[signal_i].size() == 0){
+                    EAGLEEYE_LOGD("fatal error, meta_cache_queue will no empty");
                     this->m_cond.wait(locker);
                     if(this->m_meta_cache_queue[signal_i].size() > 0){
                         break;
@@ -77,6 +76,7 @@ void FrameSyncNode::executeNodeInfo(){
                 this->m_frame_cache_queue[signal_i].pop();
                 this->m_meta_cache_queue[signal_i].pop();
             }
+            EAGLEEYE_LOGD("fraemSyncNode return success");
             break;
         }
     }
@@ -110,35 +110,38 @@ void FrameSyncNode::run(){
 
         // 缓存输入帧数据
         int signal_num = this->getNumberOfInputSignals();
-        std::vector<Matrix<Array<unsigned char, 3>>> cache_frames;
-        std::vector<MetaData> cache_metas;
-        for(int signal_i=0; signal_i<signal_num; ++signal_i){
-            ImageSignal<Array<unsigned char, 3>>* img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getInputPort(signal_i));
-            MetaData meta;
-            Matrix<Array<unsigned char, 3>> data = img_sig->getData(meta);
-
-            cache_frames.push_back(data.clone());
-            cache_metas.push_back(meta);
-        }
-
-        // 放入队列
         std::unique_lock<std::mutex> locker(this->m_mu);
         for(int signal_i=0; signal_i<signal_num; ++signal_i){
-            while(this->m_frame_cache_queue[signal_i].size() >= m_max_cache_frame_num){
-                locker.unlock();
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));    // 单位ms
-                locker = std::unique_lock<std::mutex>(this->m_mu);
+            if(m_frame_cache_queue[signal_i].size() < m_max_cache_frame_num){
+                ImageSignal<Array<unsigned char, 3>>* img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getInputPort(signal_i));
+                MetaData meta;
+                Matrix<Array<unsigned char, 3>> data = img_sig->getData(meta);
+                this->m_frame_cache_queue[signal_i].push(data.clone());
+                this->m_meta_cache_queue[signal_i].push(meta);
             }
-
-            this->m_frame_cache_queue[signal_i].push(cache_frames[signal_i]);
-            this->m_meta_cache_queue[signal_i].push(cache_metas[signal_i]);
         }
         locker.unlock();
 
+        bool all_cache_queue_full = std::all_of(m_frame_cache_queue.begin(), m_frame_cache_queue.end(), [&](const std::queue<Matrix<Array<unsigned char,3>>>& q){
+            return q.size() >= m_max_cache_frame_num;
+        });
+
         // 通知
         this->m_cond.notify_all();
+
+        if(all_cache_queue_full){
+            EAGLEEYE_LOGD("warning!!, all queue is full, please check");
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 }
+
+
+void FrameSyncNode::processUnitInfo(){
+    Superclass::processUnitInfo();
+    modified();
+}
+
 
 void FrameSyncNode::preexit(){
     // prepare exit
