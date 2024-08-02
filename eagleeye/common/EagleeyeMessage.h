@@ -30,6 +30,7 @@ public:
     void set(std::string key, T value){
         m_json_obj->Add(key, value);
     }
+
     void set(std::string key, Null val=Null()){
         m_json_obj->AddNull(key);
     }
@@ -88,6 +89,13 @@ public:
         }
 
         m_json_obj->AddEmptySubArray(key);
+    }
+
+    void copy(std::string info){
+        if(info == ""){
+            return;
+        }
+        m_json_obj->Parse(info);
     }
 
     template<typename T>

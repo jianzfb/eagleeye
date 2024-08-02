@@ -494,7 +494,7 @@ bool eagleeye_on_surface_mouse(int mouse_x, int mouse_y, int mouse_flag){
 }
 
 std::map<std::string, INITIALIZE_PLUGIN_FUNC> pipeline_init_map;
-ServerStatus eagleeye_pipeline_server_init(std::string folder){
+ServerStatus eagleeye_pipeline_server_init(std::string folder, std::vector<std::string> predefined_plugin_names){
     EAGLEEYE_LOGD("Traverse to find all plugin in %s.", folder.c_str());
     std::vector<std::string> plugin_list;
     _getAllPluginsFromDirectory(folder, plugin_list);
@@ -509,25 +509,41 @@ ServerStatus eagleeye_pipeline_server_init(std::string folder){
             continue;
         }
 
-        // 插件目录结构
-        std::string sperator="/";
-        std::vector<std::string> kv = split(plugin_list[index], sperator);
-        std::string plugin_path_parent = std::string(folder) + "/" + kv[0];
+        // 需要考虑，一个so中存在多个插件实体
+        if(predefined_plugin_names.size() == 0){
+            // 基于默认规则(插件目录结构)，发现
+            std::string sperator = "/";
+            std::vector<std::string> kv = split(plugin_list[index], sperator);
 
-        // 加载注册及初始化函数
-        REGISTER_PLUGIN_FUNC plugin_register_func = NULL; 
-        INITIALIZE_PLUGIN_FUNC plugin_initialize_func = NULL;
+            // 加载注册及初始化函数
+            REGISTER_PLUGIN_FUNC plugin_register_func = NULL; 
+            INITIALIZE_PLUGIN_FUNC plugin_initialize_func = NULL;
 
-        EAGLEEYE_LOGD("Get initialize plugin func.");
-        std::string init_func_name = "eagleeye_"+kv[0]+"_pipeline_initialize";
-        plugin_initialize_func = (INITIALIZE_PLUGIN_FUNC)dlsym(handle, init_func_name.c_str());
-        if(!plugin_initialize_func){
-            EAGLEEYE_LOGD("Dlsym error, message (%s)",dlerror());
-            dlclose(handle);
-            continue;
+            EAGLEEYE_LOGD("Get initialize plugin func.");
+            std::string init_func_name = "eagleeye_"+kv[0]+"_pipeline_initialize";
+            plugin_initialize_func = (INITIALIZE_PLUGIN_FUNC)dlsym(handle, init_func_name.c_str());
+            if(!plugin_initialize_func){
+                EAGLEEYE_LOGD("Dlsym error, message (%s)",dlerror());
+                dlclose(handle);
+                continue;
+            }
+
+            pipeline_init_map[kv[0]] = plugin_initialize_func;
         }
+        else{
+            // 直接查询预设插件
+            REGISTER_PLUGIN_FUNC plugin_register_func = NULL; 
+            INITIALIZE_PLUGIN_FUNC plugin_initialize_func = NULL;
+            for(int pp_name_i=0; pp_name_i<predefined_plugin_names.size(); ++pp_name_i){
+                std::string init_func_name = "eagleeye_"+predefined_plugin_names[pp_name_i]+"_pipeline_initialize";
+                plugin_initialize_func = (INITIALIZE_PLUGIN_FUNC)dlsym(handle, init_func_name.c_str());
 
-        pipeline_init_map[kv[0]] = plugin_initialize_func;
+                if(plugin_initialize_func){
+                    pipeline_init_map[predefined_plugin_names[pp_name_i]] = plugin_initialize_func;
+                    EAGLEEYE_LOGD("found plugin %s", predefined_plugin_names[pp_name_i].c_str());
+                }
+            }
+        }
     }
 
     return SERVER_SUCCESS;
@@ -945,6 +961,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
                         CameraCenter::getInstance()->removeCamera(source_list[camera_i]);
                     }
                 }
+                // 2.step 管线
                 else{
                     EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
                     AnyPipeline* waiting_del_pipeline = (AnyPipeline*)pipeline_obj;
@@ -1018,18 +1035,18 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string r
                     data_cfg.Get("content", data_content);
                     void* data_content_ptr = (void*)(data_content);
                     if(channel == 3){
-                        pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 8);
+                        pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
                     }
                     else if(channel == 4){
-                        pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 9);
+                        pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
                     }
                 }
                 else if(data_type == "string"){
                     std::string data;
                     data_cfg.Get("content", data);
-                    void* data_content_ptr = (void*)(&data);
+                    void* data_content_ptr = (void*)(const_cast<char*>(data.c_str()));
                     std::vector<size_t> data_size = {(size_t)1, (size_t)data.size()};
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, -1);
+                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 0);
                 }
                 else if(data_type == "matrix/float"){
                     int width = 0;
@@ -1056,6 +1073,9 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string r
                     void* data_content_ptr = (void*)(data_content);
 
                     pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 4);
+                }
+                else{
+                    EAGLEEYE_LOGE("Input data type not support.");
                 }
             }
 

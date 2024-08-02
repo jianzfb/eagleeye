@@ -116,9 +116,10 @@ void StringSignal::setData(void* data, MetaData meta){
 }
 
 void StringSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
-	this->m_tmp = this->getData();
-	data = &this->m_tmp;
-	this->m_data_size[0] = this->m_tmp.size();
+	this->m_tmp_cache = this->getData();
+	data = &this->m_tmp_cache;
+	this->m_data_size[0] = this->m_tmp_cache.size();
+	data_size = m_data_size;
 	data_dims = 1;
 	data_type = int(EAGLEEYE_STRING);
 }

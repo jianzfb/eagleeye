@@ -79,17 +79,22 @@ bool RegisterCenter::destroyObj(std::string key){
 bool RegisterCenter::destroyObjWithPrefix(std::string prefix){
     std::unique_lock<std::mutex> locker(m_mu);
     std::map<std::string, std::pair<void*, std::function<void(std::string, void*)>>>::iterator iter, iend(m_register_map.end());
+    
+    std::vector<std::string> waiting_del_list;
     for(iter = m_register_map.begin(); iter != iend; ++iter){
         if(startswith(iter->first, prefix)){
             std::function<void(std::string, void*)> destroy_obj_func = m_register_map[iter->first].second;
             void* obj = m_register_map[iter->first].first;
             destroy_obj_func(iter->first, obj);
-            m_register_map.erase(iter->first);
-            m_register_start_time.erase(iter->first);
-            m_register_info.erase(iter->first);
+            waiting_del_list.push_back(iter->first);
         }
     }
 
+    for(int i=0; i<waiting_del_list.size(); ++i){
+        m_register_map.erase(waiting_del_list[i]);
+        m_register_start_time.erase(waiting_del_list[i]);
+        m_register_info.erase(waiting_del_list[i]);
+    }
     return true;
 }
 

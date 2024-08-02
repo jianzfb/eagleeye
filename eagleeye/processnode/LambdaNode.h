@@ -136,6 +136,56 @@ private:
     Tensor m_cache;
 };
 
+class LambdaANode:public AnyNode{
+public:
+    typedef LambdaANode             Self;
+    typedef AnyNode                 Superclass;    
+
+    EAGLEEYE_CLASSIDENTITY(LambdaANode);
+
+    LambdaANode(std::function<void(std::vector<Tensor>&, std::vector<AnySignal*>, std::vector<AnySignal*>&)> lambda_func){
+        m_lambda_func = lambda_func;
+    }
+    virtual ~LambdaANode(){}
+
+    template<class T>
+    void append(T* out_sig){
+        int num = this->getNumberOfOutputSignals();
+        this->setNumberOfOutputSignals(num + 1);
+        this->setOutputPort(out_sig, num);
+    }
+
+    /**
+	 *	@brief execute Node
+     *  @note user must finish this function
+	 */
+	virtual void executeNodeInfo(){
+        // 汇集输入信号
+        std::vector<AnySignal*> input_signals;
+        int signal_num = this->getNumberOfInputSignals();
+        for(int signal_i=0; signal_i<signal_num; ++signal_i){
+            input_signals.push_back(this->getInputPort(signal_i));
+        }
+
+        // 汇集输出信号
+        std::vector<AnySignal*> output_signals;
+        signal_num = this->getNumberOfOutputSignals();
+        for(int signal_i=0; signal_i<signal_num; ++signal_i){
+            output_signals.push_back(this->getOutputPort(signal_i));
+        }
+
+        // 执行lambda
+        this->m_lambda_func(m_caches, input_signals, output_signals);
+    }
+
+private:
+    LambdaANode(const LambdaANode&);
+    void operator=(const LambdaANode&);
+
+    std::function<void(std::vector<Tensor>&, std::vector<AnySignal*>, std::vector<AnySignal*>&)> m_lambda_func;
+    std::vector<Tensor> m_caches;
+};
+
 template<class T1, class T2, class T3, class T4>
 class Lambda4Node:public AnyNode{
 public:
@@ -180,5 +230,6 @@ private:
     std::function<void(Tensor&, std::vector<AnySignal*>, std::vector<AnySignal*>&)> m_lambda_func;
     Tensor m_cache;
 };
+
 }
 #endif

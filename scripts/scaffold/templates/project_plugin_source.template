@@ -5,6 +5,8 @@
 #include "eagleeye/framework/pipeline/AnyPipeline.h"
 #include "eagleeye/processnode/Placeholder.h"
 #include "eagleeye/framework/pipeline/DynamicPipelineCreater.h"
+#include "eagleeye/processnode/LambdaNode.h"
+#include "eagleeye/framework/pipeline/JsonSignal.h"
 #include "{{project}}_plugin.h"
 // >>>>>>>>>>>>>>>>>>>>>>AUTOGENERATE PLUGIN HEADER>>>>>>>>>>>>>>>>>>>>>>
 

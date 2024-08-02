@@ -1,4 +1,4 @@
-{% if abi == "arm64-v8a" or  abi == "armeabi-v7a" %}
+{% if (abi == "arm64-v8a" or  abi == "armeabi-v7a") and platform == "android" %}
 adb shell "if [ ! -d '/data/local/tmp/{{project}}' ]; then mkdir /data/local/tmp/{{project}}; fi;"
 adb push {{eagleeye}}/libs/{{abi}}/* /data/local/tmp/{{project}}/
 adb push {{eagleeye}}/3rd/opencv/lib/{{abi}}/* /data/local/tmp/{{project}}/
@@ -14,4 +14,6 @@ adb push {{paddlelite}}/{{abi}}/lib/* /data/local/tmp/{{project}}/
 {% else %}
 cp -r {{eagleeye}}/libs/{{abi}}/* bin/{{abi}}/
 cp -r ./3rd/{{abi}}/* bin/{{abi}}/
+cp -r ./models bin/{{abi}}/
+cp -r ./config bin/{{abi}}/
 {% endif %}

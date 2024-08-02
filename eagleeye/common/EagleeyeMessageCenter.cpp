@@ -38,6 +38,7 @@ std::shared_ptr<Message> MessageCenter::get(std::string key, int timeout){
 
     if(!m_lock_map[key]->status){
         message_locker.unlock();
+        // 消息队列结束，退出
         return std::shared_ptr<Message>();
     }
 
@@ -64,7 +65,7 @@ bool MessageCenter::insert(std::string key, std::shared_ptr<Message> message){
 
     this->m_message_map[key].push(message); 
 	message_locker.unlock();
-
+    
     // notify
     m_lock_map[key]->cond.notify_all();
     return true;

@@ -8,7 +8,7 @@ fi
 echo "start compile {{abi}}"
 mkdir -p build
 cd build
-{% if abi == "arm64-v8a" or  abi == "armeabi-v7a" %}
+{% if (abi == "arm64-v8a" or  abi == "armeabi-v7a") and platform == "android" %}
 cmake -DCMAKE_BUILD_TYPE={{build_type}} -DCMAKE_TOOLCHAIN_FILE={{'${ANDROID_NDK_HOME}'}}/build/cmake/android.toolchain.cmake -DANDROID_ABI={{abi}} -DANDROID_STL=c++_shared -DANDROID_NATIVE_API_LEVEL={{api_level}} ..
 {% else %}
 cmake -DCMAKE_BUILD_TYPE={{build_type}} -DX86_ABI={{abi}} ..

@@ -111,6 +111,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeIni.cpp
     eagleeye/common/cJSON.cpp
     eagleeye/common/CJsonObject.cpp
+    eagleeye/common/base64.cpp
     eagleeye/common/EagleeyeFactory.cpp
     eagleeye/common/EagleeyeNodeManager.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
@@ -152,6 +153,7 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/YUVSignal.cpp
     eagleeye/framework/pipeline/EmptySignal.cpp
     eagleeye/framework/pipeline/GroupSignal.cpp
+    eagleeye/framework/pipeline/JsonSignal.cpp
     eagleeye/processnode/YUVConvertNode.cpp
     eagleeye/processnode/YUVResizeNode.cpp
     eagleeye/processnode/OrNode.cpp
@@ -282,6 +284,7 @@ set(EAGLEEYE_SRC
     eagleeye/common/EagleeyeIni.cpp
     eagleeye/common/cJSON.cpp
     eagleeye/common/CJsonObject.cpp
+    eagleeye/common/base64.cpp
     eagleeye/common/EagleeyeFactory.cpp
     eagleeye/common/EagleeyeNodeManager.cpp
     eagleeye/framework/EagleeyeTimeStamp.cpp 
@@ -293,6 +296,7 @@ set(EAGLEEYE_SRC
     eagleeye/framework/pipeline/StateSignal.cpp
     eagleeye/framework/pipeline/LandmarkSignal.cpp
     eagleeye/framework/pipeline/TensorSignal.cpp
+    eagleeye/framework/pipeline/JsonSignal.cpp
     eagleeye/common/EagleeyeLog.cpp 
     eagleeye/engine/model_engine.cpp 
     eagleeye/common/EagleeyeStr.cpp 
@@ -538,20 +542,31 @@ if(DEFINED FFMPEG)
 
     if(BUILD_PYTHON_MODULE)
         target_link_libraries(eagleeye PRIVATE
-                                ${FFMPEG}/install/lib/libavcodec.so
-                                ${FFMPEG}/install/lib/libavfilter.so
-                                ${FFMPEG}/install/lib/libavformat.so
-                                ${FFMPEG}/install/lib/libavutil.so
-                                ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)
+                                ${FFMPEG}/linux-install/lib/libavcodec.so
+                                ${FFMPEG}/linux-install/lib/libavfilter.so
+                                ${FFMPEG}/linux-install/lib/libavformat.so
+                                ${FFMPEG}/linux-install/lib/libavutil.so
+                                ${FFMPEG}/linux-install/lib/libswresample.so
+                                ${FFMPEG}/linux-install/lib/libswscale.so)
     else()
-        target_link_libraries(eagleeye 
-                                ${FFMPEG}/install/lib/libavcodec.so
-                                ${FFMPEG}/install/lib/libavfilter.so
-                                ${FFMPEG}/install/lib/libavformat.so
-                                ${FFMPEG}/install/lib/libavutil.so
-                                ${FFMPEG}/install/lib/libswresample.so
-                                ${FFMPEG}/install/lib/libswscale.so)
+        if(DEFINED ANDROID_ABI)
+            target_link_libraries(eagleeye 
+                                    ${FFMPEG}/android-install/lib/libavcodec.so
+                                    ${FFMPEG}/android-install/lib/libavfilter.so
+                                    ${FFMPEG}/android-install/lib/libavformat.so
+                                    ${FFMPEG}/android-install/lib/libavutil.so
+                                    ${FFMPEG}/android-install/lib/libswresample.so
+                                    ${FFMPEG}/android-install/lib/libswscale.so)
+        else()
+            target_link_libraries(eagleeye 
+                                    ${FFMPEG}/linux-install/lib/libavcodec.so
+                                    ${FFMPEG}/linux-install/lib/libavfilter.so
+                                    ${FFMPEG}/linux-install/lib/libavformat.so
+                                    ${FFMPEG}/linux-install/lib/libavutil.so
+                                    ${FFMPEG}/linux-install/lib/libswresample.so
+                                    ${FFMPEG}/linux-install/lib/libswscale.so)
+        endif()
+
     endif()
 endif()
 
