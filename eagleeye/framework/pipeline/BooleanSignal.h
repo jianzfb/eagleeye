@@ -53,6 +53,15 @@ public:
 	void setData(DataType data);
 
 	/**
+	 * @brief Set the Signal Content object
+	 * 
+	 * @param data 
+	 * @param data_size 
+	 * @param data_dims 
+	 */
+	virtual void setData(void* data, MetaData meta);
+
+	/**
 	 *	@brief clear Info signal content
 	 */
 	virtual void makeempty(bool auto_empty=true);

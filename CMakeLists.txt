@@ -168,6 +168,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ClassicalFilter.cpp
     eagleeye/processnode/SwitchNode.cpp
     eagleeye/processnode/AnyPlaceholder.cpp
+    eagleeye/processnode/PlaceholderQueue.cpp
     eagleeye/processnode/CropNode.cpp
     eagleeye/processnode/CallbackNode.cpp
     eagleeye/processnode/AutoPipeline.cpp
@@ -277,6 +278,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/DelayFetch.cpp
     eagleeye/processnode/CallbackNode.cpp
     eagleeye/processnode/AutoPipeline.cpp
+    eagleeye/processnode/PlaceholderQueue.cpp
     eagleeye/common/EagleeyeFile.cpp 
     eagleeye/common/EagleeyeTime.cpp 
     eagleeye/common/EagleeyeProcessor.cpp

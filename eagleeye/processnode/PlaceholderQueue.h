@@ -2,6 +2,8 @@
 #define _EAGLEEYE_PLACEHOLDER_QUEUE_H_
 #include "eagleeye/common/EagleeyeMacro.h"
 #include "eagleeye/basic/Matrix.h"
+#include "eagleeye/framework/pipeline/AnyNode.h"
+
 
 namespace eagleeye{
 class PlaceholderQueue: public AnyNode{
