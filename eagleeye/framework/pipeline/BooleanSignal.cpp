@@ -59,6 +59,11 @@ void BooleanSignal::setData(BooleanSignal::DataType data){
 	modified();
 }
 
+void BooleanSignal::setData(void* data, MetaData meta){
+	bool* data_ptr = (bool*)data;
+	this->m_boolean = *data_ptr;
+}
+
 void BooleanSignal::copy(AnySignal* sig){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_CONTROL){
 		BooleanSignal* b_sig = (BooleanSignal*)sig;

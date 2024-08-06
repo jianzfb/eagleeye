@@ -11,6 +11,8 @@
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include "eagleeye/processnode/AutoPipeline.h"
 #include "eagleeye/processnode/PipelineNode.h"
+#include "eagleeye/processnode/SubPipeline.h"
+#include "eagleeye/processnode/PlaceholderQueue.h"
 
 #ifdef EAGLEEYE_OPENGL
 #include "eagleeye/common/EagleeyeShader.h"
@@ -849,8 +851,161 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         }
         server_key = key;
     }
+    if(server_mode == "asyn"){
+        // 忽略数据源
+        // 异步模式 (QueueNode + AutoPipeline)
+        if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
+            EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
+            return SERVER_NOT_EXIST;
+        }
+
+        std::string key = server_id + "/" + server_timestamp;
+        // 构建管线
+        EAGLEEYE_LOGD("Construct pipeline.");
+        std::vector<std::string> pipeline_input_nodes;
+        std::vector<std::string> pipeline_input_types;
+        std::vector<std::string> pipeline_input_categorys;
+        std::vector<std::string> pipeline_input_sources;
+        AnyNode* auto_pipeline_node = new AutoPipeline(
+            [&pipeline_input_nodes, &pipeline_input_types, &pipeline_input_categorys, &pipeline_input_sources, &key, &server_params,&pipeline_name](){
+                AnyPipeline* pipeline = new AnyPipeline();
+                pipeline->setPipelineName(key.c_str());
+
+                // 初始化管线
+                pipeline_init_map[pipeline_name](pipeline);
+                const char* config_folder = NULL;
+                pipeline->initialize(config_folder, nullptr, true);
+                pipeline->getPipelineInputs(pipeline_input_nodes, pipeline_input_types, pipeline_input_categorys, pipeline_input_sources);
+
+                // 配置管线参数
+                if(!server_params.IsEmpty()){
+                    for(int i=0; i<server_params.GetArraySize(); ++i){
+                        neb::CJsonObject node_param_info = server_params[i];
+
+                        std::string node_name;
+                        node_param_info.Get("node", node_name);
+                        std::string param_name;
+                        node_param_info.Get("name", param_name);
+                        std::string param_type;
+                        node_param_info.Get("type", param_type);
+                        // "string"/"float"/"double"/"int"/"bool"
+                        if(param_type == "string"){
+                            std::string param_value;
+                            bool is_ok = node_param_info.Get("value", param_value);
+                            if(is_ok){
+                                EAGLEEYE_LOGD("set parameter %s, %s, %s", node_name.c_str(), param_name.c_str(), param_value.c_str());
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "float"){
+                            float param_value = 0.0f;
+                            bool is_ok = node_param_info.Get("value", param_value);
+                            if(is_ok){
+                                EAGLEEYE_LOGD("set parameter %s, %s, %f", node_name.c_str(), param_name.c_str(), param_value);
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "double"){
+                            double param_value = 0.0;
+                            bool is_ok = node_param_info.Get("value", param_value);
+                            if(is_ok){
+                                EAGLEEYE_LOGD("set parameter %s, %s, %f", node_name.c_str(), param_name.c_str(), param_value);
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "int"){
+                            int param_value = 0;
+                            bool is_ok = node_param_info.Get("value", param_value);
+                            if(is_ok){
+                                EAGLEEYE_LOGD("set parameter %s, %s, %d", node_name.c_str(), param_name.c_str(), param_value);
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                        else if(param_type == "bool"){
+                            bool param_value = false;
+                            bool is_ok = node_param_info.Get("value", param_value);
+                            if(is_ok){
+                                EAGLEEYE_LOGD("set parameter %s, %s, %d", node_name.c_str(), param_name.c_str(), int(param_value));
+                                pipeline->setParameter(node_name.c_str(), param_name.c_str(), &param_value);
+                            }
+                        }
+                    }
+                }
+
+                // 自定义回调
+                // 需要在管线内部完成构建
+
+                return pipeline;
+            },
+            std::vector<std::pair<std::string, int>>({}),
+            1
+        );
+
+        // 构建数据队列
+        PlaceholderQueue* data_node = new PlaceholderQueue(8);
+        for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
+            data_node->config(input_i, pipeline_input_types[input_i], pipeline_input_categorys[input_i]);
+        }
+
+        // 注册数据队列到注册中心
+        RegisterCenter::getInstance()->registerObj(
+            key + "/data",
+            data_node,
+            [](std::string k, void* obj){
+                EAGLEEYE_LOGD("Delete data queue node %s", k.c_str());
+                AnyNode* node = (AnyNode*)obj;
+                node->exit();
+                delete node;
+            }
+        );
+
+        // 关联 QueueNode -> AutoPipeline
+        for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
+            auto_pipeline_node->addInputPort(data_node->getOutputPort(input_i));
+        }
+
+        // 启动管线
+        auto_pipeline_node->init();
+
+        // 注册管线到管线管理中心
+        EAGLEEYE_LOGD("Register pipeline as %s.", key.c_str());
+        bool is_success_register = RegisterCenter::getInstance()->registerObj(
+            key, 
+            auto_pipeline_node, 
+            [](std::string pipeline_key, void* pipeline_obj){
+                // 1.step 删除管线
+                EAGLEEYE_LOGD("Delete pipeline %s", pipeline_key.c_str());
+                AnyNode* node = (AnyNode*)pipeline_obj;
+                node->exit();
+
+                for(int sig_i=0; sig_i<node->getNumberOfInputSignals(); ++sig_i){
+                    node->clearInputPort(sig_i);
+                }
+                delete node;
+
+                // 3.step 清空消息队列
+                EAGLEEYE_LOGD("Clear message %s", pipeline_key.c_str());
+                MessageCenter::getInstance()->clear(pipeline_key);
+            },
+            "mode/asyn"
+        );
+
+        if(!is_success_register){
+            EAGLEEYE_LOGE("Register pipeline manager fail.");
+            return SERVER_ABNORMAL;            
+        }
+
+        // 注册到消息中心
+        is_success_register = MessageCenter::getInstance()->create(key);
+        if(!is_success_register){
+            EAGLEEYE_LOGE("Register to message center fail.");
+            return SERVER_ABNORMAL;
+        }
+        server_key = key;
+    }
     else{
-        // 直接构建
+        // 忽略数据源
+        // 同步模式（Pipeline）
         if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
             EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
             return SERVER_NOT_EXIST;
@@ -980,6 +1135,85 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     return SERVER_SUCCESS;
 }
 
+ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::string request){
+    // 管线数据对象
+    std::string server_data_key = server_key + "/data";
+    void* pipeline_data_obj = RegisterCenter::getInstance()->getObj(server_data_key);
+    if(pipeline_data_obj == NULL){
+        return SERVER_NOT_EXIST;
+    }
+
+    // TODO, 需要增加setInput函数
+    PlaceholderQueue* data_node = (PlaceholderQueue*)pipeline_data_obj;
+
+    // 解析request，并推入数据队列
+    neb::CJsonObject request_obj(request);   
+    neb::CJsonObject data_info;
+    request_obj.Get("data", data_info);
+    for(int data_i=0; data_i<data_info.GetArraySize(); ++data_i){
+        neb::CJsonObject data_cfg;
+        data_info.Get(data_i, data_cfg);
+        std::string data_type = "";
+        data_cfg.Get("type", data_type);
+
+        std::string data_i_placeholder = "placeholder_"+std::to_string(data_i);
+        if(data_type == "image"){
+            int width = 0;
+            int height = 0;
+            int channel = 0;
+            data_cfg.Get("width", width);
+            data_cfg.Get("height", height);
+            data_cfg.Get("channel", channel);
+            std::vector<size_t> data_size = {(size_t)height, (size_t)width, (size_t)channel};
+
+            int64 data_content;   // 内存地址
+            data_cfg.Get("content", data_content);
+            void* data_content_ptr = (void*)(data_content);
+            if(channel == 3){
+                data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 1);
+            }
+            else if(channel == 4){
+                data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 1);
+            }
+        }
+        else if(data_type == "string"){
+            std::string data;
+            data_cfg.Get("content", data);
+            void* data_content_ptr = (void*)(const_cast<char*>(data.c_str()));
+            std::vector<size_t> data_size = {(size_t)1, (size_t)data.size()};
+            data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 0);
+        }
+        else if(data_type == "matrix/float"){
+            int width = 0;
+            int height = 0;
+            data_cfg.Get("width", width);
+            data_cfg.Get("height", height);
+            std::vector<size_t> data_size = {(size_t)height, (size_t)width};
+
+            int64 data_content;   // 内存地址
+            data_cfg.Get("content", data_content);
+            void* data_content_ptr = (void*)(data_content);
+            data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 6);
+        }
+        else if(data_type == "matrix/int32"){
+            int width = 0;
+            int height = 0;
+            data_cfg.Get("width", width);
+            data_cfg.Get("height", height);
+            std::vector<size_t> data_size = {(size_t)height, (size_t)width};
+
+            int64 data_content;   // 内存地址
+            data_cfg.Get("content", data_content);
+            void* data_content_ptr = (void*)(data_content);
+            data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 4);
+        }
+        else{
+            EAGLEEYE_LOGE("Input data type not support.");
+        }
+    }
+    return SERVER_SUCCESS;
+}
+
 ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout){
     void* pipeline_obj = RegisterCenter::getInstance()->getObj(server_key);
     if(pipeline_obj == NULL){
@@ -989,8 +1223,8 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string r
     std::string mode = RegisterCenter::getInstance()->getInfo(server_key);
 
     // 执行
-    if(mode == "mode/callback"){
-        // 回调模式（接收reply, 返回reply）
+    if(mode == "mode/callback" || mode == "mode/asyn"){
+        // 回调/异步模式（返回reply）
         std::shared_ptr<Message> message = MessageCenter::getInstance()->get(server_key, timeout);
         if(message.get() == nullptr){
             return SERVER_TIMEOUT;
@@ -999,115 +1233,109 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string r
         reply = message->serialize();
     }
     else{
-        // 直建模式（处理request，返回reply）
-        if(request != ""){
-            // {
-            //      "data": [
-            //          {"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, 
-            //          {"type": "string", "content": ""}, 
-            //          {"type": "matrix/float", "content": "", "width":0, "height":0},
-            //          {"type": "matrix/int32", "content": "", "width":0, "height":0}
-            //       ]
-            // }
-            AnyPipeline* pipeline = (AnyPipeline*)pipeline_obj;
+        // 同步模式（接收request, 返回reply）
+        if(request == ""){
+            return SERVER_ERROR;
+        }
+        // {
+        //      "data": [
+        //          {"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, 
+        //          {"type": "string", "content": ""}, 
+        //          {"type": "matrix/float", "content": "", "width":0, "height":0},
+        //          {"type": "matrix/int32", "content": "", "width":0, "height":0}
+        //       ]
+        // }
+        AnyPipeline* pipeline = (AnyPipeline*)pipeline_obj;
 
-            // 1.step 解析request
-            neb::CJsonObject request_obj(request);   
-            neb::CJsonObject data_info;
-            request_obj.Get("data", data_info);
-            for(int data_i=0; data_i<data_info.GetArraySize(); ++data_i){
-                neb::CJsonObject data_cfg;
-                data_info.Get(data_i, data_cfg);
-                std::string data_type = "";
-                data_cfg.Get("type", data_type);
+        // 1.step 解析request
+        neb::CJsonObject request_obj(request);   
+        neb::CJsonObject data_info;
+        request_obj.Get("data", data_info);
+        for(int data_i=0; data_i<data_info.GetArraySize(); ++data_i){
+            neb::CJsonObject data_cfg;
+            data_info.Get(data_i, data_cfg);
+            std::string data_type = "";
+            data_cfg.Get("type", data_type);
 
-                std::string data_i_placeholder = "placeholder_"+std::to_string(data_i);
-                if(data_type == "image"){
-                    int width = 0;
-                    int height = 0;
-                    int channel = 0;
-                    data_cfg.Get("width", width);
-                    data_cfg.Get("height", height);
-                    data_cfg.Get("channel", channel);
-                    std::vector<size_t> data_size = {(size_t)height, (size_t)width, (size_t)channel};
+            std::string data_i_placeholder = "placeholder_"+std::to_string(data_i);
+            if(data_type == "image"){
+                int width = 0;
+                int height = 0;
+                int channel = 0;
+                data_cfg.Get("width", width);
+                data_cfg.Get("height", height);
+                data_cfg.Get("channel", channel);
+                std::vector<size_t> data_size = {(size_t)height, (size_t)width, (size_t)channel};
 
-                    int64 data_content;   // 内存地址
-                    data_cfg.Get("content", data_content);
-                    void* data_content_ptr = (void*)(data_content);
-                    if(channel == 3){
-                        pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
-                    }
-                    else if(channel == 4){
-                        pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
-                    }
+                int64 data_content;   // 内存地址
+                data_cfg.Get("content", data_content);
+                void* data_content_ptr = (void*)(data_content);
+                if(channel == 3){
+                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
                 }
-                else if(data_type == "string"){
-                    std::string data;
-                    data_cfg.Get("content", data);
-                    void* data_content_ptr = (void*)(const_cast<char*>(data.c_str()));
-                    std::vector<size_t> data_size = {(size_t)1, (size_t)data.size()};
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 0);
-                }
-                else if(data_type == "matrix/float"){
-                    int width = 0;
-                    int height = 0;
-                    data_cfg.Get("width", width);
-                    data_cfg.Get("height", height);
-                    std::vector<size_t> data_size = {(size_t)height, (size_t)width};
-
-                    int64 data_content;   // 内存地址
-                    data_cfg.Get("content", data_content);
-                    void* data_content_ptr = (void*)(data_content);
-
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 6);
-                }
-                else if(data_type == "matrix/int32"){
-                    int width = 0;
-                    int height = 0;
-                    data_cfg.Get("width", width);
-                    data_cfg.Get("height", height);
-                    std::vector<size_t> data_size = {(size_t)height, (size_t)width};
-
-                    int64 data_content;   // 内存地址
-                    data_cfg.Get("content", data_content);
-                    void* data_content_ptr = (void*)(data_content);
-
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 4);
-                }
-                else{
-                    EAGLEEYE_LOGE("Input data type not support.");
+                else if(channel == 4){
+                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
                 }
             }
+            else if(data_type == "string"){
+                std::string data;
+                data_cfg.Get("content", data);
+                void* data_content_ptr = (void*)(const_cast<char*>(data.c_str()));
+                std::vector<size_t> data_size = {(size_t)1, (size_t)data.size()};
+                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 0);
+            }
+            else if(data_type == "matrix/float"){
+                int width = 0;
+                int height = 0;
+                data_cfg.Get("width", width);
+                data_cfg.Get("height", height);
+                std::vector<size_t> data_size = {(size_t)height, (size_t)width};
 
-            // 2.step 运行
-            pipeline->start();
+                int64 data_content;   // 内存地址
+                data_cfg.Get("content", data_content);
+                void* data_content_ptr = (void*)(data_content);
 
-            // 3.step 获得结果，并序列化
-            std::vector<std::string> output_nodes;
-            std::vector<std::string> output_types;
-            std::vector<std::string> output_categorys;
-            std::vector<std::string> output_targets;
-            pipeline->getPipelineOutputs(output_nodes, output_types, output_categorys, output_targets);
-            for(int signal_i=0; signal_i<output_nodes.size(); ++signal_i){
-                // SIGNAL_CATEGORY_STRING - 2
-                if(output_categorys[signal_i] == "2"){
-                    void* temp_content;
-                    size_t* temp_size;
-                    int temp_dims;
-                    int temp_type;
-                    pipeline->getOutput(output_nodes[signal_i].c_str(), temp_content, temp_size, temp_dims, temp_type);
+                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 6);
+            }
+            else if(data_type == "matrix/int32"){
+                int width = 0;
+                int height = 0;
+                data_cfg.Get("width", width);
+                data_cfg.Get("height", height);
+                std::vector<size_t> data_size = {(size_t)height, (size_t)width};
 
-                    reply = *((std::string*)temp_content);
-                    break;
-                }
+                int64 data_content;   // 内存地址
+                data_cfg.Get("content", data_content);
+                void* data_content_ptr = (void*)(data_content);
+
+                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 4);
+            }
+            else{
+                EAGLEEYE_LOGE("Input data type not support.");
             }
         }
-        else{
-            // 自己拥有数据源
-            AnyNode* pipeline = (AnyNode*)pipeline_obj;
-            // 1.step 运行
-            pipeline->start();
-            // 2.step（TODO）获得结果，并序列化
+
+        // 2.step 运行
+        pipeline->start();
+
+        // 3.step 获得结果，并序列化
+        std::vector<std::string> output_nodes;
+        std::vector<std::string> output_types;
+        std::vector<std::string> output_categorys;
+        std::vector<std::string> output_targets;
+        pipeline->getPipelineOutputs(output_nodes, output_types, output_categorys, output_targets);
+        for(int signal_i=0; signal_i<output_nodes.size(); ++signal_i){
+            // SIGNAL_CATEGORY_STRING - 2
+            if(output_categorys[signal_i] == "2"){
+                void* temp_content;
+                size_t* temp_size;
+                int temp_dims;
+                int temp_type;
+                pipeline->getOutput(output_nodes[signal_i].c_str(), temp_content, temp_size, temp_dims, temp_type);
+
+                reply = *((std::string*)temp_content);
+                break;
+            }
         }
     }
     return SERVER_SUCCESS;

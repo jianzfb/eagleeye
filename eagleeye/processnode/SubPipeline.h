@@ -38,8 +38,7 @@ public:
     void add(AnyNode* node, std::string name);
 
     /**
-     * @brief connect two nodes
-     * special node, "SOURCE", "SINK".
+     * @brief connect nodes
      * @param fromname 
      * @param fromport 
      * @param toname 
