@@ -768,6 +768,7 @@ void AnyPipeline::setInput(const char* node_name,
     meta.rows = data_size[0];
     meta.cols = data_size[1];
     meta.rotation = data_rotation;
+    meta.allocate_mode = 0;
     this->m_input_nodes[input_key]->getOutputPort(port)->setData(data, meta);
     this->m_input_nodes[input_key]->modified();
     EAGLEEYE_LOGD("Finish set signal content.");
