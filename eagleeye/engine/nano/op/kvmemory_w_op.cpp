@@ -97,7 +97,7 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
             key_size = key_size <= 16 ?  key_size : 16;
 
             char* group_str_ptr = (char*)malloc(16+1);
-            memset(group_str_ptr, '0', 16+1);
+            memset(group_str_ptr, '\0', 16+1);
             memcpy(group_str_ptr, key, key_size);
             group_str_ptr[16] = '\0';
             group_str = group_str_ptr;
