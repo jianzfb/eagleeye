@@ -41,8 +41,8 @@ static AImageReader* imageReader = nullptr;
 static ACaptureSessionOutput* imageOutput = nullptr;
 static ACaptureSessionOutputContainer* outputs = nullptr;
 
-static int captureImageWidth = 640;
-static int captureImageHeight = 480;
+static int captureImageWidth = 1280;
+static int captureImageHeight = 720;
 static int captureImageRotate = 0;
 
 static std::string cameraFacing = "back";
@@ -180,7 +180,7 @@ static void imageCallback(void* context, AImageReader* reader){
 
 AImageReader* createYUVReader(){
     AImageReader* reader = nullptr;
-    AImageReader_new(640, 480, AIMAGE_FORMAT_YUV_420_888, 2, &reader);
+    AImageReader_new(captureImageWidth, captureImageHeight, AIMAGE_FORMAT_YUV_420_888, 2, &reader);
     AImageReader_ImageListener listener{
             .context = nullptr,
             .onImageAvailable = imageCallback,
@@ -658,6 +658,11 @@ void AndroidCameraNode::setCameraFacing(std::string facing){
     this->m_camera_facing = facing;
     cameraFacing = this->m_camera_facing;
     modified();
+}
+
+void AndroidCameraNode::setCameraResolution(int wight, int height){
+    captureImageWidth = wight;
+    captureImageHeight = height;
 }
 
 void AndroidCameraNode::getCameraFacing(std::string& facing){
