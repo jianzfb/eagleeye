@@ -37,6 +37,7 @@ public:
     void getImageFormat(int& image_format);
 
     bool isPullError(){return m_is_pull_error;};
+    void setCameraResolution(int wight, int height);
 
 private:
     AndroidCameraNode(const AndroidCameraNode&);
