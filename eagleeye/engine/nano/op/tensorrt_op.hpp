@@ -314,29 +314,56 @@ public:
             }
         }
 
-        for(int b_i=0; b_i<batch_size; ++b_i){
+        if( !(m_model_run->isDynamicInputShape() || m_model_run->isDynamicOutputShape()) ){
+            EAGLEEYE_LOGD("static batch , batch size = [%d]", batch_size);
+            for(int b_i=0; b_i<batch_size; ++b_i){
+                std::map<std::string, const unsigned char*> inputs;
+                std::map<std::string, unsigned char*> outputs;
+
+                // 输入
+                for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+                    int slice_size = m_preprocess_tensors[input_i].numel() / batch_size;
+                    inputs[m_input_names[input_i]] = m_preprocess_tensors[input_i].cpu<unsigned char>() + b_i * slice_size * m_preprocess_tensors[input_i].elemsize();
+                }
+
+                // 输出
+                for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                    outputs[m_output_names[output_i]] = NULL;
+                }
+
+                this->m_model_run->run(inputs, outputs);
+
+                // 导出
+                for(int output_i=0; output_i<m_output_names.size(); ++output_i){
+                    int slice_size = this->m_outputs[output_i].numel() / batch_size;
+                    int elem_size = this->m_outputs[output_i].elemsize();
+                    char* output_ptr = this->m_outputs[output_i].template cpu<char>() + b_i * slice_size * elem_size;
+                    memcpy(output_ptr, outputs[m_output_names[output_i]], slice_size * elem_size);
+                }
+            }
+        }
+        else{
+            EAGLEEYE_LOGD("dynamic batch , batch size = [%d]", batch_size);
             std::map<std::string, const unsigned char*> inputs;
             std::map<std::string, unsigned char*> outputs;
 
-            // 输入
-            for(int input_i=0; input_i<m_input_names.size(); ++input_i){
-                int slice_size = m_preprocess_tensors[input_i].numel() / batch_size;
-                inputs[m_input_names[input_i]] = m_preprocess_tensors[input_i].cpu<unsigned char>() + b_i * slice_size * m_preprocess_tensors[input_i].elemsize();
-            }
+            this->m_model_run->setDynamicBatchSize(batch_size);
 
-            // 输出
+            //输入
+            for(int input_i=0; input_i<m_input_names.size(); ++input_i){
+                inputs[m_input_names[input_i]] = m_preprocess_tensors[input_i].cpu<unsigned char>();
+            }
+            //输出
             for(int output_i=0; output_i<m_output_names.size(); ++output_i){
                 outputs[m_output_names[output_i]] = NULL;
             }
 
+            //导出
             this->m_model_run->run(inputs, outputs);
-
-            // 导出
             for(int output_i=0; output_i<m_output_names.size(); ++output_i){
-                int slice_size = this->m_outputs[output_i].numel() / batch_size;
                 int elem_size = this->m_outputs[output_i].elemsize();
-                char* output_ptr = this->m_outputs[output_i].template cpu<char>() + b_i * slice_size * elem_size;
-                memcpy(output_ptr, outputs[m_output_names[output_i]], slice_size * elem_size);
+                char* output_ptr = this->m_outputs[output_i].template cpu<char>();
+                memcpy(output_ptr, outputs[m_output_names[output_i]], this->m_outputs[output_i].numel() * elem_size);
             }
         }
         return 0;
