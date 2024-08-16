@@ -55,13 +55,17 @@ bool ModelRun<TensorrtRun, Enabled>::run(
 
     // TODO，这里虽然动态设置，但是m_input_shapes参数是固定的。
     // 后期加入动态batch
-    const auto batch_size = static_cast<int32_t>(this->m_input_shapes[0][0]);
+    auto batch_size = static_cast<int32_t>(this->m_input_shapes[0][0]);
     // Make sure the same batch size was provided for all inputs
     for (size_t i = 1; i < inputs.size(); ++i) {
-        if (m_input_shapes[i][0] != static_cast<size_t>(batch_size)) {
+        if (batch_size != -1 && m_input_shapes[i][0] != static_cast<size_t>(batch_size)) {
             EAGLEEYE_LOGD("The batch size needs to be constant for all inputs!");
             return false;
         }
+    }
+
+    if(this->isDynamicInputShape() || this->isDynamicOutputShape()){
+        batch_size = getDynamicBatchSize();
     }
 
     // Create the cuda stream that will be used for inference
@@ -301,6 +305,10 @@ bool ModelRun<TensorrtRun, Enabled>::initialize(){
     }
 
     EAGLEEYE_LOGD("Load TENSORRT model from %s", onnx_model_path.c_str());
+
+    if(isDynamicInputShape() || isDynamicOutputShape()){
+        m_options.maxBatchSize = 32;
+    }
 
     // Only regenerate the engine file if it has not already been generated for the specified options
     m_engineName = serializeEngineOptions(m_options, onnx_model_path);

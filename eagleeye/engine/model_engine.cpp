@@ -47,9 +47,9 @@ ModelEngine::ModelEngine(std::string model_name,
 			}
 		}
 	}
-	if(!this->m_is_dynamic_input_shape){
-		this->m_input_shapes = input_shapes;
-	}
+	
+	this->m_input_shapes = input_shapes;
+	
 	// if(input_shapes.size() == 0){
 	// 	this->m_is_dynamic_input_shape = true;
 	// }
@@ -61,9 +61,9 @@ ModelEngine::ModelEngine(std::string model_name,
 			}
 		}
 	}
-	if(!this->m_is_dynamic_output_shape){
-		this->m_output_shapes = output_shapes;
-	}
+	
+	this->m_output_shapes = output_shapes;
+	
 	// if(output_shapes.size() == 0){
 	// 	this->m_is_dynamic_output_shape = true;
 	// }

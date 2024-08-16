@@ -197,6 +197,9 @@ public:
 	 */
 	virtual void* getInputPtr(std::string input_name){return NULL;};
 
+	virtual void setDynamicBatchSize(int batch_size){m_dynamic_batch_size = batch_size;}
+	virtual int getDynamicBatchSize(){return m_dynamic_batch_size;}
+
 protected:
 	int m_omp_num_threads;
 	int m_cpu_affinity_policy;
@@ -232,6 +235,8 @@ protected:
 
 	std::vector<float> m_mean;
 	std::vector<float> m_std;
+
+	int m_dynamic_batch_size;
 };
 }
 
