@@ -4,7 +4,7 @@ FrameSyncNode::FrameSyncNode(){
     this->m_thread_status = true;
     this->m_is_ini = false;
     this->m_max_cache_frame_num = 90;  // 最大允许差别3s (3*30)
-    m_sync_time_delta = 0.05;           // 0.05s同步误差
+    m_sync_time_delta = 24*60*60;           // 0.05s同步误差
 }
 FrameSyncNode::~FrameSyncNode(){
     this->m_thread_status = false;
@@ -37,8 +37,8 @@ void FrameSyncNode::executeNodeInfo(){
         double max_timestamp = std::numeric_limits<double>::min();
 
         while(std::any_of(this->m_meta_cache_queue.begin(), this->m_meta_cache_queue.end(), [](const std::queue<MetaData>& q){return q.empty();})){
-            this->m_cond.wait(locker);
             EAGLEEYE_LOGD("m_meta_cache_queue has empty queue, wait ...");
+            this->m_cond.wait(locker);
         }
         for(int signal_i=0; signal_i<input_num; ++signal_i){
             Matrix<Array<unsigned char, 3>> signal_frame = this->m_frame_cache_queue[signal_i].front();
@@ -57,6 +57,7 @@ void FrameSyncNode::executeNodeInfo(){
             // 除去最早时间数据
             this->m_frame_cache_queue[min_signal_i].pop();
             this->m_meta_cache_queue[min_signal_i].pop();
+            EAGLEEYE_LOGD("FrameSyncNode has no sync data, max = [%f], min = [%f]", max_timestamp, min_timestamp);
         }
         else{
             // 成功发现同步帧
@@ -68,6 +69,7 @@ void FrameSyncNode::executeNodeInfo(){
                         break;
                     }
                 }
+                EAGLEEYE_LOGD("FrameSyncNode sync data success");
                 Matrix<Array<unsigned char, 3>> signal_frame = this->m_frame_cache_queue[signal_i].front();
                 MetaData signal_meta = this->m_meta_cache_queue[signal_i].front();
 
@@ -116,6 +118,7 @@ void FrameSyncNode::run(){
                 ImageSignal<Array<unsigned char, 3>>* img_sig = (ImageSignal<Array<unsigned char, 3>>*)(this->getInputPort(signal_i));
                 MetaData meta;
                 Matrix<Array<unsigned char, 3>> data = img_sig->getData(meta);
+                EAGLEEYE_LOGD("FrameSyncNode input port =  [%d], timestamp = [%f]", signal_i, meta.timestamp);
                 this->m_frame_cache_queue[signal_i].push(data.clone());
                 this->m_meta_cache_queue[signal_i].push(meta);
             }

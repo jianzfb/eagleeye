@@ -25,7 +25,7 @@ public:
 
     bool isExist(std::string camera_address);
     bool activeCamera(std::string camera_address, int pixel_format=1, CameraType camera_type=CAMERA_NETWORK);
-    bool addCamera(std::string camera_address, int pixel_format=1, CameraType camera_type=CAMERA_NETWORK);
+    bool addCamera(std::string camera_address, int pixel_format=1, CameraType camera_type=CAMERA_NETWORK, bool get_then_remove = true);
     bool removeCamera(std::string camera_address);
 
     AnyNode* getCamera(std::string camera_address);
