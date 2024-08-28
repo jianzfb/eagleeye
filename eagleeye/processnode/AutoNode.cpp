@@ -175,8 +175,8 @@ void AutoNode::run_in_no_copy_input(){
 }
 
 void AutoNode::exit(){
-    this->m_auto_node->exit();
     Superclass::exit();
+    this->m_auto_node->exit();
 }
 
 void AutoNode::preexit(){
