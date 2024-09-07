@@ -67,11 +67,12 @@ void PlaceholderQueue::config(int placeholder_i, std::string data_type, std::str
 
 void PlaceholderQueue::push(int placeholder_i, void* data, const size_t* data_size, const int data_dims, const int data_rotation, const int data_type){
     AnySignal* signal = this->getOutputPort(placeholder_i);
-   
+
     MetaData meta;
     meta.rows = data_size[0];
     meta.cols = data_size[1];
     meta.rotation = data_rotation;
+    // memory copy mode
     signal->setData(data, meta);
 }
 }

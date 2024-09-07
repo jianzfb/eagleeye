@@ -1214,6 +1214,30 @@ ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::string r
     return SERVER_SUCCESS;
 }
 
+ServerStatus eagleeye_pipeline_server_push_stream(std::string server_key, std::vector<Image> frames){
+    if(frames.size() == 0){
+        return SERVER_SUCCESS;
+    }
+
+    // 管线数据对象
+    std::string server_data_key = server_key + "/data";
+    void* pipeline_data_obj = RegisterCenter::getInstance()->getObj(server_data_key);
+    if(pipeline_data_obj == NULL){
+        return SERVER_NOT_EXIST;
+    }
+
+    // TODO, 需要增加setInput函数
+    PlaceholderQueue* data_node = (PlaceholderQueue*)pipeline_data_obj;
+
+    for(int frame_i=0; frame_i<frames.size(); ++frame_i){
+        Image frame = frames[frame_i];
+        std::vector<size_t> data_size = {frame.height, frame.width, frame.channel};
+        data_node->push(0, (void*)(frame.data.get()), data_size.data(), data_size.size(), 0, 1);
+    }
+
+    return SERVER_SUCCESS;
+}
+
 ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout){
     void* pipeline_obj = RegisterCenter::getInstance()->getObj(server_key);
     if(pipeline_obj == NULL){

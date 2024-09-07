@@ -1,5 +1,5 @@
 #include "eagleeye/hardware/rk.h"
- #include <unistd.h> 
+#include <unistd.h> 
 #ifdef EAGLEEYE_RKCHIP
 #include "im2d_version.h"
 #include "rk_type.h"
@@ -257,8 +257,8 @@ namespace eagleeye{
 RKH264Decoder::RKH264Decoder(){}
 RKH264Decoder::~RKH264Decoder(){}
 int RKH264Decoder::initial(){return 0;}
-void RKH264Decoder::unInitial(){}
-int decode(uint8_t* package_data, int package_size, std::vector<Matrix<Array<unsigned char, 3>>>& image_list){return 0;}；
+void RKH264Decoder::destroy(){}
+int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<Matrix<Array<unsigned char, 3>>>& image_list){return 0;}
 }
 
 #endif
