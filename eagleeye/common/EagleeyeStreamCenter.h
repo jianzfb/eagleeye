@@ -5,6 +5,7 @@
 #include "eagleeye/common/EagleeyeMessage.h"
 #include "eagleeye/basic/Matrix.h"
 #include "eagleeye/processnode/VideoStreamNode.h"
+#include "eagleeye/processnode/PlaceholderQueue.h"
 #include <map>
 #include <functional> 
 #include <memory>
@@ -16,7 +17,10 @@ public:
     static StreamCenter* getInstance();
     virtual ~StreamCenter();
 
-    AnyNode* createStream(std::string name, int queue_size);
+    AnyNode* createVideoStream(std::string name, int queue_size, std::string encode_mode="H264");
+    AnyNode* createStream(std::string name, int queue_size,  std::vector<std::string> input_types, std::vector<std::string> input_categorys);
+
+    AnyNode* getStream(std::string name);
     bool decoce(std::string name, uint8_t* package_data, int package_size);
     bool removeStream(std::string name);
 

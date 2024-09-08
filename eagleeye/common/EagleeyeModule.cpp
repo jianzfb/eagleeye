@@ -7,6 +7,7 @@
 #include "eagleeye/common/EagleeyeFactory.h"
 #include "eagleeye/common/EagleeyeRegisterCenter.h"
 #include "eagleeye/common/EagleeyeCameraCenter.h"
+#include "eagleeye/common/EagleeyeStreamCenter.h"
 #include "eagleeye/common/EagleeyeMessageCenter.h"
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include "eagleeye/processnode/AutoPipeline.h"
@@ -582,7 +583,9 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     neb::CJsonObject server_params;
     config_obj.Get("server_params", server_params);
     neb::CJsonObject data_source;
-    config_obj.Get("data_source", data_source);
+    config_obj.Get("data_source", data_source);         // 拥有闭环数据源，需要设置
+    std::string data_mode;
+    config_obj.Get("data_mode", data_mode);             // 非闭环数据源，需要设置
     std::string server_mode;
     config_obj.Get("server_mode", server_mode);
 
@@ -942,22 +945,31 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         );
 
         // 构建数据队列
-        PlaceholderQueue* data_node = new PlaceholderQueue(8);
-        for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
-            data_node->config(input_i, pipeline_input_types[input_i], pipeline_input_categorys[input_i]);
-        }
+        // PlaceholderQueue* data_node = new PlaceholderQueue(8);
+        // for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
+        //     data_node->config(input_i, pipeline_input_types[input_i], pipeline_input_categorys[input_i]);
+        // }
 
-        // 注册数据队列到注册中心
-        RegisterCenter::getInstance()->registerObj(
-            key + "/data",
-            data_node,
-            [](std::string k, void* obj){
-                EAGLEEYE_LOGD("Delete data queue node %s", k.c_str());
-                AnyNode* node = (AnyNode*)obj;
-                node->exit();
-                delete node;
-            }
-        );
+        // // 注册数据队列到注册中心
+        // RegisterCenter::getInstance()->registerObj(
+        //     key + "/data",
+        //     data_node,
+        //     [](std::string k, void* obj){
+        //         EAGLEEYE_LOGD("Delete data queue node %s", k.c_str());
+        //         AnyNode* node = (AnyNode*)obj;
+        //         node->exit();
+        //         delete node;
+        //     }
+        // );
+        StreamCenter* sc = StreamCenter::getInstance();
+        AnyNode* data_node = NULL;
+        if(data_mode != "H264" && data_mode != "H265"){
+            data_node = sc->createStream(key + "/data", 10, pipeline_input_types, pipeline_input_categorys);
+        }
+        else{
+            // TODO，支持
+            data_node = sc->createVideoStream(key + "/data", 10, data_mode);
+        }
 
         // 关联 QueueNode -> AutoPipeline
         for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
@@ -982,6 +994,9 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
                     node->clearInputPort(sig_i);
                 }
                 delete node;
+
+                // 2.step 清空数据源
+                StreamCenter::getInstance()->removeStream(pipeline_key+"/data");
 
                 // 3.step 清空消息队列
                 EAGLEEYE_LOGD("Clear message %s", pipeline_key.c_str());
@@ -1138,7 +1153,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
 ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::string request){
     // 管线数据对象
     std::string server_data_key = server_key + "/data";
-    void* pipeline_data_obj = RegisterCenter::getInstance()->getObj(server_data_key);
+    AnyNode* pipeline_data_obj = StreamCenter::getInstance()->getStream(server_data_key);
     if(pipeline_data_obj == NULL){
         return SERVER_NOT_EXIST;
     }
@@ -1214,27 +1229,12 @@ ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::string r
     return SERVER_SUCCESS;
 }
 
-ServerStatus eagleeye_pipeline_server_push_stream(std::string server_key, std::vector<Image> frames){
-    if(frames.size() == 0){
-        return SERVER_SUCCESS;
-    }
-
+ServerStatus eagleeye_pipeline_server_push_stream(std::string server_key, uint8_t* package_data, int package_size){
     // 管线数据对象
     std::string server_data_key = server_key + "/data";
-    void* pipeline_data_obj = RegisterCenter::getInstance()->getObj(server_data_key);
-    if(pipeline_data_obj == NULL){
-        return SERVER_NOT_EXIST;
-    }
-
-    // TODO, 需要增加setInput函数
-    PlaceholderQueue* data_node = (PlaceholderQueue*)pipeline_data_obj;
-
-    for(int frame_i=0; frame_i<frames.size(); ++frame_i){
-        Image frame = frames[frame_i];
-        std::vector<size_t> data_size = {frame.height, frame.width, frame.channel};
-        data_node->push(0, (void*)(frame.data.get()), data_size.data(), data_size.size(), 0, 1);
-    }
-
+    AnyNode* pipeline_data_obj = StreamCenter::getInstance()->getStream(server_data_key);
+    VideoStreamNode* vsn = (VideoStreamNode*)pipeline_data_obj;
+    vsn->decode(package_data, package_size);
     return SERVER_SUCCESS;
 }
 
