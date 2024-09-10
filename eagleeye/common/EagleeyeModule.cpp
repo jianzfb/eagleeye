@@ -857,11 +857,13 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     if(server_mode == "asyn"){
         // 忽略数据源
         // 异步模式 (QueueNode + AutoPipeline)
+        std::cout<<"1"<<std::endl;
         if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
             EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
             return SERVER_NOT_EXIST;
         }
 
+        std::cout<<"2"<<std::endl;
         std::string key = server_id + "/" + server_timestamp;
         // 构建管线
         EAGLEEYE_LOGD("Construct pipeline.");
@@ -944,6 +946,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
             1
         );
 
+        std::cout<<"3"<<std::endl;
         // 构建数据队列
         // PlaceholderQueue* data_node = new PlaceholderQueue(8);
         // for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
@@ -962,23 +965,33 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         //     }
         // );
         StreamCenter* sc = StreamCenter::getInstance();
+        std::cout<<"4"<<std::endl;
         AnyNode* data_node = NULL;
         if(data_mode != "H264" && data_mode != "H265"){
             data_node = sc->createStream(key + "/data", 10, pipeline_input_types, pipeline_input_categorys);
         }
         else{
             // TODO，支持
+            std::cout<<"5"<<std::endl;
             data_node = sc->createVideoStream(key + "/data", 10, data_mode);
+            std::cout<<"data_node ptr "<<(void*)data_node<<std::endl;
+            std::cout<<"6"<<std::endl;
         }
 
+        std::cout<<"7"<<std::endl;
         // 关联 QueueNode -> AutoPipeline
         for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
+            std::cout<<"node "<<input_i<<std::endl;
+            std::cout<<pipeline_input_nodes[input_i]<<std::endl;
             auto_pipeline_node->addInputPort(data_node->getOutputPort(input_i));
         }
 
+        std::cout<<"8"<<std::endl;
+        
         // 启动管线
         auto_pipeline_node->init();
 
+        std::cout<<"9"<<std::endl;
         // 注册管线到管线管理中心
         EAGLEEYE_LOGD("Register pipeline as %s.", key.c_str());
         bool is_success_register = RegisterCenter::getInstance()->registerObj(
