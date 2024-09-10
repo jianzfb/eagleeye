@@ -123,6 +123,11 @@ void AutoNode::run(){
     }
 }
 
+void AutoNode::exit(){
+    Superclass::exit();
+    this->m_auto_node->exit();
+}
+
 void AutoNode::preexit(){
     if(this->m_persistent_flag){
         return;

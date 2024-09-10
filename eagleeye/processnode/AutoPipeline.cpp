@@ -146,6 +146,11 @@ void AutoPipeline::run(){
     }
 }
 
+void AutoPipeline::exit(){
+    Superclass::exit();
+    this->m_auto_node->exit();
+}
+
 void AutoPipeline::preexit(){
     if(this->m_persistent_flag){
         return;

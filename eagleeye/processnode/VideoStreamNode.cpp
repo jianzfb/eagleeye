@@ -22,13 +22,8 @@ void VideoStreamNode::executeNodeInfo(){
 void VideoStreamNode::decode(uint8_t* package_data, int package_size){
     std::vector<Matrix<Array<unsigned char, 3>>> frame_list;
     m_decoder->decode(package_data, package_size, frame_list);
-
-    std::cout<<"AA get decode frames "<<frame_list.size()<<std::endl;
-
     ImageSignal<Array<unsigned char, 3>>* out_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
-    std::cout<<"out_sig "<<(void*)out_sig<<std::endl;
     for(int frame_i=0; frame_i<frame_list.size(); ++frame_i){
-        std::cout<<"set data frame "<<frame_i<<std::endl;
         MetaData meta;
         out_sig->setData(frame_list[frame_i], meta);
     }
@@ -36,5 +31,11 @@ void VideoStreamNode::decode(uint8_t* package_data, int package_size){
     if(frame_list.size() > 0){
         this->modified();
     }
+}
+
+void VideoStreamNode::postexit(){
+    ImageSignal<Array<unsigned char, 3>>* out_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
+    MetaData meta;
+    out_sig->setData(Matrix<Array<unsigned char, 3>>(0,0), meta);
 }
 }

@@ -32,6 +32,8 @@ public:
 
     void decode(uint8_t* package_data, int package_size);
 
+    virtual void postexit();
+
 private:
     VideoStreamNode(const VideoStreamNode&);
     void operator=(const VideoStreamNode&);

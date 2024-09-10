@@ -75,4 +75,10 @@ void PlaceholderQueue::push(int placeholder_i, void* data, const size_t* data_si
     // memory copy mode
     signal->setData(data, meta);
 }
+
+void PlaceholderQueue::postexit(){
+    ImageSignal<Array<unsigned char, 3>>* out_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
+    MetaData meta;
+    out_sig->setData(Matrix<Array<unsigned char, 3>>(0,0), meta);
+}
 }
