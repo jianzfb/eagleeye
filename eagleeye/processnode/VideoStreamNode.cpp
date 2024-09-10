@@ -8,6 +8,7 @@ VideoStreamNode::VideoStreamNode(int queue_size){
     sig->transformCategoryToQ(this->m_queue_size);
     this->setNumberOfOutputSignals(1);
     this->setOutputPort(sig, 0);
+    m_decoder = new RKH264Decoder();
 }
 
 VideoStreamNode::~VideoStreamNode(){
