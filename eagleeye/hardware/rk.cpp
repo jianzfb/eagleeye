@@ -12,15 +12,22 @@
 #include "im2d_type.h"
 #include "im2d_single.h"
 
+const int PACKAGE_SIZE = 1024*1024;    // 1M
+
 namespace eagleeye{
 RKH264Decoder::RKH264Decoder(){
     // 初始化
     initial();
+
+    m_cache_buf = (uint8_t*)malloc(PACKAGE_SIZE*sizeof(uint8_t));
+    m_cache_offset = 0;
 }
 
 RKH264Decoder::~RKH264Decoder(){
     // 销毁
     destroy();
+
+    free(m_cache_buf);
 }
 
 int RKH264Decoder::initial(){
@@ -80,11 +87,24 @@ void RKH264Decoder::destroy(){
 }
 
 int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<Matrix<Array<unsigned char, 3>>>& image_list){
+    // 填充缓冲buf，直到满足PACKAGE_SIZE
+    std::cout<<"in rkh264 decode"<<std::endl;
+    if(m_cache_offset+package_size < PACKAGE_SIZE){
+        memcpy(m_cache_buf+m_cache_offset, package_data, package_size*sizeof(uint8_t));
+        m_cache_offset = m_cache_offset + package_size;
+        return 0;
+    }
+    std::cout<<"finish acculate cache"<<std::endl;
+
+
+    int remain_size = (m_cache_offset+package_size) - PACKAGE_SIZE;
+    memcpy(m_cache_buf+m_cache_offset, package_data, remain_size*sizeof(uint8_t));
+    
     image_list.clear();
     MppCtx mpp_ctx = (MppCtx)m_mpp_ctx;
     MppApi* mpp_api = (MppApi*)m_mpp_api;
     MppPacket mpp_packet = NULL;
-    mpp_packet_init(&mpp_packet, package_data, package_size);
+    mpp_packet_init(&mpp_packet, m_cache_buf, PACKAGE_SIZE);
 
     //  write data to packet
     // mpp_packet_write(mpp_packet, 0, data, size);
@@ -248,6 +268,12 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
         usleep(3 * 1000);
     } while (1);
 
+    std::cout<<"found image_list size "<<image_list.size()<<std::endl;
+
+    // 重置m_cache_buf
+    m_cache_offset = 0;
+    memcpy(m_cache_buf+m_cache_offset, package_data+remain_size, (package_size-remain_size)*sizeof(uint8_t));
+    m_cache_offset = package_size-remain_size;
     return 0;
 }
 }

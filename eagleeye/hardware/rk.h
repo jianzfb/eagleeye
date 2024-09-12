@@ -21,6 +21,9 @@ private:
     void* m_mpp_ctx;
     void* m_mpp_api;
     void* m_frm_grp;
+
+    uint8_t* m_cache_buf;
+    int m_cache_offset;
 };
 }
 #endif // RKH264Decoder.h
