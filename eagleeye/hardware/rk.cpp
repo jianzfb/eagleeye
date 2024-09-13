@@ -13,7 +13,7 @@
 #include "im2d_type.h"
 #include "im2d_single.h"
 
-const int PACKAGE_SIZE = 1024*1024;    // 1M
+const int PACKAGE_SIZE = 128*1024;    // 1M
 
 namespace eagleeye{
 RKH264Decoder::RKH264Decoder(){

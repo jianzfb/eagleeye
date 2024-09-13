@@ -965,13 +965,13 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         StreamCenter* sc = StreamCenter::getInstance();
         AnyNode* data_node = NULL;
         if(data_mode != "H264" && data_mode != "H265"){
-            EAGLEEYE_LOGD("General data mode");
-            data_node = sc->createStream(key + "/data", 10, pipeline_input_types, pipeline_input_categorys);
+            EAGLEEYE_LOGD("General data mode (queue size = 1)");
+            data_node = sc->createStream(key + "/data", 1, pipeline_input_types, pipeline_input_categorys);
         }
         else{
             // TODO，支持
-            EAGLEEYE_LOGD("H264/H265 data mode");
-            data_node = sc->createVideoStream(key + "/data", 10, data_mode);
+            EAGLEEYE_LOGD("H264/H265 data mode (queue size = 1)");
+            data_node = sc->createVideoStream(key + "/data", 1, data_mode);
         }
 
         // 关联 QueueNode -> AutoPipeline
