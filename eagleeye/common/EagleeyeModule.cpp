@@ -1197,9 +1197,19 @@ ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::vector<R
 ServerStatus eagleeye_pipeline_server_push_stream(std::string server_key, uint8_t* package_data, int package_size){
     // 管线数据对象
     std::string server_data_key = server_key + "/data";
-    EAGLEEYE_LOGD("Receive package_data %p, package_size %d", (void*)package_data, package_size);
     AnyNode* pipeline_data_obj = StreamCenter::getInstance()->getStream(server_data_key);
+    if(pipeline_data_obj == NULL){
+        EAGLEEYE_LOGD("Server key not correct.");
+        return SERVER_NOT_EXIST;
+    }
     VideoStreamNode* vsn = (VideoStreamNode*)pipeline_data_obj;
+
+    if(package_data == NULL || package_size == 0){
+        EAGLEEYE_LOGE("Request data abnormal.");
+        return SERVER_ABNORMAL;
+    }
+
+    EAGLEEYE_LOGD("Receive package_data %p, package_size %d", (void*)package_data, package_size);
     vsn->decode(package_data, package_size);
     return SERVER_SUCCESS;
 }

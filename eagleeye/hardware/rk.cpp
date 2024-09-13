@@ -1,5 +1,6 @@
 #include "eagleeye/hardware/rk.h"
 #include <unistd.h> 
+#include <fstream>
 #ifdef EAGLEEYE_RKCHIP
 #include "im2d_version.h"
 #include "rk_type.h"
@@ -88,18 +89,19 @@ void RKH264Decoder::destroy(){
 
 int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<Matrix<Array<unsigned char, 3>>>& image_list){
     // 填充缓冲buf，直到满足PACKAGE_SIZE
-    std::cout<<"in rkh264 decode"<<std::endl;
-    if(m_cache_offset+package_size < PACKAGE_SIZE){
+    if(m_cache_offset + package_size < PACKAGE_SIZE){
         memcpy(m_cache_buf+m_cache_offset, package_data, package_size*sizeof(uint8_t));
         m_cache_offset = m_cache_offset + package_size;
         return 0;
     }
-    std::cout<<"finish acculate cache"<<std::endl;
 
+    EAGLEEYE_LOGD("Acculate enough package");
 
-    int remain_size = (m_cache_offset+package_size) - PACKAGE_SIZE;
-    memcpy(m_cache_buf+m_cache_offset, package_data, remain_size*sizeof(uint8_t));
-    
+    int remain_size = (m_cache_offset + package_size) - PACKAGE_SIZE;
+    int copy_size = package_size - remain_size;
+    memcpy(m_cache_buf+m_cache_offset, package_data, copy_size*sizeof(uint8_t));        
+    m_cache_offset = m_cache_offset + copy_size;
+
     image_list.clear();
     MppCtx mpp_ctx = (MppCtx)m_mpp_ctx;
     MppApi* mpp_api = (MppApi*)m_mpp_api;
@@ -268,12 +270,23 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
         usleep(3 * 1000);
     } while (1);
 
-    std::cout<<"found image_list size "<<image_list.size()<<std::endl;
+    EAGLEEYE_LOGD("Found frame size %d.", image_list.size());
 
-    // 重置m_cache_buf
+    // for(int i=0; i<image_list.size(); ++i){
+    //     Matrix<Array<unsigned char, 3>> image = image_list[i];
+    //     std::string file_name = std::to_string(i)+"_image.bin";
+	// 	std::ofstream binary_file(std::string("/storage/")+file_name,std::ios::binary);
+    //     char* p = image.cpu<char>();
+    //     int rows = image.rows();
+    //     int cols = image.cols();
+    //     binary_file.write(p,sizeof(char)*rows*cols*3);
+    //     binary_file.close();
+    // }
+
+    // 重置CACHE
     m_cache_offset = 0;
-    memcpy(m_cache_buf+m_cache_offset, package_data+remain_size, (package_size-remain_size)*sizeof(uint8_t));
-    m_cache_offset = package_size-remain_size;
+    memcpy(m_cache_buf+m_cache_offset, package_data+copy_size, remain_size*sizeof(uint8_t));
+    m_cache_offset = remain_size;
     return 0;
 }
 }
