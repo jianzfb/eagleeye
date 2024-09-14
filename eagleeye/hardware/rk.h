@@ -18,6 +18,8 @@ private:
     int initial();
     void destroy();
 
+    void decodePackage4K(std::vector<Matrix<Array<unsigned char, 3>>>& image_list);
+
     void* m_mpp_ctx;
     void* m_mpp_api;
     void* m_frm_grp;

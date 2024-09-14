@@ -13,14 +13,14 @@
 #include "im2d_type.h"
 #include "im2d_single.h"
 
-const int PACKAGE_SIZE = 128*1024;    // 1M
+const int DECODE_PACKAGE_SIZE = 4*1024;    // 4K
 
 namespace eagleeye{
 RKH264Decoder::RKH264Decoder(){
     // 初始化
     initial();
 
-    m_cache_buf = (uint8_t*)malloc(PACKAGE_SIZE*sizeof(uint8_t));
+    m_cache_buf = (uint8_t*)malloc(DECODE_PACKAGE_SIZE*sizeof(uint8_t));
     m_cache_offset = 0;
 }
 
@@ -87,26 +87,11 @@ void RKH264Decoder::destroy(){
     mpp_destroy(mpp_ctx);
 }
 
-int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<Matrix<Array<unsigned char, 3>>>& image_list){
-    // 填充缓冲buf，直到满足PACKAGE_SIZE
-    if(m_cache_offset + package_size < PACKAGE_SIZE){
-        memcpy(m_cache_buf+m_cache_offset, package_data, package_size*sizeof(uint8_t));
-        m_cache_offset = m_cache_offset + package_size;
-        return 0;
-    }
-
-    EAGLEEYE_LOGD("Acculate enough package");
-
-    int remain_size = (m_cache_offset + package_size) - PACKAGE_SIZE;
-    int copy_size = package_size - remain_size;
-    memcpy(m_cache_buf+m_cache_offset, package_data, copy_size*sizeof(uint8_t));        
-    m_cache_offset = m_cache_offset + copy_size;
-
-    image_list.clear();
+void RKH264Decoder::decodePackage4K(std::vector<Matrix<Array<unsigned char, 3>>>& image_list){
     MppCtx mpp_ctx = (MppCtx)m_mpp_ctx;
     MppApi* mpp_api = (MppApi*)m_mpp_api;
     MppPacket mpp_packet = NULL;
-    mpp_packet_init(&mpp_packet, m_cache_buf, PACKAGE_SIZE);
+    mpp_packet_init(&mpp_packet, m_cache_buf, DECODE_PACKAGE_SIZE);
 
     //  write data to packet
     // mpp_packet_write(mpp_packet, 0, data, size);
@@ -254,7 +239,7 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
             if (get_frm)
                 continue;
 
-            break;            
+            break;
         } while(1);
 
         if (pkt_done)
@@ -269,9 +254,63 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
         */
         usleep(3 * 1000);
     } while (1);
+}
 
-    EAGLEEYE_LOGD("Found frame size %d.", image_list.size());
+int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<Matrix<Array<unsigned char, 3>>>& image_list){
+    // WARN: 需要考虑单次传入的package_size 大于 4K大小
+    // 初始化解码结果
+    image_list.clear();
+    if(package_size == 0){
+        // 输入数据为空，直接返回
+        return 0;
+    }
 
+    // 申请临时空间，拼接历史数据和新增数据
+    uint8_t* temp_ptr = malloc((m_cache_offset + package_size)*sizeof(uint8_t));
+    if(m_cache_offset > 0){
+        memcpy(temp_ptr, m_cache_buf, m_cache_offset*sizeof(uint8_t));
+    }
+    memcpy(temp_ptr+m_cache_offset, package_data, package_size*sizeof(uint8_t));
+
+    package_size = m_cache_offset + package_size;
+    int piece_package_num = package_size / DECODE_PACKAGE_SIZE;
+    if(piece_package_num * DECODE_PACKAGE_SIZE < package_size){
+        piece_package_num = piece_package_num + 1;
+    }
+    // 重置CACHE偏移
+    m_cache_offset = 0;
+    // 使用临时空间作为package数据
+    package_data = temp_ptr;
+
+    // 解码过程
+    for(int piece_package_i = 0; piece_package_i < piece_package_num; ++piece_package_i){
+        // 必然存在: piece_package_size <= DECODE_PACKAGE_SIZE
+        int piece_package_size = DECODE_PACKAGE_SIZE;
+        uint8_t* piece_package_data = package_data + piece_package_i * piece_package_size;
+
+        int use_piece_package_size = piece_package_size;
+        if((piece_package_i * piece_package_size + piece_package_size) > package_size){
+            use_piece_package_size = package_size - piece_package_i * piece_package_size;
+        }
+
+        if(use_piece_package_size < DECODE_PACKAGE_SIZE){
+            memcpy(m_cache_buf, piece_package_data, use_piece_package_size*sizeof(uint8_t));
+            m_cache_offset = use_piece_package_size;
+            continue;
+        }
+
+        // 
+        memcpy(m_cache_buf, piece_package_data, DECODE_PACKAGE_SIZE*sizeof(uint8_t));
+
+        // 解码一个4K package
+        this->decodePackage4K(image_list);
+        EAGLEEYE_LOGD("Found frame size %d.", image_list.size());
+
+        // 重置CACHE偏移
+        m_cache_offset = 0;
+    }
+
+    // debug
     // for(int i=0; i<image_list.size(); ++i){
     //     Matrix<Array<unsigned char, 3>> image = image_list[i];
     //     std::string file_name = std::to_string(i)+"_image.bin";
@@ -283,10 +322,9 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
     //     binary_file.close();
     // }
 
-    // 重置CACHE
-    m_cache_offset = 0;
-    memcpy(m_cache_buf+m_cache_offset, package_data+copy_size, remain_size*sizeof(uint8_t));
-    m_cache_offset = remain_size;
+    if(package_size > 0){
+        free(temp_ptr);
+    }
     return 0;
 }
 }
@@ -298,6 +336,7 @@ RKH264Decoder::~RKH264Decoder(){}
 int RKH264Decoder::initial(){return 0;}
 void RKH264Decoder::destroy(){}
 int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<Matrix<Array<unsigned char, 3>>>& image_list){return 0;}
+void RKH264Decoder::decodePackage4K(std::vector<Matrix<Array<unsigned char, 3>>>& image_list){};
 }
 
 #endif
