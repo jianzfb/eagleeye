@@ -266,7 +266,7 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
     }
 
     // 申请临时空间，拼接历史数据和新增数据
-    uint8_t* temp_ptr = malloc((m_cache_offset + package_size)*sizeof(uint8_t));
+    uint8_t* temp_ptr = (uint8_t*)malloc((m_cache_offset + package_size)*sizeof(uint8_t));
     if(m_cache_offset > 0){
         memcpy(temp_ptr, m_cache_buf, m_cache_offset*sizeof(uint8_t));
     }
