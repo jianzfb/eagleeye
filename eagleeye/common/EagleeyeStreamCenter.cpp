@@ -51,6 +51,7 @@ bool StreamCenter::removeStream(std::string name){
     std::unique_lock<std::mutex> locker(m_mu);
     if(m_stream_info.find(name) != m_stream_info.end()){
         delete m_stream_info[name];
+        m_stream_info.erase(name);
     }
 
     return true;
