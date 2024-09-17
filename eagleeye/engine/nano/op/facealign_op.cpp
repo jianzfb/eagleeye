@@ -89,6 +89,13 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
     }
 
     float* bbox_ptr = bbox.cpu<float>();
+    if(bbox_ptr[0] < 0 || bbox_ptr[1] < 0 || bbox_ptr[2] < 0 || bbox_ptr[3] < 0){
+        // 对于无效人脸，返回全0人脸图
+        this->m_outputs[0] = 
+            Tensor(std::vector<int64_t>{this->m_target_h, this->m_target_w, image_c}, image.type(), image.format(),CPU_BUFFER);        
+        return 0;
+    }
+
     float face_cx = (bbox_ptr[0]+bbox_ptr[2])/2.0f;
     float face_cy = (bbox_ptr[1]+bbox_ptr[3])/2.0f;
     float face_w = bbox_ptr[2]-bbox_ptr[0];
@@ -116,8 +123,9 @@ int FaceAlignOp::runOnCpu(const std::vector<Tensor>& input){
     face_w = x1 - x0;
     face_h = y1 - y0;
     if(face_w == 0 || face_h == 0){
+        // 对于无效人脸，返回全0人脸图
         this->m_outputs[0] = 
-            Tensor(std::vector<int64_t>{0, this->m_target_w, image_c}, image.type(), image.format(),CPU_BUFFER);        
+            Tensor(std::vector<int64_t>{this->m_target_h, this->m_target_w, image_c}, image.type(), image.format(),CPU_BUFFER);        
         return 0;
     }
 

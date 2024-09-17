@@ -304,12 +304,11 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
 
         // 解码一个4K package
         this->decodePackage4K(image_list);
-        EAGLEEYE_LOGD("Found frame size %d.", image_list.size());
-
         // 重置CACHE偏移
         m_cache_offset = 0;
     }
 
+    EAGLEEYE_LOGD("Found frame size %d.", image_list.size());
     // debug
     // for(int i=0; i<image_list.size(); ++i){
     //     Matrix<Array<unsigned char, 3>> image = image_list[i];
@@ -322,9 +321,7 @@ int RKH264Decoder::decode(uint8_t* package_data, int package_size, std::vector<M
     //     binary_file.close();
     // }
 
-    if(package_size > 0){
-        free(temp_ptr);
-    }
+    free(temp_ptr);
     return 0;
 }
 }
