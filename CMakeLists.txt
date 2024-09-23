@@ -224,6 +224,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/kvmemory_r_op.cpp
     eagleeye/engine/nano/op/kvmemory_op.cpp
     eagleeye/engine/nano/op/expand_dim_op.cpp
+    eagleeye/engine/nano/op/person_id_op.cpp
     eagleeye/engine/math/common/pixel_affine.cpp
     eagleeye/engine/math/common/argmax.cc
     eagleeye/engine/thread_pool.cpp
@@ -400,6 +401,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/kvmemory_r_op.cpp
     eagleeye/engine/nano/op/kvmemory_op.cpp
     eagleeye/engine/nano/op/expand_dim_op.cpp
+    eagleeye/engine/nano/op/person_id_op.cpp
     eagleeye/engine/thread_pool.cpp
     eagleeye/processnode/ImageResizeNode.cpp
     eagleeye/processnode/ImageTransformNode.cpp
