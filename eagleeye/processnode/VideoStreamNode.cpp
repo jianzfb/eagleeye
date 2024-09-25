@@ -12,7 +12,7 @@ VideoStreamNode::VideoStreamNode(int queue_size){
 }
 
 VideoStreamNode::~VideoStreamNode(){
-
+    delete m_decoder;
 }
 
 void VideoStreamNode::executeNodeInfo(){
