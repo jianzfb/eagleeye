@@ -17,7 +17,7 @@ cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
 cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a -DBUILD_PYTHON_MODULE:BOOL=ON ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a -DRKCHIP=/root/.3rd/rk -DMINIO:BOOL=ON -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a ..
 fi
 make -j 6
 cd ..

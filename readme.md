@@ -4,13 +4,26 @@
 ![](./doc/resource/readme.png)
 EAGLEEYE图像应用开发框架针对于快速将图像算法推向落地而设计。依靠统一通用的模块接口定义和数据流管线架构设计，极度简化团队协同开发。
 
-#### EAGLEEYE核心库编译(可选)
-编译移动端EAGLEEYE库
+#### 视频流行人检测及人脸识别实战案例
+##### 核心功能点
+* 异步视频流处理
+* 异步多模型协同
+* 参数快速可视化调试
+##### 调试可视化
+TODO UI可视化，参数调节控件自动生成，管线结构自动生成
+
+#### EAGLEEYE核心库编译
+编译EAGLEEYE核心库，支持android,linux x86-64,和linux arm64
 ```c++
-bash build.sh
+# 编译android版本库
+bash android_build.sh
+# 编译linux x86-64版本库
+bash linux_x86_64_build.sh
+# 编译linux arm64版本库
+bash linux_arm64_v8a_build.sh
 ```
 
-> 注意：需要提前安装Android NDK，并创立 ANDROID_NDK_HOME 环境变量
+> 注意：对于android版本，需要提前安装Android NDK，并创立 ANDROID_NDK_HOME 环境变量
 
 #### 安装EAGLEEYE项目脚手架
 安装脚手架
