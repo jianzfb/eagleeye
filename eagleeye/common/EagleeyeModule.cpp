@@ -7,6 +7,7 @@
 #include "eagleeye/common/EagleeyeFactory.h"
 #include "eagleeye/common/EagleeyeRegisterCenter.h"
 #include "eagleeye/common/EagleeyeCameraCenter.h"
+#include "eagleeye/common/EagleeyeStreamCenter.h"
 #include "eagleeye/common/EagleeyeMessageCenter.h"
 #include "eagleeye/framework/pipeline/DynamicNodeCreater.h"
 #include "eagleeye/processnode/AutoPipeline.h"
@@ -582,7 +583,9 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     neb::CJsonObject server_params;
     config_obj.Get("server_params", server_params);
     neb::CJsonObject data_source;
-    config_obj.Get("data_source", data_source);
+    config_obj.Get("data_source", data_source);         // 拥有闭环数据源，需要设置
+    std::string data_mode;
+    config_obj.Get("data_mode", data_mode);             // 非闭环数据源，需要设置
     std::string server_mode;
     config_obj.Get("server_mode", server_mode);
 
@@ -854,6 +857,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     if(server_mode == "asyn"){
         // 忽略数据源
         // 异步模式 (QueueNode + AutoPipeline)
+        EAGLEEYE_LOGD("asyn mode server");
         if(pipeline_init_map.find(pipeline_name) == pipeline_init_map.end()){
             EAGLEEYE_LOGE("pipeline %s not register.", pipeline_name.c_str());
             return SERVER_NOT_EXIST;
@@ -942,28 +946,39 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         );
 
         // 构建数据队列
-        PlaceholderQueue* data_node = new PlaceholderQueue(8);
-        for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
-            data_node->config(input_i, pipeline_input_types[input_i], pipeline_input_categorys[input_i]);
-        }
+        // PlaceholderQueue* data_node = new PlaceholderQueue(8);
+        // for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
+        //     data_node->config(input_i, pipeline_input_types[input_i], pipeline_input_categorys[input_i]);
+        // }
 
-        // 注册数据队列到注册中心
-        RegisterCenter::getInstance()->registerObj(
-            key + "/data",
-            data_node,
-            [](std::string k, void* obj){
-                EAGLEEYE_LOGD("Delete data queue node %s", k.c_str());
-                AnyNode* node = (AnyNode*)obj;
-                node->exit();
-                delete node;
-            }
-        );
+        // // 注册数据队列到注册中心
+        // RegisterCenter::getInstance()->registerObj(
+        //     key + "/data",
+        //     data_node,
+        //     [](std::string k, void* obj){
+        //         EAGLEEYE_LOGD("Delete data queue node %s", k.c_str());
+        //         AnyNode* node = (AnyNode*)obj;
+        //         node->exit();
+        //         delete node;
+        //     }
+        // );
+        StreamCenter* sc = StreamCenter::getInstance();
+        AnyNode* data_node = NULL;
+        if(data_mode != "H264" && data_mode != "H265"){
+            EAGLEEYE_LOGD("General data mode (queue size = 1)");
+            data_node = sc->createStream(key + "/data", 1, pipeline_input_types, pipeline_input_categorys);
+        }
+        else{
+            // TODO，支持
+            EAGLEEYE_LOGD("H264/H265 data mode (queue size = 1)");
+            data_node = sc->createVideoStream(key + "/data", 1, data_mode);
+        }
 
         // 关联 QueueNode -> AutoPipeline
         for(int input_i=0; input_i<pipeline_input_nodes.size(); ++input_i){
             auto_pipeline_node->addInputPort(data_node->getOutputPort(input_i));
         }
-
+        
         // 启动管线
         auto_pipeline_node->init();
 
@@ -982,6 +997,9 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
                     node->clearInputPort(sig_i);
                 }
                 delete node;
+
+                // 2.step 清空数据源
+                StreamCenter::getInstance()->removeStream(pipeline_key+"/data");
 
                 // 3.step 清空消息队列
                 EAGLEEYE_LOGD("Clear message %s", pipeline_key.c_str());
@@ -1135,86 +1153,68 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     return SERVER_SUCCESS;
 }
 
-ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::string request){
+ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::vector<RequestData> server_request){
     // 管线数据对象
     std::string server_data_key = server_key + "/data";
-    void* pipeline_data_obj = RegisterCenter::getInstance()->getObj(server_data_key);
+    AnyNode* pipeline_data_obj = StreamCenter::getInstance()->getStream(server_data_key);
     if(pipeline_data_obj == NULL){
         return SERVER_NOT_EXIST;
     }
 
-    // TODO, 需要增加setInput函数
     PlaceholderQueue* data_node = (PlaceholderQueue*)pipeline_data_obj;
 
-    // 解析request，并推入数据队列
-    neb::CJsonObject request_obj(request);   
-    neb::CJsonObject data_info;
-    request_obj.Get("data", data_info);
-    for(int data_i=0; data_i<data_info.GetArraySize(); ++data_i){
-        neb::CJsonObject data_cfg;
-        data_info.Get(data_i, data_cfg);
-        std::string data_type = "";
-        data_cfg.Get("type", data_type);
+    for(int data_i=0; data_i<server_request.size(); ++data_i){
+        RequestData request_data = server_request[data_i];
+        if(request_data.type == "image"){
+            std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width, (size_t)request_data.channel};
 
-        std::string data_i_placeholder = "placeholder_"+std::to_string(data_i);
-        if(data_type == "image"){
-            int width = 0;
-            int height = 0;
-            int channel = 0;
-            data_cfg.Get("width", width);
-            data_cfg.Get("height", height);
-            data_cfg.Get("channel", channel);
-            std::vector<size_t> data_size = {(size_t)height, (size_t)width, (size_t)channel};
-
-            int64 data_content;   // 内存地址
-            data_cfg.Get("content", data_content);
-            void* data_content_ptr = (void*)(data_content);
-            if(channel == 3){
-                data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 1);
+            if(request_data.channel == 3){
+                data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 1);
             }
-            else if(channel == 4){
-                data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 1);
+            else if(request_data.channel == 4){
+                data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 1);
             }
         }
-        else if(data_type == "string"){
-            std::string data;
-            data_cfg.Get("content", data);
-            void* data_content_ptr = (void*)(const_cast<char*>(data.c_str()));
-            std::vector<size_t> data_size = {(size_t)1, (size_t)data.size()};
-            data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 0);
+        else if(request_data.type == "string"){
+            std::vector<size_t> data_size = {(size_t)1, (size_t)request_data.width};
+            data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 0);
         }
-        else if(data_type == "matrix/float"){
-            int width = 0;
-            int height = 0;
-            data_cfg.Get("width", width);
-            data_cfg.Get("height", height);
-            std::vector<size_t> data_size = {(size_t)height, (size_t)width};
-
-            int64 data_content;   // 内存地址
-            data_cfg.Get("content", data_content);
-            void* data_content_ptr = (void*)(data_content);
-            data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 6);
+        else if(request_data.type == "matrix/float"){
+            std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
+            data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 6);
         }
-        else if(data_type == "matrix/int32"){
-            int width = 0;
-            int height = 0;
-            data_cfg.Get("width", width);
-            data_cfg.Get("height", height);
-            std::vector<size_t> data_size = {(size_t)height, (size_t)width};
-
-            int64 data_content;   // 内存地址
-            data_cfg.Get("content", data_content);
-            void* data_content_ptr = (void*)(data_content);
-            data_node->push(data_i, data_content_ptr, data_size.data(), data_size.size(), 0, 4);
+        else if(request_data.type == "matrix/int32"){
+            std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
+            data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 4);
         }
         else{
-            EAGLEEYE_LOGE("Input data type not support.");
+            EAGLEEYE_LOGE("Input data type at index %d not support.", data_i);
         }
     }
     return SERVER_SUCCESS;
 }
 
-ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string request, std::string& reply, int timeout){
+ServerStatus eagleeye_pipeline_server_push_stream(std::string server_key, uint8_t* package_data, int package_size){
+    // 管线数据对象
+    std::string server_data_key = server_key + "/data";
+    AnyNode* pipeline_data_obj = StreamCenter::getInstance()->getStream(server_data_key);
+    if(pipeline_data_obj == NULL){
+        EAGLEEYE_LOGD("Server key not correct.");
+        return SERVER_NOT_EXIST;
+    }
+    VideoStreamNode* vsn = (VideoStreamNode*)pipeline_data_obj;
+
+    if(package_data == NULL || package_size == 0){
+        EAGLEEYE_LOGE("Request data abnormal.");
+        return SERVER_ABNORMAL;
+    }
+
+    EAGLEEYE_LOGD("Receive package_data %p, package_size %d", (void*)package_data, package_size);
+    vsn->decode(package_data, package_size);
+    return SERVER_SUCCESS;
+}
+
+ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::vector<RequestData> server_request, std::string& reply, int timeout){
     void* pipeline_obj = RegisterCenter::getInstance()->getObj(server_key);
     if(pipeline_obj == NULL){
         return SERVER_NOT_EXIST;
@@ -1234,9 +1234,6 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string r
     }
     else{
         // 同步模式（接收request, 返回reply）
-        if(request == ""){
-            return SERVER_ERROR;
-        }
         // {
         //      "data": [
         //          {"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, 
@@ -1246,72 +1243,34 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::string r
         //       ]
         // }
         AnyPipeline* pipeline = (AnyPipeline*)pipeline_obj;
-
-        // 1.step 解析request
-        neb::CJsonObject request_obj(request);   
-        neb::CJsonObject data_info;
-        request_obj.Get("data", data_info);
-        for(int data_i=0; data_i<data_info.GetArraySize(); ++data_i){
-            neb::CJsonObject data_cfg;
-            data_info.Get(data_i, data_cfg);
-            std::string data_type = "";
-            data_cfg.Get("type", data_type);
-
+        for(int data_i=0; data_i<server_request.size(); ++data_i){
             std::string data_i_placeholder = "placeholder_"+std::to_string(data_i);
-            if(data_type == "image"){
-                int width = 0;
-                int height = 0;
-                int channel = 0;
-                data_cfg.Get("width", width);
-                data_cfg.Get("height", height);
-                data_cfg.Get("channel", channel);
-                std::vector<size_t> data_size = {(size_t)height, (size_t)width, (size_t)channel};
 
-                int64 data_content;   // 内存地址
-                data_cfg.Get("content", data_content);
-                void* data_content_ptr = (void*)(data_content);
-                if(channel == 3){
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
+            RequestData request_data = server_request[data_i];
+            if(request_data.type == "image"){
+                std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width, (size_t)request_data.channel};
+
+                if(request_data.channel == 3){
+                    pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 1);
                 }
-                else if(channel == 4){
-                    pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 1);
-                }
+                else if(request_data.channel == 4){
+                    pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 1);
+                }                
             }
-            else if(data_type == "string"){
-                std::string data;
-                data_cfg.Get("content", data);
-                void* data_content_ptr = (void*)(const_cast<char*>(data.c_str()));
-                std::vector<size_t> data_size = {(size_t)1, (size_t)data.size()};
-                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 0);
+            else if(request_data.type == "string"){
+                std::vector<size_t> data_size = {(size_t)1, (size_t)request_data.width};
+                pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 0);
             }
-            else if(data_type == "matrix/float"){
-                int width = 0;
-                int height = 0;
-                data_cfg.Get("width", width);
-                data_cfg.Get("height", height);
-                std::vector<size_t> data_size = {(size_t)height, (size_t)width};
-
-                int64 data_content;   // 内存地址
-                data_cfg.Get("content", data_content);
-                void* data_content_ptr = (void*)(data_content);
-
-                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 6);
+            else if(request_data.type == "matrix/float"){
+                std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
+                pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 6);
             }
-            else if(data_type == "matrix/int32"){
-                int width = 0;
-                int height = 0;
-                data_cfg.Get("width", width);
-                data_cfg.Get("height", height);
-                std::vector<size_t> data_size = {(size_t)height, (size_t)width};
-
-                int64 data_content;   // 内存地址
-                data_cfg.Get("content", data_content);
-                void* data_content_ptr = (void*)(data_content);
-
-                pipeline->setInput(data_i_placeholder.c_str(), data_content_ptr, data_size.data(), data_size.size(), 0, 4);
+            else if(request_data.type == "matrix/int32"){
+                std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
+                pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 4);
             }
             else{
-                EAGLEEYE_LOGE("Input data type not support.");
+                EAGLEEYE_LOGE("Input data type at index %d not support.", data_i);
             }
         }
 

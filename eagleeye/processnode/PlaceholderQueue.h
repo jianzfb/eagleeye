@@ -19,6 +19,8 @@ public:
     void config(int placeholder_i, std::string data_type, std::string data_category);
     void push(int placeholder_i, void* data, const size_t* data_size, const int data_dims, const int data_rotation, const int data_type);
 
+    virtual void postexit();
+
 private:    
     PlaceholderQueue(const PlaceholderQueue&);
     void operator=(const PlaceholderQueue&);

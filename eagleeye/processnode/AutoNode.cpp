@@ -144,7 +144,6 @@ void AutoNode::run_in_no_copy_input(){
             break;
         }
 
-
         // 1. start run auto node
         bool running_ischange = m_auto_node->start();
         if(!running_ischange){

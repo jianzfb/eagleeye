@@ -67,11 +67,18 @@ void PlaceholderQueue::config(int placeholder_i, std::string data_type, std::str
 
 void PlaceholderQueue::push(int placeholder_i, void* data, const size_t* data_size, const int data_dims, const int data_rotation, const int data_type){
     AnySignal* signal = this->getOutputPort(placeholder_i);
-   
+
     MetaData meta;
     meta.rows = data_size[0];
     meta.cols = data_size[1];
     meta.rotation = data_rotation;
+    // memory copy mode
     signal->setData(data, meta);
+}
+
+void PlaceholderQueue::postexit(){
+    ImageSignal<Array<unsigned char, 3>>* out_sig = (ImageSignal<Array<unsigned char, 3>>*)this->getOutputPort(0);
+    MetaData meta;
+    out_sig->setData(Matrix<Array<unsigned char, 3>>(0,0), meta);
 }
 }

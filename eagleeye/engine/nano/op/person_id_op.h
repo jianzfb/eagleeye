@@ -1,5 +1,5 @@
-#ifndef _EAGLEEYE_FACE_ID_OP_
-#define _EAGLEEYE_FACE_ID_OP_
+#ifndef _EAGLEEYE_PERSON_ID_OP_
+#define _EAGLEEYE_PERSON_ID_OP_
 
 #include "eagleeye/engine/nano/dataflow/base.h"
 #include "eagleeye/basic/Tensor.h"

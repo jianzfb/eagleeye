@@ -47,6 +47,7 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
     memset(memory_name_str_ptr, '\0', input[0].dims().production() + 1);
     memcpy(memory_name_str_ptr, memory_name_ptr, input[0].dims().production());
     std::string memory_name = memory_name_str_ptr;
+    free(memory_name_str_ptr);
 
     if(input[1].empty()){
         this->m_outputs[0] = Tensor(

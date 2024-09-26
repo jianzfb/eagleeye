@@ -29,16 +29,9 @@ int PersonIdOp::init(std::map<std::string, std::vector<float>> params){
 }
 
 int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
-    // input: memory name, NxD person feature
+    // input: NxD person feature
     // output: N person id 
-    const char* memory_name_ptr = input[0].cpu<char>();
-    char* memory_name_str_ptr = (char*)malloc(input[0].dims().production() + 1);
-    memset(memory_name_str_ptr, '\0', input[0].dims().production() + 1);
-    memcpy(memory_name_str_ptr, memory_name_ptr, input[0].dims().production());
-    std::string memory_name = memory_name_str_ptr;
-    free(memory_name_str_ptr);
-
-    if(input[1].empty() || input[1].dims()[0] == 0){
+    if(input[0].empty() || input[0].dims()[0] == 0){
         this->m_outputs[0] = Tensor(
             std::vector<int64_t>{0, 16},
             EAGLEEYE_UCHAR,
@@ -48,7 +41,7 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
         return 0;
     }
 
-    int query_person_num = input[1].dims()[0];
+    int query_person_num = input[0].dims()[0];
     this->m_outputs[0] = Tensor(
         std::vector<int64_t>{query_person_num, 16},
         EAGLEEYE_UCHAR,
@@ -61,7 +54,8 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
         unsigned char* person_id_ptr = this->m_outputs[0].cpu<unsigned char>() + person_i*16;
         memset(person_id_ptr, '\0', 16);
     }
-    int query_person_feature_dim = input[1].dims().production()/query_person_num;
+
+    int query_person_feature_dim = input[0].dims().production()/query_person_num;
 
     // 发现人体ID
     std::vector<std::string> selected_person_id;
@@ -71,7 +65,7 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
         selected_person_score.push_back(0.0f);
     }
 
-    Eigen::Map<EigenComMatrixXf> query_face_features_mat(const_cast<float*>(input[1].cpu<float>()), query_person_num, query_person_feature_dim);
+    Eigen::Map<EigenComMatrixXf> query_face_features_mat(const_cast<float*>(input[0].cpu<float>()), query_person_num, query_person_feature_dim);
     std::map<std::string, Tensor>::iterator iter, iend(m_person_gallery.end());
     for(iter=m_person_gallery.begin(); iter != iend; ++iter){
         std::string person_name = iter->first;
@@ -99,7 +93,8 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
 
     for(int person_i=0; person_i<query_person_num; ++person_i){
         unsigned char* person_id_ptr = this->m_outputs[0].cpu<unsigned char>() + person_i*16;
-        const float* person_i_feature = input[1].cpu<float>() + person_i * query_person_feature_dim;
+        const float* person_i_feature = input[0].cpu<float>() + person_i * query_person_feature_dim;
+
         if(selected_person_id[person_i] != ""){
             // 发现ID
             std::string person_name = selected_person_id[person_i];

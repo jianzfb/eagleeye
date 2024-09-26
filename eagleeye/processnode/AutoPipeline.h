@@ -31,6 +31,7 @@ public:
      */
 	virtual void setUnitName(const char* unit_name);
 
+    virtual void exit() override;
     /**
      * @brief (pre/post) exit
      * 
