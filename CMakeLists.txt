@@ -53,6 +53,7 @@ elseif(DEFINED ARM_ABI)
         include(FindPythonByEnv)
         add_subdirectory(${eagleeye_SOURCE_DIR}/eagleeye/3rd/pybind11)
     endif()
+    link_libraries(-lm)
     link_libraries(-lz)
 else()
     # OSX
