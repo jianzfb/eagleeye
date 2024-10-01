@@ -13,11 +13,29 @@ git submodule update
 mkdir build
 cd build
 
+tool_chain_path="/opt/cross_build/linux-arm64/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu"
+
 # arm64编译
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
 cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a -DBUILD_PYTHON_MODULE:BOOL=ON ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a -DFFMPEG=/root/.3rd/ffmpeg/ -DRKCHIP=/root/.3rd/rk -DMINIO:BOOL=ON -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release \
+  -DARM_ABI=arm64-v8a  \
+  -DCMAKE_SYSTEM_NAME=Linux \
+  -DCMAKE_SYSTEM_PROCESSOR=aarch64  \
+  -DTOOLCHAIN_PATH=$tool_chain_path \
+  -DCMAKE_C_COMPILER=$tool_chain_path/bin/aarch64-none-linux-gnu-gcc \
+  -DCMAKE_CXX_COMPILER=$tool_chain_path/bin/aarch64-none-linux-gnu-g++ \
+  -DCMAKE_FIND_ROOT_PATH="$tool_chain_path/aarch64-linux-gnu;/opt/cross_build/linux-arm64/zlib-1.3.1" \
+  -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER \
+  -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
+  -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
+  -DZLIB_ROOT=/opt/cross_build/linux-arm64/zlib-1.3.1 \
+  -DFFMPEG=/root/.3rd/ffmpeg_arm \
+  -DRKCHIP=/root/.3rd/rk  \
+  -DMINIO:BOOL=OFF \
+  ..
+
 fi
 make -j 6
 cd ..

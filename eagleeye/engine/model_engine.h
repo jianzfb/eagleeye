@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <cstdint> 
 
 namespace eagleeye{
 enum RunPower{
