@@ -306,16 +306,15 @@ bool ModelRun<SnpeRun, Enabled>::_run(std::map<std::string, const unsigned char*
         auto tensor_ptr = this->m_output_tensormap.getTensor(tensor_name);
         zdl::DlSystem::TensorShape shape = tensor_ptr->getShape();
 
-       	std::string name = tensor_name;
-		// name = name.substr(0, name.length()-2);
-
-		std::string transformed_name = name;
-		if(this->m_inv_output_name_map2.size() > 0){
-			assert(this->m_inv_output_name_map2.find(name) != this->m_inv_output_name_map2.end());
-			transformed_name = this->m_inv_output_name_map2[name];
-		}
-		EAGLEEYE_LOGD("pair %s and %s",tensor_name, transformed_name.c_str());
-		outputs[transformed_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
+       	// std::string name = tensor_name;
+		// // name = name.substr(0, name.length()-2);
+		// std::string transformed_name = name;
+		// if(this->m_inv_output_name_map2.size() > 0){
+		// 	assert(this->m_inv_output_name_map2.find(name) != this->m_inv_output_name_map2.end());
+		// 	transformed_name = this->m_inv_output_name_map2[name];
+		// }
+		// EAGLEEYE_LOGD("pair %s and %s",tensor_name, transformed_name.c_str());
+		outputs[tensor_name] = (unsigned char*)tensor_ptr->begin().dataPointer();
 	});
 
 	return is_run_ok;

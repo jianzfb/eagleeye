@@ -1,6 +1,7 @@
 #ifndef _EAGLEEYE_SNPE_OP_H_
 #define _EAGLEEYE_SNPE_OP_H_
 #include "eagleeye/engine/nano/dataflow/base.h"
+#include "eagleeye/common/EagleeyeFile.h"
 #include "eagleeye/basic/Tensor.h"
 #include "eagleeye/basic/Dim.h"
 #include "eagleeye/basic/type.h"
@@ -181,10 +182,10 @@ public:
 
             // 设置模型根目录，（将在此目录下寻找模型文件）
             this->m_model_run->setModelFolder(m_model_folder);
-            // 初始化模型
-            this->m_model_init = this->m_model_run->initialize();
             // alias output names
             this->m_model_run->setOutputNameMap(this->m_alias_output_names);
+            // 初始化模型
+            this->m_model_init = this->m_model_run->initialize();
         }
         if(!this->m_model_init){
             EAGLEEYE_LOGE("snpe model fail to initialize.");
@@ -229,58 +230,80 @@ public:
                 // NxHxWx3 或 HxWx3 格式
                 if(x_dims.size() == 4){
                     // NxHxWx3
-                    int batch_size = x_dims[0];
-                    int offset_size = x_dims[1] * x_dims[2] * x_dims[3];
-                    int x_width = x_dims[2];
-                    int x_height = x_dims[1];
+                    // int batch_size = x_dims[0];
+                    // int offset_size = x_dims[1] * x_dims[2] * x_dims[3];
+                    // int x_width = x_dims[2];
+                    // int x_height = x_dims[1];
 
-                    for(int b_i=0; b_i<batch_size; ++b_i){
-                        if(this->m_reverse_channel){
-                            this->m_model_run->bgrToRgbTensorCHW(
-                                x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
-                                preprocessed_data + b_i * x_width * x_height * 3, 
-                                x_width, 
-                                x_height, 
-                                &(this->m_mean[0]),
-                                &(this->m_std[0])
-                            );
-                        }
-                        else{
-                            this->m_model_run->bgrToTensorCHW(
-                                x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
-                                preprocessed_data + b_i * x_width * x_height * 3, 
-                                x_width, 
-                                x_height, 
-                                &(this->m_mean[0]), 
-                                &(this->m_std[0])
-                            );
-                        }     
-                    }
+                    // for(int b_i=0; b_i<batch_size; ++b_i){
+                    //     if(this->m_reverse_channel){
+                    //         this->m_model_run->bgrToRgbTensorCHW(
+                    //             x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
+                    //             preprocessed_data + b_i * x_width * x_height * 3, 
+                    //             x_width, 
+                    //             x_height, 
+                    //             &(this->m_mean[0]),
+                    //             &(this->m_std[0])
+                    //         );
+                    //     }
+                    //     else{
+                    //         this->m_model_run->bgrToTensorCHW(
+                    //             x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
+                    //             preprocessed_data + b_i * x_width * x_height * 3, 
+                    //             x_width, 
+                    //             x_height, 
+                    //             &(this->m_mean[0]), 
+                    //             &(this->m_std[0])
+                    //         );
+                    //     }     
+                    // }
+                    EAGLEEYE_LOGE("Not support");
                 }
                 else{
                     // HxWx3
                     int x_width = x_dims[1];
                     int x_height = x_dims[0];
+
                     if(this->m_reverse_channel){
-                        this->m_model_run->bgrToRgbTensorCHW(
-                            x.cpu<unsigned char>(), 
-                            preprocessed_data, 
-                            x_width, 
-                            x_height, 
-                            &(this->m_mean[0]), 
-                            &(this->m_std[0])
-                        );
+                        // this->m_model_run->bgrToRgbTensorCHW(
+                        //     x.cpu<unsigned char>(), 
+                        //     preprocessed_data, 
+                        //     x_width, 
+                        //     x_height, 
+                        //     &(this->m_mean[0]), 
+                        //     &(this->m_std[0])
+                        // );
+                        // TODO， 使用neon加速
+                        for(int i=0; i<x_height; ++i){
+                            const unsigned char* x_ptr = x.cpu<unsigned char>() + i * x_width * 3;
+                            float* preprocessed_ptr = preprocessed_data + i * x_width * 3;
+                            for(int j=0; j<x_width; ++j){
+                                preprocessed_ptr[j*3] = ((float)(x_ptr[j*3+2]) - m_mean[0]) * m_std[0];
+                                preprocessed_ptr[j*3+1] = ((float)(x_ptr[j*3+1]) - m_mean[1]) * m_std[1];
+                                preprocessed_ptr[j*3+2] = ((float)(x_ptr[j*3]) - m_mean[2]) * m_std[2];
+                            }
+                        }
                     }
                     else{
-                        this->m_model_run->bgrToTensorCHW(
-                            x.cpu<unsigned char>(), 
-                            preprocessed_data, 
-                            x_width, 
-                            x_height, 
-                            &(this->m_mean[0]), 
-                            &(this->m_std[0])
-                        );
-                    }                       
+                        // this->m_model_run->bgrToTensorCHW(
+                        //     x.cpu<unsigned char>(), 
+                        //     preprocessed_data, 
+                        //     x_width, 
+                        //     x_height, 
+                        //     &(this->m_mean[0]), 
+                        //     &(this->m_std[0])
+                        // );
+                        // TODO， 使用neon加速
+                        for(int i=0; i<x_height; ++i){
+                            const unsigned char* x_ptr = x.cpu<unsigned char>() + i * x_width * 3;
+                            float* preprocessed_ptr = preprocessed_data + i * x_width * 3;
+                            for(int j=0; j<x_width; ++j){
+                                preprocessed_ptr[j*3] = ((float)(x_ptr[j*3]) - m_mean[0]) * m_std[0];
+                                preprocessed_ptr[j*3+1] = ((float)(x_ptr[j*3+1]) - m_mean[1]) * m_std[1];
+                                preprocessed_ptr[j*3+2] = ((float)(x_ptr[j*3+2]) - m_mean[2]) * m_std[2];
+                            }
+                        }
+                    }      
                 }
 
                 continue;
@@ -301,7 +324,6 @@ public:
         // 输出数据
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
             std::string output_name = this->m_output_names[output_i];
-
             this->m_outputs[output_i] = Tensor(
                         m_output_shapes[output_i],
                         m_output_types[output_i],
