@@ -16,9 +16,6 @@ cd build
 tool_chain_path="/opt/cross_build/linux-arm64/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu"
 
 # arm64编译
-if [[ $1 == BUILD_PYTHON_MODULE ]];then
-cmake -DCMAKE_BUILD_TYPE=Release -DARM_ABI=arm64-v8a -DBUILD_PYTHON_MODULE:BOOL=ON ..
-else
 cmake -DCMAKE_BUILD_TYPE=Release \
   -DARM_ABI=arm64-v8a  \
   -DCMAKE_SYSTEM_NAME=Linux \
@@ -31,12 +28,13 @@ cmake -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
   -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
   -DZLIB_ROOT=/opt/cross_build/linux-arm64/zlib-1.3.1 \
-  -DFFMPEG=/root/.3rd/ffmpeg_arm \
+  -DZLIB_INCLUDE_DIR=/opt/cross_build/linux-arm64/zlib-1.3.1 \
+  -DZLIB_LIBRARY=/opt/cross_build/linux-arm64/zlib-1.3.1/libz.so \
+  -DFFMPEG=/root/.3rd/ffmpeg \
   -DRKCHIP=/root/.3rd/rk  \
   -DMINIO:BOOL=OFF \
   ..
 
-fi
 make -j 6
 cd ..
 
