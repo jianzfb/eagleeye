@@ -569,13 +569,23 @@ if(DEFINED FFMPEG)
                                     ${FFMPEG}/android-install/lib/libswresample.so
                                     ${FFMPEG}/android-install/lib/libswscale.so)
         else()
-            target_link_libraries(eagleeye 
-                                    ${FFMPEG}/linux-install/lib/libavcodec.so
-                                    ${FFMPEG}/linux-install/lib/libavfilter.so
-                                    ${FFMPEG}/linux-install/lib/libavformat.so
-                                    ${FFMPEG}/linux-install/lib/libavutil.so
-                                    ${FFMPEG}/linux-install/lib/libswresample.so
-                                    ${FFMPEG}/linux-install/lib/libswscale.so)
+            if(DEFINED ARM_ABI)
+                target_link_libraries(eagleeye 
+                                        ${FFMPEG}/linux-arm64-install/lib/libavcodec.so
+                                        ${FFMPEG}/linux-arm64-install/lib/libavfilter.so
+                                        ${FFMPEG}/linux-arm64-install/lib/libavformat.so
+                                        ${FFMPEG}/linux-arm64-install/lib/libavutil.so
+                                        ${FFMPEG}/linux-arm64-install/lib/libswresample.so
+                                        ${FFMPEG}/linux-arm64-install/lib/libswscale.so) 
+            else()
+                target_link_libraries(eagleeye 
+                                        ${FFMPEG}/linux-install/lib/libavcodec.so
+                                        ${FFMPEG}/linux-install/lib/libavfilter.so
+                                        ${FFMPEG}/linux-install/lib/libavformat.so
+                                        ${FFMPEG}/linux-install/lib/libavutil.so
+                                        ${FFMPEG}/linux-install/lib/libswresample.so
+                                        ${FFMPEG}/linux-install/lib/libswscale.so)
+            endif()
         endif()
 
     endif()
