@@ -134,11 +134,6 @@ void AutoNode::run_in_copy_input(){
     }
 }
 
-void AutoNode::exit(){
-    Superclass::exit();
-    this->m_auto_node->exit();
-}
-
 void AutoNode::run_in_no_copy_input(){
     int signal_num = this->getNumberOfInputSignals();
     for(int signal_i  = 0; signal_i < signal_num; ++signal_i){
@@ -148,7 +143,6 @@ void AutoNode::run_in_no_copy_input(){
         if(!this->m_thread_status){
             break;
         }
-
 
         // 1. start run auto node
         bool running_ischange = m_auto_node->start();
