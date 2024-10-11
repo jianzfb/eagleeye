@@ -54,6 +54,7 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
         unsigned char* person_id_ptr = this->m_outputs[0].cpu<unsigned char>() + person_i*16;
         memset(person_id_ptr, '\0', 16);
     }
+
     int query_person_feature_dim = input[0].dims().production()/query_person_num;
 
     // 发现人体ID

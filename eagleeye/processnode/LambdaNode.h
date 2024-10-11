@@ -186,5 +186,50 @@ private:
     std::vector<Tensor> m_caches;
 };
 
+template<class T1, class T2, class T3, class T4>
+class Lambda4Node:public AnyNode{
+public:
+    typedef Lambda4Node              Self;
+    typedef AnyNode                 Superclass;    
+
+    EAGLEEYE_CLASSIDENTITY(Lambda4Node);
+
+    Lambda4Node(std::function<void(Tensor&, std::vector<AnySignal*>, std::vector<AnySignal*>&)> lambda_func){
+        m_lambda_func = lambda_func;
+        this->setNumberOfOutputSignals(4);
+        this->setOutputPort(new T1(), 0);
+        this->setOutputPort(new T2(), 1);
+        this->setOutputPort(new T3(), 2);
+        this->setOutputPort(new T4(), 3);
+    }
+    virtual ~Lambda4Node(){}
+
+    /**
+	 *	@brief execute Node
+     *  @note user must finish this function
+	 */
+	virtual void executeNodeInfo(){
+        std::vector<AnySignal*> input_signals;
+        int signal_num = this->getNumberOfInputSignals();
+        for(int signal_i=0; signal_i<signal_num; ++signal_i){
+            input_signals.push_back(this->getInputPort(signal_i));
+        }
+
+        std::vector<AnySignal*> output_signals;
+        signal_num = this->getNumberOfOutputSignals();
+        for(int signal_i=0; signal_i<signal_num; ++signal_i){
+            output_signals.push_back(this->getOutputPort(signal_i));
+        }
+        this->m_lambda_func(m_cache, input_signals, output_signals);
+    }
+
+private:
+    Lambda4Node(const Lambda4Node&);
+    void operator=(const Lambda4Node&);
+
+    std::function<void(Tensor&, std::vector<AnySignal*>, std::vector<AnySignal*>&)> m_lambda_func;
+    Tensor m_cache;
+};
+
 }
 #endif
