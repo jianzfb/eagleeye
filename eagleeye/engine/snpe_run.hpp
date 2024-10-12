@@ -128,7 +128,7 @@ bool ModelRun<SnpeRun, Enabled>::initialize(){
 		dlc_path = model_folder + std::string("/")+this->m_model_name;
 	}
 
-    // 检查文件是否存在，否则更换查找位置
+    // 1.检查文件是否存在，否则更换查找位置
     if(!isfileexist(dlc_path.c_str())){
         std::string so_folder = this->getModelRoot();
         if(endswith(so_folder, "/")){
@@ -137,6 +137,20 @@ bool ModelRun<SnpeRun, Enabled>::initialize(){
         else{
             dlc_path = so_folder + std::string("/") + this->m_model_name;
         }
+    }
+
+    // 2. 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(dlc_path.c_str())){
+        // android platform: /sdcard/models/
+        // x86 platform: /${HOME}/models/
+        #ifdef _ANDROID_
+            dlc_path = std::string( "/sdcard/models/") + this->m_model_name;
+        #else
+            const char* home_folder = std::getenv("HOME");
+            if(home_folder != NULL){
+                dlc_path = std::string(home_folder) + std::string("/models/") + this->m_model_name;
+            }
+        #endif
     }
 
     EAGLEEYE_LOGD("Load SNPE model from %s", dlc_path.c_str());

@@ -113,7 +113,7 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
         nb_path = model_folder + "/" + this->m_nb_name;
     }
 
-    // 检查文件是否存在，否则更换查找位置
+    // 1.检查文件是否存在，否则更换查找位置
     if(!isfileexist(nb_path.c_str())){
         std::string so_folder = this->getModelRoot();
         if(endswith(so_folder, "/")){
@@ -123,6 +123,21 @@ bool ModelRun<PaddleRun, Enabled>::initialize(){
             nb_path = so_folder + std::string("/") + this->m_nb_name;
         }
     }
+
+    // 2. 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(nb_path.c_str())){
+        // android platform: /sdcard/models/
+        // x86 platform: /${HOME}/models/
+        #ifdef _ANDROID_
+            nb_path = std::string( "/sdcard/models/") + this->m_nb_name;
+        #else
+            const char* home_folder = std::getenv("HOME");
+            if(home_folder != NULL){
+                nb_path = std::string(home_folder) + std::string("/models/") + this->m_nb_name;
+            }
+        #endif
+    }
+
     EAGLEEYE_LOGD("Load PADDLE model from %s", nb_path.c_str());
 
     EAGLEEYE_LOGD("PADDLELITE Set paddle model file %s", nb_path.c_str());

@@ -153,7 +153,7 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
     else{
         model_path = model_folder + "/" + this->m_tnnmodel;
     }
-    // 检查文件是否存在，否则更换查找位置
+    // 1.检查文件是否存在，否则更换查找位置
     if(!isfileexist(model_path.c_str())){
         std::string so_folder = this->getModelRoot();
         if(endswith(so_folder, "/")){
@@ -162,6 +162,20 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
         else{
             model_path = so_folder + std::string("/") + this->m_tnnmodel;
         }
+    }
+
+    // 2. 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(model_path.c_str())){
+        // android platform: /sdcard/models/
+        // x86 platform: /${HOME}/models/
+        #ifdef _ANDROID_
+            model_path = std::string( "/sdcard/models/") + this->m_tnnmodel;
+        #else
+            const char* home_folder = std::getenv("HOME");
+            if(home_folder != NULL){
+                model_path = std::string(home_folder) + std::string("/models/") + this->m_tnnmodel;
+            }
+        #endif
     }
 
     EAGLEEYE_LOGD("Load TNN model from %s", model_path.c_str());

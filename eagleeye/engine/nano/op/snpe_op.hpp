@@ -194,6 +194,7 @@ public:
 
         bool is_inner_preprocess = false;
         if(this->m_mean.size() > 0 && this->m_std.size() > 0){
+            // 标记，是否需要进行减均值除方差处理
             is_inner_preprocess = true;
         }
 
@@ -226,84 +227,67 @@ public:
 
             Dim x_dims = x.dims();
             if(is_inner_preprocess){
-                // 需要进行预处理流程
+                // 需要进行预处理流程（减均值除方差）
                 // NxHxWx3 或 HxWx3 格式
                 if(x_dims.size() == 4){
                     // NxHxWx3
-                    // int batch_size = x_dims[0];
-                    // int offset_size = x_dims[1] * x_dims[2] * x_dims[3];
-                    // int x_width = x_dims[2];
-                    // int x_height = x_dims[1];
+                    int batch_size = x_dims[0];
+                    int offset_size = x_dims[1] * x_dims[2] * x_dims[3];
+                    int x_width = x_dims[2];
+                    int x_height = x_dims[1];
 
-                    // for(int b_i=0; b_i<batch_size; ++b_i){
-                    //     if(this->m_reverse_channel){
-                    //         this->m_model_run->bgrToRgbTensorCHW(
-                    //             x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
-                    //             preprocessed_data + b_i * x_width * x_height * 3, 
-                    //             x_width, 
-                    //             x_height, 
-                    //             &(this->m_mean[0]),
-                    //             &(this->m_std[0])
-                    //         );
-                    //     }
-                    //     else{
-                    //         this->m_model_run->bgrToTensorCHW(
-                    //             x.cpu<unsigned char>() + b_i * x_width * x_height * 3, 
-                    //             preprocessed_data + b_i * x_width * x_height * 3, 
-                    //             x_width, 
-                    //             x_height, 
-                    //             &(this->m_mean[0]), 
-                    //             &(this->m_std[0])
-                    //         );
-                    //     }     
-                    // }
-                    EAGLEEYE_LOGE("Not support");
+                    int pixel_num = batch_size * x_width * x_height;
+                    const unsigned char* x_ptr = x.cpu<unsigned char>();
+                    float* preprocessed_ptr = preprocessed_data;
+                    if(this->m_reverse_channel){
+                        for(int p_i=0; p_i<pixel_num; ++p_i){
+                            preprocessed_ptr[0] =((float)(x_ptr[2]) - m_mean[0]) * m_std[0];
+                            preprocessed_ptr[1] =((float)(x_ptr[1]) - m_mean[1]) * m_std[1];
+                            preprocessed_ptr[2] =((float)(x_ptr[0]) - m_mean[2]) * m_std[2];
+
+                            preprocessed_ptr += 3;
+                            x_ptr += 3;
+                        }
+                    }
+                    else{
+                        for(int p_i=0; p_i<pixel_num; ++p_i){
+                            preprocessed_ptr[0] =((float)(x_ptr[0]) - m_mean[0]) * m_std[0];
+                            preprocessed_ptr[1] =((float)(x_ptr[1]) - m_mean[1]) * m_std[1];
+                            preprocessed_ptr[2] =((float)(x_ptr[2]) - m_mean[2]) * m_std[2];
+
+                            preprocessed_ptr += 3;
+                            x_ptr += 3;
+                        }
+                    }
                 }
                 else{
                     // HxWx3
                     int x_width = x_dims[1];
                     int x_height = x_dims[0];
+                    int pixel_num = x_width * x_height;
 
+                    const unsigned char* x_ptr = x.cpu<unsigned char>();
+                    float* preprocessed_ptr = preprocessed_data;
                     if(this->m_reverse_channel){
-                        // this->m_model_run->bgrToRgbTensorCHW(
-                        //     x.cpu<unsigned char>(), 
-                        //     preprocessed_data, 
-                        //     x_width, 
-                        //     x_height, 
-                        //     &(this->m_mean[0]), 
-                        //     &(this->m_std[0])
-                        // );
-                        // TODO， 使用neon加速
-                        for(int i=0; i<x_height; ++i){
-                            const unsigned char* x_ptr = x.cpu<unsigned char>() + i * x_width * 3;
-                            float* preprocessed_ptr = preprocessed_data + i * x_width * 3;
-                            for(int j=0; j<x_width; ++j){
-                                preprocessed_ptr[j*3] = ((float)(x_ptr[j*3+2]) - m_mean[0]) * m_std[0];
-                                preprocessed_ptr[j*3+1] = ((float)(x_ptr[j*3+1]) - m_mean[1]) * m_std[1];
-                                preprocessed_ptr[j*3+2] = ((float)(x_ptr[j*3]) - m_mean[2]) * m_std[2];
-                            }
+                        for(int p_i=0; p_i<pixel_num; ++p_i){
+                            preprocessed_ptr[0] =((float)(x_ptr[2]) - m_mean[0]) * m_std[0];
+                            preprocessed_ptr[1] =((float)(x_ptr[1]) - m_mean[1]) * m_std[1];
+                            preprocessed_ptr[2] =((float)(x_ptr[0]) - m_mean[2]) * m_std[2];
+
+                            preprocessed_ptr += 3;
+                            x_ptr += 3;
                         }
                     }
                     else{
-                        // this->m_model_run->bgrToTensorCHW(
-                        //     x.cpu<unsigned char>(), 
-                        //     preprocessed_data, 
-                        //     x_width, 
-                        //     x_height, 
-                        //     &(this->m_mean[0]), 
-                        //     &(this->m_std[0])
-                        // );
-                        // TODO， 使用neon加速
-                        for(int i=0; i<x_height; ++i){
-                            const unsigned char* x_ptr = x.cpu<unsigned char>() + i * x_width * 3;
-                            float* preprocessed_ptr = preprocessed_data + i * x_width * 3;
-                            for(int j=0; j<x_width; ++j){
-                                preprocessed_ptr[j*3] = ((float)(x_ptr[j*3]) - m_mean[0]) * m_std[0];
-                                preprocessed_ptr[j*3+1] = ((float)(x_ptr[j*3+1]) - m_mean[1]) * m_std[1];
-                                preprocessed_ptr[j*3+2] = ((float)(x_ptr[j*3+2]) - m_mean[2]) * m_std[2];
-                            }
+                        for(int p_i=0; p_i<pixel_num; ++p_i){
+                            preprocessed_ptr[0] =((float)(x_ptr[0]) - m_mean[0]) * m_std[0];
+                            preprocessed_ptr[1] =((float)(x_ptr[1]) - m_mean[1]) * m_std[1];
+                            preprocessed_ptr[2] =((float)(x_ptr[2]) - m_mean[2]) * m_std[2];
+
+                            preprocessed_ptr += 3;
+                            x_ptr += 3;
                         }
-                    }      
+                    }
                 }
 
                 continue;
