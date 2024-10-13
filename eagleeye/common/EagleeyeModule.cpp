@@ -1194,7 +1194,7 @@ ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::vector<R
     return SERVER_SUCCESS;
 }
 
-ServerStatus eagleeye_pipeline_server_push_stream(std::string server_key, uint8_t* package_data, int package_size){
+ServerStatus eagleeye_pipeline_server_stream(std::string server_key, uint8_t* package_data, int package_size){
     // 管线数据对象
     std::string server_data_key = server_key + "/data";
     AnyNode* pipeline_data_obj = StreamCenter::getInstance()->getStream(server_data_key);

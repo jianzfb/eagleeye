@@ -369,7 +369,7 @@ ServerStatus eagleeye_pipeline_server_init(std::string folder, std::vector<std::
 ServerStatus eagleeye_pipeline_server_register(std::string server_name, INITIALIZE_PLUGIN_FUNC server_initialize_func);
 ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::string& server_key, std::function<void*(std::vector<void*>, void*)> render_config_func);
 ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::vector<RequestData> server_request);
-ServerStatus eagleeye_pipeline_server_push_stream(std::string server_key, uint8_t* package_data, int package_size);
+ServerStatus eagleeye_pipeline_server_stream(std::string server_key, uint8_t* package_data, int package_size);
 
 ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::vector<RequestData> server_request, std::string& reply, int timeout=3);
 ServerStatus eagleeye_pipeline_server_render(std::string server_key);
