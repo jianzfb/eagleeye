@@ -583,9 +583,9 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     neb::CJsonObject server_params;
     config_obj.Get("server_params", server_params);
     neb::CJsonObject data_source;
-    config_obj.Get("data_source", data_source);         // 拥有闭环数据源，需要设置
+    config_obj.Get("data_source", data_source);         // 拥有闭环数据源（比如，摄像头，在管线服务初启动时设置）
     std::string data_mode;
-    config_obj.Get("data_mode", data_mode);             // 非闭环数据源，需要设置
+    config_obj.Get("data_mode", data_mode);             // 非闭环数据源（需要在实际运行时，指定数据。运行模式分为同步和异步，同步是指每次调用需要输入数据然后获得输出；异步是指有一个独立的输入接口接收数据）
     std::string server_mode;
     config_obj.Get("server_mode", server_mode);
 
@@ -854,7 +854,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
         }
         server_key = key;
     }
-    if(server_mode == "asyn"){
+    else if(server_mode == "asyn"){
         // 忽略数据源
         // 异步模式 (QueueNode + AutoPipeline)
         EAGLEEYE_LOGD("asyn mode server");
