@@ -24,11 +24,9 @@ public:
     virtual int runOnGpu(const std::vector<Tensor>& input);
 
 protected:
-    std::map<std::string, Tensor> m_face_gallery;
     std::string m_cache_folder;
-    std::string m_cache_memory_folder;
-
-    long m_face_gallery_update_time;
+    std::map<std::string, long> m_face_gallery_update_time;
+    std::map<std::string, std::map<std::string, Tensor>> m_face_gallery;
     float m_score_thres;
 };
 }

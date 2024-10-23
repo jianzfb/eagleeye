@@ -5,18 +5,14 @@
 #include "eagleeye/common/EagleeyeIO.h"
 #include "eagleeye/common/EagleeyeFile.h"
 #include "Eigen/Dense"
-#include <fstream>
 
 namespace eagleeye{
 namespace dataflow{
-typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> EigenComMatrixXf;
+typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> EMatrixF;
 
 FaceIdOp::FaceIdOp(){
     m_cache_folder = "./cache";
-    m_cache_memory_folder = "";
     m_score_thres = 0.55f;
-
-    m_face_gallery_update_time = 0;
 }
 
 FaceIdOp::FaceIdOp(const FaceIdOp& op){
@@ -55,7 +51,7 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
             EAGLEEYE_UCHAR,
             DataFormat::AUTO,
             CPU_BUFFER
-        );        
+        );
         return 0;
     }
 
@@ -77,23 +73,24 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
         return 0;
     }
 
-    if(m_face_gallery_update_time < KVMemoryOp::m_g_time[memory_name]){
+    // 初始化重组的特征信息
+    // 人脸特征库更新时间戳，用于标记是否需要重新建立重组的特征信息
+    if(m_face_gallery_update_time.find(memory_name) == m_face_gallery_update_time.end()){
+        m_face_gallery_update_time[memory_name] = 0;
+    }
+    // 人脸重组的特征信息
+    if(m_face_gallery.find(memory_name) == m_face_gallery.end()){
+        m_face_gallery[memory_name] = std::map<std::string, Tensor>();
+    }
+
+    EAGLEEYE_LOGD("local facegallery %s update_time %ld", memory_name.c_str(), m_face_gallery_update_time[memory_name]);
+    EAGLEEYE_LOGD("KVMemoryOp %s time %ld", memory_name.c_str(), KVMemoryOp::m_g_time[memory_name]);
+    if(m_face_gallery_update_time[memory_name] < KVMemoryOp::m_g_time[memory_name]){
         // 使用的人脸库旧，需要更新
-        if(m_cache_memory_folder == ""){
-            if(endswith(m_cache_folder, "/")){
-                m_cache_memory_folder = m_cache_folder + memory_name;
-            }
-            else{
-                m_cache_memory_folder = m_cache_folder + "/" + memory_name;
-            }
-        }
-
-        if(!isdirexist(m_cache_memory_folder.c_str())){
-            createdirectory(m_cache_memory_folder.c_str());
-        }
-
-        // 重新加载人脸库
-        m_face_gallery.clear();
+        // TODO 多线程支持        
+        // TODO,需要优化为仅对变动的条目进行更新
+        EAGLEEYE_LOGD("update local facegallery %s", memory_name.c_str());
+        m_face_gallery[memory_name].clear();
         std::map<std::string, std::vector<std::string>>::iterator iter, iend(KVMemoryOp::m_g_info[memory_name].end());
         for(iter = KVMemoryOp::m_g_info[memory_name].begin(); iter != iend; ++iter){
             std::vector<std::string> key_name_list = iter->second;
@@ -106,28 +103,33 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
                 continue;
             }
 
-            int64_t tensor_n = tensor_list.size();
+            int64_t face_num = tensor_list.size();
             int64_t feature_dim = tensor_list[0].dims().production();
             Tensor person_feature_tensor(
-                std::vector<int64_t>{tensor_n, feature_dim},
+                std::vector<int64_t>{feature_dim, face_num},
                 EAGLEEYE_FLOAT32,
                 DataFormat::AUTO,
                 CPU_BUFFER
             );
-            for(int key_i=0; key_i<tensor_list.size(); ++key_i){
-                float* offset_ptr = person_feature_tensor.cpu<float>() + key_i * feature_dim;
+
+            EAGLEEYE_LOGD("instance num %d, feature dim %d", face_num, feature_dim);
+            // 使用feature_dim x face_num 格式存储
+            float* person_feature_tensor_ptr = person_feature_tensor.cpu<float>();
+            for(int key_i=0; key_i<face_num; ++key_i){
                 float* src_ptr = tensor_list[key_i].cpu<float>();
-                memcpy(offset_ptr, src_ptr, sizeof(float)*feature_dim);
+                for(int i=0; i<feature_dim; ++i){
+                    person_feature_tensor_ptr[i*face_num+key_i] = src_ptr[i];
+                }
             }
 
             std::string person_name = iter->first;
-            m_face_gallery[person_name] = person_feature_tensor;
+            m_face_gallery[memory_name][person_name] = person_feature_tensor;
         }
 
-        m_face_gallery_update_time = KVMemoryOp::m_g_time[memory_name];
+        m_face_gallery_update_time[memory_name] = KVMemoryOp::m_g_time[memory_name];
     }
 
-    if(m_face_gallery.size() == 0){
+    if(m_face_gallery[memory_name].size() == 0){
         // face gallery empty
         return 0;
     }
@@ -145,17 +147,18 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
         selected_face_score.push_back(0.0f);
     }
 
-    Eigen::Map<EigenComMatrixXf> query_face_features_mat(const_cast<float*>(input[1].cpu<float>()), query_face_num, query_face_feature_dim);
-    std::map<std::string, Tensor>::iterator iter, iend(m_face_gallery.end());
-    for(iter=m_face_gallery.begin(); iter != iend; ++iter){
+    Eigen::Map<EMatrixF> query_face_features_mat(const_cast<float*>(input[1].cpu<float>()), query_face_num, query_face_feature_dim);
+    std::map<std::string, Tensor>::iterator iter, iend(m_face_gallery[memory_name].end());
+    EAGLEEYE_LOGD("person num %d in memory %s", m_face_gallery[memory_name].size(), memory_name.c_str());
+    for(iter=m_face_gallery[memory_name].begin(); iter != iend; ++iter){
         std::string person_name = iter->first;
         Tensor person_face_tensor = iter->second;
-        int person_face_tensor_n = person_face_tensor.dims()[0];
+        int person_face_tensor_n = person_face_tensor.dims()[1];
+        EAGLEEYE_LOGD("person name %s, sample num %d", person_name.c_str(), person_face_tensor_n);
 
-        const float* gallery_face_features_ptr = person_face_tensor.cpu<float>();
-        Eigen::Map<EigenComMatrixXf> gallery_face_features_mat(const_cast<float*>(gallery_face_features_ptr), person_face_tensor_n, query_face_feature_dim);
-        EigenComMatrixXf gallery_face_features_mat_t = gallery_face_features_mat.transpose();
-        EigenComMatrixXf sim_score_mat = query_face_features_mat * gallery_face_features_mat_t;  // query_face_num x gallery_face_num
+        float* gallery_face_features_ptr = person_face_tensor.cpu<float>();
+        Eigen::Map<EMatrixF> gallery_face_features_mat(gallery_face_features_ptr, query_face_feature_dim, person_face_tensor_n);
+        EMatrixF sim_score_mat = query_face_features_mat * gallery_face_features_mat;  // query_face_num x gallery_face_num
 
         for(int query_face_i=0; query_face_i<query_face_num; ++query_face_i){
             float max_score = 0.0f;

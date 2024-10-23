@@ -25,7 +25,6 @@ public:
 
 protected:
     std::string m_cache_folder;
-    std::string m_cache_memory_folder;
 };
 }
 }
