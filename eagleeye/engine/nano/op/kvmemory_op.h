@@ -35,6 +35,7 @@ public:
 protected:
     std::string m_memory_name;
     std::string m_cache_folder;
+    bool m_is_load_once;
 };
 
 class KVDMemoryOp:public BaseOp<2, 1>, DynamicCreator<KVDMemoryOp>{

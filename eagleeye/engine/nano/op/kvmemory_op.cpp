@@ -17,6 +17,7 @@ std::map<std::string, bool> KVMemoryOp::m_g_is_init;
 KVMemoryOp::KVMemoryOp(){
     m_memory_name = "memory";
     m_cache_folder = "./cache";
+    m_is_load_once = true;
 }
 
 KVMemoryOp::KVMemoryOp(const KVMemoryOp& op){
@@ -36,6 +37,9 @@ int KVMemoryOp::init(std::map<std::string, std::vector<std::string>> params){
 }
 
 int KVMemoryOp::init(std::map<std::string, std::vector<float>> params){
+    if(params.find("load_once") != params.end()){
+        m_is_load_once = bool(int(params["load_once"][0]));
+    }
     return 0;
 }
 
@@ -63,7 +67,9 @@ int KVMemoryOp::runOnCpu(const std::vector<Tensor>& input){
     memcpy(this->m_outputs[0].cpu<char>(), m_memory_name.c_str(), m_memory_name.size());
 
     int operator_status = input[0].cpu<int>()[0];
-    if(!m_g_is_init[m_memory_name] || operator_status==1){
+    if((!m_g_is_init[m_memory_name] || operator_status==1) && (!(m_g_is_init[m_memory_name] && m_is_load_once))){
+        // 条件1: 未初始化或者操作符为1
+        // 条件2: !(初始化并且仅加载一次)
         // 将缓存文件加载到内存
         std::vector<std::string> file_list;
         traverseFiles(cache_memory_folder.c_str(), file_list);
@@ -143,7 +149,9 @@ int KVDMemoryOp::runOnCpu(const std::vector<Tensor>& input){
     m_kv_memory_op->m_memory_name = memory_name;
 
     std::vector<Tensor> operator_input = {input[1]};
-    return m_kv_memory_op->runOnCpu(operator_input);
+    int result = m_kv_memory_op->runOnCpu(operator_input);
+    this->m_outputs[0] = this->m_kv_memory_op->getOutput(0);
+    return result;
 }
 
 int KVDMemoryOp::runOnGpu(const std::vector<Tensor>& input){
