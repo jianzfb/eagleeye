@@ -9,7 +9,7 @@
 
 namespace eagleeye{
 namespace dataflow{
-typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> EigenComMatrixXf;
+typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> EMatrixF;
 PersonIdOp::PersonIdOp(){
     m_score_thres = 0.6f;
 }
@@ -54,7 +54,6 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
         unsigned char* person_id_ptr = this->m_outputs[0].cpu<unsigned char>() + person_i*16;
         memset(person_id_ptr, '\0', 16);
     }
-
     int query_person_feature_dim = input[0].dims().production()/query_person_num;
 
     // 发现人体ID
@@ -65,7 +64,7 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
         selected_person_score.push_back(0.0f);
     }
 
-    Eigen::Map<EigenComMatrixXf> query_face_features_mat(const_cast<float*>(input[0].cpu<float>()), query_person_num, query_person_feature_dim);
+    Eigen::Map<EMatrixF> query_face_features_mat(const_cast<float*>(input[0].cpu<float>()), query_person_num, query_person_feature_dim);
     std::map<std::string, Tensor>::iterator iter, iend(m_person_gallery.end());
     for(iter=m_person_gallery.begin(); iter != iend; ++iter){
         std::string person_name = iter->first;
@@ -73,9 +72,9 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
         int person_face_tensor_n = person_face_tensor.dims()[0];
 
         const float* gallery_face_features_ptr = person_face_tensor.cpu<float>();
-        Eigen::Map<EigenComMatrixXf> gallery_face_features_mat(const_cast<float*>(gallery_face_features_ptr), person_face_tensor_n, query_person_feature_dim);
-        EigenComMatrixXf gallery_face_features_mat_t = gallery_face_features_mat.transpose();
-        EigenComMatrixXf sim_score_mat = query_face_features_mat * gallery_face_features_mat_t;  // query_face_num x gallery_face_num
+        Eigen::Map<EMatrixF> gallery_face_features_mat(const_cast<float*>(gallery_face_features_ptr), person_face_tensor_n, query_person_feature_dim);
+        EMatrixF gallery_face_features_mat_t = gallery_face_features_mat.transpose();
+        EMatrixF sim_score_mat = query_face_features_mat * gallery_face_features_mat_t;  // query_face_num x gallery_face_num
 
         for(int query_person_i=0; query_person_i<query_person_num; ++query_person_i){
             float max_score = 0.0f;
@@ -103,8 +102,9 @@ int PersonIdOp::runOnCpu(const std::vector<Tensor>& input){
             // 循坏更新
             Tensor person_tensor = m_person_gallery[person_name];
             int offset_i = m_person_offset[person_name];
+            offset_i = (offset_i + 1) % 10;
             memcpy(person_tensor.cpu<float>()+offset_i*query_person_feature_dim, person_i_feature, sizeof(float)*query_person_feature_dim);
-            m_person_offset[person_name] = (offset_i + 1) % 10;
+            m_person_offset[person_name] = offset_i;
         }
         else{
             // 没有发现ID， 自动创建新ID， 更新特征库
