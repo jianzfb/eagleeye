@@ -1,4 +1,4 @@
-linux_arm64_v8a_build_with_rk.shif [ -d "./build" ]; 
+if [ -d "./build" ]; 
 then
   rm -rf build
 fi
