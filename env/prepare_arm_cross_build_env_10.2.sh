@@ -33,6 +33,9 @@ cd /root/.3rd/ffmpeg && cp /root/.3rd/eagleeye/eagleeye/3rd/ffmpeg/libavformat/*
     && make clean && make -j 10 && make install
 
 # 4. rk mpp install
+mkdir -p /root/.3rd/rk/
+cd /root/.3rd/rk && git clone https://github.com/rockchip-linux/mpp.git
+cd /root/.3rd/rk && git clone https://github.com/airockchip/librga.git
 cd /root/.3rd/rk/mpp/build/linux/aarch64  && \
     sed -i "s/aarch64-linux-gnu-gcc/${arm_cross_build_root_path//\//\\/}\/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu\/bin\/aarch64-none-linux-gnu-gcc/g" arm.linux.cross.cmake && \
     sed -i "s/aarch64-linux-gnu-g++/${arm_cross_build_root_path//\//\\/}\/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu\/bin\/aarch64-none-linux-gnu-g++/g" arm.linux.cross.cmake && \

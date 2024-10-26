@@ -9,7 +9,15 @@ CRTDIR=$(pwd)
 git submodule init
 git submodule update
 
-# 2.step 编译
+# 2.step 准备环境
+arm_cross_build_root_path=/opt/cross_build/linux-arm64
+if [ -d "$arm_cross_build_root_path" ]; then
+  echo "use /opt/cross_build/linux-arm64 cross compile env"
+else
+  bash env/prepare_arm_cross_build_env_10.2.sh
+fi
+
+# 3.step 编译
 mkdir build
 cd build
 
@@ -38,7 +46,7 @@ make -j 6
 cd ..
 
 install_dir="linux-arm64-v8a-install"
-# 3.step 安装
+# 4.step 安装
 if [ -d $install_dir ]; 
 then
   rm -rf $install_dir
@@ -63,7 +71,7 @@ mv include $install_dir/
 mv bin/* $install_dir/libs/
 rm -rf bin
 
-# 4.step 第三方库（opencl）
+# 5.step 第三方库（opencl）
 cd $install_dir
 mkdir 3rd
 cp -r ../eagleeye/3rd/opencl 3rd/
@@ -71,7 +79,7 @@ cp -r ../eagleeye/3rd/eigen 3rd/
 cp -r ../eagleeye/3rd/opencv 3rd/
 cd ..
 
-# 5.step 脚本工具
+# 6.step 脚本工具
 cp -r scripts $install_dir
 
 ldconfig
