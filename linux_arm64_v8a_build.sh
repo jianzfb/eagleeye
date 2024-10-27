@@ -14,7 +14,7 @@ arm_cross_build_root_path=/opt/cross_build/linux-arm64
 if [ -d "$arm_cross_build_root_path" ]; then
   echo "use /opt/cross_build/linux-arm64 cross compile env"
 else
-  bash env/prepare_arm_cross_build_env_10.2.sh
+  source env/prepare_arm_cross_build_env_10.2.sh
 fi
 
 # 3.step 编译
