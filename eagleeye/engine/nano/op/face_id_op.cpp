@@ -95,6 +95,8 @@ int FaceIdOp::runOnCpu(const std::vector<Tensor>& input){
         for(iter = KVMemoryOp::m_g_info[memory_name].begin(); iter != iend; ++iter){
             std::vector<std::string> key_name_list = iter->second;
             std::vector<Tensor> tensor_list;
+
+            EAGLEEYE_LOGD("person name %s has key feature files %d", iter->first.c_str(), int(key_name_list.size()));
             for(int key_i=0; key_i<key_name_list.size(); ++key_i){
                 std::string key_name = key_name_list[key_i];
                 tensor_list.push_back(KVMemoryOp::m_g_memory[memory_name][key_name]);

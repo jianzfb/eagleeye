@@ -40,6 +40,7 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
     std::string memory_name = memory_name_str_ptr;
     free(memory_name_str_ptr);
 
+    EAGLEEYE_LOGD("Activate memory %s", memory_name.c_str());
     if(input[3].empty() || input[3].dims()[0] == 0){
         EAGLEEYE_LOGE("KVMemoryWOp runOnCpu, invalid input[3], input[3].dims()[0] = %d", input[3].dims()[0]);
         // 非有效记录，直接跳过
@@ -109,9 +110,11 @@ int KVMemoryWOp::runOnCpu(const std::vector<Tensor>& input){
         std::string ext_str = std::to_string(now_tv.tv_sec * 1000000 + now_tv.tv_usec);
         std::string key_str = group_str + ext_str;
         std::string key_mem_filename = cache_memory_folder + "/" + key_str;
-        KVMemoryOp::m_g_memory[memory_name][key_str] = input[3];
+        Tensor feature_info = input[3];
+        KVMemoryOp::m_g_memory[memory_name][key_str] = feature_info.clone();
         KVMemoryOp::m_g_info[memory_name][group_str].push_back(key_str);
         KVMemoryOp::m_g_time[memory_name] = now_tv.tv_sec * 1000000 + now_tv.tv_usec;
+        EAGLEEYE_LOGD("Add %s in in memory %s ", key_str.c_str(), memory_name.c_str());
 
         EagleeyeIO yard_io;
         yard_io.createWriteHandle(key_mem_filename.c_str(), false, WRITE_BINARY_MODE);
