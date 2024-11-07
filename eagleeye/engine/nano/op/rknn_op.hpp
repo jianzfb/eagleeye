@@ -82,7 +82,8 @@ public:
             this->m_num_threads = (int)(params["num_threads"][0]);
         }
         this->m_model_power = HIGH_POWER;
-     
+
+        // 这里设置的均值和方差不启任何作用，均值和方差已经在转模型时写入
         if(params.find("mean") != params.end()){
             this->m_mean = params["mean"];
         }
@@ -154,9 +155,16 @@ public:
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
         if(!this->m_model_init){
-            bool is_inner_preprocess = false;
-            if(this->m_mean.size() > 0 && this->m_std.size() > 0){
-                is_inner_preprocess = true;
+            std::vector<bool> is_inner_preprocess;
+            for(int input_i=0; input_i<input.size(); ++input_i){
+                if(this->m_mean.size() > 0 && this->m_std.size() > 0 && (input[input_i].type() == EAGLEEYE_CHAR || input[input_i].type() == EAGLEEYE_UCHAR)){
+                    // 输入图像并且类型是uint8时，需要将减均值除方差置于NPU内部处理
+                    is_inner_preprocess.push_back(true);
+                }
+                else{
+                    // 直接穿透，rknn不对输入进行均值方差处理
+                    is_inner_preprocess.push_back(false);
+                }
             }
             m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<RknnRun>(
                         m_model_name,
@@ -199,6 +207,7 @@ public:
             batch_size = input[0].dims()[0];
         }
 
+        // 输出分配空间
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
             std::string output_name = this->m_output_names[output_i];
             std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
@@ -213,6 +222,7 @@ public:
             }
         }
 
+        // 切分batch，逐样本推理
         for(int b_i=0; b_i<batch_size; ++b_i){
             std::map<std::string, const unsigned char*> inputs;
             std::map<std::string, unsigned char*> outputs;

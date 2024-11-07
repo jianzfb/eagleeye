@@ -10,7 +10,7 @@ ModelRun<RknnRun, Enabled>::ModelRun(std::string model_name,
 		     int num_threads, 
 		     RunPower model_power, 
 		     std::string writable_path,
-             bool inner_preprocess)
+             std::vector<bool> inner_preprocess)
     	:ModelEngine(model_name,
 				 device,
 				 input_names,
@@ -65,7 +65,8 @@ bool ModelRun<RknnRun, Enabled>::run(std::map<std::string, const unsigned char*>
 		}
 
         const unsigned char* input_data = inputs[node_name];
-        if(this->m_inner_preprocess){
+        // 默认batch size = 1
+        if(this->m_inner_preprocess[index]){
             // 输入数据为NHWC IMAGE TENSOR
             int width  = this->m_input_attrs[index].dims[2];
             int stride = m_input_attrs[index].w_stride;
@@ -218,7 +219,7 @@ bool ModelRun<RknnRun, Enabled>::initialize(){
     // Create input tensor memory
     this->m_input_mems = new rknn_tensor_mem*[m_io_num.n_input];
     for(uint32_t i = 0; i < m_io_num.n_input; ++i){
-        if(m_inner_preprocess){
+        if(m_inner_preprocess[i]){
             // default input type is int8 (normalize and quantize need compute in outside)
             // if set uint8, will fuse normalize and quantize to npu
             this->m_input_attrs[i].type = RKNN_TENSOR_UINT8;
@@ -227,8 +228,8 @@ bool ModelRun<RknnRun, Enabled>::initialize(){
             m_input_mems[i] = rknn_create_mem(m_ctx, m_input_attrs[i].size_with_stride);
         }
         else{
-            this->m_input_attrs[i].type = RKNN_TENSOR_FLOAT32;
-            this->m_input_attrs[i].fmt = RKNN_TENSOR_NCHW;
+            // 设置pass_through穿透标记,传入数据直接进入模型
+            this->m_input_attrs[i].pass_through = 1;
             m_input_mems[i] = rknn_create_mem(m_ctx, m_input_attrs[i].n_elems * sizeof(float));
         }
     }

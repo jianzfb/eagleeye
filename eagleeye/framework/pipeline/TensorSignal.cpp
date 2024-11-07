@@ -90,6 +90,31 @@ void TensorSignal::setData(TensorSignal::DataType data){
 	}
 }
 
+void TensorSignal::setData(void* data, MetaData meta){
+	if(meta.allocate_mode == 1){
+		// InPlace Mode
+		this->setData(
+			Tensor(
+				meta.dims,
+				EagleeyeType(meta.type),
+				DataFormat::AUTO,
+				data,
+				false)
+		);
+	}
+	else{
+		// Copy Mode
+		this->setData(
+			Tensor(
+				meta.dims,
+				EagleeyeType(meta.type),
+				DataFormat::AUTO,
+				data,
+				true)
+		);
+	}
+}
+
 void TensorSignal::copy(AnySignal* sig){
 	if((sig->getSignalCategory() != SIGNAL_CATEGORY_TENSOR) &&
 		(sig->getSignalCategory() != SIGNAL_CATEGORY_TENSOR_QUEUE)){

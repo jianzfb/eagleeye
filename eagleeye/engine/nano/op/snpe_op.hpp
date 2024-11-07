@@ -226,7 +226,7 @@ public:
             float* preprocessed_data = (float*)(this->m_model_run->getInputPtr(m_input_names[input_i]));
 
             Dim x_dims = x.dims();
-            if(is_inner_preprocess){
+            if(is_inner_preprocess && (x.type() == EAGLEEYE_CHAR || x.type() == EAGLEEYE_UCHAR)){
                 // 需要进行预处理流程（减均值除方差）
                 // NxHxWx3 或 HxWx3 格式
                 if(x_dims.size() == 4){

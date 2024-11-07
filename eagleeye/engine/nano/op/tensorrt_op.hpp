@@ -227,9 +227,9 @@ public:
                     );
             }
             float* preprocessed_data = m_preprocess_tensors[input_i].cpu<float>();
-            
+
             Dim x_dims = x.dims();
-            if(is_inner_preprocess && x.type() != EAGLEEYE_FLOAT){
+            if(is_inner_preprocess && (x.type() == EAGLEEYE_CHAR || x.type() == EAGLEEYE_UCHAR)){
                 // 需要进行预处理流程
                 // NxHxWx3 或 HxWx3 格式
                 if(x_dims.size() == 4){

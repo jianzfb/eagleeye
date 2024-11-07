@@ -737,10 +737,15 @@ void AnyPipeline::setInput(const char* node_name,
             meta.rows = data_size[0];
             meta.cols = data_size[1];
             meta.rotation = data_rotation;
+            meta.dims.resize(data_dims);
+            for(int d_i=0; d_i<data_dims; ++d_i){
+                meta.dims[d_i] = data_size[d_i];
+            }
+            meta.type = data_type;
             m_using_placeholders[finding_index]->getOutputPort(0)->setData(data, meta);
             m_using_placeholders[finding_index]->modified();
             return;
-        }   
+        }
     }
 
     EAGLEEYE_LOGD("Set pipeline input %s.", node_name);
@@ -769,6 +774,11 @@ void AnyPipeline::setInput(const char* node_name,
     meta.cols = data_size[1];
     meta.rotation = data_rotation;
     meta.allocate_mode = 0;
+    meta.dims.resize(data_dims);
+    meta.type = data_type;
+    for(int d_i=0; d_i<data_dims; ++d_i){
+        meta.dims[d_i] = data_size[d_i];
+    }
     this->m_input_nodes[input_key]->getOutputPort(port)->setData(data, meta);
     this->m_input_nodes[input_key]->modified();
     EAGLEEYE_LOGD("Finish set signal content.");

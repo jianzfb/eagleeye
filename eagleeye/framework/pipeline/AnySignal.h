@@ -32,6 +32,7 @@ public:
 		timestamp = 0.0;
 		mirror = false;
 		color_format = -1;
+		type = -1;
 	}
 	std::string name;		// name
 	std::string info;		// info
@@ -51,7 +52,10 @@ public:
 	double timestamp;		// timestamp
 	bool mirror;			// mirror(mirror, rotation)
 	int color_format;		// color space(// -1: UNKOWN, 0: RGB, 1: BGR, 2: RGBA, 3: BGRA, 4: YUV420P, 5: YUV420SP)
-};	
+
+	int type;					// 数据类型
+	std::vector<int64_t> dims;	// 数据维度
+};
 
 class AnyNode;
 class EAGLEEYE_API AnySignal:public AnyUnit

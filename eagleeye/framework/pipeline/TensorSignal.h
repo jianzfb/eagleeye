@@ -45,6 +45,7 @@ public:
 	 * @param data 
 	 */
 	void setData(DataType data);
+	virtual void setData(void* data, MetaData meta);
 
 	/**
 	 *	@brief clear Info signal content

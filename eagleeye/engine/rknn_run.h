@@ -34,7 +34,7 @@ public:
 		     int num_threads = -1, 
 		     RunPower model_power = HIGH_POWER, 
 		     std::string writable_path="/data/local/tmp/",
-			 bool inner_preprocess=true);
+			 std::vector<bool> inner_preprocess=std::vector<bool>());
 
     /**
 	 * [destructor]
@@ -71,7 +71,7 @@ private:
 
     std::string m_model_name;
     rknn_input_output_num m_io_num;
-	bool m_inner_preprocess;
+	std::vector<bool> m_inner_preprocess;
 };
 } // namespace eagleeye
 
