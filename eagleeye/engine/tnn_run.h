@@ -37,7 +37,7 @@ public:
 		     int num_threads = -1, 
 		     RunPower model_power = HIGH_POWER, 
 		     std::string writable_path="/data/local/tmp/",
-			 bool inner_preprocess=false);
+			 std::vector<bool> inner_preprocess=std::vector<bool>());
 
     /**
 	 * [destructor]
@@ -114,7 +114,7 @@ private:
 
 	std::map<std::string, std::shared_ptr<TNN_NS::Mat>> m_input_map;
 	bool m_is_init;
-	bool m_inner_preprocess;
+	std::vector<bool> m_inner_preprocess;
 };
 } // namespace eagleeye
 

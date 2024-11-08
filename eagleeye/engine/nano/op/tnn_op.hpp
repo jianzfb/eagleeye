@@ -155,10 +155,18 @@ public:
 
     virtual int runOnCpu(const std::vector<Tensor>& input){
         if(!this->m_model_init){
-            bool is_inner_preprocess = false;
-            if(this->m_mean.size() > 0 && this->m_std.size() > 0){
-                is_inner_preprocess = true;
+            std::vector<bool> is_inner_preprocess;
+            for(int input_i=0; input_i<input.size(); ++input_i){
+                if(this->m_mean.size() > 0 && this->m_std.size() > 0 && (input[input_i].type() == EAGLEEYE_CHAR || input[input_i].type() == EAGLEEYE_UCHAR)){
+                    // 输入图像并且类型是uint8时，需要将减均值除方差置于NPU内部处理
+                    is_inner_preprocess.push_back(true);
+                }
+                else{
+                    // 直接穿透，rknn不对输入进行均值方差处理
+                    is_inner_preprocess.push_back(false);
+                }
             }
+
             m_model_run = std::shared_ptr<ModelEngine>(new ModelRun<TNNRun>(
                         m_model_name,
                         m_device, 
@@ -170,18 +178,21 @@ public:
                         m_model_power,
                         m_writable_path, is_inner_preprocess), [](ModelEngine* d) {delete d;});
 
-            if(is_inner_preprocess){
-                ConvertParam cp;
-                for(int i=0; i<this->m_std.size(); ++i){
-                    cp.scale[i] = 1.0f/this->m_std[i];
-                    cp.bias[i] = -(this->m_mean[i]/this->m_std[i]);
-                }
+            for(int input_i=0; input_i<input.size(); ++input_i){
+                if(is_inner_preprocess[input_i]){
+                    ConvertParam cp;
+                    // TODO, 这里默认所有输入的均值和方差是一样的
+                    for(int i=0; i<this->m_std.size(); ++i){
+                        cp.scale[i] = 1.0f/this->m_std[i];
+                        cp.bias[i] = -(this->m_mean[i]/this->m_std[i]);
+                    }
 
-                cp.reverse_channel = this->m_reverse_channel;
-                m_model_run->setInputConvertParam(
-                    this->m_input_names[0],
-                    cp
-                );
+                    cp.reverse_channel = this->m_reverse_channel;
+                    m_model_run->setInputConvertParam(
+                        this->m_input_names[input_i],
+                        cp
+                    );
+                }
             }
 
             this->m_model_run->setModelFolder(m_model_folder);

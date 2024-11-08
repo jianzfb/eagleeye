@@ -9,7 +9,7 @@ ModelRun<TNNRun, Enabled>::ModelRun(std::string model_name,
 		     std::vector<std::vector<int64_t>> output_shapes,
 		     int num_threads, 
 		     RunPower model_power, 
-		     std::string writable_path, bool inner_preprocess)
+		     std::string writable_path, std::vector<bool> inner_preprocess)
     	:ModelEngine(model_name,
 				 device,
 				 input_names,
@@ -48,18 +48,18 @@ bool ModelRun<TNNRun, Enabled>::run(std::map<std::string, const unsigned char*> 
 			continue;
 		}
 
-        // 输入节点形状
-        std::vector<int64_t> node_shape = this->m_input_shapes[index];
-        TNN_NS::DimsVector dims = {1,1,1,1};
-        dims[0] = node_shape[0];
-        dims[1] = node_shape[1];
-        dims[2] = node_shape[2];
-        dims[3] = node_shape[3];
-
         // 输入节点数据
         unsigned char* node_data = const_cast<unsigned char*>(inputs[node_name]);
-        if(this->m_inner_preprocess && this->m_input_convert_params.find(node_name) != this->m_input_convert_params.end()){
+        if(this->m_inner_preprocess[index] && this->m_input_convert_params.find(node_name) != this->m_input_convert_params.end()){
             // 需要内部预处理，输入的数据为uchar
+            // 输入节点形状
+            std::vector<int64_t> node_shape = this->m_input_shapes[index];
+            TNN_NS::DimsVector dims = {1,1,1,1};
+            dims[0] = node_shape[0];
+            dims[1] = node_shape[1];
+            dims[2] = node_shape[2];
+            dims[3] = node_shape[3];
+
             ConvertParam convert_param = this->m_input_convert_params[node_name];
             TNN_NS::MatConvertParam tnn_cvt_param;
             tnn_cvt_param.scale = convert_param.scale;
@@ -86,9 +86,7 @@ bool ModelRun<TNNRun, Enabled>::run(std::map<std::string, const unsigned char*> 
                     std::make_shared<TNN_NS::Mat>(TNN_NS::DEVICE_ARM, TNN_NS::NCHW_FLOAT, target_dims, node_data);  
                     
             TNN_NS::Status stats = 
-                this->m_predictor->SetInputMat(target_mat, 
-                                                input_cvt_param, 
-                                                node_name);                
+                this->m_predictor->SetInputMat(target_mat, input_cvt_param, node_name);                
         }
     }
 
@@ -134,7 +132,33 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
         network_path=model_folder + "/" + this->m_tnnproto;
     }
 
+    // 1.检查文件是否存在，否则更换查找位置
+    if(!isfileexist(network_path.c_str())){
+        std::string so_folder = this->getModelRoot();
+        if(endswith(so_folder, "/")){
+            network_path = so_folder + this->m_tnnproto;
+        }
+        else{
+            network_path = so_folder + std::string("/") + this->m_tnnproto;
+        }
+    }
+
+    // 2. 检查文件是否存在，否则更换查找位置
+    if(!isfileexist(network_path.c_str())){
+        // android platform: /sdcard/models/
+        // x86 platform: /${HOME}/models/
+        #ifdef _ANDROID_
+            network_path = std::string( "/sdcard/models/") + this->m_tnnproto;
+        #else
+            const char* home_folder = std::getenv("HOME");
+            if(home_folder != NULL){
+                network_path = std::string(home_folder) + std::string("/models/") + this->m_tnnproto;
+            }
+        #endif
+    }
+
     // 读取proto文件
+    EAGLEEYE_LOGD("Load TNN proto from %s", network_path.c_str());
     FILE* proto_fp = fopen(network_path.c_str(), "r");
     char buf[1024];
     std::string proto_str;
@@ -163,7 +187,6 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
             model_path = so_folder + std::string("/") + this->m_tnnmodel;
         }
     }
-
     // 2. 检查文件是否存在，否则更换查找位置
     if(!isfileexist(model_path.c_str())){
         // android platform: /sdcard/models/
@@ -209,7 +232,7 @@ bool ModelRun<TNNRun, Enabled>::initialize(){
     else{
         network_config.device_type = TNN_NS::DEVICE_ARM;
     }
-    
+
     network_config.network_type = TNN_NS::NETWORK_TYPE_AUTO;
     if(this->getWritablePath() != ""){
         if(!isdirexist(this->getWritablePath().c_str())){
