@@ -169,6 +169,23 @@ void JsonSignal::setKList(std::string key, std::vector<std::string> value){
 	m_json_obj.AddEmptySubArray(key);
 }
 
+void JsonSignal::setKT(std::string key, std::vector<float> value, EagleeyeType type, std::vector<int> dims){
+	neb::CJsonObject obj;
+	neb::CJsonObject data_obj;
+	for(int i=0; i<value.size(); ++i){
+		data_obj.Add(value[i]);
+	}
+	obj.Add("data", data_obj);
+	obj.Add("type", int(type));
+	neb::CJsonObject dims_obj;
+	for(int i=0; i<dims.size(); ++i){
+		dims_obj.Add(dims[i]);
+	}
+	obj.Add("dims", dims_obj);
+	m_json_obj.ReplaceAdd(key, obj);
+}
+
+
 void JsonSignal::flush(){
 	if(m_record_name == ""){
 		return;

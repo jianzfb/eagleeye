@@ -304,6 +304,21 @@ int NNNode::getOpGraphIn(){
     return this->m_g->getEntryNodes().size();
 }
 
+void NNNode::getOpGraphOutInfo(int i, std::pair<std::string, int>& info){
+    if(m_output_map.find(i) == m_output_map.end()){
+        return;
+    }
+
+    info = m_output_map[i];
+}
+void NNNode::getOpGraphInInfo(int i, std::string& info){
+    if(m_input_map.find(i) == m_input_map.end()){
+        return;
+    }
+
+    info = m_input_map[i];
+}
+
 void NNNode::analyze(std::vector<std::string> in_ops, std::vector<std::pair<std::string, int>> out_ops){
     // 创建输入信号
     int input_signal_num = in_ops.size();

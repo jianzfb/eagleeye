@@ -43,6 +43,9 @@ public:
      */
     void analyze(std::vector<std::string> in_ops, std::vector<std::pair<std::string, int>> out_ops);
 
+    void getOpGraphOutInfo(int i, std::pair<std::string, int>& info);
+    void getOpGraphInInfo(int i, std::string& info);
+
     /**
      * @brief 得到计算图的输入
      */

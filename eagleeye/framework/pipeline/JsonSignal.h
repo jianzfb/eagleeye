@@ -78,6 +78,7 @@ public:
     void setKList(std::string key, std::vector<float> value);
     void setKList(std::string key, std::vector<double> value);
     void setKList(std::string key, std::vector<std::string> value);
+	void setKT(std::string key, std::vector<float> value, EagleeyeType type, std::vector<int> dims);
 
 	/**
 	 *	@brief clear Info signal content
