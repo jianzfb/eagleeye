@@ -92,7 +92,6 @@ private:
     MetaData m_next_meta;
     MetaData m_nextnext_meta;
 
-    int m_stream_index;
     double m_video_fps = 30.0;
     float m_rotation = 0.0;
     bool m_decoder_finish;

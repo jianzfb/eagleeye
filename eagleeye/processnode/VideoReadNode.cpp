@@ -257,7 +257,7 @@ bool VideoReadNode::initVideoDecoder(const std::string& src){
         return theta;
     };
 
-    m_rotation = GetRotation(m_stream_index);
+    m_rotation = GetRotation(m_streamIdx);
     return true;
 }
 
