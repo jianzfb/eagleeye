@@ -11,16 +11,6 @@
 #include <condition_variable>
 
 namespace eagleeye{
-class MessageLock{
-public:
-    MessageLock(){
-        status = true;
-    }
-    std::mutex mu;
-    std::condition_variable cond;
-    bool status;
-};
-
 class MessageCenter{
 public:
     virtual ~MessageCenter();
@@ -44,10 +34,9 @@ public:
 private:
     MessageCenter();
 
-    std::map<std::string, std::priority_queue<std::shared_ptr<Message>, std::vector<std::shared_ptr<Message>>, MessageCmp>> m_message_map;
-    std::map<std::string, std::shared_ptr<MessageLock>> m_lock_map;
+    std::map<std::string, std::pair<int, std::priority_queue<std::shared_ptr<Message>, std::vector<std::shared_ptr<Message>>, MessageCmp>>> m_message_map;
+    std::condition_variable m_cond;
     std::mutex m_mu;
-
     static std::shared_ptr<MessageCenter> m_instance;
 };
 }

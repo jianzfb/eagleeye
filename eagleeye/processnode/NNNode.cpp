@@ -37,7 +37,7 @@ void NNNode::executeNodeInfo(){
         }
     }
 
-    std::map<std::string, std::pair<void*, std::vector<int64_t>>> graph_input_map;
+    std::map<std::string, std::tuple<void*, std::vector<int64_t>, EagleeyeType>> graph_input_map;
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
         void* data = NULL;
         size_t* data_size;
@@ -53,7 +53,7 @@ void NNNode::executeNodeInfo(){
         for(int dim_i=0; dim_i<data_dims; ++dim_i){
             data_shape[dim_i] = data_size[dim_i];
         }
-        graph_input_map[sig_i_name] = std::make_pair(data, data_shape);
+        graph_input_map[sig_i_name] = std::make_tuple(data, data_shape, EagleeyeType(data_type));
     }
 
     // 2.step 运行网络
@@ -62,7 +62,6 @@ void NNNode::executeNodeInfo(){
     for(int sig_i=0; sig_i<signal_num; ++sig_i){
         graph_output_map[m_output_map[sig_i].first] = std::tuple<void*, std::vector<int64_t>, EagleeyeType>(NULL, {}, EAGLEEYE_UNDEFINED);
     }
-
     m_g->run(graph_input_map, graph_output_map);
 
     // 3.step 输出绑定

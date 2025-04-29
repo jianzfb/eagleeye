@@ -1,12 +1,12 @@
 namespace eagleeye{
 template<class T>
-Placeholder<T>::Placeholder(bool queue_mode, int queue_size){
+Placeholder<T>::Placeholder(bool queue_mode, int queue_size, bool get_then_auto_remove){
 	this->setNumberOfOutputSignals(1);
 	this->setOutputPort(new T,OUTPUT_PORT_PLACEHOLDER);
 
     this->m_queue_mode = queue_mode;
     if(this->m_queue_mode){
-        this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->transformCategoryToQ(queue_size);
+        this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->transformCategoryToQ(queue_size, get_then_auto_remove);
     }
 }
 
@@ -32,16 +32,17 @@ void Placeholder<T>::executeNodeInfo(){
 
 template<class T>
 bool Placeholder<T>::selfcheck(){
-    if(!this->m_queue_mode){
-        bool is_ok = true;
-        if(this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->isempty()){
-            is_ok = false;
-            EAGLEEYE_LOGD("placeholder %s is empty", this->getUnitName());
-        }
-        return is_ok;
-    }
-    else{
-        return true;
-    }
+    // if(!this->m_queue_mode){
+    //     bool is_ok = true;
+    //     if(this->getOutputPort(OUTPUT_PORT_PLACEHOLDER)->isempty()){
+    //         is_ok = false;
+    //         EAGLEEYE_LOGD("placeholder %s is empty", this->getUnitName());
+    //     }
+    //     return is_ok;
+    // }
+    // else{
+    //     return true;
+    // }
+    return true;
 }
 }

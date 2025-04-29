@@ -1,7 +1,9 @@
 #include "eagleeye/framework/pipeline/TensorSignal.h"
+#include <memory>
+#include <string.h>
+
 namespace eagleeye{
 TensorSignal::TensorSignal(){
-	this->m_release_count = 1;
 	this->m_sig_category = SIGNAL_CATEGORY_TENSOR;
 	this->m_max_queue_size = 5;
 	this->m_get_then_auto_remove = true;
@@ -19,18 +21,9 @@ void TensorSignal::printUnit(){
 }
 
 void TensorSignal::makeempty(bool auto_empty){
-	if(auto_empty){
-		if(this->m_release_count % this->getOutDegree() != 0){
-			this->m_release_count += 1;
-			return;
-		}
-	}
-
+	// ignore auto_empty
+	// only for non-queue
     this->m_data = Tensor();
-
-	if(auto_empty){
-		this->m_release_count = 1;
-	}
 
 	//force time update
 	modified();
@@ -55,19 +48,64 @@ typename TensorSignal::DataType TensorSignal::getData(){
 		std::unique_lock<std::mutex> locker(this->m_mu);
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
-
-			if(this->m_queue.size() > 0){
+			if(this->m_queue.size() > 0 || m_disable){
 				break;
 			}
         }
-
-		Tensor data = this->m_queue.front();
-		if(this->m_get_then_auto_remove){
-			this->m_queue.pop();
+		if(m_disable){
+			// 由于失活，产生空数据返回
+			locker.unlock();
+			return Tensor();
 		}
+
+		std::pair<Tensor, int> data_info = this->m_queue.front();
+		Tensor data = data_info.first;
+		if(this->m_get_then_auto_remove){
+			this->m_queue.front().second -= 1;
+			if(this->m_queue.front().second == 0){
+				this->m_queue.pop();
+			}
+		}
+
         locker.unlock();
 		return data;
 	}	
+}
+
+std::vector<std::string> TensorSignal::getString(){
+	Tensor tensor = this->getData();
+	if(tensor.empty()){
+		return std::vector<std::string>();
+	}
+	if((tensor.type() != EAGLEEYE_UINT8 && tensor.type() != EAGLEEYE_INT8 && tensor.type() != EAGLEEYE_UCHAR && tensor.type() != EAGLEEYE_CHAR) || (tensor.dims().size() != 1 && tensor.dims().size() != 2)){
+		return std::vector<std::string>();
+	}
+
+	if(tensor.dims().size() == 1){
+		char* str_info = tensor.cpu<char>();
+		int str_len = tensor.dims().production();
+		char* str_info_w_eof = (char*)malloc(str_len+1);
+    	memset(str_info_w_eof, '\0', str_len+1);
+    	memcpy(str_info_w_eof, str_info, str_len);
+		std::string str(str_info_w_eof);
+		free(str_info_w_eof);
+		return {str};
+	}
+
+	std::vector<std::string> out_list;
+	int str_num = tensor.dims()[0];
+	int str_len = tensor.dims()[1];
+	char* str_info_w_eof = (char*)malloc(str_len+1);
+	for(int str_i=0; str_i<str_num; ++str_i){
+		char* str_info = tensor.cpu<char>() + str_i * str_len;
+		memset(str_info_w_eof, '\0', str_len+1);
+		memcpy(str_info_w_eof, str_info, str_len);
+		std::string str(str_info_w_eof);
+		out_list.push_back(str);
+	}
+	free(str_info_w_eof);
+
+	return out_list;
 }
 
 void TensorSignal::setData(TensorSignal::DataType data){
@@ -82,7 +120,8 @@ void TensorSignal::setData(TensorSignal::DataType data){
 		if(this->m_queue.size() > this->m_max_queue_size){
 			this->m_queue.pop();
 		}
-		this->m_queue.push(data); 
+
+		this->m_queue.push(std::pair<Tensor,int>{data, int(this->getOutDegree())}); 
 
 		modified();
 		// notify
@@ -137,4 +176,7 @@ void TensorSignal::getSignalContent(void*& data, size_t*& data_size, int& data_d
 	data_size = (size_t*)(&(m_tmp.dims().data()[0]));
 }
 
+void TensorSignal::wake(){
+	this->m_cond.notify_all();
+}
 } // namespace eagleeye

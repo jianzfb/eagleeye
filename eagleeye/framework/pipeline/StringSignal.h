@@ -120,10 +120,15 @@ public:
 		m_max_queue_size = max_queue_size;
 	};
 
+	/**
+	 * @brief 唤醒等待状态（对于队列模式，在某些情况下，需要唤醒帮助处理临时逻辑）
+	 */
+	virtual void wake();
+
 private:
     std::string m_str;
 	std::string m_tmp_cache;
-	std::queue<std::string> m_queue;	
+	std::queue<std::pair<std::string, int>> m_queue;
 	SignalCategory m_sig_category;
 
 	std::mutex m_mu;
@@ -131,7 +136,117 @@ private:
 
 	size_t m_data_size[1];
 	std::string m_ini_str;
-	int m_release_count;
+	int m_max_queue_size;
+};
+
+
+class ListStringSignal:public AnySignal{
+public:
+    typedef ListStringSignal          	Self;
+    typedef AnySignal                   Superclass;
+
+	typedef std::vector<std::string>	DataType;
+
+	ListStringSignal();
+	virtual ~ListStringSignal();
+
+	/**
+	 *	@brief copy info
+	 */
+	virtual void copyInfo(AnySignal* sig);
+
+	/**
+	 * @brief copy content
+	 * 
+	 * @param sig 
+	 */
+	virtual void copy(AnySignal* sig);
+
+	/**
+	 * @brief make same type signal
+	 * 
+	 * @return AnySignal* 
+	 */
+	virtual AnySignal* make(){
+		return new ListStringSignal();
+	}
+
+	/**
+	 *	@brief print ListStringSignal info
+	 */
+	virtual void printUnit();
+
+	/**
+	 * @brief Get the Data object
+	 * 
+	 * @return DataType 
+	 */
+	DataType getData();
+
+	/**
+	 * @brief Set the Data object
+	 * 
+	 * @param data 
+	 */
+	void setData(DataType data);
+
+	/**
+	 *	@brief clear Info signal content
+	 */
+	virtual void makeempty(bool auto_empty=true);
+
+	/**
+	 * @brief check signal content empty
+	 * 
+	 * @return true 
+	 * @return false 
+	 */
+	virtual bool isempty();
+
+	/**
+	 * @brief Get the Signal Value Type object
+	 * 
+	 * @return int 
+	 */
+	virtual EagleeyeType getValueType(){return EAGLEEYE_STRING;};
+
+	/**
+	 * @brief Get the Derive Type object
+	 * 
+	 * @return SignalCategory 
+	 */
+	virtual SignalCategory getSignalCategory(){return m_sig_category;}
+
+	/**
+	 * @brief Set the Signal Content object
+	 * 
+	 * @param data 
+	 * @param data_size 
+	 * @param data_dims 
+	 */
+	virtual void setData(void* data, MetaData meta);
+
+	/**
+	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
+	 * 
+	 */
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
+		m_sig_category = SIGNAL_CATEGORY_LIST_STRING_QUEUE;
+		m_max_queue_size = max_queue_size;
+	};
+
+	/**
+	 * @brief 唤醒等待状态（对于队列模式，在某些情况下，需要唤醒帮助处理临时逻辑）
+	 */
+	virtual void wake();
+
+private:
+	std::vector<std::string> m_list;
+	std::queue<std::pair<std::vector<std::string>, int>> m_queue;
+	SignalCategory m_sig_category;
+
+	std::mutex m_mu;
+	std::condition_variable m_cond;
 	int m_max_queue_size;
 };
 

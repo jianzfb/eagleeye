@@ -106,7 +106,6 @@ private:
 	int m_state;	
     int m_ini_state;
 	size_t m_data_size[1];
-	int m_release_count;
 };
 }
 #endif

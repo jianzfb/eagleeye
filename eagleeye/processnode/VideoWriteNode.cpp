@@ -367,6 +367,7 @@ VideoWriteNode::~VideoWriteNode(){
         this->writeFinish();
     }
 
+// 如下代码似乎无效，如果已经writefinish，则已经释放资源；若没有这里会再次调用一遍writefinish
 #ifdef EAGLEEYE_RKCHIP
     if(m_pkt_buf != NULL){
         mpp_buffer_put((MppBuffer)(m_pkt_buf));
@@ -437,6 +438,11 @@ void VideoWriteNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,3>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,3>>*)(this->getInputPort(0));
         m_c3_image = input_img_signal->getData(image_meta_data);
+        if(m_c3_image.rows() == 0 || m_c3_image.cols() == 0){
+            EAGLEEYE_LOGE("Frame is empty.");
+            return;
+        }
+
         if(!m_c3_image.isContinuous()){
             m_c3_image = m_c3_image.clone();
         }
@@ -450,6 +456,11 @@ void VideoWriteNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,4>>* input_img_signal = 
                         (ImageSignal<Array<unsigned char,4>>*)(this->getInputPort(0));
         m_c4_image = input_img_signal->getData(image_meta_data);
+        if(m_c4_image.rows() == 0 || m_c4_image.cols() == 0){
+            EAGLEEYE_LOGE("Frame is empty.");
+            return;
+        }
+        
         if(!m_c4_image.isContinuous()){
             m_c4_image = m_c4_image.clone();
         }
@@ -540,6 +551,13 @@ void VideoWriteNode::executeNodeInfo(){
 
     if(!this->m_is_init){
         EAGLEEYE_LOGD("Start to write video.");
+#ifndef EAGLEEYE_RKCHIP
+        //设置编码器
+#ifdef EAGLEEYE_CUDA
+        m_encoder = avcodec_find_encoder_by_name("h264_nvenc");
+#else
+        m_encoder = avcodec_find_encoder_by_name("libx264");
+#endif
         //初始化媒体文件上下文信息
         if(auto ret = avformat_alloc_output_context2(&m_fmt_context_ff, nullptr, nullptr,  this->m_file_path.c_str()); ret != 0){
             EAGLEEYE_LOGE("avformat_alloc_context failed, ret = %d", ret);
@@ -551,13 +569,6 @@ void VideoWriteNode::executeNodeInfo(){
         }
         m_stream_ff->id = m_fmt_context_ff->nb_streams - 1;
 
-#ifndef EAGLEEYE_RKCHIP
-        //设置编码器
-#ifdef EAGLEEYE_CUDA
-        m_encoder = avcodec_find_encoder_by_name("h264_nvenc");
-#else
-        m_encoder = avcodec_find_encoder_by_name("libx264");
-#endif
         //初始化并设置编码器上下文
         m_codec_cxt = avcodec_alloc_context3(m_encoder);
         m_codec_cxt->bit_rate = 3000000;
@@ -641,6 +652,7 @@ void VideoWriteNode::executeNodeInfo(){
         m_frame_size = MPP_ALIGN(image_w*elem_size, 64) * MPP_ALIGN(image_h, 64);
         mpp_buffer_get(buf_grp, &pkt_buf, m_frame_size);
         m_pkt_buf = pkt_buf;
+        m_buf_grp = buf_grp;
 
         MppBuffer frame_buf;
         MppFrameFormat fmt;
@@ -801,7 +813,7 @@ void VideoWriteNode::executeNodeInfo(){
             c4_image_ptr[i*4+2] = image_ptr[i*3+2];
         }
         image_ptr = c4_image_ptr;
-    }    
+    }
 
     av_image_fill_arrays(m_frame->data, m_frame->linesize, image_ptr, m_codec_cxt->pix_fmt, image_w, image_h, 1);
     int ret = av_frame_make_writable(m_frame);
@@ -883,6 +895,7 @@ void VideoWriteNode::executeNodeInfo(){
 
     meta = mpp_frame_get_meta(frame);
     mpp_packet_init_with_buffer(&packet, pkt_buf);
+
     /* NOTE: It is important to clear output packet length!! */
     mpp_packet_set_length(packet, 0);
     mpp_meta_set_packet(meta, KEY_OUTPUT_PACKET, packet);
@@ -1048,13 +1061,43 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
     av_write_trailer(m_fmt_context);
     if(m_codec_ctx != nullptr){
          avcodec_free_context(&m_codec_ctx);
+         m_codec_ctx = nullptr;
     }
     if(m_fmt_context != nullptr){
         avio_closep(&m_fmt_context->pb);
         avformat_free_context(m_fmt_context);
+        m_fmt_context = nullptr;
     }
     if(m_av_packet != nullptr){
         av_packet_free(&m_av_packet);
+        m_av_packet = nullptr;
+    }
+
+    if(m_pkt_buf != NULL){
+        mpp_buffer_put((MppBuffer)(m_pkt_buf));
+        m_pkt_buf = NULL;
+    }
+    if(m_frame_buf != NULL){
+        mpp_buffer_put((MppBuffer)(m_frame_buf));
+        m_frame_buf = NULL;
+    }
+    if(m_md_info != NULL){
+        mpp_buffer_put((MppBuffer)(m_md_info));
+        m_md_info = NULL;
+    }
+    if(m_buf_grp != NULL){
+        mpp_buffer_group_put((MppBufferGroup)(m_buf_grp));
+        m_buf_grp = NULL;
+    }
+    if(m_mpp_ctx != NULL){
+        MppCtx mpp_ctx = (MppCtx)m_mpp_ctx;
+        MppApi* mpp_api = (MppApi*)m_mpp_api;
+
+        mpp_api->reset(mpp_ctx);
+        mpp_destroy(mpp_ctx);
+
+        m_mpp_ctx = NULL;
+        m_mpp_api = NULL;
     }
 #endif
 
@@ -1074,6 +1117,9 @@ void VideoWriteNode::writeFinish(AnySignal* out_sig){
     // 调用至此，说明写入完成
     this->m_is_success_write = true;
     this->m_video_count += 1;
+
+    // TODO
+    this->m_is_init = false;
 }
 
 void VideoWriteNode::setStop(int stop){

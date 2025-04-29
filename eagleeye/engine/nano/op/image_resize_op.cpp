@@ -123,10 +123,11 @@ int ResizeOp::runOnCpu(const std::vector<Tensor>& input){
     }
 
     // do 
-    if(this->m_outputs[0].numel() != input[0].numel()){
-        Dim new_dimx = input[0].dims();
-        new_dimx[h_dim_i] = out_height;
-        new_dimx[w_dim_i] = out_width;
+    Dim new_dimx = input[0].dims();
+    new_dimx[h_dim_i] = out_height;
+    new_dimx[w_dim_i] = out_width;
+    if(this->m_outputs[0].numel() != new_dimx.production()){
+        // 需要重新申请输出内存
         this->m_outputs[0] = Tensor(
             new_dimx.data(),
             x.type(),

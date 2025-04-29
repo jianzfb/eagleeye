@@ -169,20 +169,26 @@ bool traverseFiles(const char* folder, std::vector<std::string>& file_list){
 }
 
 void savepng(const char* file_path, unsigned char* data, int height, int width, int stride, int channel){
+    EAGLEEYE_LOGD(">>>><<<<<<");
     int y;
     FILE *fp = fopen(file_path, "wb");
     if(!fp) abort();
 
+    EAGLEEYE_LOGD("A");
     png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png) abort();
 
+    EAGLEEYE_LOGD("B");
     png_infop info = png_create_info_struct(png);
     if (!info) abort();
     
+    EAGLEEYE_LOGD("C");
     if (setjmp(png_jmpbuf(png))) abort();
     
+    EAGLEEYE_LOGD("D");
     png_init_io(png, fp);
 
+    EAGLEEYE_LOGD("E");
     // Output is 8bit depth, RGBA format.
     int png_color = 0;
     switch (channel)
@@ -209,6 +215,7 @@ void savepng(const char* file_path, unsigned char* data, int height, int width, 
     );
     png_write_info(png, info);
 
+    EAGLEEYE_LOGD("F");
     // To remove the alpha channel for PNG_COLOR_TYPE_RGB format,
     // Use png_set_filler().
     //png_set_filler(png, 0, PNG_FILLER_AFTER);
@@ -217,9 +224,11 @@ void savepng(const char* file_path, unsigned char* data, int height, int width, 
         row_pointers[i] = data + stride*i*channel;
     }
 
+    EAGLEEYE_LOGD("G");
     png_write_image(png, row_pointers);
     png_write_end(png, NULL);
 
+    EAGLEEYE_LOGD("H");
     free(row_pointers);
     fclose(fp);
     png_destroy_write_struct(&png, &info);

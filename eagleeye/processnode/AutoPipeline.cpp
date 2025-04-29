@@ -37,6 +37,8 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
     this->m_is_ini = false;
     this->m_callback = nullptr;
     this->m_persistent_flag = false;
+
+    this->m_enable_auto_stop = true;
 }
 
 AutoPipeline::~AutoPipeline(){
@@ -93,6 +95,10 @@ void AutoPipeline::run(){
             MetaData data_meta;
             m_cache_input[signal_i]->copy(this->getInputPort(signal_i));
             m_cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
+            if(!this->m_thread_status){
+                // 发现退出标记，退出线程运行
+                return;
+            }
 
             std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
             data_meta.rows = data_size[0];
@@ -115,6 +121,14 @@ void AutoPipeline::run(){
             continue;
         }
         this->m_last_timestamp = input_data_timestamp;
+
+        // 基于pipeline是否是异步，决定是否等待返回
+        // *****
+        if(m_auto_pipeline->isAsyn()){
+            // 异步管线，无需等待返回结果
+            // 底层实现需要依靠回调实现数据输出
+            continue;
+        }
 
         // 运行管线
         m_auto_pipeline->start();
@@ -139,7 +153,7 @@ void AutoPipeline::run(){
         }
 
         // 检查自动结束条件
-        if(is_auto_stop){
+        if(is_auto_stop && this->m_enable_auto_stop){
             m_thread_status = false;
             break;
         }
@@ -164,13 +178,19 @@ void AutoPipeline::postexit(){
         return;
     }
     
-    int signal_num = this->getNumberOfOutputSignals();
-    for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-        std::string node_name = m_pipeline_node[signal_i].first;
-        int node_signal_i = m_pipeline_node[signal_i].second;
+    // int signal_num = this->getNumberOfOutputSignals();
+    // for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+    //     std::string node_name = m_pipeline_node[signal_i].first;
+    //     int node_signal_i = m_pipeline_node[signal_i].second;
 
-        AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i);
-        this->getOutputPort(signal_i)->copy(output_signal);
+    //     AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i);
+    //     this->getOutputPort(signal_i)->copy(output_signal);
+    // }
+    // 触发自身，跳出数据等待，并结束线程
+    int signal_num = this->getNumberOfInputSignals();
+    for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+        this->getInputPort(signal_i)->disable();
+        this->getInputPort(signal_i)->wake();
     }
 
     if(this->m_is_ini){
@@ -223,5 +243,13 @@ bool AutoPipeline::stop(bool block, bool force){
 
     // 返回线程标记
     return !m_thread_status;
+}
+
+void AutoPipeline::enableAutoStop(){
+    this->m_enable_auto_stop = true;
+}
+
+void AutoPipeline::disableAutoStop(){
+    this->m_enable_auto_stop = false;
 }
 }

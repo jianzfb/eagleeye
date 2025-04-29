@@ -22,6 +22,7 @@ struct AsynMetaData{
     int round;
 };
 
+// 下游节点获取数据时，会获得
 class AsynNode:public AnyNode, DynamicNodeCreator<AsynNode>{
 public:
     typedef AsynNode                Self;
@@ -113,6 +114,7 @@ private:
     int m_round;
 
     bool m_reset_flag;
+    bool m_is_asyn_mode;
 };
 }
 #endif

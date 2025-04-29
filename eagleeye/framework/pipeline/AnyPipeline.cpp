@@ -762,13 +762,6 @@ void AnyPipeline::setInput(const char* node_name,
         return;
     }
     
-    for(int d=0; d<data_dims; ++d){
-        if(data_size[d] == 0){
-            EAGLEEYE_LOGE("Data size abnormal data_size[%d]=0", d);
-            return;
-        }
-    }
-
     MetaData meta = this->m_input_nodes[input_key]->getOutputPort(port)->meta();
     meta.rows = data_size[0];
     meta.cols = data_size[1];
@@ -838,7 +831,6 @@ void AnyPipeline::setInput(const char* node_name, std::string from_pipeline_name
     this->m_input_nodes[input_key]->modified();
     EAGLEEYE_LOGD("Finish set input %s", node_name);
 }
-
 
 void AnyPipeline::setInput(const char* node_name, std::string from_register_node){
     if(node_name == NULL || strcmp(node_name, "") == 0){
@@ -1411,5 +1403,28 @@ int AnyPipeline::getRenderSurfaceH(){
 
 RenderContext* AnyPipeline::getRenderContext(){
     return AnyPipeline::m_render_context.get();
+}
+
+bool AnyPipeline::isAsyn(){
+    if(m_using_placeholders.size() == 0){
+        EAGLEEYE_LOGD("Pipeline is not asyn.");
+        return false;
+    }
+
+    bool is_asyn = false;
+    for(int i=0; i<m_using_placeholders.size(); ++i){
+        if(m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_IMAGE_QUEUE || 
+            m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_TENSOR_QUEUE || 
+            m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_STRING_QUEUE || 
+            m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_LIST_STRING_QUEUE){
+            is_asyn = true;
+            EAGLEEYE_LOGD("Pipeline is asyn.");
+            break;
+        }
+    }
+    if(!is_asyn){
+        EAGLEEYE_LOGD("Pipeline is sync.");
+    }
+    return is_asyn;
 }
 }
