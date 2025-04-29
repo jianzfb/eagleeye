@@ -129,7 +129,7 @@ public:
    * @brief start worker thread
    * 
    */
-  bool run(std::map<std::string, std::pair<void*,std::vector<int64_t>>> inputs, 
+  bool run(std::map<std::string, std::tuple<void*,std::vector<int64_t>, EagleeyeType>> inputs, 
            std::map<std::string, std::tuple<void*,std::vector<int64_t>, EagleeyeType>>& outputs){
     // 1.step check
     if(outputs.size() == 0){
@@ -157,11 +157,11 @@ public:
         }
     }
 
-    // 3.step update input data
-    std::map<std::string, std::pair<void*,std::vector<int64_t>>>::iterator in_iter,in_iend(inputs.end());
+    // 3.step update input data 
+    std::map<std::string, std::tuple<void*,std::vector<int64_t>, EagleeyeType>>::iterator in_iter,in_iend(inputs.end());
     for(in_iter = inputs.begin(); in_iter != in_iend; ++in_iter){
       if(m_nodes_map.find(in_iter->first) != m_nodes_map.end()){
-        m_nodes_map[in_iter->first]->update(in_iter->second.first, in_iter->second.second,0);
+        m_nodes_map[in_iter->first]->update(std::get<0>(in_iter->second), std::get<1>(in_iter->second), std::get<2>(in_iter->second), 0);
       }
     }
 

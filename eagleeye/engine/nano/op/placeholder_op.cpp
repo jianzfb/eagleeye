@@ -71,11 +71,15 @@ int PlaceholderOp::runOnGpu(const std::vector<Tensor>& input){
     return 0;
 }
 
-int PlaceholderOp::update(void* data, std::vector<int64_t> shape, int index){
+int PlaceholderOp::update(void* data, std::vector<int64_t> shape, EagleeyeType type, int index){
+    // RGB, RGBA -> 转换到base type
+    if(type == EAGLEEYE_RGB || type == EAGLEEYE_RGBA || type == EAGLEEYE_UCHAR3 || type == EAGLEEYE_UCHAR4 || type == EAGLEEYE_UINT8_3 || type == EAGLEEYE_UINT8_4){
+        type = EAGLEEYE_UCHAR;
+    }
     if(this->m_zero_copy){
         this->m_outputs[0] = Tensor(
             shape,
-            this->m_data_type,
+            type,
             DataFormat::AUTO,
             data
         );
@@ -84,7 +88,7 @@ int PlaceholderOp::update(void* data, std::vector<int64_t> shape, int index){
         if(this->m_outputs[0].dims().production() != Dim(shape).production()){
             this->m_outputs[0] = Tensor(
                 shape,
-                this->m_data_type,
+                type,
                 DataFormat::AUTO,
                 CPU_BUFFER
             );

@@ -1,7 +1,12 @@
 #include "eagleeye/engine/nano/op/keepratio_op.h"
 #include "eagleeye/common/EagleeyeLog.h"
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)  
+#include "eagleeye/engine/math/arm/interpolate.h"
+#else
+#include "eagleeye/engine/math/x86/interpolate.h"
+#endif
 #include <fstream>
-
+#include <opencv2/opencv.hpp>
 namespace eagleeye{
 namespace dataflow{
 KeepRatioOp::KeepRatioOp(){
@@ -101,6 +106,212 @@ int KeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
 }
 
 int KeepRatioOp::runOnGpu(const std::vector<Tensor>& input){
+    return -1;
+}
+
+
+ResizeKeepRatioOp::ResizeKeepRatioOp(){
+    this->m_out_size = std::vector<int64_t>{64,64};
+    this->m_op_type = INTERPOLATE_BILINER;
+}
+
+ResizeKeepRatioOp::ResizeKeepRatioOp(std::vector<int64_t> out_size, InterpolateOpType op_type){
+    this->m_out_size = out_size;
+    this->m_op_type = op_type;
+}
+
+ResizeKeepRatioOp::ResizeKeepRatioOp(const ResizeKeepRatioOp& op){
+    this->m_out_size = op.m_out_size;
+    this->m_op_type = op.m_op_type;
+}
+
+ResizeKeepRatioOp::~ResizeKeepRatioOp(){
+}
+
+int ResizeKeepRatioOp::init(std::map<std::string, std::vector<float>> params){
+    if(params.size() == 0){
+        return 0;
+    }
+    if(params.find("out_size") != params.end()){
+        this->m_out_size.resize(2);
+        this->m_out_size[0] = int64_t(params["out_size"][0]);       // width
+        this->m_out_size[1] = int64_t(params["out_size"][1]);       // height
+    }
+    this->m_op_type = INTERPOLATE_BILINER;
+    if(params.find("op_type") != params.end()){
+        this->m_op_type = InterpolateOpType(params["op_type"][0]);
+    }
+    return 0;
+}
+
+int ResizeKeepRatioOp::runOnCpu(const std::vector<Tensor>& input){
+    const Tensor x = input[0];
+    Dim dimx = x.dims();
+
+    // dimx.size() == 2, 3, 4
+    if(dimx.size() != 2 && dimx.size() != 3 && dimx.size() != 4){
+        EAGLEEYE_LOGE("ResizeOp only support dimx.size == 2,3,4");
+        return -1;
+    }
+    else if(dimx.size() == 3){
+        if(dimx[2] != 3 && dimx[2] != 4){
+            EAGLEEYE_LOGE("ResizeOp only support HxWx3, HxWx4");
+            return -1;
+        }
+    }
+    else if(dimx.size() == 4){
+        if(dimx[3] != 3){
+            EAGLEEYE_LOGE("ResizeOp only support NxHxWx3");
+            return -1;
+        }
+    }
+    // other, NxHxW or HxWx3
+
+    if(x.type() != EAGLEEYE_UCHAR){
+        EAGLEEYE_LOGE("ResizeOp only support EAGLEEYE_UCHAR");
+        return -1;
+    }
+
+    int h_dim_i = 0; int w_dim_i = 0;
+    if(dimx.size() == 2){
+        h_dim_i = 0; w_dim_i = 1; // H,W
+    }
+    else if(dimx.size() == 3){
+        h_dim_i = 0; w_dim_i = 1; // H,W,3
+    }
+    else{
+        h_dim_i = 1; w_dim_i = 2; // N,H,W,3
+    }
+
+    int out_width = this->m_out_size[0];
+    int out_height = this->m_out_size[1];
+
+    float im_ratio = float(dimx[h_dim_i]) / float(dimx[w_dim_i]);
+    float target_ratio = float(this->m_out_size[1]) / float(this->m_out_size[0]);
+    int new_height = 0;
+    int new_width = 0;
+    if(im_ratio > target_ratio){
+        new_height = this->m_out_size[1];
+        new_width = int((float)new_height / im_ratio);
+    }
+    else{
+        new_width = this->m_out_size[0];
+        new_height = int((float)new_width * im_ratio);
+    }
+
+    Dim out_dimx = input[0].dims();
+    out_dimx[h_dim_i] = out_height;
+    out_dimx[w_dim_i] = out_width;
+    if(this->m_outputs[0].numel() != out_dimx.production()){
+        // 需要重新申请输出内存
+        this->m_outputs[0] = Tensor(
+            out_dimx.data(),
+            x.type(),
+            x.format(),
+            CPU_BUFFER
+        );
+    }
+
+    if(this->m_outputs[1].empty()){
+        this->m_outputs[1] = Tensor(
+            std::vector<int64_t>{1},
+            EAGLEEYE_FLOAT,
+            DataFormat::NONE,
+            CPU_BUFFER
+        );
+    }
+    float* scale_ptr = this->m_outputs[1].cpu<float>();
+    scale_ptr[0] = float(dimx[h_dim_i]) / float(new_height);
+
+    int count = (dimx.size() == 2 || dimx.size() == 3) ? 1 : dimx[0];
+    int channels = dimx.size() == 2 ? 1 : dimx[dimx.size()-1];
+    int in_height = dimx[h_dim_i];
+    int in_width = dimx[w_dim_i];
+
+    if(channels == 4){
+        EAGLEEYE_LOGE("Todo support channel = 4, image resize.");
+        return 0;
+    }
+
+    unsigned char* x_ptr = (unsigned char*)x.cpu();
+    unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
+#if defined (__ARM_NEON) || defined (__ARM_NEON__)      
+    if(channels == 3){
+        // 三通道图
+// #pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::arm::bilinear_rgb_8u_3d_interp(
+                x_ptr+i*in_width*in_height*3,
+                y_ptr+i*out_width*out_height*3,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                new_width,
+                new_height,
+                out_width
+            );
+        }
+    }
+    else{
+        // 灰度图
+// #pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::arm::bilinear_gray_8u_1d_interp(
+                x_ptr+i*in_width*in_height,
+                y_ptr+i*out_width*out_height,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                new_width,
+                new_height,
+                out_width
+            );
+        }
+    }
+#else
+    if(channels == 3){
+        // 三通道图
+// #pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::x86::bilinear_rgb_8u_3d_interp(
+                x_ptr+i*in_width*in_height*3,
+                y_ptr+i*out_width*out_height*3,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                new_width,
+                new_height,
+                out_width
+            );
+        }
+    }
+    else{
+        // 灰度图
+// #pragma omp parallel for
+        for (int i = 0; i < count; ++i) {
+            math::x86::bilinear_gray_8u_1d_interp(
+                x_ptr+i*in_width*in_height,
+                y_ptr+i*out_width*out_height,
+                in_width,
+                in_height,
+                0,0,
+                in_width,
+                new_width,
+                new_height,
+                out_width
+            );
+        } 
+    }
+#endif
+
+    return 0;
+}
+
+int ResizeKeepRatioOp::runOnGpu(const std::vector<Tensor>& input){
+    EAGLEEYE_LOGE("Dont implement (GPU)");
     return -1;
 }
 }

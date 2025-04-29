@@ -81,8 +81,11 @@ protected:
 
     std::vector<std::string> m_input_node_name_list;
     std::vector<std::string> m_output_node_name_list;
-    std::vector<AnySignal*> m_placeholders;
 
+    std::vector<std::pair<int,int>> m_input_node_port_list;
+    std::vector<std::pair<int,int>> m_output_node_port_list;
+
+    std::vector<AnySignal*> m_cache;
     std::map<std::string, int> m_node_bind_input_num;
     std::map<std::string, int> m_node_bind_output_num;
 

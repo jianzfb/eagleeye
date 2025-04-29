@@ -15,7 +15,7 @@ cd build
 if [[ $1 == BUILD_PYTHON_MODULE ]];then
 cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DBUILD_PYTHON_MODULE:BOOL=ON ..
 else
-cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DFFMPEG=/root/.3rd/ffmpeg -DCUDA:BOOL=ON -DMINIO:BOOL=ON -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+cmake -DCMAKE_BUILD_TYPE=Release -DX86_ABI=x86-64 -DLITE=ON -DFFMPEG=/root/.3rd/ffmpeg -DFLANN_DIR=/workspace/project/pcl-for-android-ndk/flann-1.8.4-src -DCUDA:BOOL=ON -DMINIO:BOOL=ON -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 fi
 make -j 4
 cd ..

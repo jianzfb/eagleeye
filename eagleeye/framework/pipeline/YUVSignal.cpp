@@ -4,7 +4,6 @@
 namespace eagleeye
 {
 YUVSignal::YUVSignal(){
-    m_release_count = 1;
     this->m_yuv_format = EAGLEEYE_YUV_I420;
     this->setSignalType(EAGLEEYE_SIGNAL_YUV_IMAGE);
 }   
@@ -51,13 +50,6 @@ void YUVSignal::setData(Blob data, MetaData m){
 }
 
 void YUVSignal::makeempty(bool auto_empty){
-    if(auto_empty){
-		if(this->m_release_count % this->getOutDegree() != 0){
-			this->m_release_count += 1;
-			return;
-		}
-	}
-
     this->m_blob = Blob();
 	this->m_meta.name = "";
 	this->m_meta.info = "";
@@ -70,11 +62,6 @@ void YUVSignal::makeempty(bool auto_empty){
 	this->m_meta.rows = 0;
 	this->m_meta.cols = 0;
 	this->m_meta.timestamp = 0;
-
-	if(auto_empty){
-		// reset count
-		this->m_release_count = 1;
-	}
 
 	//force time update
 	modified();

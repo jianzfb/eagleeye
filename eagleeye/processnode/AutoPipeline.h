@@ -77,6 +77,12 @@ public:
      */
     virtual bool stop(bool block=false, bool force=false);
 
+    /**
+     * @brief enable/disable auto stop(根据Meta信息自动结束)
+     */
+    void enableAutoStop();
+    void disableAutoStop();
+
 protected:
     void run();
 
@@ -94,6 +100,8 @@ private:
 
     std::vector<AnySignal*> m_cache_input;
     std::vector<double> m_last_timestamp;
+
+    bool m_enable_auto_stop;
 }; 
 }
 #endif

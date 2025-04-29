@@ -33,7 +33,7 @@ public:
 	BaseImageSignal(EagleeyeType p_type,int cha,char* info = "")
 		:AnySignal("ImgSig"),pixel_type(p_type),
 		channels(cha){
-			this->m_release_count = 1;
+			this->setSignalType(EAGLEEYE_SIGNAL_IMAGE);
 		}
 	virtual ~BaseImageSignal(){};
 
@@ -42,7 +42,6 @@ public:
 	const int channels;
 	
 protected:
-	int m_release_count;
 	std::mutex m_mu;
 	std::condition_variable m_cond;
 };
@@ -196,13 +195,18 @@ public:
 	 */
 	virtual void setMeta(MetaData meta);
 
+	/**
+	 * @brief 唤醒等待状态（对于队列模式，在某些情况下，需要唤醒帮助处理临时逻辑）
+	 */
+	virtual void wake();
+
 private:
 	Matrix<T> img;
 	Matrix<T> m_tmp;
 	size_t m_data_size[3];
 	MetaData m_tmp_meta;
-	std::queue<Matrix<T>> m_queue;
-	std::queue<MetaData> m_meta_queue;
+	std::queue<std::pair<Matrix<T>, int>> m_queue;
+	std::queue<std::pair<MetaData, int>> m_meta_queue;
 	SignalCategory m_sig_category;
 	int m_max_queue_size;
 	bool m_get_then_auto_remove;

@@ -93,9 +93,9 @@ public:
     return result;
   }
 
-  virtual bool update(void* data, std::vector<int64_t> shape, int index=0){
+  virtual bool update(void* data, std::vector<int64_t> shape, EagleeyeType type, int index=0){
     // block
-    (&m_handler)->update(data, shape, index);
+    (&m_handler)->update(data, shape, type, index);
     return true;
   }
 

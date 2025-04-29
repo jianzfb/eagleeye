@@ -130,8 +130,6 @@ public:
      */ 
     int getHeight();
 
-	
-
     /**
      * @brief print yuv info
      */ 
@@ -146,7 +144,6 @@ private:
     Blob m_blob;
     int m_width;
     int m_height;
-    int m_release_count;
 	size_t m_data_size[3];
 	EagleeyeType m_yuv_format;
 };

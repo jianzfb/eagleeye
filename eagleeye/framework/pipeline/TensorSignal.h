@@ -38,6 +38,11 @@ public:
 	 * @return DataType 
 	 */
 	DataType getData();
+	/**
+	 *	@brief 获得字符串列表（仅对2维，uint8类型tensor有效）
+	 *	@return 返回字符串列表
+	 */
+	std::vector<std::string> getString();
 
 	/**
 	 * @brief Set the Data object
@@ -108,14 +113,18 @@ public:
 		this->m_get_then_auto_remove = get_then_auto_remove;
 	};
 
+	/**
+	 * @brief 唤醒等待状态（对于队列模式，在某些情况下，需要唤醒帮助处理临时逻辑）
+	 */
+	virtual void wake();
+
 private:
     Tensor m_data;
 	Tensor m_tmp;
 	SignalCategory m_sig_category;
-	int m_release_count;
 	bool m_get_then_auto_remove;
 
-	std::queue<Tensor> m_queue;
+	std::queue<std::pair<Tensor, int>> m_queue;
 	int m_max_queue_size;
 	std::mutex m_mu;
 	std::condition_variable m_cond;	

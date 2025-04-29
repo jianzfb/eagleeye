@@ -125,7 +125,7 @@ public:
   /*
    * @brief update node data
    */
-  virtual bool update(void* data, std::vector<int64_t> shape, int index=0)=0;
+  virtual bool update(void* data, std::vector<int64_t> shape, EagleeyeType type, int index=0)=0;
 
   /**
    * @brief get node data

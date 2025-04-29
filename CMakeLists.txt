@@ -73,7 +73,6 @@ include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/)
 include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/eigen)
 link_directories(${EXECUTABLE_OUTPUT_PATH})
 
-
 if(DEFINED LITE)
 message(STATUS "LITE EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
@@ -87,7 +86,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SkipNode.cpp
     eagleeye/processnode/VideoReadNode.cpp
     eagleeye/processnode/VideoWriteNode.cpp
-    eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
     eagleeye/processnode/SerialWriteNode.cpp
@@ -97,6 +95,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ReadLineFromFileNode.cpp
     eagleeye/processnode/SerialStringNode.cpp
     eagleeye/processnode/AutoNode.cpp
+    eagleeye/processnode/ProxyNode.cpp
     eagleeye/processnode/QueueNode.cpp
     eagleeye/processnode/DebugNode.cpp
     eagleeye/processnode/LogicalNode.cpp
@@ -211,6 +210,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/pose_decoder_op.cpp
     eagleeye/engine/nano/op/pose_affine_op.cpp    
     eagleeye/engine/nano/op/facealign_op.cpp
+    eagleeye/engine/nano/op/arcfacealign_op.cpp
     eagleeye/engine/nano/op/keepratio_op.cpp
     eagleeye/engine/nano/op/colorcvt_op.cpp
     eagleeye/engine/nano/op/yuv_op.cpp
@@ -249,7 +249,8 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/UnfoldFrameSignalNode.cpp
     eagleeye/hardware/rk.cpp
     eagleeye/processnode/VideoStreamNode.cpp
-    eagleeye/common/EagleeyeStreamCenter.cpp)
+    eagleeye/common/EagleeyeStreamCenter.cpp
+    eagleeye/common/EagleeyeMemory.cpp)
 else()
 message(STATUS "FULL EAGLEEYE VERSION")
 set(EAGLEEYE_SRC 
@@ -263,7 +264,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/SkipNode.cpp
     eagleeye/processnode/VideoReadNode.cpp
     eagleeye/processnode/VideoWriteNode.cpp
-    eagleeye/processnode/AsynNode.cpp
     eagleeye/processnode/NNNode.cpp
     eagleeye/processnode/SerialReadNode.cpp
     eagleeye/processnode/SerialWriteNode.cpp
@@ -273,6 +273,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/ReadLineFromFileNode.cpp
     eagleeye/processnode/SerialStringNode.cpp
     eagleeye/processnode/AutoNode.cpp
+    eagleeye/processnode/ProxyNode.cpp
     eagleeye/processnode/QueueNode.cpp
     eagleeye/processnode/DebugNode.cpp
     eagleeye/processnode/LogicalNode.cpp
@@ -388,6 +389,7 @@ set(EAGLEEYE_SRC
     eagleeye/engine/nano/op/pose_decoder_op.cpp
     eagleeye/engine/nano/op/pose_affine_op.cpp
     eagleeye/engine/nano/op/facealign_op.cpp
+    eagleeye/engine/nano/op/arcfacealign_op.cpp
     eagleeye/engine/nano/op/keepratio_op.cpp
     eagleeye/engine/nano/op/colorcvt_op.cpp
     eagleeye/engine/nano/op/yuv_op.cpp
@@ -449,6 +451,15 @@ else()
         ${EAGLEEYE_SRC} 
         eagleeye/engine/math/x86/preprocess.cc
         eagleeye/engine/math/x86/interpolate.cc)
+endif()
+
+# flann
+if(FLANN_DIR)
+include_directories(${FLANN_DIR}/src/cpp)
+set(EAGLEEYE_SRC 
+        ${EAGLEEYE_SRC} 
+        eagleeye/processnode/FlannNode.cpp
+    )
 endif()
 
 # opencl
@@ -515,6 +526,41 @@ if(BUILD_PYTHON_MODULE)
 else()
     add_library(eagleeye SHARED ${EAGLEEYE_SRC})
 endif()
+
+if(FLANN_DIR)
+    target_link_libraries(eagleeye ${FLANN_DIR}/build/lib/libflann_cpp_s.a)
+endif()
+
+if(DEFINED ANDROID_ABI)
+    message(STATUS "using simplification opencv 3.4")
+    include_directories(${eagleeye_SOURCE_DIR}/eagleeye/3rd/opencv/include)
+    add_library(libopencv SHARED IMPORTED)
+    set_target_properties(
+        libopencv
+        PROPERTIES IMPORTED_LOCATION 
+        ${eagleeye_SOURCE_DIR}/eagleeye/3rd/opencv/lib/${ANDROID_ABI}/libopencv_java3.so
+    )
+    target_link_libraries(eagleeye libopencv)
+elseif(DEFINED X86_ABI)
+    set(OpenCV_DIR "/root/.3rd/opencv-install")
+    include_directories(${OpenCV_DIR}/include) 
+    if(BUILD_PYTHON_MODULE)    
+        target_link_libraries(eagleeye PRIVATE
+                                ${OpenCV_DIR}/lib/libopencv_calib3d.so 
+                                ${OpenCV_DIR}/lib/libopencv_core.so 
+                                ${OpenCV_DIR}/lib/libopencv_highgui.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgproc.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgcodecs.so)    
+    else()
+        target_link_libraries(eagleeye 
+                                ${OpenCV_DIR}/lib/libopencv_calib3d.so 
+                                ${OpenCV_DIR}/lib/libopencv_core.so 
+                                ${OpenCV_DIR}/lib/libopencv_highgui.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgproc.so 
+                                ${OpenCV_DIR}/lib/libopencv_imgcodecs.so)
+    endif()
+endif()
+
 
 FIND_PACKAGE(OpenMP REQUIRED)
 if(OpenMP_CXX_FOUND)
@@ -691,4 +737,3 @@ if(DEFINED ANDROID_ABI)
     # android, dont support build_python_module
     target_link_libraries(eagleeye log mediandk android camera2ndk)
 endif()
-

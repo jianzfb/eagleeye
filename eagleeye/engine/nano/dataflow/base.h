@@ -121,7 +121,7 @@ public:
     /**
      * @brief use cpu data, update
      */
-    virtual int update(void* data, std::vector<int64_t> shape, int index){return -1;}
+    virtual int update(void* data, std::vector<int64_t> shape, EagleeyeType type, int index){return -1;}
 
     /**
      * @brief get cpu data, from 

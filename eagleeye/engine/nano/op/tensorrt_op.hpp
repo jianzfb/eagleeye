@@ -48,7 +48,7 @@ public:
         m_writable_path = writable_path;
         m_model_init = false;
         m_reverse_channel = false;
-
+        m_output_dim_0_is_not_b = false;
         m_preprocess_tensors.resize(input_names.size());
     };
     
@@ -56,6 +56,7 @@ public:
         m_model_run = NULL;  
         m_model_init = false;
         m_reverse_channel = false;
+        m_output_dim_0_is_not_b = false;
     };
     virtual ~TensorrtOp(){};
 
@@ -94,7 +95,11 @@ public:
         if(params.find("reverse_channel") != params.end()){
             this->m_reverse_channel = (bool)(int(params["reverse_channel"][0]));
         }
-
+        if(params.find("output_dim_0_is_not_b") != params.end()){
+            // 仅在导出模型不规范时，需要设置
+            // 输出tensor 第0维度 不是batch维度
+            this->m_output_dim_0_is_not_b = (bool)(int(params["output_dim_0_is_not_b"][0]));
+        }
         if(params.find("num_threads") != params.end()){
             this->m_num_threads = (int)(params["num_threads"][0]);
         }
@@ -175,7 +180,7 @@ public:
                         m_output_shapes,
                         m_num_threads,
                         m_model_power,
-                        m_writable_path), [](ModelEngine* d) {delete d;});
+                        m_writable_path, true, m_output_dim_0_is_not_b), [](ModelEngine* d) {delete d;});
 
             // 设置模型根目录，（将在此目录下寻找模型文件）
             this->m_model_run->setModelFolder(m_model_folder);
@@ -303,7 +308,10 @@ public:
         for(int output_i=0; output_i<m_output_names.size(); ++output_i){
             std::string output_name = this->m_output_names[output_i];
             std::vector<int64_t> output_shape = this->m_output_shapes[output_i];
-            output_shape[0] = batch_size;
+            if(!m_output_dim_0_is_not_b){
+                // 对于第0维是batch维度的，设置batch_size
+                output_shape[0] = batch_size;
+            }
             if(this->m_outputs[output_i].empty() || this->m_outputs[output_i].dims()[0] != batch_size){
                 this->m_outputs[output_i] = Tensor(
                     output_shape,
@@ -315,6 +323,7 @@ public:
         }
 
         if( !(m_model_run->isDynamicInputShape() || m_model_run->isDynamicOutputShape()) ){
+            // 静态尺寸，逐个样本处理
             EAGLEEYE_LOGD("static batch , batch size = [%d]", batch_size);
             for(int b_i=0; b_i<batch_size; ++b_i){
                 std::map<std::string, const unsigned char*> inputs;
@@ -343,6 +352,7 @@ public:
             }
         }
         else{
+            // 动态尺寸，一次处理
             EAGLEEYE_LOGD("dynamic batch , batch size = [%d]", batch_size);
             std::map<std::string, const unsigned char*> inputs;
             std::map<std::string, unsigned char*> outputs;
@@ -395,6 +405,8 @@ private:
     std::string m_model_folder;
 	std::string m_writable_path;
     bool m_model_init;
+
+    bool m_output_dim_0_is_not_b;
 };    
 
 } // namespace dataflow

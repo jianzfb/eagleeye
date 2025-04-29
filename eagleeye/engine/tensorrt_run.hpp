@@ -10,7 +10,8 @@ ModelRun<TensorrtRun, Enabled>::ModelRun(std::string model_name,
 			int num_threads, 
 		    RunPower model_power, 
             std::string writable_path,
-            bool inner_preprocess)
+            bool inner_preprocess,
+            bool output_dim_0_is_not_b)
 	:ModelEngine(model_name,
 				 device,
 				 input_names,
@@ -26,6 +27,7 @@ ModelRun<TensorrtRun, Enabled>::ModelRun(std::string model_name,
 	}    
 	this->m_is_init = false;    
     this->m_inner_preprocess = inner_preprocess;
+    this->m_output_dim_0_is_not_b = output_dim_0_is_not_b;
 }
 
 template<typename Enabled>
@@ -214,6 +216,7 @@ bool ModelRun<TensorrtRun, Enabled>::loadNetwork() {
         throw std::runtime_error(errMsg);
     }
 
+    initLibNvInferPlugins(nullptr, "");
     m_engine = std::unique_ptr<nvinfer1::ICudaEngine>(m_runtime->deserializeCudaEngine(buffer.data(), buffer.size()));
     if (!m_engine) {
         return false;
@@ -251,7 +254,11 @@ bool ModelRun<TensorrtRun, Enabled>::loadNetwork() {
             uint32_t outputLenFloat = 1;
             auto outputDims = m_engine->getBindingDimensions(i);
 
-            for (int j = 1; j < outputDims.nbDims; ++j) {
+            int start_j = 1;
+            if(m_output_dim_0_is_not_b){
+                start_j = 0;
+            }
+            for (int j = start_j; j < outputDims.nbDims; ++j) {
                 // We ignore j = 0 because that is the batch size, and we will take that into account when sizing the buffer
                 outputLenFloat *= outputDims.d[j];
             }

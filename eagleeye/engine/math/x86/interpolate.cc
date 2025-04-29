@@ -20,7 +20,12 @@ void bilinear_rgb_8u_3d_interp(
                     int srcOffsetY, 
                     int srcStride, 
                     int desWidth, 
-                    int desHeight){
+                    int desHeight,
+					int desStride){
+	if(desStride < 0){
+		desStride = desWidth;
+	}
+
   	int i, j;
 	int nRateW, nRateH;
 	int y;
@@ -103,15 +108,15 @@ void bilinear_rgb_8u_3d_interp(
 			res_x0 = ((pImg_left_top[j * 3] * sub_bi_coef_x[j] + pImg_right_top[j * 3] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_x1 = ((pImg_left_down[j * 3] * sub_bi_coef_x[j] + pImg_right_down[j * 3] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_xy = res_x0*sub_bi_coef_y[i] + res_x1*bi_coef_y[i];
-			pDesImg[(i*desWidth + j) * 3] = (res_xy >> QRBAR_SHIFTBITS);
+			pDesImg[(i*desStride + j) * 3] = (res_xy >> QRBAR_SHIFTBITS);
 			res_x0 = ((pImg_left_top[j * 3 + 1] * sub_bi_coef_x[j] + pImg_right_top[j * 3 + 1] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_x1 = ((pImg_left_down[j * 3 + 1] * sub_bi_coef_x[j] + pImg_right_down[j * 3 + 1] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_xy = res_x0*sub_bi_coef_y[i] + res_x1*bi_coef_y[i];
-			pDesImg[(i*desWidth + j) * 3 + 1] = (res_xy >> QRBAR_SHIFTBITS);
+			pDesImg[(i*desStride + j) * 3 + 1] = (res_xy >> QRBAR_SHIFTBITS);
 			res_x0 = ((pImg_left_top[j * 3 + 2] * sub_bi_coef_x[j] + pImg_right_top[j * 3 + 2] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_x1 = ((pImg_left_down[j * 3 + 2] * sub_bi_coef_x[j] + pImg_right_down[j * 3 + 2] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_xy = res_x0*sub_bi_coef_y[i] + res_x1*bi_coef_y[i];
-			pDesImg[(i*desWidth + j) * 3 + 2] = (res_xy >> QRBAR_SHIFTBITS);
+			pDesImg[(i*desStride + j) * 3 + 2] = (res_xy >> QRBAR_SHIFTBITS);
 		}
 	}
 
@@ -136,7 +141,12 @@ void bilinear_gray_8u_1d_interp(
                     int srcOffsetY, 
                     int srcStride, 
                     int desWidth, 
-                    int desHeight){
+                    int desHeight,
+					int desStride){
+	if(desStride < 0){
+		desStride = desWidth;
+	}
+
 	int i, j;
 	int nRateW, nRateH;
 	int y;
@@ -213,7 +223,7 @@ void bilinear_gray_8u_1d_interp(
 			res_x0 = ((pImg_left_top[j] * sub_bi_coef_x[j] + pImg_right_top[j] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_x1 = ((pImg_left_down[j] * sub_bi_coef_x[j] + pImg_right_down[j] * bi_coef_x[j]) >> QRBAR_SHIFTBITS);
 			res_xy = res_x0*sub_bi_coef_y[i] + res_x1*bi_coef_y[i];
-			pDesImg[i*desWidth + j] = (res_xy >> QRBAR_SHIFTBITS);
+			pDesImg[i*desStride + j] = (res_xy >> QRBAR_SHIFTBITS);
 		}
 	}
 

@@ -15,50 +15,63 @@ SubPipeline::~SubPipeline(){
         delete iter->second;
     }
 
-    std::vector<AnySignal*>::iterator sig_iter, sig_iend(this->m_placeholders.end());
-    for(sig_iter = this->m_placeholders.begin(); sig_iter != sig_iend; ++sig_iter){
+    std::vector<AnySignal*>::iterator sig_iter, sig_iend(this->m_cache.end());
+    for(sig_iter = this->m_cache.begin(); sig_iter != sig_iend; ++sig_iter){
         delete *sig_iter;
     }
 }
 
 void SubPipeline::executeNodeInCopyInputMode(){
     // 1.step copy input
-    if(this->m_placeholders.size() == 0){
-        int input_port_i = 0;
+    if(this->m_cache.size() == 0){
         for(int i=0; i<m_input_node_name_list.size(); ++i){
-            std::string name = m_input_node_name_list[i];
-            for(int j=0; j<m_subpipeline[name]->getNumberOfInputSignals(); ++j){
-                AnySignal* signal_cp = this->getInputPort(input_port_i)->make();
-                this->m_subpipeline[name]->setInputPort(signal_cp, j);
-                this->m_placeholders.push_back(signal_cp);
-                input_port_i += 1;
+            int input_port_i = m_input_node_port_list[i].first;
+            int inner_node_port = m_input_node_port_list[i].second;
+
+            AnySignal* signal_cp = this->getInputPort(input_port_i)->make();
+            this->m_cache.push_back(signal_cp);
+
+            std::string inner_node_name =  m_input_node_name_list[i];
+            // 动态设置
+            if(this->m_subpipeline[inner_node_name]->getNumberOfInputSignals() < inner_node_port+1){
+                this->m_subpipeline[inner_node_name]->setNumberOfInputSignals(inner_node_port+1);
             }
+            this->m_subpipeline[inner_node_name]->setInputPort(signal_cp, inner_node_port);
         }
     }
 
-    for(int i=0; i<m_placeholders.size(); ++i){
-        m_placeholders[i]->copy(this->getInputPort(i));
+    for(int i=0; i<m_input_node_name_list.size(); ++i){
+        int input_port_i = m_input_node_port_list[i].first;
+        int inner_node_port = m_input_node_port_list[i].second;
+        std::string inner_node_name =  m_input_node_name_list[i];
+
+        this->m_subpipeline[inner_node_name]->getInputPort(inner_node_port)->copy(this->getInputPort(input_port_i));
     }
 
     // 2.step run subpipeline
+    std::map<std::string, bool> run_status;
     for(int i=0; i<m_output_node_name_list.size(); ++i){
         std::string name = m_output_node_name_list[i];
-        m_subpipeline[name]->start();
+        if(run_status.find(name) == run_status.end()){
+            run_status[name] = false;
+        }
+        if(!run_status[name]){
+            m_subpipeline[name]->start();
+            run_status[name] = true;
+        }
     }
 
     // 3.step copy output
-    int output_port_i = 0;
     for(int i=0; i<m_output_node_name_list.size(); ++i){
-        std::string name = m_output_node_name_list[i];
-        for(int j=0; j<m_subpipeline[name]->getNumberOfOutputSignals(); ++j){
-            this->getOutputPort(output_port_i)->copy(m_subpipeline[name]->getOutputPort(j));
-            this->getOutputPort(output_port_i)->setSignalType(m_subpipeline[name]->getOutputPort(j)->getSignalType());
-            output_port_i += 1;
-        }
+        std::string inner_node_name = m_output_node_name_list[i];
+        int inner_node_port = m_output_node_port_list[i].first;
+        int output_port_i = m_output_node_port_list[i].second;
+        this->getOutputPort(output_port_i)->copy(m_subpipeline[inner_node_name]->getOutputPort(inner_node_port));
     }
 }
 
 void SubPipeline::executeNodeInNoCopyInputMode(){
+    // TODO，需要根据50x8运动项目，进行调试为什么存在此模式
     // 1.step copy input
     int input_port_i = 0;
     for(int i=0; i<m_input_node_name_list.size(); ++i){
@@ -68,7 +81,6 @@ void SubPipeline::executeNodeInNoCopyInputMode(){
             input_port_i += 1;
         }
     }
-
 
     // 2.step run subpipeline
     for(int i=0; i<m_output_node_name_list.size(); ++i){
@@ -89,6 +101,7 @@ void SubPipeline::executeNodeInNoCopyInputMode(){
 }
 
 void SubPipeline::executeNodeInfo(){
+    // 动态根据输入设置
     if(m_copy_input){
         executeNodeInCopyInputMode();
     }
@@ -109,12 +122,38 @@ void SubPipeline::add(AnyNode* node, std::string name){
 }
 
 void SubPipeline::bind(std::string fromname, int fromport, std::string toname, int toport){
-    if(m_subpipeline.find(toname) == m_subpipeline.end()){
-        EAGLEEYE_LOGE("Node %s not int subpipeline.", toname.c_str());
+    // 保留 head, tail 关键字
+    if(toname != "tail"){
+        if(m_subpipeline.find(toname) == m_subpipeline.end()){
+            EAGLEEYE_LOGE("Node %s not int subpipeline.", toname.c_str());
+            return;
+        }
+    }
+    if(fromname != "head"){
+        if(m_subpipeline.find(fromname) == m_subpipeline.end()){
+            EAGLEEYE_LOGE("Node %s not int subpipeline.", fromname.c_str());
+            return;
+        }
+    }
+    if(fromname == "head"){
+        m_input_node_name_list.push_back(toname);
+        m_input_node_port_list.push_back({fromport, toport});
+
+        // 配置输入端口信息（个数）
+        if(this->getNumberOfInputSignals() < fromport+1){
+            this->setNumberOfInputSignals(fromport+1);
+        }
         return;
     }
-    if(m_subpipeline.find(fromname) == m_subpipeline.end()){
-        EAGLEEYE_LOGE("Node %s not int subpipeline.", fromname.c_str());
+    if(toname == "tail"){
+        m_output_node_name_list.push_back(fromname);
+        m_output_node_port_list.push_back({fromport, toport});
+
+        if(this->getNumberOfOutputSignals() < toport+1){
+            this->setNumberOfOutputSignals(toport+1);
+        }
+        // 配置输出端口信号
+        this->setOutputPort(this->m_subpipeline[fromname]->getOutputPort(fromport)->make(), toport);
         return;
     }
 
@@ -130,6 +169,13 @@ void SubPipeline::bind(std::string fromname, int fromport, std::string toname, i
 }
 
 void SubPipeline::analyze(){
+    if(m_input_node_name_list.size() != 0 || m_output_node_name_list.size() != 0){
+        EAGLEEYE_LOGD("Has use 'head/tail' keyword auto construct, skip analyze here!");
+        return;
+    }
+
+    // TODO，目前仅支持顺序关联subpipeline -> inner node -> subpipeline
+    // inner node 需要设置input signal number(大部分node对于输入端口是动态的)
     int total_input_signal_num = 0;
     int total_output_signal_num = 0;
     m_input_node_name_list.clear();
@@ -139,23 +185,38 @@ void SubPipeline::analyze(){
         if(m_node_bind_input_num[node_name] == 0){
             // 获得输入节点相关信息
             int input_signal_num = this->m_subpipeline[node_name]->getNumberOfInputSignals();
+            if(input_signal_num == 0){
+                EAGLEEYE_LOGE("why > subpipeline %s node 0 input", node_name.c_str());
+            }
+            for(int j=total_input_signal_num; j<total_input_signal_num+input_signal_num; ++j){
+                m_input_node_port_list.push_back({j, j-total_input_signal_num});
+                m_input_node_name_list.push_back(node_name);                
+            }
             total_input_signal_num += input_signal_num;
-            m_input_node_name_list.push_back(node_name);
 
+            // 设置subpipeline输入端口数
             this->setNumberOfInputSignals(total_input_signal_num);
         }
 
         if(m_node_bind_output_num[node_name] == 0){
             // 获得输出节点相关信息
+            int before_output_signal_num = total_output_signal_num;
             int ouput_signal_num = this->m_subpipeline[node_name]->getNumberOfOutputSignals();
+            if(ouput_signal_num == 0){
+                EAGLEEYE_LOGE("why > subpipeline %s node 0 output", node_name.c_str());
+            }
+            for(int j=before_output_signal_num; j<before_output_signal_num+ouput_signal_num; ++j){
+                m_output_node_port_list.push_back({j-before_output_signal_num, j});
+                m_output_node_name_list.push_back(node_name);
+            }
             total_output_signal_num += ouput_signal_num;
-            m_output_node_name_list.push_back(node_name);
-            
-            int subpipeline_output_signal_num = this->getNumberOfOutputSignals();
+
+            // 设置subpipeline输出端口数
             this->setNumberOfOutputSignals(total_output_signal_num);
-            for(int sig_i=subpipeline_output_signal_num; sig_i<total_output_signal_num; ++sig_i){
-                int node_sig_i = sig_i-subpipeline_output_signal_num;
-                this->setOutputPort(this->m_subpipeline[node_name]->getOutputPort(node_sig_i)->make(), sig_i);
+
+            // 配置输出端口信号
+            for(int j=before_output_signal_num; j<before_output_signal_num+ouput_signal_num; ++j){
+                this->setOutputPort(this->m_subpipeline[node_name]->getOutputPort(j-before_output_signal_num)->make(), j);
             }
         }
     }

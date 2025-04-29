@@ -394,7 +394,12 @@ public:
      * @param folder 
      */
     void setResoruceFolder(std::string folder);
-  
+    
+    /**
+     * @brief is asyn pipeline
+     */
+    bool isAsyn();
+
 private:
     std::map<std::string, AnyMonitor*> m_monitor_params;
     std::map<std::string, AnyNode*> m_input_nodes;

@@ -25,7 +25,7 @@ public:
 
     virtual int runOnCpu(const std::vector<Tensor>& input);
     virtual int runOnGpu(const std::vector<Tensor>& input);
-    virtual int update(void* data, std::vector<int64_t> shape, int index=0);
+    virtual int update(void* data, std::vector<int64_t> shape, EagleeyeType type, int index=0);
 
 private:
     MemoryType m_memory_type;

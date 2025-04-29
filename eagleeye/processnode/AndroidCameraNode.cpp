@@ -385,7 +385,6 @@ static std::string getCamId(ACameraManager *cameraManager, std::string camera_in
     ACameraManager_getCameraIdList(cameraManager, &cameraIds);
     EAGLEEYE_LOGD("Found camera count %d.", cameraIds->numCameras);
 
-    EAGLEEYE_LOGD("Check camera_index %s", camera_index.c_str());
     std::string frontId;    
     for (int i = 0; i < cameraIds->numCameras; ++i){
         if(std::to_string(i) != camera_index){
@@ -635,9 +634,13 @@ void AndroidCameraNode::executeNodeInfo(){
     locker.unlock();
 
     ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
-    output_img_signal->setData(data);
+    MetaData data_meta;
+    data_meta.timestamp = m_timestamp;
+    output_img_signal->setData(data, data_meta);
     ImageSignal<double>* output_timestamp_signal = (ImageSignal<double>*)(this->getOutputPort(1));
-    output_timestamp_signal->getData().at(0,0) = m_timestamp;
+    Matrix<double> timestamp(1,1);
+    timestamp.at(0,0) = m_timestamp;
+    output_timestamp_signal->setData(timestamp);
 
     m_timestamp += 1.0;
 }

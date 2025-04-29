@@ -107,7 +107,6 @@ public:
 private:
 	bool m_boolean;	
 	bool m_ini_boolean;
-	int m_release_count;
 };
 
 }
