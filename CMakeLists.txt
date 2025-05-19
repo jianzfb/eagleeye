@@ -3,8 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 
 # --gc-sections -pie
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fPIC -std=c++11 -Wl, -fpermissive")
-set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++11 -Wall -fPIC -pie -Wl,--gc-sections -fpermissive")
-
+set(CMAKE_CXX_FLAGS"${CMAKE_CXX_FLAGS} -std=c++17 -fPIC -Wall -Wl,--gc-sections -fpermissive")
 
 # Use ccache to speed up rebuilds
 # include(ccache.cmake)
@@ -541,6 +540,16 @@ if(DEFINED ANDROID_ABI)
         ${eagleeye_SOURCE_DIR}/eagleeye/3rd/opencv/lib/${ANDROID_ABI}/libopencv_java3.so
     )
     target_link_libraries(eagleeye libopencv)
+elseif(DEFINED ARM_ABI)
+    set(OpenCV_DIR "/root/.3rd/opencv-arm64-install")
+    include_directories(${OpenCV_DIR}/include) 
+    target_link_libraries(eagleeye 
+                            ${OpenCV_DIR}/lib/libopencv_calib3d.so 
+                            ${OpenCV_DIR}/lib/libopencv_core.so 
+                            ${OpenCV_DIR}/lib/libopencv_highgui.so 
+                            ${OpenCV_DIR}/lib/libopencv_imgproc.so 
+                            ${OpenCV_DIR}/lib/libopencv_imgcodecs.so)
+
 elseif(DEFINED X86_ABI)
     set(OpenCV_DIR "/root/.3rd/opencv-install")
     include_directories(${OpenCV_DIR}/include) 
