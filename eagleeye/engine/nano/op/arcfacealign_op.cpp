@@ -172,14 +172,6 @@ ArcFaceAlignOp::ArcFaceAlignOp(int target_h, int target_w, int margin){
 }
 
 ArcFaceAlignOp::~ArcFaceAlignOp(){
-#ifdef EAGLEEYE_RKCHIP    
-    if (m_src_handler){
-        releasebuffer_handle(m_src_handler);
-    }
-    if (m_tgt_handler){
-        releasebuffer_handle(m_tgt_handler);
-    }
-#endif
 }
 
 int ArcFaceAlignOp::init(std::map<std::string, std::vector<float>> params){
