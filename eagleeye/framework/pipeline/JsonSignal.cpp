@@ -21,7 +21,7 @@ void JsonSignal::copyInfo(AnySignal* sig){
 	Superclass::copyInfo(sig);
 }
 
-void JsonSignal::copy(AnySignal* sig){
+void JsonSignal::copy(AnySignal* sig, bool is_deep){
 	if(sig->getSignalCategory() != SIGNAL_CATEGORY_STRING && 
 		sig->getSignalCategory() != SIGNAL_CATEGORY_STRING_QUEUE){
 		return;

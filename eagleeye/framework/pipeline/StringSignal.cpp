@@ -24,7 +24,7 @@ void StringSignal::copyInfo(AnySignal* sig){
 	Superclass::copyInfo(sig);
 }
 
-void StringSignal::copy(AnySignal* sig){
+void StringSignal::copy(AnySignal* sig, bool is_deep){
 	if(SIGNAL_CATEGORY_STRING != (sig->getSignalCategory() & SIGNAL_CATEGORY_STRING)){
 		return;
 	}

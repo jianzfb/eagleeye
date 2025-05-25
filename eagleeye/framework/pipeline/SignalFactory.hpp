@@ -29,7 +29,7 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 }
 
 template<class T>
-void ImageSignal<T>::copy(AnySignal* sig){
+void ImageSignal<T>::copy(AnySignal* sig, bool is_deep){
 	if((SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) || 
 			(this->getValueType() != sig->getValueType())){
 		return;
@@ -38,6 +38,9 @@ void ImageSignal<T>::copy(AnySignal* sig){
 
 	MetaData from_data_meta;
 	Matrix<T> from_data = from_sig->getData(from_data_meta);
+	if(is_deep){
+		from_data = from_data.clone();
+	}
 	this->setData(from_data, from_data_meta);
 }
 

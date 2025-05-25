@@ -76,7 +76,7 @@ void AutoNode::run_in_copy_input(){
         int signal_num = this->getNumberOfInputSignals();
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             // block call
-            signal_list[signal_i]->copy(this->getInputPort(signal_i));
+            signal_list[signal_i]->copy(this->getInputPort(signal_i), m_copy_input);
             if(!this->m_thread_status){
                 // 发现退出标记，退出线程运行
                 return;

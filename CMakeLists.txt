@@ -424,6 +424,7 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/FrameSyncNode.cpp
     eagleeye/processnode/UnfoldFrameSignalNode.cpp
     eagleeye/hardware/rk.cpp
+    eagleeye/render/RenderContext.cpp
     eagleeye/processnode/VideoStreamNode.cpp
     eagleeye/common/EagleeyeStreamCenter.cpp)
 endif()

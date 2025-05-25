@@ -36,7 +36,7 @@ public:
 	 * 
 	 * @param sig 
 	 */
-	virtual void copy(AnySignal* sig);
+	virtual void copy(AnySignal* sig, bool is_deep=false);
 
 	/**
 	 * @brief make same type signal

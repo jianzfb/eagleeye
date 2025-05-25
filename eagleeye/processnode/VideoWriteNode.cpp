@@ -1306,13 +1306,17 @@ bool VideoWriteNode::uploader(const std::string &src_file){
         if (!resp) {
             EAGLEEYE_LOGE("unable to upload object [%s], error = %s",src_file, resp.Error());
             return false;
-        }   
+        }
     }
     catch(const std::exception& e)
     {
         EAGLEEYE_LOGE("UploadObject throw error = %s", e.what());
         return false;
     }
+
+    // 如果启用MINIO，上传成功后删除本地文件
+    deletefile(src_file.c_str());
+
     return true;
 #else
     return true;

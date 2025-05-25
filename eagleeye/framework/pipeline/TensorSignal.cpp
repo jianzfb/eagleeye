@@ -154,14 +154,18 @@ void TensorSignal::setData(void* data, MetaData meta){
 	}
 }
 
-void TensorSignal::copy(AnySignal* sig){
+void TensorSignal::copy(AnySignal* sig, bool is_deep){
 	if((sig->getSignalCategory() != SIGNAL_CATEGORY_TENSOR) &&
 		(sig->getSignalCategory() != SIGNAL_CATEGORY_TENSOR_QUEUE)){
 		return;
 	}
 
 	TensorSignal* b_sig = (TensorSignal*)sig;
-	this->setData(b_sig->getData());
+	Tensor data = b_sig->getData();
+	if(is_deep){
+		data = data.clone();
+	}
+	this->setData(data);
 }
 
 void TensorSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
