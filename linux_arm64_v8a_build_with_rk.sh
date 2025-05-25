@@ -39,7 +39,7 @@ cmake -DCMAKE_BUILD_TYPE=Release \
   -DZLIB_INCLUDE_DIR=/opt/cross_build/linux-arm64/zlib-1.3.1 \
   -DZLIB_LIBRARY=/opt/cross_build/linux-arm64/zlib-1.3.1/libz.so \
   -DRKCHIP=/root/.3rd/rk  \
-  -DMINIO:BOOL=OFF \
+  -DMINIO:BOOL=OFF -DLITE=ON \
   ..
 
 make -j 6

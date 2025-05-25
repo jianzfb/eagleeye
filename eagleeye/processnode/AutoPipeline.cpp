@@ -5,7 +5,7 @@
 #include <chrono>
 
 namespace eagleeye{
-AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std::vector<std::pair<std::string, int>> pipeline_node, int queue_size, bool get_then_auto_remove){
+AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std::vector<std::pair<std::string, int>> pipeline_node, int queue_size, bool get_then_auto_remove, bool copy_input){
     m_auto_pipeline = pipeline_generator();
 
     // 设置输出端口
@@ -39,6 +39,7 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
     this->m_persistent_flag = false;
 
     this->m_enable_auto_stop = true;
+    this->m_copy_input = copy_input;
 }
 
 AutoPipeline::~AutoPipeline(){
@@ -93,7 +94,7 @@ void AutoPipeline::run(){
             int data_dims=0;    // 3
             int data_type=0;    // DATA TYPE 
             MetaData data_meta;
-            m_cache_input[signal_i]->copy(this->getInputPort(signal_i));
+            m_cache_input[signal_i]->copy(this->getInputPort(signal_i), this->m_copy_input);
             m_cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
             if(!this->m_thread_status){
                 // 发现退出标记，退出线程运行

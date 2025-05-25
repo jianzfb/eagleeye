@@ -11,7 +11,7 @@ YUVSignal::YUVSignal(){
 YUVSignal::~YUVSignal(){
 }
 
-void YUVSignal::copy(AnySignal* sig){
+void YUVSignal::copy(AnySignal* sig, bool is_deep){
     if(sig == NULL){
         return;
     }

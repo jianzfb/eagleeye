@@ -12,7 +12,7 @@ EmptySignal::~EmptySignal(){
 void EmptySignal::copyInfo(AnySignal* sig){
     Superclass::copyInfo(sig);
 }
-void EmptySignal::copy(AnySignal* sig){
+void EmptySignal::copy(AnySignal* sig, bool is_deep){
     // do nothing
 }
 

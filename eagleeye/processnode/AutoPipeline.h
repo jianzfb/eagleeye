@@ -17,7 +17,7 @@ public:
     typedef AnyNode                     Superclass;
     EAGLEEYE_CLASSIDENTITY(AutoPipeline);
 
-    AutoPipeline(std::function<AnyPipeline*()> generator, std::vector<std::pair<std::string, int>> export_node, int queue_size=1,  bool get_then_auto_remove=true);
+    AutoPipeline(std::function<AnyPipeline*()> generator, std::vector<std::pair<std::string, int>> export_node, int queue_size=1,  bool get_then_auto_remove=true, bool copy_input=true);
     virtual ~AutoPipeline();
 
     /**
@@ -102,6 +102,7 @@ private:
     std::vector<double> m_last_timestamp;
 
     bool m_enable_auto_stop;
+    bool m_copy_input;
 }; 
 }
 #endif

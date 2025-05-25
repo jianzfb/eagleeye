@@ -53,7 +53,7 @@ void BooleanSignal::setData(void* data, MetaData meta){
 	this->m_boolean = *data_ptr;
 }
 
-void BooleanSignal::copy(AnySignal* sig){
+void BooleanSignal::copy(AnySignal* sig, bool is_deep){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_CONTROL){
 		BooleanSignal* b_sig = (BooleanSignal*)sig;
 		this->setData(b_sig->getData());

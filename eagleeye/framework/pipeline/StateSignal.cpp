@@ -45,7 +45,7 @@ bool StateSignal::isempty(){
     return false;
 }
 
-void StateSignal::copy(AnySignal* sig){
+void StateSignal::copy(AnySignal* sig, bool is_deep){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_STATE){
 		StateSignal* state_sig = (StateSignal*)sig;
 		this->setData(state_sig->getData());

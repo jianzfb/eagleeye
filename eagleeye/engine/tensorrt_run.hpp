@@ -216,7 +216,9 @@ bool ModelRun<TensorrtRun, Enabled>::loadNetwork() {
         throw std::runtime_error(errMsg);
     }
 
+#ifdef EAGLEEYE_TENSORRT_INFER_PLUGIN
     initLibNvInferPlugins(nullptr, "");
+#endif
     m_engine = std::unique_ptr<nvinfer1::ICudaEngine>(m_runtime->deserializeCudaEngine(buffer.data(), buffer.size()));
     if (!m_engine) {
         return false;
