@@ -80,14 +80,7 @@ RTSPReadNode::RTSPReadNode(){
     m_pCodecCtx->hw_device_ctx = av_buffer_ref(m_hw_device_ctx);
 #endif
 
-    if(avcodec_open2(m_pCodecCtx, m_pCodec, NULL) < 0){
-        EAGLEEYE_LOGE("Couldn't open codec.");
-#ifdef EAGLEEYE_CUDA
-        av_buffer_unref(&m_hw_device_ctx);
-        m_hw_device_ctx = NULL;
-#endif
-        m_is_rtsp_stream_pull_error = true;
-    }
+
 
     // 0: RGB, 1: BGR, 2: RGBA, 3: BGRA
     // 设置默认图像格式(同步设置0端口数据)
@@ -968,6 +961,22 @@ void RTSPReadNode::setFilePath(std::string file_path){
     if (m_video_stream_index == -1) {
         EAGLEEYE_LOGE("no video stream");
         this->m_is_rtsp_stream_pull_error = true;
+        return;
+    }
+
+    AVCodecParameters* codec_params = m_format_ctx->streams[m_video_stream_index]->codecpar;
+    if (avcodec_parameters_to_context(m_pCodecCtx, codec_params) < 0) {
+        EAGLEEYE_LOGE("Could not copy codec parameters to codec context");
+        avformat_close_input(&m_format_ctx);
+        return;
+    }
+    if(avcodec_open2(m_pCodecCtx, m_pCodec, NULL) < 0){
+        EAGLEEYE_LOGE("Couldn't open codec.");
+#ifdef EAGLEEYE_CUDA
+        av_buffer_unref(&m_hw_device_ctx);
+        m_hw_device_ctx = NULL;
+#endif
+        m_is_rtsp_stream_pull_error = true;
         return;
     }
 }

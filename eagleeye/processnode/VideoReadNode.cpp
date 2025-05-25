@@ -2,6 +2,7 @@
 #include "eagleeye/common/EagleeyeLog.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 #include "eagleeye/basic/MatrixMath.h"
+#include <chrono>
 
 #ifdef EAGLEEYE_FFMPEG
 extern "C" { 
@@ -39,8 +40,15 @@ namespace eagleeye
 {
 VideoReadNode::VideoReadNode(){
     // 输出信号
-    this->setNumberOfOutputSignals(1);
+    this->setNumberOfOutputSignals(2);
 	this->setOutputPort(this->makeOutputSignal(),0);
+
+    // 设置时间戳端口
+    ImageSignal<double>* timestamp_sig = new ImageSignal<double>();
+    Matrix<double> timestamp(1,1);
+    timestamp_sig->setData(timestamp);
+    this->setOutputPort(timestamp_sig,1);
+    this->getOutputPort(1)->setSignalType(EAGLEEYE_SIGNAL_TIMESTAMP);
 
     // // 输入信号
     // this->setNumberOfInputSignals(1);
@@ -52,203 +60,66 @@ VideoReadNode::VideoReadNode(){
     this->m_image_format = 1;
     this->m_is_pull_error = false;
 
-    m_avf_cxt = NULL;
-    m_avc_cxt = NULL;
     EAGLEEYE_MONITOR_VAR(std::string, setFilePath, getFilePath, "file","","");
     EAGLEEYE_MONITOR_VAR(int, setFramesNumber, getFramesNumber, "frames", "", "");
 }   
 
 VideoReadNode::~VideoReadNode(){
-    if(m_avf_cxt != NULL){
-        avformat_free_context(m_avf_cxt);
-        m_avf_cxt = NULL;
+    if(m_sws != nullptr){
+        sws_freeContext(m_sws);
+        m_sws = nullptr;
     }
-    if(m_avc_cxt != NULL){
-        avcodec_close(m_avc_cxt);
-        m_avc_cxt = NULL;
+
+    if(m_frame != nullptr){
+        av_frame_free(&m_frame);
+        m_frame = nullptr;
+    }
+
+    if(m_pkt != nullptr){
+        av_packet_free(&m_pkt);
+        m_pkt = nullptr;
+    }
+
+    if(m_cctx != nullptr){
+        avcodec_free_context(&m_cctx);
+        m_cctx = nullptr;
+    }
+
+    if(m_ctx != nullptr){
+        avformat_close_input(&m_ctx);
+        m_ctx = nullptr;
     }
 }
 
+void VideoReadNode::processUnitInfo(){
+    if(m_decoder_finish){
+        return;
+    }
+    Superclass::processUnitInfo();
+    modified();
+}
+
 void VideoReadNode::executeNodeInfo(){
-    // if((m_decoder_finish || m_first_call) && this->getNumberOfInputSignals() > 0){
-    //     StringSignal* input_sig = (StringSignal*)(this->getInputPort(0));
-    //     std::string video_path = input_sig->getData();
-    //     this->setFilePath(video_path);
-    // }
-    // ImageSignal<Array<unsigned char,3>>* output_img_signal = 
-    //                 (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
-    // if(!m_next.isempty()){
-    //     output_img_signal->setData(m_next, m_next_meta);
-    //     m_next = m_nextnext;
-    //     m_next_meta = m_nextnext_meta;
-    //     m_nextnext = Matrix<Array<unsigned char,3>>();
-
-    //     if(m_next.isempty()){
-    //         m_decoder_finish = true;
-    //     }
-    // }
-    // if(m_decoder_finish){
-    //     return;
-    // }
-    // // 0.step 解析视频
-    // if(this->m_frame_total == 0){
-    //     // 解析新视频
-    //     if(m_avf_cxt != NULL){
-    //         avformat_free_context(m_avf_cxt);
-    //         m_avf_cxt = NULL;
-    //     }
-    //     if(m_avc_cxt != NULL){
-    //         avcodec_close(m_avc_cxt);
-    //         m_avc_cxt = NULL;
-    //     }
-    //     m_avf_cxt = avformat_alloc_context();
-    //     int ret = avformat_open_input(&m_avf_cxt,m_file_path.c_str(),NULL,NULL);
-
-    //     if(ret < 0){
-    //         EAGLEEYE_LOGD("couldnt open video file");
-    //         avformat_free_context(m_avf_cxt);
-    //         m_avf_cxt = NULL;
-    //         return;
-    //     }
-
-    //     ret = avformat_find_stream_info(m_avf_cxt,NULL);
-    //     if(ret < 0){
-    //         EAGLEEYE_LOGD("couldnt find stream");
-    //         avformat_free_context(m_avf_cxt);
-    //         m_avf_cxt = NULL;
-    //         return;
-    //     }
-
-    //     // 打印视频信息
-    //     av_dump_format(m_avf_cxt,0,m_file_path.c_str(),0);
-    //     m_stream_index = -1;
-    //     for(int i = 0 ; i < m_avf_cxt->nb_streams; i++){
-    //         if(m_avf_cxt->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO){
-    //             m_stream_index = i;
-    //             break;
-    //         }
-    //     }
-    //     if(m_stream_index == -1){
-    //         EAGLEEYE_LOGD("couldnt find stream");
-    //         avformat_free_context(m_avf_cxt);
-    //         m_avf_cxt = NULL;
-    //         return;
-    //     }
-
-    //     m_video_fps = av_q2d(m_avf_cxt->streams[m_stream_index]->r_frame_rate);
-    //     m_frame_total = m_avf_cxt->streams[m_stream_index]->nb_frames;
-    //     EAGLEEYE_LOGD("video total frames %d with FPS %f", m_frame_total, (float)(m_video_fps));
-    //     m_avc_cxt = m_avf_cxt->streams[m_stream_index]->codec;
-    //     enum AVCodecID codecId = m_avc_cxt->codec_id;
-    //     AVCodec* codec = avcodec_find_decoder(codecId);
-    //     if(!codec){
-    //         EAGLEEYE_LOGD("couldnt find decoder");
-    //         avcodec_close(m_avc_cxt);
-    //         avformat_free_context(m_avf_cxt);
-    //         m_avc_cxt = NULL;
-    //         m_avf_cxt = NULL;
-    //         return;
-    //     }
+    auto time_to_sleep_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(1)/m_video_fps);
+    std::this_thread::sleep_for(time_to_sleep_ms);
     
-    //     ret = avcodec_open2(m_avc_cxt,codec,NULL);
-    //     if(ret < 0){
-    //         EAGLEEYE_LOGD("decoder dont work");
-    //         avcodec_close(m_avc_cxt);
-    //         avformat_free_context(m_avf_cxt);
-    //         m_avc_cxt = NULL;
-    //         m_avf_cxt = NULL;
-    //         return;
-    //     }
-
-    //     output_img_signal->meta().fps = this->m_video_fps;
-    //     output_img_signal->meta().nb_frames = this->m_frame_total;
-
-    //     AVDictionaryEntry *tag = NULL;
-    //     tag = av_dict_get(m_avf_cxt->streams[m_stream_index]->metadata,"rotate", tag, 0);
-    //     if (tag==NULL){
-    //         m_rotate_degree = 0;
-    //     }
-    //     else{
-    //         int angle = atoi(tag->value);
-    //         angle %= 360;
-    //         m_rotate_degree = angle;
-    //     }
-    // }
-
-    // EAGLEEYE_LOGD("video direction %d", m_rotate_degree);
-
-    // // 1.step 逐帧解析
-    // //为avpacket分配内存
-    // AVPacket* packet = av_packet_alloc();
-    // //为avFrame分配内存
-    // AVFrame* frame = av_frame_alloc();
-
-    // int iterator_count = 1;
-    // if(this->m_first_call){
-    //     iterator_count = 3;
-    // }
-    // for(int index=0; index<iterator_count; ++index){
-    //     bool is_finding = false;
-    //     while(av_read_frame(m_avf_cxt, packet) >= 0){
-    //         if(packet && packet->stream_index == m_stream_index){
-    //             int gotFrame = 0;
-    //             int ret = avcodec_decode_video2(m_avc_cxt, frame, &gotFrame, packet);
-    //             if(gotFrame == 0){
-    //                 continue;
-    //             }
-    //             is_finding = true;
-    //             break;
-    //         }
-    //     }
-
-    //     if(is_finding){
-    //         // 发现视频帧
-    //         SwsContext* swsContext = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,frame->width, frame->height, AV_PIX_FMT_RGB24,
-    //                             SWS_BILINEAR, NULL, NULL, NULL);
-    //         int num_bytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, frame->width, frame->height, 1);
-    //         // std::cout<<"num bytes "<<num_bytes<<std::endl;
-    //         // std::cout<<"size "<<frame->width*frame->height*3<<std::endl;
-    //         // std::cout<<"height "<<frame->height<<" width "<<frame->width<<std::endl;
-    //         // std::cout<<"linesize "<<frame->linesize[0]<<" "<<frame->linesize[1]<<" "<<frame->linesize[2]<<std::endl;
-
-    //         Matrix<Array<unsigned char,3>> frame_rgb_data(frame->height, frame->width);
-    //         uint8_t* rgb_buffer[1] = {(uint8_t*)frame_rgb_data.dataptr()};
-    //         int rgb_stride[1] = { 3 * frame->width};
-    //         sws_scale(swsContext, frame->data, frame->linesize, 0, frame->height, rgb_buffer, rgb_stride);
-    //         output_img_signal->meta().rotation = this->m_rotate_degree;
-    //         MetaData frame_meta = output_img_signal->meta();
-    //         if(index==0 && iterator_count==3){
-    //             // 首次调用,直接输出赋值
-    //             output_img_signal->setData(frame_rgb_data, frame_meta);
-    //         }
-    //         else if(index == 1 && iterator_count==3){
-    //             m_next = frame_rgb_data;
-    //             m_next_meta = frame_meta;
-    //         }
-    //         else{
-    //             // 每次调用，获得下下次数据
-    //             m_nextnext = frame_rgb_data;
-    //             m_nextnext_meta = frame_meta;
-    //         }
-
-    //         sws_freeContext(swsContext);
-    //     }
-    //     else{
-    //         // 没有发现
-    //         m_nextnext = Matrix<Array<unsigned char,3>>();
-
-    //         // m_next is final frame
-    //         m_next_meta.is_end_frame = true;
-    //     }
-    // }
-
-    // av_free_packet(packet);
-    // av_packet_free(&packet);
-    // av_frame_free(&frame);
-    // this->m_frame_count += 1;
-
-    // EAGLEEYE_LOGD("extract frame %d (total %d)", this->m_frame_count, this->m_frame_total);
-    // this->m_first_call = false;
+    if(m_decoder_finish){
+        EAGLEEYE_LOGI("video read finish");
+        return;
+    }
+    if(m_first_call){
+        if(not initVideoDecoder(m_file_path)){
+            EAGLEEYE_LOGE("init video decoder failed");
+            return;
+        }
+        m_first_call = false;
+    }
+    if(not decoderOneFrame()){
+        EAGLEEYE_LOGE("decoder one frame failed");
+        return;
+    }
+    EAGLEEYE_LOGI("frame index  = [%d]", m_frame_count);
+    return;
 }
 
 void VideoReadNode::setFilePath(std::string file_path){
@@ -263,6 +134,206 @@ void VideoReadNode::setFilePath(std::string file_path){
     m_nextnext = Matrix<Array<unsigned char, 3>>();
 	//force time to update
 	modified();
+}
+
+bool VideoReadNode::initVideoDecoder(const std::string& src){
+    if(src.empty()){
+        return false;
+    }
+    m_ctx = avformat_alloc_context();
+    if (m_ctx == nullptr)
+    {
+        return false;
+    }
+    if (auto ret = avformat_open_input(&m_ctx, src.c_str(), nullptr, nullptr); ret != 0)
+    {
+        EAGLEEYE_LOGE("call avformat_open_input return %d, source = %s", ret, src.c_str());
+        return false;
+    }
+
+    auto GetFirstStreamByType = [&](enum AVMediaType type)  -> int
+    {
+        for (int i = 0; i < m_ctx->nb_streams; i++)
+        {
+            if (m_ctx->streams[i]->codecpar->codec_type == type)
+            {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    m_streamIdx = GetFirstStreamByType(AVMediaType::AVMEDIA_TYPE_VIDEO);
+    if (m_streamIdx < 0)
+    {
+        EAGLEEYE_LOGE("find AVMEDIA_TYPE_VIDEO failed");
+        return false;
+    }
+
+    auto GetAVCodecContext = [&](int idx) -> AVCodecContext*
+    {
+        auto *par = m_ctx->streams[idx]->codecpar;
+
+        const AVCodec *decoder = nullptr;
+
+        decoder = avcodec_find_decoder(par->codec_id);
+        if (decoder == nullptr)
+        {
+            return nullptr;
+        }
+        auto *cctx = avcodec_alloc_context3(decoder);
+        if (cctx == nullptr)
+        {
+            return nullptr;
+        }
+        if (avcodec_parameters_to_context(cctx, par) != 0 or avcodec_open2(cctx, decoder, nullptr) != 0)
+        {
+            avcodec_free_context(&cctx);
+            return nullptr;
+        }
+        return cctx;
+    };
+
+    m_cctx = GetAVCodecContext(m_streamIdx);
+    if (m_cctx == nullptr)
+    {
+        EAGLEEYE_LOGE("call GetAVCodecContext return nullptr");
+        return false;
+    }
+    m_cctx->thread_count = m_threadNum;
+    m_cctx->thread_type = FF_THREAD_FRAME;
+    m_pkt = av_packet_alloc();
+    if (m_pkt == nullptr)
+    {
+        EAGLEEYE_LOGE("call av_packet_alloc return nullptr");
+        return false;
+    }
+    m_frame = av_frame_alloc();
+    if (m_frame == nullptr)
+    {
+        EAGLEEYE_LOGE("call av_frame_alloc return nullptr");
+        return false;
+    }
+
+
+    m_width = m_cctx->width;
+    m_height = m_cctx->height;
+
+    m_sws = sws_alloc_context();
+    if (m_sws == nullptr)
+    {
+        EAGLEEYE_LOGE("call sws_alloc_context return nullptr");
+        return false;
+    }
+
+    EAGLEEYE_LOGI("video reader open source = %s success", src.c_str());
+
+    // get fps 
+    AVStream* stream = m_ctx->streams[m_streamIdx];
+    double fps = av_q2d(stream->avg_frame_rate);
+    m_video_fps = fps > 0 ? fps: m_video_fps;
+    m_frame_total = stream->nb_frames;
+
+    // get rotation
+    auto GetRotation = [&](int idx){
+        AVStream *st = m_ctx->streams[idx];
+        AVDictionaryEntry *rotate_tag = av_dict_get(st->metadata, "rotate", NULL, 0);
+        float theta = 0.0;
+    
+        if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
+            //char *tail;
+            //theta = av_strtod(rotate_tag->value, &tail);
+            theta = atof(rotate_tag->value);
+            // if (*tail)
+                // theta = 0;
+        }
+    
+        theta -= 360*floor(theta/360 + 0.9/360);
+    
+        if (fabs(theta - 90*round(theta/90)) > 2){
+            EAGLEEYE_LOGE("Odd ration angle");
+        }
+        EAGLEEYE_LOGD("got ration = [%d]", theta);
+        return theta;
+    };
+
+    m_rotation = GetRotation(m_streamIdx);
+    return true;
+}
+
+bool VideoReadNode::decoderOneFrame(){
+    while (av_read_frame(m_ctx, m_pkt) == 0)
+    {
+        std::unique_ptr<AVPacket, decltype(av_packet_unref) *> unref_guard{m_pkt, av_packet_unref};
+        if (m_pkt->stream_index != m_streamIdx)
+        {
+            continue;
+        }
+        if (auto err_code = avcodec_send_packet(m_cctx, m_pkt); err_code != 0)
+        {
+            EAGLEEYE_LOGE("can't send packet to decoder, return [%d]", err_code);
+            continue;
+        }
+        if (auto err_code = avcodec_receive_frame(m_cctx, m_frame); err_code != 0)
+        {
+            if (err_code == AVERROR(EAGAIN))
+            {
+                continue;
+            }
+            EAGLEEYE_LOGE("can't recevie frame from decoder, return [%d]", err_code);
+        }
+
+        // Only BGR24
+        m_sws = sws_getCachedContext(m_sws,
+                                       m_frame->width, m_frame->height, static_cast<AVPixelFormat>(m_frame->format),
+                                       m_width, m_height, AVPixelFormat::AV_PIX_FMT_BGR24, SWS_BILINEAR, nullptr, nullptr, nullptr);
+        //int data_size = av_image_get_buffer_size(AVPixelFormat(frame->format), Width, Height, 1);
+        Matrix<Array<unsigned char,3>> frame_rgb_data(m_frame->height, m_frame->width);
+        uint8_t* rgb_buffer[1] = {(uint8_t*)frame_rgb_data.dataptr()};
+        int rgb_stride[1] = { 3 * m_frame->width};
+        sws_scale(m_sws, m_frame->data, m_frame->linesize, 0, m_frame->height, rgb_buffer, rgb_stride);
+        ImageSignal<Array<unsigned char,3>>* output_img_signal = 
+                    (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
+        output_img_signal->meta().rotation = m_rotation;
+        output_img_signal->setData(frame_rgb_data, output_img_signal->meta());
+
+        ImageSignal<double>* output_timestamp_signal = (ImageSignal<double>*)(this->getOutputPort(1));
+        output_timestamp_signal->getData().at(0,0) = m_frame_count++;
+        return true;
+    }
+    return TryFlushing();
+}
+
+bool VideoReadNode::TryFlushing(){
+    avcodec_send_packet(m_cctx, NULL);
+                    
+    auto ret = avcodec_receive_frame(m_cctx, m_frame);
+    if(ret == AVERROR_EOF)
+    {
+        m_decoder_finish = true;
+        EAGLEEYE_LOGE("Decoder dont need FLUSHING!!!");
+        return true;
+    }
+    else if(ret == 0)
+    {
+        // Only BGR24
+        m_sws = sws_getCachedContext(m_sws,
+                                       m_frame->width, m_frame->height, static_cast<AVPixelFormat>(m_frame->format),
+                                       m_width, m_height, AVPixelFormat::AV_PIX_FMT_BGR24, SWS_BILINEAR, nullptr, nullptr, nullptr);
+        //int data_size = av_image_get_buffer_size(AVPixelFormat(frame->format), Width, Height, 1);
+        Matrix<Array<unsigned char,3>> frame_rgb_data(m_frame->height, m_frame->width);
+        uint8_t* rgb_buffer[1] = {(uint8_t*)frame_rgb_data.dataptr()};
+        int rgb_stride[1] = { 3 * m_frame->width};
+        sws_scale(m_sws, m_frame->data, m_frame->linesize, 0, m_frame->height, rgb_buffer, rgb_stride);
+        ImageSignal<Array<unsigned char,3>>* output_img_signal = 
+                    (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
+        output_img_signal->meta().rotation = this->m_rotate_degree;
+        output_img_signal->setData(frame_rgb_data, output_img_signal->meta());
+
+        ImageSignal<double>* output_timestamp_signal = (ImageSignal<double>*)(this->getOutputPort(1));
+        output_timestamp_signal->getData().at(0,0) = m_frame_count++;
+    }
+    return true;
 }
 
 void VideoReadNode::getFilePath(std::string& file_path){
@@ -287,7 +358,31 @@ void VideoReadNode::getFramesNumber(int& num){
 }
 
 void VideoReadNode::setImageFormat(int image_format){
-    m_image_format = image_format;
+    // image_format: 0: RGB; 1: BGR, 2: RGBA, 3: BGRA
+    if(image_format > 3){
+        EAGLEEYE_LOGE("image format only support 0(RGB),1(BGR),2(RGBA),3(BGRA)");
+        return;
+    }
+
+    this->m_image_format = image_format;
+    if(this->m_image_format <= 1){
+        this->setOutputPort(new ImageSignal<Array<unsigned char,3>>(),0);
+        if(this->m_image_format == 0){
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_RGB_IMAGE);
+        }
+        else{
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_BGR_IMAGE);
+        }
+    }
+    else{
+        this->setOutputPort(new ImageSignal<Array<unsigned char,4>>(),0);
+        if(this->m_image_format == 2){
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_RGBA_IMAGE);
+        }
+        else{
+            this->getOutputPort(0)->setSignalType(EAGLEEYE_SIGNAL_BGRA_IMAGE);
+        }
+    }
 }
 void VideoReadNode::getImageFormat(int& image_format){
     image_format = m_image_format;

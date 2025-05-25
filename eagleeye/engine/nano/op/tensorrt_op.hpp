@@ -183,7 +183,7 @@ public:
             this->m_model_init = this->m_model_run->initialize();
         }
         if(!this->m_model_init){
-            EAGLEEYE_LOGE("tensor model fail to initialize.");
+            EAGLEEYE_LOGE("tensor model fail to initialize, model name = [%s], model folder = [%s]", m_model_name.c_str(), m_model_folder.c_str());
             return -1;
         }
 
