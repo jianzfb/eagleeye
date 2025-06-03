@@ -25,7 +25,7 @@ void CallbackNode::executeNodeInfo(){
     this->m_callback(this, input_signals);
 }
 
-void CallbackNode::setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
+void CallbackNode::setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
     this->m_callback = callback;
 }
 }

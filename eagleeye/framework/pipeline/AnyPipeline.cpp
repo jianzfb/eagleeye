@@ -699,12 +699,31 @@ void AnyPipeline::setCallback(const char* node_name, std::function<void(AnyNode*
         return;
     }
 
-    AnyNode* node = this->getNode(node_name);
+    std::string node_name_str = node_name;
+    AnyNode* node = NULL;
+    if (node_name_str.find("/") == std::string::npos) {
+        node = this->getNode(node_name);
+        node_name_str = "";
+    }
+    else{
+        std::string separator = "/";
+        std::vector<std::string> name_tree = split(node_name_str, separator);
+        node = this->getNode(name_tree[0]);
+        node_name_str = "";
+        for(int i=1; i<name_tree.size(); ++i){
+            if(i != name_tree.size() - 1){
+                node_name_str += name_tree[i]+"/";
+            }
+            else{
+                node_name_str += name_tree[i];
+            }
+        }
+    }
     if(node == NULL){
         EAGLEEYE_LOGE("Node %s not exists.", node_name);
         return;
     }
-    node->setCallback(callback);
+    node->setCallback(node_name_str, callback);
 }
 
 void AnyPipeline::setInput(const char* node_name, 
@@ -1406,17 +1425,13 @@ RenderContext* AnyPipeline::getRenderContext(){
 }
 
 bool AnyPipeline::isAsyn(){
-    if(m_using_placeholders.size() == 0){
-        EAGLEEYE_LOGD("Pipeline is not asyn.");
-        return false;
-    }
-
     bool is_asyn = false;
-    for(int i=0; i<m_using_placeholders.size(); ++i){
-        if(m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_IMAGE_QUEUE || 
-            m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_TENSOR_QUEUE || 
-            m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_STRING_QUEUE || 
-            m_using_placeholders[i]->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_LIST_STRING_QUEUE){
+    std::map<std::string, AnyNode*>::iterator iter, iend(m_input_nodes.end());
+    for(iter=m_input_nodes.begin(); iter != iend; ++iter){
+        if(iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_IMAGE_QUEUE || 
+            iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_TENSOR_QUEUE || 
+            iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_STRING_QUEUE || 
+            iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_LIST_STRING_QUEUE){
             is_asyn = true;
             EAGLEEYE_LOGD("Pipeline is asyn.");
             break;

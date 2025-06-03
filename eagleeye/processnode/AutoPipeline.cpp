@@ -225,8 +225,37 @@ void AutoPipeline::setUnitName(const char* unit_name){
     this->m_unit_name=std::string("auto-") + unit_name;
 }
 
-void AutoPipeline::setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
-    this->m_callback = callback;
+void AutoPipeline::setCallback(std::string node_name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
+    if(node_name == ""){
+        this->m_callback = callback;
+        return;
+    }
+
+    std::string node_name_str = node_name;
+    AnyNode* node = NULL;
+    if (node_name_str.find("/") == std::string::npos) {
+        node = this->m_auto_pipeline->getNode(node_name);
+        node_name_str = "";
+    }
+    else{
+        std::string separator = "/";
+        std::vector<std::string> name_tree = split(node_name_str, separator);
+        node = this->m_auto_pipeline->getNode(name_tree[0]);
+        node_name_str = "";
+        for(int i=1; i<name_tree.size(); ++i){
+            if(i != name_tree.size() - 1){
+                node_name_str += name_tree[i]+"/";
+            }
+            else{
+                node_name_str += name_tree[i];
+            }
+        }
+    }
+    if(node == NULL){
+        EAGLEEYE_LOGE("Node %s not exists.", node_name);
+        return;
+    }
+    node->setCallback(node_name_str, callback);
 }
 
 bool AutoPipeline::stop(bool block, bool force){

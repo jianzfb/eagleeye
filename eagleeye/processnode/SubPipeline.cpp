@@ -262,4 +262,43 @@ void SubPipeline::getPipelineMonitors(std::map<std::string,std::vector<AnyMonito
 	}
 }
 
+
+void SubPipeline::setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
+    AnyNode* node = NULL;
+    std::string node_name = "";
+    std::string next_name = "";
+    if(name.find("/") == std::string::npos){
+        if(m_subpipeline.find(name) != m_subpipeline.end()){
+            node = m_subpipeline[name];
+
+            node_name = name;
+            next_name = "";
+        }
+    }
+    else{
+        std::string separator = "/";
+        std::vector<std::string> name_tree = split(name, separator);
+        if(m_subpipeline.find(name) != m_subpipeline.end()){
+            node = m_subpipeline[name_tree[0]];
+
+            node_name = name_tree[0];
+            next_name = "";
+            for(int i=1; i<name_tree.size(); ++i){
+                if(i != name_tree.size() - 1){
+                    next_name += name_tree[i]+"/";
+                }
+                else{
+                    next_name += name_tree[i];
+                }
+            }
+        }
+    }
+
+    if(node == NULL){
+        EAGLEEYE_LOGD("Node %s not exists, couldnt set callback.", node_name.c_str());
+        return;
+    }
+    node->setCallback(next_name, callback);
+}
+
 } // namespace eagleeye

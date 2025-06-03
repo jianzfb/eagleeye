@@ -24,7 +24,7 @@ public:
     /**
      * @brief set call back
      */
-	virtual void setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
+	virtual void setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
 
 private:
     CallbackNode(const CallbackNode&);

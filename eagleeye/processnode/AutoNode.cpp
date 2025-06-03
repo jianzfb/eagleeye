@@ -2,6 +2,7 @@
 #include "eagleeye/common/EagleeyeTime.h"
 #include <functional>
 #include <thread>
+#include <chrono>
 
 namespace eagleeye
 {
@@ -258,8 +259,30 @@ void AutoNode::setUnitName(const char* unit_name){
     this->m_auto_node->setUnitName(unit_name);
 }
 
-void AutoNode::setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
-    this->m_callback = callback;
+void AutoNode::setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
+    if(name == ""){
+        this->m_callback = callback;
+        return;
+    }
+    
+    std::string next_name = "";
+    if (name.find("/") == std::string::npos) {
+        next_name = name;
+    }
+    else{
+        std::string separator = "/";
+        std::vector<std::string> name_tree = split(name, separator);
+        next_name = "";
+        for(int i=1; i<name_tree.size(); ++i){
+            if(i != name_tree.size() - 1){
+                next_name += name_tree[i]+"/";
+            }
+            else{
+                next_name += name_tree[i];
+            }
+        }
+    }
+    this->m_auto_node->setCallback(next_name, callback);
 }
 
 bool AutoNode::stop(bool block, bool force){

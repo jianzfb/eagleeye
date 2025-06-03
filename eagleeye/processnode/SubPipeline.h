@@ -70,6 +70,12 @@ public:
     virtual void exit();
 
     /**
+     * @brief set callback for inner nodes
+     * 
+     */
+    virtual void setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
+
+    /**
 	 *	@brief get monitor pool of the whole pipeline
 	 *	@note traverse the whole pipeline
 	 */
