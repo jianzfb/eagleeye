@@ -1432,6 +1432,7 @@ bool AnyPipeline::isAsyn(){
             iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_TENSOR_QUEUE || 
             iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_STRING_QUEUE || 
             iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_LIST_STRING_QUEUE){
+
             is_asyn = true;
             EAGLEEYE_LOGD("Pipeline is asyn.");
             break;
