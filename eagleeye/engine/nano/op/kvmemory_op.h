@@ -6,6 +6,7 @@
 #include "eagleeye/engine/nano/op/dynamiccreater.h"
 #include <string>
 #include <vector>
+#include <mutex>
 
 namespace eagleeye{
 namespace dataflow{
@@ -36,6 +37,7 @@ protected:
     std::string m_memory_name;
     std::string m_cache_folder;
     bool m_is_load_once;
+    std::mutex m_mu;
 };
 
 class KVDMemoryOp:public BaseOp<2, 1>, DynamicCreator<KVDMemoryOp>{

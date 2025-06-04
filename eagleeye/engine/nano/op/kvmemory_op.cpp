@@ -52,6 +52,7 @@ int KVMemoryOp::runOnCpu(const std::vector<Tensor>& input){
     else{
         cache_memory_folder = m_cache_folder + "/" + m_memory_name;
     }
+    std::unique_lock<std::mutex> memory_manage_locker(m_mu);
     if(!isdirexist(cache_memory_folder.c_str())){
         createdirectory(cache_memory_folder.c_str());
     }

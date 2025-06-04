@@ -25,10 +25,11 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_sig_category = SIGNAL_CATEGORY_IMAGE;
 	this->m_max_queue_size = 5;
 	this->m_get_then_auto_remove = true;
+	this->setSignalType(EAGLEEYE_SIGNAL_IMAGE);
 }
 
 template<class T>
-void ImageSignal<T>::copy(AnySignal* sig){
+void ImageSignal<T>::copy(AnySignal* sig, bool is_deep){
 	if((SIGNAL_CATEGORY_IMAGE != (sig->getSignalCategory() & SIGNAL_CATEGORY_IMAGE)) || 
 			(this->getValueType() != sig->getValueType())){
 		return;
@@ -37,8 +38,10 @@ void ImageSignal<T>::copy(AnySignal* sig){
 
 	MetaData from_data_meta;
 	Matrix<T> from_data = from_sig->getData(from_data_meta);
+	if(is_deep){
+		from_data = from_data.clone();
+	}
 	this->setData(from_data, from_data_meta);
-
 }
 
 template<class T>
@@ -53,13 +56,7 @@ void ImageSignal<T>::printUnit()
 template<class T>
 void ImageSignal<T>::makeempty(bool auto_empty)
 {
-	if(auto_empty){
-		if(this->m_release_count % this->getOutDegree() != 0){
-			this->m_release_count += 1;
-			return;
-		}
-	}
-
+	//ignore auto_empty
 	img = Matrix<T>();
 	this->m_meta.name = "";
 	this->m_meta.info = "";
@@ -72,10 +69,6 @@ void ImageSignal<T>::makeempty(bool auto_empty)
 	this->m_meta.rows = 0;
 	this->m_meta.cols = 0;
 	this->m_meta.timestamp = 0;
-	if(auto_empty){
-		// reset count
-		this->m_release_count = 1;
-	}
 
 	//force time update
 	if(!m_disable_data_timestamp){
@@ -114,14 +107,24 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
 		std::unique_lock<std::mutex> locker(this->m_mu);
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
-			if(this->m_queue.size() > 0){
+			if(this->m_queue.size() > 0 || m_disable){
 				break;
 			}
         }
-		Matrix<T> data = this->m_queue.front();
+		if(m_disable){
+			// 由于失活，产生空数据返回
+			locker.unlock();
+			return Matrix<T>();
+		}
+
+		std::pair<Matrix<T>, int> data_info = this->m_queue.front();
+		Matrix<T> data = data_info.first;
 		if(this->m_get_then_auto_remove){
-			this->m_queue.pop();
-			this->m_meta_queue.pop();
+			this->m_queue.front().second -= 1;
+			if(this->m_queue.front().second == 0){
+				this->m_queue.pop();
+				this->m_meta_queue.pop();
+			}
 		}
         locker.unlock();
 		return data;
@@ -147,11 +150,11 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 			this->m_meta_queue.pop();
 		}
 
-		this->m_queue.push(data); 
+		this->m_queue.push(std::pair<Matrix<T>, int>{data, int(this->getOutDegree())}); 
 		MetaData mm;
 		mm.rows = data.rows();
 		mm.cols = data.cols();
-		this->m_meta_queue.push(mm);
+		this->m_meta_queue.push(std::pair<MetaData, int>{mm, int(this->getOutDegree())});
 		locker.unlock();
 
 		if(!m_disable_data_timestamp){
@@ -179,17 +182,29 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm){
 		std::unique_lock<std::mutex> locker(this->m_mu);
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
-
-			if(this->m_queue.size() > 0){
+			if(this->m_queue.size() > 0 || m_disable){
 				break;
 			}
         }
-
-		Matrix<T> data = this->m_queue.front();
-		mm = this->m_meta_queue.front();		
+		if(m_disable){
+			// 由于失活，产生空数据返回
+			locker.unlock();
+			mm = MetaData();
+			mm.disable = true;
+			return Matrix<T>();
+		}
+	
+		std::pair<Matrix<T>, int> data_info = this->m_queue.front();
+		Matrix<T> data = data_info.first;
+		std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
+		mm = meta_info.first;
+	
 		if(this->m_get_then_auto_remove){
-			this->m_queue.pop();
-			this->m_meta_queue.pop();
+			this->m_queue.front().second -= 1;
+			if(this->m_queue.front().second == 0){
+				this->m_queue.pop();
+				this->m_meta_queue.pop();
+			}
 		}
         locker.unlock();
 		return data;
@@ -222,8 +237,8 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 			this->m_queue.pop();
 			this->m_meta_queue.pop();
 		}
-		this->m_queue.push(data); 
-		this->m_meta_queue.push(mm);
+		this->m_queue.push(std::pair<Matrix<T>, int>{data, this->getOutDegree()}); 
+		this->m_meta_queue.push(std::pair<MetaData, int>{mm, this->getOutDegree()});
 		locker.unlock();
 
 		if(!m_disable_data_timestamp){
@@ -301,4 +316,8 @@ void ImageSignal<T>::setMeta(MetaData meta){
 	this->m_meta = meta;
 }
 
+template<class T>
+void ImageSignal<T>::wake(){
+	this->m_cond.notify_all();
+}
 }

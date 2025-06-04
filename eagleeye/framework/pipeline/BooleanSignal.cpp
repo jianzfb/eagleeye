@@ -4,8 +4,7 @@ namespace eagleeye
 BooleanSignal::BooleanSignal(bool ini_boolean){
 	this->m_ini_boolean = ini_boolean;
 	this->m_boolean = ini_boolean;
-
-	this->m_release_count = 1;
+	this->setSignalType(EAGLEEYE_SIGNAL_SWITCH);
 }   
 BooleanSignal::~BooleanSignal(){
 
@@ -28,18 +27,8 @@ void BooleanSignal::printUnit()
 
 void BooleanSignal::makeempty(bool auto_empty)
 {
-	if(auto_empty){
-		if(this->m_release_count % this->getOutDegree() != 0){
-			this->m_release_count += 1;
-			return;
-		}
-	}
-
+	// ignore auto_empty
     this->m_boolean = this->m_ini_boolean;
-
-	if(auto_empty){
-		this->m_release_count = 1;
-	}
 
 	//force time update
 	modified();
@@ -64,7 +53,7 @@ void BooleanSignal::setData(void* data, MetaData meta){
 	this->m_boolean = *data_ptr;
 }
 
-void BooleanSignal::copy(AnySignal* sig){
+void BooleanSignal::copy(AnySignal* sig, bool is_deep){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_CONTROL){
 		BooleanSignal* b_sig = (BooleanSignal*)sig;
 		this->setData(b_sig->getData());

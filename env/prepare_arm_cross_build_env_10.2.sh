@@ -17,7 +17,7 @@ tar -xvf gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz
 wget https://www.zlib.net/zlib-1.3.1.tar.gz && tar -zxvf zlib-1.3.1.tar.gz && export CC=$arm_cross_build_root_path/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-gcc && \
 export CXX=$arm_cross_build_root_path/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-g++ && \
 cd $arm_cross_build_root_path/zlib-1.3.1 && ./configure && make -j 10 && \
-cp libz.a /opt/cross_build/linux-arm64/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/lib64/
+cp libz.so /opt/cross_build/linux-arm64/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu/aarch64-none-linux-gnu/lib64/
 
 # 3. ffmepg install 
 if [ ! -d "/root/.3rd/ffmpeg" ];then

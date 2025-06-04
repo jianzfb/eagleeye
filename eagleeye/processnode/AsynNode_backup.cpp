@@ -12,11 +12,17 @@ AsynNode::AsynNode(int thread_num, std::function<AnyNode*()> generator, int inpu
     m_input_queue_size(input_queue_size),
     m_output_queue_size(output_queue_size),
     m_process_count(0),
+    m_is_asyn_mode(true),
     m_thread_status(true){
     // 开启线程        
     for(int i=0; i<thread_num; ++i){
         m_run_node.push_back(generator());
         m_run_threads.push_back(std::thread(std::bind(&AsynNode::run,this, i)));
+    }
+    if(thread_num <= 0){
+        // 非多线程模式
+        m_is_asyn_mode = false;
+        m_run_node.push_back(generator());
     }
 
     // 设置输出端口
@@ -39,6 +45,18 @@ AsynNode::~AsynNode(){
 }
 
 void AsynNode::executeNodeInfo(){
+    if(!m_is_asyn_mode){
+        // 同步调用
+        for(int i=0; i<this->getNumberOfInputSignals(); ++i){
+            m_run_node[0]->setInputPort(this->getInputPort(i), i);
+        }
+        m_run_node[0]->start();
+        for(int i=0; i<this->getNumberOfOutputSignals(); ++i){
+            this->getOutputPort(i)->copy(m_run_node[0]->getOutputPort(i));
+        }
+        return;
+    }
+
     // 1.step generate input signal clone
     std::vector<std::shared_ptr<AnySignal>> input_signals_cp;
     for(int i=0; i<this->getNumberOfInputSignals(); ++i){
@@ -65,16 +83,22 @@ void AsynNode::executeNodeInfo(){
 }
 
 void AsynNode::preexit(){
+    if(!m_is_asyn_mode){
+        return;
+    }
     this->m_thread_status = false;
 }
 
 void AsynNode::postexit(){
+    if(!m_is_asyn_mode){
+        return;
+    }
     std::unique_lock<std::mutex> input_locker(this->m_input_mu);
     // clear input queue
     while (this->m_input_cache.size() > 0){
         this->m_input_cache.pop_front();
     }
-    
+
     // push empty 
     for(int i=0; i<this->m_run_threads.size(); ++i){
         this->m_input_cache.push_back(std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>(std::vector<std::shared_ptr<AnySignal>>(),AsynMetaData(0,0)));
@@ -90,6 +114,9 @@ void AsynNode::postexit(){
 }
 
 void AsynNode::refresh(){
+    if(!m_is_asyn_mode){
+        return;
+    }
     std::unique_lock<std::mutex> output_locker(this->m_output_mu);    
     if(this->m_reset_flag){
         // remove all data in not this round
@@ -99,7 +126,6 @@ void AsynNode::refresh(){
             this->m_reset_flag = false;
         }
     }
-    
     if(this->m_output_list.size() == 0){
         output_locker.unlock();
         return;
@@ -166,9 +192,8 @@ void AsynNode::run(int thread_id){
         }
 
         // 4.step 输出到队列
-        std::unique_lock<std::mutex> output_locker(this->m_output_mu);
-        // 加入最新结果
-        m_output_list.push_back(std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>(ll, AsynMetaData(timestamp,round)));
+        std::unique_lock<std::mutex> output_locker(this->m_output_mu);    
+        m_output_list.push_back(std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>(ll, AsynMetaData(timestamp, round)));
         // 按时间排序，最新结果置于列尾
         m_output_list.sort(LatestPriority);
         if(m_output_list.size() > this->m_output_queue_size){
@@ -176,11 +201,30 @@ void AsynNode::run(int thread_id){
             m_output_list.pop_front();
         }
 
+        // if(this->m_reset_flag){
+        //     // remove all data in not this round
+        //     this->m_output_list.remove_if([&](std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData>& a){return a.second.round != m_round;});
+        //     if(this->m_output_list.size() > 0){
+        //         this->m_reset_flag = false;
+        //     }
+        // }
+
+        // get the newest output
+        std::pair<std::vector<std::shared_ptr<AnySignal>>, AsynMetaData> result = m_output_list.back();
+        // remove the oldest output
+        m_output_list.pop_front();
+
+        for(int i=0; i<this->getNumberOfOutputSignals(); ++i){
+            this->getOutputPort(i)->copy(result.first[i].get());
+        }
         output_locker.unlock();
     }
 }
 
 void AsynNode::reset(){
+    if(!m_is_asyn_mode){
+        return;
+    }
     // clear input queue
     std::unique_lock<std::mutex> input_locker(this->m_input_mu);
     this->m_input_cache.clear();

@@ -699,12 +699,31 @@ void AnyPipeline::setCallback(const char* node_name, std::function<void(AnyNode*
         return;
     }
 
-    AnyNode* node = this->getNode(node_name);
+    std::string node_name_str = node_name;
+    AnyNode* node = NULL;
+    if (node_name_str.find("/") == std::string::npos) {
+        node = this->getNode(node_name);
+        node_name_str = "";
+    }
+    else{
+        std::string separator = "/";
+        std::vector<std::string> name_tree = split(node_name_str, separator);
+        node = this->getNode(name_tree[0]);
+        node_name_str = "";
+        for(int i=1; i<name_tree.size(); ++i){
+            if(i != name_tree.size() - 1){
+                node_name_str += name_tree[i]+"/";
+            }
+            else{
+                node_name_str += name_tree[i];
+            }
+        }
+    }
     if(node == NULL){
         EAGLEEYE_LOGE("Node %s not exists.", node_name);
         return;
     }
-    node->setCallback(callback);
+    node->setCallback(node_name_str, callback);
 }
 
 void AnyPipeline::setInput(const char* node_name, 
@@ -762,13 +781,6 @@ void AnyPipeline::setInput(const char* node_name,
         return;
     }
     
-    for(int d=0; d<data_dims; ++d){
-        if(data_size[d] == 0){
-            EAGLEEYE_LOGE("Data size abnormal data_size[%d]=0", d);
-            return;
-        }
-    }
-
     MetaData meta = this->m_input_nodes[input_key]->getOutputPort(port)->meta();
     meta.rows = data_size[0];
     meta.cols = data_size[1];
@@ -838,7 +850,6 @@ void AnyPipeline::setInput(const char* node_name, std::string from_pipeline_name
     this->m_input_nodes[input_key]->modified();
     EAGLEEYE_LOGD("Finish set input %s", node_name);
 }
-
 
 void AnyPipeline::setInput(const char* node_name, std::string from_register_node){
     if(node_name == NULL || strcmp(node_name, "") == 0){
@@ -1411,5 +1422,25 @@ int AnyPipeline::getRenderSurfaceH(){
 
 RenderContext* AnyPipeline::getRenderContext(){
     return AnyPipeline::m_render_context.get();
+}
+
+bool AnyPipeline::isAsyn(){
+    bool is_asyn = false;
+    std::map<std::string, AnyNode*>::iterator iter, iend(m_input_nodes.end());
+    for(iter=m_input_nodes.begin(); iter != iend; ++iter){
+        if(iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_IMAGE_QUEUE || 
+            iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_TENSOR_QUEUE || 
+            iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_STRING_QUEUE || 
+            iter->second->getOutputPort(0)->getSignalCategory() == SIGNAL_CATEGORY_LIST_STRING_QUEUE){
+
+            is_asyn = true;
+            EAGLEEYE_LOGD("Pipeline is asyn.");
+            break;
+        }
+    }
+    if(!is_asyn){
+        EAGLEEYE_LOGD("Pipeline is sync.");
+    }
+    return is_asyn;
 }
 }

@@ -33,6 +33,7 @@ public:
 		mirror = false;
 		color_format = -1;
 		type = -1;
+		disable = false;
 	}
 	std::string name;		// name
 	std::string info;		// info
@@ -55,6 +56,8 @@ public:
 
 	int type;					// 数据类型
 	std::vector<int64_t> dims;	// 数据维度
+
+	bool disable;			// 失活标记（标记数据无效）
 };
 
 class AnyNode;
@@ -111,7 +114,7 @@ public:
 	 * 
 	 * @param sig 
 	 */
-	virtual void copy(AnySignal* sig){};
+	virtual void copy(AnySignal* sig, bool is_deep=false){};
 
 	/**
 	 * @brief clone signal
@@ -363,6 +366,21 @@ public:
 	 * @brief 禁用数据时间戳
 	 */
 	void disableDataTimestamp(){m_disable_data_timestamp = true;}
+	
+	/**
+	 * @brief 启用无效标记（仅在管线退出时，标记）
+	 */
+	void disable(){m_disable = true;}
+
+	/**
+	 * @brief 启用无效标记（仅在管线退出时，标记）
+	 */
+	bool isEnable(){return !m_disable;}
+
+	/**
+	 * @brief 唤醒等待状态（对于队列模式，在某些情况下，需要唤醒帮助处理临时逻辑）
+	 */
+	virtual void wake(){};
 
 protected:
 	std::string m_signal_type;
@@ -377,6 +395,7 @@ protected:
 	MetaData m_meta;
 	std::shared_ptr<unsigned char> m_mem;
 	bool m_disable_data_timestamp;
+	bool m_disable;
 
 private:
 	AnySignal(const AnySignal&);

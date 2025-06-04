@@ -167,6 +167,12 @@ inline CUCTensor* new_cuctensor(){
     return t;
 }
 
+inline CUSTensor* new_custensor(){
+    CUSTensor* t = new CUSTensor();
+    t->is_assign_inner = false;
+    return t;
+}
+
 inline CBTensor* new_cbtensor(){
     CBTensor* t = new CBTensor();
     t->is_assign_inner = false;

@@ -14,6 +14,7 @@
 #include <memory> 
 #include "NvInfer.h"
 #include "NvOnnxParser.h"
+#include "NvInferPlugin.h"
 #include "eagleeye/common/EagleeyeFile.h"
 
 namespace eagleeye{
@@ -63,7 +64,8 @@ public:
 		     int num_threads = -1, 
 		     RunPower model_power = HIGH_POWER, 
 		     std::string writable_path="/data/local/tmp/", 
-             bool inner_preprocess=false);
+             bool inner_preprocess=false,
+             bool output_dim_0_is_not_b=false);
 
     virtual ~ModelRun();
 
@@ -107,6 +109,7 @@ protected:
     Options m_options;
     NvInferLoggerC m_logger;
     std::string m_engineName;
+    bool m_output_dim_0_is_not_b;
 
     std::map<int32_t, std::string> m_engine_binds_to_name_map;
 private:

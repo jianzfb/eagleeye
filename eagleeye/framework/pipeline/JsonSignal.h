@@ -32,7 +32,7 @@ public:
 	 * 
 	 * @param sig 
 	 */
-	virtual void copy(AnySignal* sig);
+	virtual void copy(AnySignal* sig, bool is_deep=false);
 
 	/**
 	 * @brief make same type signal
@@ -141,7 +141,7 @@ public:
 
 private:
 	std::string m_tmp_cache;
-	std::queue<std::string> m_queue;
+	std::queue<std::pair<std::string, int>> m_queue;
 	std::string m_info;
 	SignalCategory m_sig_category;
 
@@ -149,7 +149,6 @@ private:
 	std::condition_variable m_cond;
 
 	size_t m_data_size[1];
-	int m_release_count;
 	int m_max_queue_size;
 
     neb::CJsonObject m_json_obj;

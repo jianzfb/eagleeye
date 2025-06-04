@@ -7,11 +7,10 @@ namespace eagleeye
 {
 JsonSignal::JsonSignal(std::string record_name, bool is_record_in_message_center){
 	this->m_sig_category = SIGNAL_CATEGORY_STRING;
-
-	this->m_release_count = 1;
 	this->m_max_queue_size = 5;
 	this->m_record_name = record_name;
 	this->m_is_record_in_message_center = is_record_in_message_center;
+	this->setSignalType(EAGLEEYE_SIGNAL_TEXT);
 }
 
 JsonSignal::~JsonSignal(){
@@ -22,7 +21,7 @@ void JsonSignal::copyInfo(AnySignal* sig){
 	Superclass::copyInfo(sig);
 }
 
-void JsonSignal::copy(AnySignal* sig){
+void JsonSignal::copy(AnySignal* sig, bool is_deep){
 	if(sig->getSignalCategory() != SIGNAL_CATEGORY_STRING && 
 		sig->getSignalCategory() != SIGNAL_CATEGORY_STRING_QUEUE){
 		return;
@@ -39,15 +38,9 @@ void JsonSignal::printUnit(){
 }
 
 void JsonSignal::makeempty(bool auto_empty){
-	if(auto_empty){
-		if(this->m_release_count % this->getOutDegree() != 0){
-			this->m_release_count += 1;
-			return;
-		}
-	}
-	if(auto_empty){
-		this->m_release_count = 1;
-	}
+	// ignore auto_empty
+	// TODO, 清空json
+	this->m_json_obj.Clear();
 
 	//force time update
 	modified();
@@ -81,8 +74,12 @@ typename JsonSignal::DataType JsonSignal::getData(){
 			}
         }
 
-		std::string data = this->m_queue.front();
-        this->m_queue.pop();
+		std::pair<std::string, int> data_info = this->m_queue.front();
+		std::string data = data_info.first;
+		this->m_queue.front().second -= 1;
+		if(this->m_queue.front().second == 0){
+			this->m_queue.pop();
+		}
         locker.unlock();
 		return data;
 	}
@@ -99,7 +96,7 @@ void JsonSignal::setData(JsonSignal::DataType data){
 		if(this->m_queue.size() > this->m_max_queue_size){
 			this->m_queue.pop();
 		}
-		this->m_queue.push(data); 
+		this->m_queue.push(std::pair<std::string, int>{data, int(this->getOutDegree())}); 
 		locker.unlock();
 
 		// notify

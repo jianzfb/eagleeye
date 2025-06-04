@@ -2,6 +2,7 @@
 #include "eagleeye/common/EagleeyeTime.h"
 #include <functional>
 #include <thread>
+#include <chrono>
 
 namespace eagleeye
 {
@@ -26,7 +27,6 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
     this->m_callback = nullptr;
     this->m_persistent_flag = false;
     this->m_copy_input = copy_input;
-    EAGLEEYE_LOGD("auto node run in copy_inpu mode = [%d]", m_copy_input);
 }
 
 AutoNode::~AutoNode(){
@@ -54,19 +54,15 @@ void AutoNode::executeNodeInfo(){
 }
 
 void AutoNode::run(){
-    if(m_copy_input){
-        run_in_copy_input();
-    }
-    else{
-        run_in_no_copy_input();
-    }
+    // TODO，忽略run_in_no_copy_input调用（可能存在风险，在aisports 50x8里 使用的是run_in_copy_input，需要进一步查看是否有影响）
+    run_in_copy_input();
 }
 
 void AutoNode::run_in_copy_input(){
     std::vector<AnySignal*> signal_list;
     for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
         AnySignal* signal_cp = this->getInputPort(signal_i)->make();
-        m_auto_node->setInputPort(signal_cp, signal_i);        
+        m_auto_node->setInputPort(signal_cp, signal_i);
         signal_list.push_back(signal_cp);
     }
 
@@ -81,7 +77,11 @@ void AutoNode::run_in_copy_input(){
         int signal_num = this->getNumberOfInputSignals();
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             // block call
-            signal_list[signal_i]->copy(this->getInputPort(signal_i));
+            signal_list[signal_i]->copy(this->getInputPort(signal_i), m_copy_input);
+            if(!this->m_thread_status){
+                // 发现退出标记，退出线程运行
+                return;
+            }
 
             // set input
             MetaData data_meta = signal_list[signal_i]->meta();
@@ -192,10 +192,16 @@ void AutoNode::postexit(){
         return;
     }
 
-    int signal_num = m_auto_node->getNumberOfOutputSignals();
+    // int signal_num = m_auto_node->getNumberOfOutputSignals();
+    // for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+    //     // dont care data is what
+    //     this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));        
+    // }
+    // 触发自身，跳出数据等待，并结束线程
+    int signal_num = m_auto_node->getNumberOfInputSignals();
     for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-        // dont care data is what
-        this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));        
+        this->getInputPort(signal_i)->disable();
+        this->getInputPort(signal_i)->wake();
     }
 
     if(this->m_is_ini){
@@ -253,8 +259,30 @@ void AutoNode::setUnitName(const char* unit_name){
     this->m_auto_node->setUnitName(unit_name);
 }
 
-void AutoNode::setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
-    this->m_callback = callback;
+void AutoNode::setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){
+    if(name == ""){
+        this->m_callback = callback;
+        return;
+    }
+    
+    std::string next_name = "";
+    if (name.find("/") == std::string::npos) {
+        next_name = name;
+    }
+    else{
+        std::string separator = "/";
+        std::vector<std::string> name_tree = split(name, separator);
+        next_name = "";
+        for(int i=1; i<name_tree.size(); ++i){
+            if(i != name_tree.size() - 1){
+                next_name += name_tree[i]+"/";
+            }
+            else{
+                next_name += name_tree[i];
+            }
+        }
+    }
+    this->m_auto_node->setCallback(next_name, callback);
 }
 
 bool AutoNode::stop(bool block, bool force){

@@ -114,9 +114,9 @@ public:
 	/**
 	 *	@brief set/get the number of output signals and input signals
 	 */
-	void setNumberOfOutputSignals(unsigned int outputnum);
+	virtual void setNumberOfOutputSignals(unsigned int outputnum);
 	int getNumberOfOutputSignals(){return int(m_output_signals.size());};
-	void setNumberOfInputSignals(unsigned int inputnum);
+	virtual void setNumberOfInputSignals(unsigned int inputnum);
 	int getNumberOfInputSignals(){return int(m_input_signals.size());};
 	
 	/**
@@ -356,8 +356,8 @@ public:
 	/**
 	 * @brief set callback
 	 */
-	virtual void setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){};
-	virtual void setCallback(std::function<void(std::string)> callback) {};
+	virtual void setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback){};
+	virtual void setCallback(std::string name, std::function<void(std::string)> callback) {};
 
 	/**
 	 * @brief Set the Resource Folder object

@@ -38,7 +38,8 @@ void bilinear_rgb_8u_3d_interp(
                     int srcOffsetY, 
                     int srcStride, 
                     int desWidth, 
-                    int desHeight);
+                    int desHeight,
+                    int desStride=-1);
 
 void bilinear_gray_8u_1d_interp(
                     const unsigned char * pSrcImg, 
@@ -49,7 +50,8 @@ void bilinear_gray_8u_1d_interp(
                     int srcOffsetY, 
                     int srcStride, 
                     int desWidth, 
-                    int desHeight);
+                    int desHeight,
+                    int desStride=-1);
 
 void bilinear_32f_c1_interp(
                     const float* pSrcImg, 

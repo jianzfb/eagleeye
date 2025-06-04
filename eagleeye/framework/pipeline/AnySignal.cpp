@@ -67,6 +67,7 @@ AnySignal::AnySignal(const char* unit_name, const char* signal_type, const char*
 	m_signal_type_value = EAGLEEYE_UNDEFINED_SIGNAL;
 	m_signal_target_value = EAGLEEYE_UNDEFINED_TARGET;
 	this->m_disable_data_timestamp = false;
+	this->m_disable = false;
 }
 AnySignal::~AnySignal()
 {

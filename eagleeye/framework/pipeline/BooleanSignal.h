@@ -79,7 +79,7 @@ public:
 	 * 
 	 * @param sig 
 	 */
-	virtual void copy(AnySignal* sig);
+	virtual void copy(AnySignal* sig, bool is_deep=false);
 
 	/**
 	 * @brief make same type signal
@@ -107,7 +107,6 @@ public:
 private:
 	bool m_boolean;	
 	bool m_ini_boolean;
-	int m_release_count;
 };
 
 }

@@ -571,7 +571,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     //      "server_timestamp": "",
     //      "server_id": "",
     //      "server_mode": "callback",
-    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR", "mode": "NETWORK/USB/ANDROID_NATIVE/V4L2", "flag": "front"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
+    //      "data_source": [{"type": "camera", "address": "", "format": "RGB/BGR", "mode": "NETWORK/USB/ANDROID_NATIVE/V4L2"}, {"type": "video", "address": "", "format": "RGB/BGR"},...]
     // }
     neb::CJsonObject config_obj(server_config);
     std::string pipeline_name;
@@ -764,6 +764,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
             std::vector<std::pair<std::string, int>>({}),
             1
         );
+        ((AutoPipeline*)(auto_pipeline_node))->disableAutoStop();
 
         // 关联 AutoNode -> AutoPipeline
         auto_pipeline_node->setNumberOfInputSignals(source_list.size());
@@ -944,6 +945,7 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
             std::vector<std::pair<std::string, int>>({}),
             1
         );
+        ((AutoPipeline*)(auto_pipeline_node))->disableAutoStop();
 
         // 构建数据队列
         // PlaceholderQueue* data_node = new PlaceholderQueue(8);
@@ -1153,6 +1155,12 @@ ServerStatus eagleeye_pipeline_server_start(std::string server_config, std::stri
     return SERVER_SUCCESS;
 }
 
+ServerStatus eagleeye_pipeline_server_update(std::string server_key, std::vector<std::map<std::string, std::string>> server_params){
+    // TODO, 更新管线参数
+    return SERVER_SUCCESS;
+}
+
+
 ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::vector<RequestData> server_request){
     // 管线数据对象
     std::string server_data_key = server_key + "/data";
@@ -1179,11 +1187,11 @@ ServerStatus eagleeye_pipeline_server_push(std::string server_key, std::vector<R
             std::vector<size_t> data_size = {(size_t)1, (size_t)request_data.width};
             data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 0);
         }
-        else if(request_data.type == "matrix/float"){
+        else if(request_data.type == "float"){
             std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
             data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 6);
         }
-        else if(request_data.type == "matrix/int32"){
+        else if(request_data.type == "int32"){
             std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
             data_node->push(data_i, request_data.data, data_size.data(), data_size.size(), 0, 4);
         }
@@ -1238,8 +1246,8 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::vector<R
         //      "data": [
         //          {"type": "image", "content": "", "width": 0, "height": 0, "channel": 0}, 
         //          {"type": "string", "content": ""}, 
-        //          {"type": "matrix/float", "content": "", "width":0, "height":0},
-        //          {"type": "matrix/int32", "content": "", "width":0, "height":0}
+        //          {"type": "float", "content": "", "width":0, "height":0},
+        //          {"type": "int32", "content": "", "width":0, "height":0}
         //       ]
         // }
         AnyPipeline* pipeline = (AnyPipeline*)pipeline_obj;
@@ -1261,11 +1269,11 @@ ServerStatus eagleeye_pipeline_server_call(std::string server_key, std::vector<R
                 std::vector<size_t> data_size = {(size_t)1, (size_t)request_data.width};
                 pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 0);
             }
-            else if(request_data.type == "matrix/float"){
+            else if(request_data.type == "float"){
                 std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
                 pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 6);
             }
-            else if(request_data.type == "matrix/int32"){
+            else if(request_data.type == "int32"){
                 std::vector<size_t> data_size = {(size_t)request_data.height, (size_t)request_data.width};
                 pipeline->setInput(data_i_placeholder.c_str(), request_data.data, data_size.data(), data_size.size(), 0, 4);
             }

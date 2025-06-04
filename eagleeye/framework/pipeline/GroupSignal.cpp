@@ -17,7 +17,7 @@ void GroupSignal::copyInfo(AnySignal* sig){
     Superclass::copyInfo(sig);
 }
 
-void GroupSignal::copy(AnySignal* sig){
+void GroupSignal::copy(AnySignal* sig, bool is_deep){
     if((SIGNAL_CATEGORY_DEFAULT != (sig->getSignalCategory() & SIGNAL_CATEGORY_DEFAULT)) || (this->getSignalType() != sig->getSignalType())){
 		return;
 	}

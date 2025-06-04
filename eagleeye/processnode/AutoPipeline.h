@@ -17,7 +17,7 @@ public:
     typedef AnyNode                     Superclass;
     EAGLEEYE_CLASSIDENTITY(AutoPipeline);
 
-    AutoPipeline(std::function<AnyPipeline*()> generator, std::vector<std::pair<std::string, int>> export_node, int queue_size=1,  bool get_then_auto_remove=true);
+    AutoPipeline(std::function<AnyPipeline*()> generator, std::vector<std::pair<std::string, int>> export_node, int queue_size=1,  bool get_then_auto_remove=true, bool copy_input=true);
     virtual ~AutoPipeline();
 
     /**
@@ -60,7 +60,7 @@ public:
     /**
      * @brief set call back
      */
-	virtual void setCallback(std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
+	virtual void setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
 
     /**
      * @brief get inner delegation instance
@@ -76,6 +76,12 @@ public:
      * @brief 检查是否停止运行
      */
     virtual bool stop(bool block=false, bool force=false);
+
+    /**
+     * @brief enable/disable auto stop(根据Meta信息自动结束)
+     */
+    void enableAutoStop();
+    void disableAutoStop();
 
 protected:
     void run();
@@ -94,6 +100,9 @@ private:
 
     std::vector<AnySignal*> m_cache_input;
     std::vector<double> m_last_timestamp;
+
+    bool m_enable_auto_stop;
+    bool m_copy_input;
 }; 
 }
 #endif
