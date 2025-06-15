@@ -252,7 +252,7 @@ void AutoPipeline::setCallback(std::string node_name, std::function<void(AnyNode
         }
     }
     if(node == NULL){
-        EAGLEEYE_LOGE("Node %s not exists.", node_name);
+        EAGLEEYE_LOGE("Node %s not exists.", node_name.c_str());
         return;
     }
     node->setCallback(node_name_str, callback);
