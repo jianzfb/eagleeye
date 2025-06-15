@@ -31,6 +31,20 @@ public:
 
 	virtual void setNumberOfInputSignals(unsigned int inputnum);
 
+    /**
+     * @brief set call back
+     */
+	virtual void setCallback(std::string name, std::function<void(AnyNode*, std::vector<AnySignal*>)> callback);
+
+    /**
+	 *	@brief get monitor pool of the whole pipeline
+	 *	@note traverse the whole pipeline
+	 */
+	virtual void getPipelineMonitors(std::map<std::string,std::vector<AnyMonitor*>>& pipeline_monitor_pool);
+
+    void setFolder(const std::string folder);
+    void getFolder(std::string& folder);
+
 private:
     ProxyNode(const ProxyNode&);
     void operator=(const ProxyNode&);
