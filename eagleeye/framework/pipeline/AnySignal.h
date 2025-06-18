@@ -305,7 +305,7 @@ public:
 	 * @brief upgrade signal to queue version
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){};
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true, bool set_then_auto_remove=true){};
 
 	/**
 	 * @brief Get the Signal Value Type object
@@ -381,6 +381,11 @@ public:
 	 * @brief 唤醒等待状态（对于队列模式，在某些情况下，需要唤醒帮助处理临时逻辑）
 	 */
 	virtual void wake(){};
+
+	/**
+	 *	@brief 触发自动清除队列元素（一般用在队列模式下，手动管理队列元素）
+	 */
+	virtual bool tryClear(){};
 
 protected:
 	std::string m_signal_type;

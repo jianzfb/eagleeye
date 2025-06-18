@@ -46,6 +46,14 @@ public:
 	DataType getData();
 
 	/**
+	 * @brief Get the Data object with meta
+	 * 
+	 * @param meta 
+	 * @return DataType 
+	 */
+	DataType getData(MetaData& mm);
+
+	/**
 	 * @brief Set the Data object
 	 * 
 	 * @param data 

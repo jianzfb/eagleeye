@@ -2,13 +2,15 @@
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 namespace  eagleeye
 {
-QueueNode::QueueNode(int queue_size){
+QueueNode::QueueNode(int queue_size, bool get_then_auto_remove, bool set_then_auto_remove){
     this->m_queue_size = queue_size;
-}   
+    this->m_get_then_auto_remove = get_then_auto_remove;
+    this->m_set_then_auto_remove = set_then_auto_remove;
+}
 
 QueueNode::~QueueNode(){
 
-} 
+}
 
 void QueueNode::executeNodeInfo(){
     int signal_num = this->getNumberOfInputSignals();
@@ -22,7 +24,7 @@ void QueueNode::addInputPort(AnySignal* sig){
     int index = this->getNumberOfInputSignals() - 1;
 
     AnySignal* sig_cp = sig->make();
-    sig_cp->transformCategoryToQ(this->m_queue_size);
+    sig_cp->transformCategoryToQ(this->m_queue_size, this->m_get_then_auto_remove, this->m_set_then_auto_remove);
 
     if(this->getNumberOfOutputSignals() < index+1){
         this->setNumberOfOutputSignals(index+1);
@@ -37,7 +39,7 @@ void QueueNode::setInputPort(AnySignal* sig,int index){
     Superclass::setInputPort(sig, index);
 
     AnySignal* sig_cp = sig->make();
-    sig_cp->transformCategoryToQ(this->m_queue_size);
+    sig_cp->transformCategoryToQ(this->m_queue_size, this->m_get_then_auto_remove, this->m_set_then_auto_remove);
 
     if(this->getNumberOfOutputSignals() < index+1){
         this->setNumberOfOutputSignals(index+1);
@@ -50,6 +52,6 @@ void QueueNode::postexit(){
     int signal_num = this->getNumberOfInputSignals();
     for(int signal_i=0; signal_i<signal_num; ++signal_i){
         this->getOutputPort(signal_i)->copy(this->getInputPort(signal_i));
-    }    
+    }
 }
 } // namespace  eagleeye

@@ -43,6 +43,11 @@ typename BooleanSignal::DataType BooleanSignal::getData(){
 	return this->m_boolean;
 }
 
+typename BooleanSignal::DataType BooleanSignal::getData(MetaData& mm){
+	mm = this->m_meta;
+	return this->m_boolean;
+}
+
 void BooleanSignal::setData(BooleanSignal::DataType data){
 	this->m_boolean = data;
 	modified();
@@ -51,6 +56,7 @@ void BooleanSignal::setData(BooleanSignal::DataType data){
 void BooleanSignal::setData(void* data, MetaData meta){
 	bool* data_ptr = (bool*)data;
 	this->m_boolean = *data_ptr;
+	this->m_meta = meta;
 }
 
 void BooleanSignal::copy(AnySignal* sig, bool is_deep){

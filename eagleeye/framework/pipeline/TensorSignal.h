@@ -38,6 +38,7 @@ public:
 	 * @return DataType 
 	 */
 	DataType getData();
+
 	/**
 	 *	@brief 获得字符串列表（仅对2维，uint8类型tensor有效）
 	 *	@return 返回字符串列表
@@ -45,11 +46,32 @@ public:
 	std::vector<std::string> getString();
 
 	/**
+	 * @brief Get the Data object with meta
+	 * 
+	 * @param meta 
+	 * @return DataType 
+	 */
+	DataType getData(MetaData& mm);
+
+	/**
 	 * @brief Set the Data object
 	 * 
 	 * @param data 
 	 */
 	void setData(DataType data);
+	/**
+	 * @brief Set the Data object with meta
+	 * 
+	 * @param data 
+	 * @param meta 
+	 */
+	void setData(DataType data, MetaData mm);
+	/**
+	 * @brief Set the Data object with meta
+	 * 
+	 * @param data 
+	 * @param meta 
+	 */
 	virtual void setData(void* data, MetaData meta);
 
 	/**
@@ -103,14 +125,16 @@ public:
 	 * @param data_dims 
 	 */
 	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
+	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type, MetaData& data_meta);
 
 	/**
 	 * 	@brief 转换成队列
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true,  bool set_then_auto_remove=true){
 		m_sig_category = SIGNAL_CATEGORY_TENSOR_QUEUE;
 		m_max_queue_size = max_queue_size;
 		this->m_get_then_auto_remove = get_then_auto_remove;
+		this->m_set_then_auto_remove = set_then_auto_remove;
 	};
 
 	/**
@@ -118,16 +142,22 @@ public:
 	 */
 	virtual void wake();
 
+	virtual bool tryClear();
+
 private:
     Tensor m_data;
 	Tensor m_tmp;
 	SignalCategory m_sig_category;
 	bool m_get_then_auto_remove;
+	bool m_set_then_auto_remove;
 
 	std::queue<std::pair<Tensor, int>> m_queue;
+	std::queue<std::pair<MetaData, int>> m_meta_queue;
 	int m_max_queue_size;
 	std::mutex m_mu;
 	std::condition_variable m_cond;	
+
+	int m_clear_count;
 };
 }
 #endif

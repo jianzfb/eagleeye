@@ -3,8 +3,10 @@
 #include "eagleeye/framework/pipeline/BooleanSignal.h"
 #include "eagleeye/common/EagleeyeMacro.h"
 namespace eagleeye{
-PlaceholderQueue::PlaceholderQueue(int queue_size){
+PlaceholderQueue::PlaceholderQueue(int queue_size, bool get_then_auto_remove, bool set_then_auto_remove){
     this->m_queue_size = queue_size;
+    this->m_get_then_auto_remove = get_then_auto_remove;
+    this->m_set_then_auto_remove = set_then_auto_remove;
 }   
 PlaceholderQueue::~PlaceholderQueue(){
 
@@ -57,7 +59,7 @@ void PlaceholderQueue::config(int placeholder_i, std::string data_type, std::str
     }
 
     // 切换到队列
-    out_signal->transformCategoryToQ(m_queue_size);
+    out_signal->transformCategoryToQ(m_queue_size, m_get_then_auto_remove, m_set_then_auto_remove);
 
     if(this->getNumberOfOutputSignals() < placeholder_i+1){
         this->setNumberOfOutputSignals(placeholder_i+1);

@@ -11,6 +11,8 @@ JsonSignal::JsonSignal(std::string record_name, bool is_record_in_message_center
 	this->m_record_name = record_name;
 	this->m_is_record_in_message_center = is_record_in_message_center;
 	this->setSignalType(EAGLEEYE_SIGNAL_TEXT);
+	this->m_get_then_auto_remove = true;
+	this->m_set_then_auto_remove = true;
 }
 
 JsonSignal::~JsonSignal(){
@@ -28,7 +30,9 @@ void JsonSignal::copy(AnySignal* sig, bool is_deep){
 	}
 
 	JsonSignal* from_sig = (JsonSignal*)(sig);
-	this->setData(from_sig->getData());
+	MetaData from_data_meta;
+	DataType from_data = from_sig->getData(from_data_meta);
+	this->setData(from_data, from_data_meta);
 
 	// ignore record_name and is_record_in_message_center
 }
@@ -68,17 +72,70 @@ typename JsonSignal::DataType JsonSignal::getData(){
 		std::unique_lock<std::mutex> locker(this->m_mu);
 		while(this->m_queue.size() == 0){
             this->m_cond.wait(locker);
-
-			if(this->m_queue.size() > 0){
+			if(this->m_queue.size() > 0 || m_disable){
 				break;
 			}
         }
+		if(m_disable){
+			// 由于失活，产生空数据返回
+			locker.unlock();
+			return "";
+		}
 
 		std::pair<std::string, int> data_info = this->m_queue.front();
 		std::string data = data_info.first;
-		this->m_queue.front().second -= 1;
-		if(this->m_queue.front().second == 0){
-			this->m_queue.pop();
+		if(this->m_get_then_auto_remove){
+			this->m_queue.front().second -= 1;
+			if(this->m_queue.front().second == 0){
+				this->m_queue.pop();
+				this->m_meta_queue.pop();
+			}
+		}
+        locker.unlock();
+		return data;
+	}
+}
+
+typename JsonSignal::DataType JsonSignal::getData(MetaData& mm){
+	// refresh data
+	if(this->m_link_node != NULL){
+		this->m_link_node->refresh();
+	}
+
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_STRING){
+		// SIGNAL_CATEGORY_STRING
+		if(!(m_json_obj.IsEmpty())){
+			mm = this->m_meta;
+			m_info = m_json_obj.ToString();
+		}
+		return m_info;
+	}
+	else{
+		// SIGNAL_CATEGORY_STRING_QUEUE
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		while(this->m_queue.size() == 0){
+            this->m_cond.wait(locker);
+			if(this->m_queue.size() > 0 || m_disable){
+				break;
+			}
+        }
+		if(m_disable){
+			// 由于失活，产生空数据返回
+			locker.unlock();
+			return "";
+		}
+
+		std::pair<std::string, int> data_info = this->m_queue.front();
+		std::string data = data_info.first;
+		std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
+		mm = meta_info.first;
+	
+		if(this->m_get_then_auto_remove){
+			this->m_queue.front().second -= 1;
+			if(this->m_queue.front().second == 0){
+				this->m_queue.pop();
+				this->m_meta_queue.pop();
+			}
 		}
         locker.unlock();
 		return data;
@@ -93,10 +150,15 @@ void JsonSignal::setData(JsonSignal::DataType data){
 	else{
 		// SIGNAL_CATEGORY_STRING_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
-		if(this->m_queue.size() > this->m_max_queue_size){
+		if(this->m_queue.size() > this->m_max_queue_size && m_set_then_auto_remove){
+			// TODO, 非去除模式，需要阻塞
 			this->m_queue.pop();
+			this->m_meta_queue.pop();
 		}
+
 		this->m_queue.push(std::pair<std::string, int>{data, int(this->getOutDegree())}); 
+		MetaData mm;
+		this->m_meta_queue.push(std::pair<MetaData, int>{mm, int(this->getOutDegree())});
 		locker.unlock();
 
 		// notify
@@ -104,6 +166,51 @@ void JsonSignal::setData(JsonSignal::DataType data){
 	}
 
     modified();
+}
+
+void JsonSignal::setData(JsonSignal::DataType data, MetaData mm){
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_STRING){
+		// SIGNAL_CATEGORY_STRING
+		this->m_info = data;
+		this->m_meta = mm;
+	}
+	else{
+		// SIGNAL_CATEGORY_STRING_QUEUE
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(this->m_queue.size() > this->m_max_queue_size && m_set_then_auto_remove){
+			// TODO, 非去除模式，需要阻塞
+			this->m_queue.pop();
+			this->m_meta_queue.pop();
+		}
+
+		this->m_queue.push(std::pair<std::string, int>{data, int(this->getOutDegree())}); 
+		this->m_meta_queue.push(std::pair<MetaData, int>{mm, int(this->getOutDegree())});
+		locker.unlock();
+
+		// notify
+		this->m_cond.notify_all();		
+	}
+
+    modified();
+}
+
+bool JsonSignal::tryClear(){
+	if(m_sig_category != SIGNAL_CATEGORY_STRING_QUEUE){
+		EAGLEEYE_LOGE("not string-queue mode, dont exec.");
+		return false;
+	}
+	if(this->m_get_then_auto_remove){
+		return false;
+	}
+
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	this->m_queue.front().second -= 1;
+	if(this->m_queue.front().second == 0){
+		this->m_queue.pop();
+		this->m_meta_queue.pop();
+		return true;
+	}
+	return false;
 }
 
 void JsonSignal::setKV(std::string key, std::string value){
@@ -181,7 +288,6 @@ void JsonSignal::setKT(std::string key, std::vector<float> value, EagleeyeType t
 	obj.Add("dims", dims_obj);
 	m_json_obj.ReplaceAdd(key, obj);
 }
-
 
 void JsonSignal::flush(){
 	if(m_record_name == ""){

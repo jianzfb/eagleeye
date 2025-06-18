@@ -14,7 +14,7 @@ public:
 
     EAGLEEYE_CLASSIDENTITY(QueueNode);
     
-    QueueNode(int queue_size=5);
+    QueueNode(int queue_size=5, bool get_then_auto_remove=true, bool set_then_auto_remove=false);
     virtual ~QueueNode();
 
     /**
@@ -37,6 +37,8 @@ private:
     QueueNode(const QueueNode&);
     void operator=(const QueueNode&);
     int m_queue_size;
+    bool m_set_then_auto_remove;
+    bool m_get_then_auto_remove;
 };
 
 }

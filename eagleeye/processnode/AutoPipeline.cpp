@@ -5,7 +5,7 @@
 #include <chrono>
 
 namespace eagleeye{
-AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std::vector<std::pair<std::string, int>> pipeline_node, int queue_size, bool get_then_auto_remove, bool copy_input){
+AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std::vector<std::pair<std::string, int>> pipeline_node, int queue_size, bool get_then_auto_remove, bool set_then_auto_remove, bool copy_input){
     m_auto_pipeline = pipeline_generator();
 
     // 设置输出端口
@@ -27,7 +27,7 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
 
         AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i)->make();
         // 必须为队列信号
-        output_signal->transformCategoryToQ(queue_size, get_then_auto_remove);
+        output_signal->transformCategoryToQ(queue_size, get_then_auto_remove, set_then_auto_remove);
         output_signal->disableDataTimestamp();  // 禁用数据时间戳
         this->setOutputPort(output_signal, signal_i);
     }
@@ -40,6 +40,9 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
 
     this->m_enable_auto_stop = true;
     this->m_copy_input = copy_input;
+
+    this->m_get_then_auto_remove = get_then_auto_remove;
+    this->m_set_then_auto_remove = set_then_auto_remove;
 }
 
 AutoPipeline::~AutoPipeline(){
@@ -123,8 +126,18 @@ void AutoPipeline::run(){
         }
         this->m_last_timestamp = input_data_timestamp;
 
+        // 至此，已经获得一帧新数据
+
+        // 尝试清理输入信号队列信息
+        // 信号队列🈶三种清理队列数据机制
+        // 1. 推入队列时，检查是否超出队列最大值，如果超出吐出尾部数据
+        // 2. 读取队列时，是否直接将吐出队列数据
+        // 3. 外部进行tryClear()，如果满足出度数，则吐出数据
+        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+            this->getInputPort(signal_i)->tryClear();
+        }
+
         // 基于pipeline是否是异步，决定是否等待返回
-        // *****
         if(m_auto_pipeline->isAsyn()){
             // 异步管线，无需等待返回结果
             // 底层实现需要依靠回调实现数据输出
@@ -142,7 +155,10 @@ void AutoPipeline::run(){
             int node_signal_i = m_pipeline_node[signal_i].second;
 
             AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i);
-            this->getOutputPort(signal_i)->copy(output_signal);
+            if(m_last_timestamp.size() > 0){
+                output_signal->meta().timestamp = m_last_timestamp[0];
+            }
+            this->getOutputPort(signal_i)->copy(output_signal, true);
             if(m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i)->meta().is_end_frame){
                 is_auto_stop = true;
             }

@@ -22,7 +22,7 @@ public:
 	 */	 
 	EAGLEEYE_CLASSIDENTITY(VideoStreamNode);
 
-    VideoStreamNode(int queue_size);
+    VideoStreamNode(int queue_size, bool get_then_auto_remove=false, bool set_then_auto_remove=false);
     virtual ~VideoStreamNode();
 
 	/**
@@ -39,6 +39,8 @@ private:
     void operator=(const VideoStreamNode&);
 
     int m_queue_size;
+    bool m_set_then_auto_remove;
+    bool m_get_then_auto_remove;
     RKH264Decoder* m_decoder;
 };
 }

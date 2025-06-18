@@ -21,7 +21,7 @@ public:
 	 * @param source 
 	 * @param queue_mode 
 	 */
-    Placeholder(bool queue_mode=false, int queue_size=5, bool get_then_auto_remove=true);
+    Placeholder(bool queue_mode=false, int queue_size=5, bool get_then_auto_remove=true, bool set_then_auto_remove=true);
     virtual ~Placeholder();
 
     /**

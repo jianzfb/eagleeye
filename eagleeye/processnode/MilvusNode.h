@@ -75,6 +75,25 @@ public:
      *  @note user must finish this function
 	 */
 	virtual void executeNodeInfo(){
+        // 填充默认输出
+        ((TensorSignal*)this->getOutputPort(1))->setData(
+            Tensor(
+                std::vector<int64_t>{0, m_top_k},
+                EAGLEEYE_FLOAT,
+                DataFormat::AUTO,
+                CPU_BUFFER                
+            )
+        );
+
+        ((TensorSignal*)this->getOutputPort(2))->setData(
+            Tensor(
+                std::vector<int64_t>{0, m_top_k, 16},
+                EAGLEEYE_CHAR,
+                DataFormat::AUTO,
+                CPU_BUFFER
+            )
+        );
+
         if(!m_is_ready){
             BooleanSignal* status = (BooleanSignal*)this->getOutputPort(0);
             status->setData(false);
