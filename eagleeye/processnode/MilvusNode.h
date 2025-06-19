@@ -19,40 +19,29 @@ enum MilvusMode{
 
 class MilvusNode:public AnyNode, DynamicNodeCreator<MilvusNode>{
 public:
-    typedef AutoNode                Self;
-    typedef AnyNode                 Superclass;
+    typedef MilvusNode                  Self;
+    typedef AnyNode                     Superclass;
     EAGLEEYE_CLASSIDENTITY(MilvusNode);
 
     MilvusNode(){};
     MilvusNode(std::string collection, int top_k, bool use_norm, std::string ip, int port){
         m_is_ready = false;
         m_client = milvus::MilvusClient::Create();
+        m_is_ready = false; // 向量库是否已经准备好
 
-        // step 1: 链接
-        milvus::ConnectParam connect_param{ip, port};
-        auto status = m_client->Connect(connect_param);
-        EAGLEEYE_LOGD("milvus connect ip %s, port %d", ip.c_str(), port);
-        if(!status.IsOk()){
-            // 失败链接
-            EAGLEEYE_LOGE("Failed to connect %s:%d", ip.c_str(), port);
-            return;
-        }
-        EAGLEEYE_LOGD("milvus load collection %s", collection.c_str());
-
-        // step 2: 加载collection
-        status = m_client->LoadCollection(collection);
-        if(!status.IsOk()){
-            // 失败加载
-            EAGLEEYE_LOGE("Failed to load collection %s (%s:%d)", collection.c_str(), ip.c_str(), port);
-            return;
+        // 检查向量库IP和端口是否有效
+        if(ip != "" && port > 0){
+            m_is_ready = this->connectMilvus(ip, port, collection);
         }
 
+        // 连接向量库基本信息
         this->m_collection = collection;
         this->m_ip = ip;
         this->m_port = port;
+
+        // 
         this->m_top_k = top_k;
         this->m_mode = MILVUS_QUERY;
-        m_is_ready = true;
         m_use_norm = use_norm;
 
         // 输入端口说明
@@ -65,10 +54,46 @@ public:
         this->setOutputPort(new BooleanSignal(), 0);        // 执行是否成功
         this->setOutputPort(new TensorSignal(), 1);         // SCORE: float N x top_k
         this->setOutputPort(new TensorSignal(), 2);         // ID: char N x top_k x 16
-    }
-    virtual ~MilvusNode(){}
 
+        EAGLEEYE_MONITOR_VAR(std::string, setMilvusIp, getMilvusIp, "milvus_ip", "", "");
+        EAGLEEYE_MONITOR_VAR(int, setMilvusPort, getMilvusPort, "milvus_port", "", "");
+    }
+
+    virtual ~MilvusNode(){
+        if(m_is_ready){
+            auto status = m_client->Disconnect();
+            if (!status.IsOk()) {
+                EAGLEEYE_LOGE("close connect milvus %s", status.Message().c_str());
+            }
+        }
+    }
+
+    /**
+     *  @brief 设置工作模式插入/检索
+     */
     void setMode(MilvusMode mode){m_mode = mode;};
+
+    /**
+     * @brief 设置/拿取向量库IP
+     */
+    void setMilvusIp(const std::string ip){
+        this->m_ip = ip;
+        std::cout<<"set milvus ip "<<ip<<std::endl;
+    }
+    void getMilvusIp(std::string& ip){
+        ip = this->m_ip;
+    }
+
+    /**
+     *  @brief 设置/拿取向量库端口
+     */
+    void setMilvusPort(const int port){
+        this->m_port = port;
+        std::cout<<"set milvus port "<<port<<std::endl;
+    }
+    void getMilvusPort(int& port){
+        port = this->m_port;
+    }
 
     /**
 	 *	@brief execute Node
@@ -95,9 +120,17 @@ public:
         );
 
         if(!m_is_ready){
-            BooleanSignal* status = (BooleanSignal*)this->getOutputPort(0);
-            status->setData(false);
-            return;
+            if(m_ip != "" && m_port > 0){
+                // 尝试继续连接milvus
+                m_is_ready = this->connectMilvus(m_ip, m_port, m_collection);
+            }
+
+            // 无法连接，则返回
+            if(!m_is_ready){
+                BooleanSignal* status = (BooleanSignal*)this->getOutputPort(0);
+                status->setData(false);
+                return;
+            }
         }
 
         // input: group, feature
@@ -258,6 +291,30 @@ public:
 
         BooleanSignal* status = (BooleanSignal*)this->getOutputPort(0);
         status->setData(true);
+    }
+
+protected:
+    bool connectMilvus(std::string ip, int port, std::string collection){
+        // step 1: 链接
+        milvus::ConnectParam connect_param{ip, port};
+        auto status = m_client->Connect(connect_param);
+        EAGLEEYE_LOGD("milvus connect ip %s, port %d", ip.c_str(), port);
+        if(!status.IsOk()){
+            // 失败链接
+            EAGLEEYE_LOGE("Failed to connect %s", status.Message().c_str());
+            return false;
+        }
+        EAGLEEYE_LOGD("milvus load collection %s", collection.c_str());
+
+        // step 2: 加载collection
+        status = m_client->LoadCollection(collection);
+        if(!status.IsOk()){
+            // 失败加载
+            EAGLEEYE_LOGE("Failed to load collection %s (%s)", collection.c_str(), status.Message().c_str());
+            return false;
+        }
+
+        return true;
     }
 
 private:

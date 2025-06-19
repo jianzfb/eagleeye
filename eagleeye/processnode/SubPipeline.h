@@ -24,6 +24,11 @@ public:
     virtual ~SubPipeline();
 
     /**
+     * @brief overide setUnitName
+     */
+	virtual void setUnitName(const char* unit_name);
+
+    /**
 	 *	@brief execute goturn algorithm
      *  @note user must finish this function
 	 */
