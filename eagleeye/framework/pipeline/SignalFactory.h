@@ -107,6 +107,8 @@ public:
 	 */
 	virtual void makeempty(bool auto_empty=true);
 
+	virtual bool tryClear();
+	
 	/**
 	 * @brief check signal content empty
 	 * 
@@ -182,10 +184,11 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true, bool set_then_auto_remove=true){
 		m_sig_category = SIGNAL_CATEGORY_IMAGE_QUEUE;
 		m_max_queue_size = max_queue_size;
 		this->m_get_then_auto_remove = get_then_auto_remove;
+		this->m_set_then_auto_remove = set_then_auto_remove;
 	};
 
 	/**
@@ -210,6 +213,7 @@ private:
 	SignalCategory m_sig_category;
 	int m_max_queue_size;
 	bool m_get_then_auto_remove;
+	bool m_set_then_auto_remove;
 };
 }
 

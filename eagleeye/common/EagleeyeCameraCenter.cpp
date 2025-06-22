@@ -26,7 +26,7 @@ bool CameraCenter::isExist(std::string camera_address){
     return true;
 }
 
-bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, CameraType camera_type){
+bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, CameraType camera_type, int cache_size, bool get_then_remove){
 #ifndef EAGLEEYE_FFMPEG
     return false;
 #else
@@ -82,8 +82,8 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
                 return (AnyNode*)video_node;
             }
         },
-        1,
-        false
+        cache_size,
+        get_then_remove
     );
     camera_source->setPersistent(true);
     camera_source->init();
@@ -129,7 +129,7 @@ bool CameraCenter::activeCamera(std::string camera_address, int pixel_format, Ca
 #endif
 }
 
-bool CameraCenter::addCamera(std::string camera_address, int pixel_format, CameraType camera_type, bool get_then_remove){
+bool CameraCenter::addCamera(std::string camera_address, int pixel_format, CameraType camera_type, int cache_size, bool get_then_remove){
 #ifndef EAGLEEYE_FFMPEG
     return false;
 #else
@@ -179,8 +179,9 @@ bool CameraCenter::addCamera(std::string camera_address, int pixel_format, Camer
                 return (AnyNode*)video_node;
             }
         },
-        1,
-        get_then_remove
+        cache_size,
+        get_then_remove,
+        true
     );
     camera_source->setPersistent(true);
     camera_source->setUnitName("Camera");

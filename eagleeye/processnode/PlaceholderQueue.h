@@ -11,7 +11,7 @@ public:
     typedef PlaceholderQueue                Self;
     typedef AnyNode                         Superclass;
 
-    PlaceholderQueue(int queue_size=8);
+    PlaceholderQueue(int queue_size=8, bool get_then_auto_remove=true, bool set_then_auto_remove=true);
     virtual ~PlaceholderQueue();
 
     EAGLEEYE_CLASSIDENTITY(PlaceholderQueue);
@@ -26,6 +26,8 @@ private:
     void operator=(const PlaceholderQueue&);
 
     int m_queue_size;
+    bool m_set_then_auto_remove;
+    bool m_get_then_auto_remove;
 }; 
 }
 #endif

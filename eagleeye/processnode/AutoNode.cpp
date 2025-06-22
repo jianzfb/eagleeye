@@ -6,7 +6,8 @@
 
 namespace eagleeye
 {
-AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get_then_auto_remove, bool copy_input){
+AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get_then_auto_remove,  bool set_then_auto_remove, bool copy_input){
+    // auto_node 必须非异步
     m_auto_node = generator();
     // 设置输出端口
     int signal_num = m_auto_node->getNumberOfOutputSignals();
@@ -14,7 +15,7 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
     for(int signal_i=0; signal_i<signal_num; ++signal_i){
         AnySignal* output_signal = m_auto_node->getOutputPort(signal_i)->make();
         // 必须为队列信号
-        output_signal->transformCategoryToQ(queue_size, get_then_auto_remove);
+        output_signal->transformCategoryToQ(queue_size, get_then_auto_remove, set_then_auto_remove);
         output_signal->disableDataTimestamp();  // 禁用数据时间戳
         this->setOutputPort(output_signal, signal_i);
     }
@@ -27,6 +28,8 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
     this->m_callback = nullptr;
     this->m_persistent_flag = false;
     this->m_copy_input = copy_input;
+    this->m_get_then_auto_remove = get_then_auto_remove;
+    this->m_set_then_auto_remove = set_then_auto_remove;
 }
 
 AutoNode::~AutoNode(){
@@ -98,6 +101,17 @@ void AutoNode::run_in_copy_input(){
         }
         this->m_last_timestamp = input_data_timestamp;
 
+        // 至此，已经获得一帧新数据
+
+        // 尝试清理输入信号队列信息
+        // 信号队列🈶三种清理队列数据机制
+        // 1. 推入队列时，检查是否超出队列最大值，如果超出吐出尾部数据
+        // 2. 读取队列时，是否直接将吐出队列数据
+        // 3. 外部进行tryClear()，如果满足出度数，则吐出数据
+        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+            this->getInputPort(signal_i)->tryClear();
+        }
+
         // 2.step run node
         bool running_ischange = m_auto_node->start();
         if(!running_ischange){
@@ -108,7 +122,9 @@ void AutoNode::run_in_copy_input(){
         signal_num = m_auto_node->getNumberOfOutputSignals();
         bool is_auto_stop = false;
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-            this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));
+            // 时间戳填充
+            m_auto_node->getOutputPort(signal_i)->meta().timestamp = m_last_timestamp;
+            this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i), true);
             if(m_auto_node->getOutputPort(signal_i)->meta().is_end_frame){
                 is_auto_stop = true;
             }

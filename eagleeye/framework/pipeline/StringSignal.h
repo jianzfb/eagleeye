@@ -60,11 +60,26 @@ public:
 	DataType getData();
 
 	/**
+	 * @brief Get the Data object with meta
+	 * 
+	 * @param meta 
+	 * @return DataType 
+	 */
+	DataType getData(MetaData& mm);
+
+	/**
 	 * @brief Set the Data object
 	 * 
 	 * @param data 
 	 */
 	void setData(DataType data);
+	/**
+	 * @brief Set the Data object with meta
+	 * 
+	 * @param data 
+	 * @param meta 
+	 */
+	void setData(DataType data, MetaData mm);
 
 	/**
 	 *	@brief clear Info signal content
@@ -115,9 +130,11 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true, bool set_then_auto_remove=true){
 		m_sig_category = SIGNAL_CATEGORY_STRING_QUEUE;
 		m_max_queue_size = max_queue_size;
+		this->m_get_then_auto_remove = get_then_auto_remove;
+		this->m_set_then_auto_remove = set_then_auto_remove;
 	};
 
 	/**
@@ -125,10 +142,13 @@ public:
 	 */
 	virtual void wake();
 
+	virtual bool tryClear();
+
 private:
     std::string m_str;
 	std::string m_tmp_cache;
 	std::queue<std::pair<std::string, int>> m_queue;
+	std::queue<std::pair<MetaData, int>> m_meta_queue;
 	SignalCategory m_sig_category;
 
 	std::mutex m_mu;
@@ -137,6 +157,9 @@ private:
 	size_t m_data_size[1];
 	std::string m_ini_str;
 	int m_max_queue_size;
+
+	bool m_get_then_auto_remove;
+	bool m_set_then_auto_remove;
 };
 
 
@@ -160,7 +183,7 @@ public:
 	 * 
 	 * @param sig 
 	 */
-	virtual void copy(AnySignal* sig);
+	virtual void copy(AnySignal* sig, bool is_deep=false);
 
 	/**
 	 * @brief make same type signal
@@ -184,16 +207,27 @@ public:
 	DataType getData();
 
 	/**
+	 * @brief Get the Data object with meta
+	 * 
+	 * @param meta 
+	 * @return DataType 
+	 */
+	DataType getData(MetaData& mm);
+
+	/**
 	 * @brief Set the Data object
 	 * 
 	 * @param data 
 	 */
 	void setData(DataType data);
+	void setData(DataType data, MetaData mm);
 
 	/**
 	 *	@brief clear Info signal content
 	 */
 	virtual void makeempty(bool auto_empty=true);
+
+	virtual bool tryClear();
 
 	/**
 	 * @brief check signal content empty
@@ -230,9 +264,12 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true, bool set_then_auto_remove=true){
 		m_sig_category = SIGNAL_CATEGORY_LIST_STRING_QUEUE;
 		m_max_queue_size = max_queue_size;
+
+		m_get_then_auto_remove = get_then_auto_remove;
+		m_set_then_auto_remove = set_then_auto_remove;
 	};
 
 	/**
@@ -243,11 +280,15 @@ public:
 private:
 	std::vector<std::string> m_list;
 	std::queue<std::pair<std::vector<std::string>, int>> m_queue;
+	std::queue<std::pair<MetaData, int>> m_meta_queue;
 	SignalCategory m_sig_category;
 
 	std::mutex m_mu;
 	std::condition_variable m_cond;
 	int m_max_queue_size;
+
+	bool m_get_then_auto_remove;
+	bool m_set_then_auto_remove;
 };
 
 }

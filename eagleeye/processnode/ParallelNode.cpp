@@ -6,6 +6,7 @@ namespace eagleeye{
 ParallelNode::ParallelNode(int thread_num, std::function<AnyNode*()> generator, int queue_size){
     // generate run nodes
     for(int i=0; i<thread_num; ++i){
+        // run_node 必须非异步版本
         m_run_node.push_back(generator());
     }
 
@@ -15,7 +16,7 @@ ParallelNode::ParallelNode(int thread_num, std::function<AnyNode*()> generator, 
     for(int signal_i=0; signal_i<signal_num; ++signal_i){
         AnySignal* output_signal = m_run_node[0]->getOutputPort(signal_i)->make();
         // 必须为队列信号
-        output_signal->transformCategoryToQ(queue_size);
+        output_signal->transformCategoryToQ(queue_size, true, false);
         this->setOutputPort(output_signal, signal_i);
     }
     m_output_cache.resize(signal_num);
@@ -81,6 +82,15 @@ void ParallelNode::run(int thread_id){
             break;
         }
 
+        // 尝试清理输入信号队列信息
+        // 信号队列🈶三种清理队列数据机制
+        // 1. 推入队列时，检查是否超出队列最大值，如果超出吐出尾部数据
+        // 2. 读取队列时，是否直接将吐出队列数据
+        // 3. 外部进行tryClear()，如果满足出度数，则吐出数据
+        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+            this->getInputPort(signal_i)->tryClear();
+        }
+
         // 2.step run node
         this->m_run_node[thread_id]->start();
 
@@ -89,7 +99,10 @@ void ParallelNode::run(int thread_id){
         std::unique_lock<std::mutex> output_locker(this->m_output_mu);
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             AnySignal* output_signal = m_run_node[thread_id]->getOutputPort(signal_i)->make();
-            output_signal->copy(m_run_node[thread_id]->getOutputPort(signal_i));
+            output_signal->copy(m_run_node[thread_id]->getOutputPort(signal_i), true);
+            if(timestamp.size() > 0){
+                output_signal->meta().timestamp = timestamp[0];
+            }
             m_output_cache[signal_i].push(std::pair<std::shared_ptr<AnySignal>, int>(std::shared_ptr<AnySignal>(output_signal, [](AnySignal* a){delete a;}), timestamp[signal_i]));
         }
         output_locker.unlock();

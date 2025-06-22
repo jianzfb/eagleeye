@@ -1,11 +1,13 @@
 #include "eagleeye/processnode/VideoStreamNode.h"
 #include "eagleeye/framework/pipeline/SignalFactory.h"
 namespace eagleeye{
-VideoStreamNode::VideoStreamNode(int queue_size){
+VideoStreamNode::VideoStreamNode(int queue_size, bool get_then_auto_remove, bool set_then_auto_remove){
     // 设置输出节点
     this->m_queue_size = queue_size;
+    this->m_set_then_auto_remove = set_then_auto_remove;
+    this->m_get_then_auto_remove = get_then_auto_remove;
     AnySignal* sig = new ImageSignal<Array<unsigned char, 3>>();
-    sig->transformCategoryToQ(this->m_queue_size);
+    sig->transformCategoryToQ(this->m_queue_size, m_get_then_auto_remove, m_set_then_auto_remove);
     this->setNumberOfOutputSignals(1);
     this->setOutputPort(sig, 0);
     m_decoder = new RKH264Decoder();

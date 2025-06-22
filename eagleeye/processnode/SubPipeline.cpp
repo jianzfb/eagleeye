@@ -110,6 +110,10 @@ void SubPipeline::executeNodeInfo(){
     }
 }
 
+void SubPipeline::setUnitName(const char* unit_name){ 
+    this->m_unit_name=std::string("subpipeline-") + unit_name;
+}
+
 void SubPipeline::add(AnyNode* node, std::string name){
     if(this->m_subpipeline.find(name) == this->m_subpipeline.end()){
         m_subpipeline[name] = node;

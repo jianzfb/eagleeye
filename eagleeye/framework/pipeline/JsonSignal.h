@@ -56,11 +56,27 @@ public:
 	DataType getData();
 
 	/**
+	 * @brief Get the Data object with meta
+	 * 
+	 * @param meta 
+	 * @return DataType 
+	 */
+	DataType getData(MetaData& mm);
+
+	/**
 	 * @brief Set the Data object
 	 * 
 	 * @param data 
 	 */
 	void setData(DataType data);
+
+	/**
+	 * @brief Set the Data object with meta
+	 * 
+	 * @param data 
+	 * @param meta 
+	 */
+	void setData(DataType data, MetaData mm);
 
 	/**
 	 * @brief Set the Data object
@@ -134,14 +150,19 @@ public:
 	 * @brief to SIGNAL_CATEGORY_IMAGE_QUEUE
 	 * 
 	 */
-	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true){
+	virtual void transformCategoryToQ(int max_queue_size=5, bool get_then_auto_remove=true, bool set_then_auto_remove=true){
 		m_sig_category = SIGNAL_CATEGORY_STRING_QUEUE;
 		m_max_queue_size = max_queue_size;
+		this->m_get_then_auto_remove = get_then_auto_remove;
+		this->m_set_then_auto_remove = set_then_auto_remove;
 	};
+
+	virtual bool tryClear();
 
 private:
 	std::string m_tmp_cache;
 	std::queue<std::pair<std::string, int>> m_queue;
+	std::queue<std::pair<MetaData, int>> m_meta_queue;
 	std::string m_info;
 	SignalCategory m_sig_category;
 
@@ -154,6 +175,8 @@ private:
     neb::CJsonObject m_json_obj;
 	std::string m_record_name;
 	bool m_is_record_in_message_center;
+	bool m_get_then_auto_remove;
+	bool m_set_then_auto_remove;
 };
 
 }

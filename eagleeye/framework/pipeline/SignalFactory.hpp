@@ -25,6 +25,7 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_sig_category = SIGNAL_CATEGORY_IMAGE;
 	this->m_max_queue_size = 5;
 	this->m_get_then_auto_remove = true;
+	this->m_set_then_auto_remove = true;
 	this->setSignalType(EAGLEEYE_SIGNAL_IMAGE);
 }
 
@@ -56,7 +57,6 @@ void ImageSignal<T>::printUnit()
 template<class T>
 void ImageSignal<T>::makeempty(bool auto_empty)
 {
-	//ignore auto_empty
 	img = Matrix<T>();
 	this->m_meta.name = "";
 	this->m_meta.info = "";
@@ -145,7 +145,8 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
-		if(this->m_queue.size() > this->m_max_queue_size){
+		if(this->m_queue.size() > this->m_max_queue_size && m_set_then_auto_remove){
+			// TODO, 非去除模式，需要阻塞
 			this->m_queue.pop();
 			this->m_meta_queue.pop();
 		}
@@ -233,7 +234,8 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data, MetaData mm){
 	else{
 		// SIGNAL_CATEGORY_IMAGE_QUEUE
 		std::unique_lock<std::mutex> locker(this->m_mu);
-		if(this->m_queue.size() > this->m_max_queue_size){
+		if(this->m_queue.size() > this->m_max_queue_size && m_set_then_auto_remove){
+			// TODO, 非去除模式，需要阻塞
 			this->m_queue.pop();
 			this->m_meta_queue.pop();
 		}
@@ -277,6 +279,26 @@ void ImageSignal<T>::setData(void* data, MetaData meta){
 		signal_content = Matrix<T>(meta.rows, meta.cols, data, true);
 	}
 	this->setData(signal_content, meta);
+}
+
+template<class T>
+bool ImageSignal<T>::tryClear(){
+	if(m_sig_category != SIGNAL_CATEGORY_IMAGE_QUEUE){
+		EAGLEEYE_LOGE("not image-queue mode, dont exec.");
+		return false;
+	}
+	if(this->m_get_then_auto_remove){
+		return false;
+	}
+
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	this->m_queue.front().second -= 1;
+	if(this->m_queue.front().second == 0){
+		this->m_queue.pop();
+		this->m_meta_queue.pop();
+		return true;
+	}
+	return false;
 }
 
 template<class T>
