@@ -1,4 +1,4 @@
-#include "eagleeye/framework/pipeline/TensorSignal.h"
+eagleeye/framework/pipeline/TensorSignal.cpp#include "eagleeye/framework/pipeline/TensorSignal.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include <memory>
 #include <string.h>
@@ -12,7 +12,7 @@ TensorSignal::TensorSignal(){
 	m_get_then_auto_remove = true;
 	m_set_then_auto_remove = true;
 
-	m_clear_count = 0;
+	record_count = -1;
 }
 TensorSignal::~TensorSignal(){} 
 
@@ -280,10 +280,15 @@ bool TensorSignal::tryClear(){
 
 	std::unique_lock<std::mutex> locker(this->m_mu);
 	this->m_queue.front().second -= 1;
+
+	if(record_count == -1){
+		record_count = this->getOutDegree();
+	}
+	record_count -= 1;
 	if(this->m_queue.front().second == 0){
 		this->m_queue.pop();
 		this->m_meta_queue.pop();
-		m_clear_count += 1;
+		record_count = this->getOutDegree();
 		return true;
 	}
 	return false;

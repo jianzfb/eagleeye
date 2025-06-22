@@ -157,7 +157,7 @@ private:
 	std::mutex m_mu;
 	std::condition_variable m_cond;	
 
-	int m_clear_count;
+	int record_count;
 };
 }
 #endif
