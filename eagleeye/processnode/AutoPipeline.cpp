@@ -97,7 +97,7 @@ void AutoPipeline::run(){
             int data_dims=0;    // 3
             int data_type=0;    // DATA TYPE 
             MetaData data_meta;
-            m_cache_input[signal_i]->copy(this->getInputPort(signal_i), this->m_copy_input);
+            m_cache_input[signal_i]->copy(this->getInputPort(signal_i), true);
             m_cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
             if(!this->m_thread_status){
                 // 发现退出标记，退出线程运行

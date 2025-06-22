@@ -18,7 +18,7 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_meta.cols = 0;
 	this->m_meta.needed_rows = 0;
 	this->m_meta.needed_cols = 0;	
-	this->m_meta.allocate_mode = 1;
+	this->m_meta.allocate_mode = 0;
 	this->m_meta.color_format = -1;
 
 	this->m_meta.timestamp = 0;
@@ -27,6 +27,8 @@ ImageSignal<T>::ImageSignal(Matrix<T> data,char* name,char* info)
 	this->m_get_then_auto_remove = true;
 	this->m_set_then_auto_remove = true;
 	this->setSignalType(EAGLEEYE_SIGNAL_IMAGE);
+
+	record_count = -1;
 }
 
 template<class T>
@@ -194,7 +196,7 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm){
 			mm.disable = true;
 			return Matrix<T>();
 		}
-	
+
 		std::pair<Matrix<T>, int> data_info = this->m_queue.front();
 		Matrix<T> data = data_info.first;
 		std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
@@ -293,9 +295,14 @@ bool ImageSignal<T>::tryClear(){
 
 	std::unique_lock<std::mutex> locker(this->m_mu);
 	this->m_queue.front().second -= 1;
+	if(record_count == -1){
+		record_count = this->getOutDegree();
+	}
+	record_count -= 1;
 	if(this->m_queue.front().second == 0){
 		this->m_queue.pop();
 		this->m_meta_queue.pop();
+		record_count = this->getOutDegree();
 		return true;
 	}
 	return false;

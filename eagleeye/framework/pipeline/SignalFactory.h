@@ -214,6 +214,8 @@ private:
 	int m_max_queue_size;
 	bool m_get_then_auto_remove;
 	bool m_set_then_auto_remove;
+
+	int record_count;
 };
 }
 
