@@ -40,7 +40,7 @@ void LandmarkSignal::copy(AnySignal* sig, bool is_deep){
 	LandmarkSignal* from_sig = (LandmarkSignal*)(sig);	
 
 	MetaData from_data_meta;
-	Matrix<float> from_data = from_sig->getData(from_data_meta);
+	Matrix<float> from_data = from_sig->getData(from_data_meta, is_deep);
 	this->setData(from_data, from_data_meta);
     this->setJoints(from_sig->getJoints());
 }
@@ -78,11 +78,11 @@ bool LandmarkSignal::isempty(){
     return false;
 }
 
-typename LandmarkSignal::DataType LandmarkSignal::getData(){
+typename LandmarkSignal::DataType LandmarkSignal::getData(bool deep_copy){
     return m_landmark;
 }
 
-typename LandmarkSignal::DataType LandmarkSignal::getData(MetaData& mm){
+typename LandmarkSignal::DataType LandmarkSignal::getData(MetaData& mm, bool deep_copy){
     mm = this->m_meta;
     return m_landmark;
 }

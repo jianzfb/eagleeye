@@ -31,7 +31,7 @@ public:
 	 * 
 	 * @return DataType 
 	 */
-	bool getData(){return true;};
+	bool getData(bool deep_copy=false){return true;};
 
     /**
 	 * @brief Set the Data object

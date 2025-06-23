@@ -37,7 +37,7 @@ public:
 	 * 
 	 * @return DataType 
 	 */
-	DataType getData();
+	DataType getData(bool deep_copy=false);
 
 	/**
 	 *	@brief 获得字符串列表（仅对2维，uint8类型tensor有效）
@@ -51,7 +51,7 @@ public:
 	 * @param meta 
 	 * @return DataType 
 	 */
-	DataType getData(MetaData& mm);
+	DataType getData(MetaData& mm, bool deep_copy=false);
 
 	/**
 	 * @brief Set the Data object

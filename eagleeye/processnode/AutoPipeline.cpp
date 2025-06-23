@@ -55,10 +55,8 @@ AutoPipeline::~AutoPipeline(){
     }
 
     // 删除内部节点
-    delete m_auto_pipeline;
-
-    for(int cache_input_i=0; cache_input_i<m_cache_input.size(); ++cache_input_i){
-        delete m_cache_input[cache_input_i];
+    if(m_auto_pipeline != NULL){
+        delete m_auto_pipeline;
     }
 }
 
@@ -67,47 +65,46 @@ void AutoPipeline::executeNodeInfo(){
 }
 
 void AutoPipeline::run(){
+    // 记录输入信号时间戳，用于防止重复数据计算
+    if(m_last_timestamp.size() == 0){
+        m_last_timestamp = std::vector<double>(this->getNumberOfInputSignals(), 0.0);
+    }
+
+    // 缓存数据（缓存上游的输入数据）
+    std::vector<AnySignal*> cache_input;
+    for(int signal_i=0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
+        cache_input.push_back(this->getInputPort(signal_i)->make());
+    }
+
     while(true){
         if(!this->m_thread_status){
             break;
         }
 
-        // 管线输入
         int signal_num = this->getNumberOfInputSignals();
-        if(m_cache_input.size() == 0){
-            for(int signal_i=0; signal_i<signal_num; ++signal_i){
-                m_cache_input.push_back(
-                    this->getInputPort(signal_i)->make()
-                );
-            }
-        }
-        if(m_last_timestamp.size() == 0){
-            m_last_timestamp.resize(signal_num);
-            for(int signal_i=0; signal_i<signal_num; ++signal_i){
-                m_last_timestamp[signal_i] = 0.0;
-            }
-        }
-
         bool is_duplicate_frame = true;
         int no_timestamp_signal_num = 0;
-        std::vector<double> input_data_timestamp(signal_num);
+        std::vector<double> input_data_timestamp(signal_num, 0.0);
+
+        // 1.step get input
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-            void* data;         // data address
-            size_t* data_size;  // data size
-            int data_dims=0;    // 3
-            int data_type=0;    // DATA TYPE 
-            MetaData data_meta;
-            m_cache_input[signal_i]->copy(this->getInputPort(signal_i), true);
-            m_cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
             if(!this->m_thread_status){
                 // 发现退出标记，退出线程运行
-                return;
+                break;
             }
 
-            std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
-            data_meta.rows = data_size[0];
-            data_meta.cols = data_size[1];
-            data_meta.rotation = 0;
+            cache_input[signal_i]->copy(this->getInputPort(signal_i), false);
+            if(!this->m_thread_status){
+                // 发现退出标记，退出线程运行
+                break;
+            }
+            if(!this->getInputPort(signal_i)->isEnable()){
+                // 上游数据已经无效，主动设置退出标记
+                this->m_thread_status = false;
+                break;
+            }
+
+            MetaData data_meta = cache_input[signal_i]->meta();
             if(data_meta.timestamp > 0.0 && m_last_timestamp[signal_i] != data_meta.timestamp){
                 // 只要有一个输入信号的时间戳发生了更新，则设置为非重复帧
                 is_duplicate_frame = false;
@@ -116,15 +113,43 @@ void AutoPipeline::run(){
                 no_timestamp_signal_num += 1;
             }
             input_data_timestamp[signal_i] = data_meta.timestamp;
-            m_auto_pipeline->setInput(placeholder_name.c_str(), data, data_meta);
         }
+
+        if(!this->m_thread_status){
+            // 发现退出标记，退出线程运行
+            break;
+        }
+
         // 如果所有输入信号都是无时间戳信号，则忽略重复帧去除
         if(is_duplicate_frame && no_timestamp_signal_num != signal_num){
             // 重复帧，休息1ms
             std::this_thread::sleep_for(std::chrono::microseconds(1000));
             continue;
         }
+        if(!this->m_thread_status){
+            // 发现退出标记，退出线程运行
+            break;
+        }
+
+        // 产生有效帧，驱动管线执行
         this->m_last_timestamp = input_data_timestamp;
+
+        // 填充到管线数据
+        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+            std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
+            void* data;         // data address
+            size_t* data_size;  // data size
+            int data_dims=0;    // 3
+            int data_type=0;    // DATA TYPE 
+            MetaData data_meta;
+            cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
+
+            data_meta.rows = data_size[0];
+            data_meta.cols = data_size[1];
+            data_meta.rotation = 0;
+            data_meta.allocate_mode = 0;        // 强迫复制模式，分配输入内存
+            m_auto_pipeline->setInput(placeholder_name.c_str(), data, data_meta);
+        }
 
         // 至此，已经获得一帧新数据
 
@@ -144,6 +169,11 @@ void AutoPipeline::run(){
             continue;
         }
 
+        if(!this->m_thread_status){
+            // 发现退出标记，退出线程运行
+            break;
+        }
+    
         // 运行管线
         m_auto_pipeline->start();
 
@@ -175,6 +205,10 @@ void AutoPipeline::run(){
             break;
         }
     }
+
+    for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
+        delete cache_input[signal_i];
+    }
 }
 
 void AutoPipeline::exit(){
@@ -188,6 +222,20 @@ void AutoPipeline::preexit(){
 
     // prepare exit
     this->m_thread_status = false;
+
+    // 触发自身，跳出数据等待，并结束线程
+    // 可以保证，下游节点先退出，游节点再退出
+    int signal_num = this->getNumberOfInputSignals();
+    for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+        this->getInputPort(signal_i)->disable();
+        this->getInputPort(signal_i)->wake();
+    }
+
+    if(this->m_is_ini){
+        if(m_auto_thread.joinable()){
+            m_auto_thread.join();
+        }
+    }
 }
 
 void AutoPipeline::postexit(){
@@ -203,18 +251,18 @@ void AutoPipeline::postexit(){
     //     AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i);
     //     this->getOutputPort(signal_i)->copy(output_signal);
     // }
-    // 触发自身，跳出数据等待，并结束线程
-    int signal_num = this->getNumberOfInputSignals();
-    for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-        this->getInputPort(signal_i)->disable();
-        this->getInputPort(signal_i)->wake();
-    }
+    // // 触发自身，跳出数据等待，并结束线程
+    // int signal_num = this->getNumberOfInputSignals();
+    // for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+    //     this->getInputPort(signal_i)->disable();
+    //     this->getInputPort(signal_i)->wake();
+    // }
 
-    if(this->m_is_ini){
-        if(m_auto_thread.joinable()){
-            m_auto_thread.join();
-        }
-    }
+    // if(this->m_is_ini){
+    //     if(m_auto_thread.joinable()){
+    //         m_auto_thread.join();
+    //     }
+    // }
 }
 
 void AutoPipeline::reset(){

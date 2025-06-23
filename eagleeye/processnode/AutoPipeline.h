@@ -98,9 +98,7 @@ private:
     bool m_persistent_flag;
     std::function<void(AnyNode*, std::vector<AnySignal*>)> m_callback;
 
-    std::vector<AnySignal*> m_cache_input;
     std::vector<double> m_last_timestamp;
-
     bool m_enable_auto_stop;
     bool m_copy_input;
 

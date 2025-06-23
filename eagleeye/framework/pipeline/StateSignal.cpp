@@ -26,7 +26,7 @@ void StateSignal::printUnit(){
     Superclass::printUnit();
 }
 
-StateSignal::DataType StateSignal::getData(){
+StateSignal::DataType StateSignal::getData(bool deep_copy){
     return this->m_state;
 }
 
@@ -48,7 +48,7 @@ bool StateSignal::isempty(){
 void StateSignal::copy(AnySignal* sig, bool is_deep){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_STATE){
 		StateSignal* state_sig = (StateSignal*)sig;
-		this->setData(state_sig->getData());
+		this->setData(state_sig->getData(is_deep));
         this->m_ini_state = state_sig->m_ini_state;
 	}
 }
