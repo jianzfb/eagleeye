@@ -101,7 +101,7 @@ void AutoNode::run_in_copy_input(){
                 this->m_thread_status = false;
                 break;
             }
-c
+
             // set input
             MetaData data_meta = signal_list[signal_i]->meta();
             if(data_meta.timestamp > 0.0 && m_last_timestamp[signal_i] == data_meta.timestamp){
@@ -159,7 +159,9 @@ c
         bool is_auto_stop = false;
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             // 时间戳填充
-            m_auto_node->getOutputPort(signal_i)->meta().timestamp = m_last_timestamp[signal_i];
+            if(m_last_timestamp.size() > 0){
+                m_auto_node->getOutputPort(signal_i)->meta().timestamp = m_last_timestamp[0];
+            }
             this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i), true);
             if(m_auto_node->getOutputPort(signal_i)->meta().is_end_frame){
                 is_auto_stop = true;
