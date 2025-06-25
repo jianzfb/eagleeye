@@ -120,8 +120,8 @@ void AutoNode::run_in_copy_input(){
 
         // 如果所有输入信号都是无时间戳信号，则忽略重复帧去除
         if(is_duplicate_frame && no_timestamp_signal_num != signal_num){
-            // 重复帧，休息1ms
-            std::this_thread::sleep_for(std::chrono::microseconds(1000));
+            // 重复帧，休息10ms
+            std::this_thread::sleep_for(std::chrono::microseconds(10000));
             continue;
         }
         if(!this->m_thread_status){
