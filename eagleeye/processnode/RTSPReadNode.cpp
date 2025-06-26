@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fstream>
+#include "opencv2/opencv.hpp"
 #ifdef EAGLEEYE_FFMPEG
 extern "C"
 {
@@ -43,6 +44,8 @@ extern "C"
 #endif
 
 #ifdef EAGLEEYE_CUDA
+#include <cuda_runtime.h>
+#include <libavutil/hwcontext_cuda.h>
 #include <nppi.h>
 #endif
 
@@ -412,24 +415,25 @@ void RTSPReadNode::executeNodeInfo(){
 
                     do{
                         AVFrame* pframe = av_frame_alloc();
-                        AVFrame* sw_frame = av_frame_alloc();
+                        // AVFrame* sw_frame = av_frame_alloc();
                         int ret = avcodec_receive_frame(m_pCodecCtx, pframe);
                         if (ret < 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                             av_frame_free(&pframe);
-                            av_frame_free(&sw_frame);
+                            // av_frame_free(&sw_frame);
                             break;
                         }
                         __int64_t pts = pframe->pts;
 
-                        if (pframe->format == AV_PIX_FMT_CUDA){
-                            av_hwframe_transfer_data(sw_frame, pframe, 1);
-                            av_frame_free(&pframe);
-                            pframe = sw_frame;
-                        }
+                        // if (pframe->format == AV_PIX_FMT_CUDA){
+                        //     av_hwframe_transfer_data(sw_frame, pframe, 1);
+                        //     av_frame_free(&pframe);
+                        //     pframe = sw_frame;
+                        // }
 
                         {
                             std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
                             m_postprocess_queue.push(std::make_pair(pframe, pts));
+                            std::cout<<"m_postprocess_queue.size() "<<m_postprocess_queue.size()<<std::endl;
                             locker.unlock();
                             m_postprocess_cond.notify_all();
                         }
@@ -479,6 +483,8 @@ void RTSPReadNode::executeNodeInfo(){
             pts = out.second - (rtp_demux_context->range_start_offset + rtp_demux_context->rtcp_ts_offset);
         }
         ntp_time = seconds + useconds + pts * av_q2d(m_format_ctx->streams[m_video_stream_index]->time_base);
+
+        std::cout<<"this->m_out_queue.size() "<<this->m_out_queue.size()<<std::endl;
         locker.unlock();
         break;
     }
@@ -801,89 +807,35 @@ void RTSPReadNode::postprocess_by_cuda(){
             }
         }
 
-        ///////////////////////
-        int y_plane_size = pframe->width*pframe->height;
-        int uv_plane_size = pframe->width*pframe->height/4;
-
-        Npp8u *p_src_y, *p_src_u, *p_src_v;
-        cudaMalloc(&p_src_y, y_plane_size);
-        cudaMalloc(&p_src_u, uv_plane_size);
-        cudaMalloc(&p_src_v, uv_plane_size);
-        Npp8u *p_src[3] = {p_src_y, p_src_u, p_src_v};
-
-        cudaMemcpy(p_src[0], pframe->data[0], y_plane_size, cudaMemcpyHostToDevice);
-        uint8_t *u_buffer = new uint8_t[uv_plane_size];
-        uint8_t *v_buffer = new uint8_t[uv_plane_size];
-        size_t i = 0;
-        size_t j = 0;
-        for (; i < uv_plane_size*2; i+=2, j++){
-            u_buffer[j] = pframe->data[1][i];
-            v_buffer[j] = pframe->data[1][i+1];
-        }
-        cudaMemcpy(p_src[1], u_buffer, uv_plane_size, cudaMemcpyHostToDevice);
-        cudaMemcpy(p_src[2], v_buffer, uv_plane_size, cudaMemcpyHostToDevice);
-        delete[] u_buffer;
-        delete[] v_buffer;
-
-        int n_src_step_y = pframe->linesize[0];
-        int n_src_step_uv = pframe->linesize[1];
-        int r_src_step[3] = {n_src_step_y, n_src_step_uv/2, n_src_step_uv/2};
-        NppiSize o_size_roi = {pframe->width, pframe->height};
-
-        int dest_stop = pframe->width*3;
+        unsigned char* dest_in_host = NULL;
         int dest_size = pframe->width*pframe->height*3;
+        if (pframe->format == AV_PIX_FMT_CUDA){
+            Npp8u* dev_bgr;
+            size_t bgr_pitch;
+            cudaMallocPitch(&dev_bgr, &bgr_pitch, pframe->width * 3, pframe->height);
 
-        Npp8u *p_dest;
-        cudaMalloc(&p_dest, dest_size);
-        cudaMemset(&p_dest, 0, dest_size);
-        nppiYUV420ToBGR_8u_P3C3R(p_src, r_src_step, p_dest, dest_stop, o_size_roi);
+            const uint8_t* src_ptrs[2] = {pframe->data[0], pframe->data[1]};
+            // int srcSteps[2] = {pframe->linesize[0], pframe->linesize[1]};  // Y和UV平面的步长（无填充）
+            NppiSize roi = { pframe->width, pframe->height };
+            NppStatus status = nppiNV12ToBGR_8u_P2C3R(
+                src_ptrs, 
+                pframe->linesize[0], 
+                dev_bgr, 
+                bgr_pitch, 
+                roi
+            );
 
-        unsigned char* dest_in_host = new unsigned char[dest_size];
-        cudaMemcpy(dest_in_host, p_dest, dest_size, cudaMemcpyDeviceToHost);
+            dest_in_host = new unsigned char[dest_size];
+            cudaMemcpy(dest_in_host, (unsigned char*)dev_bgr, dest_size, cudaMemcpyDeviceToHost);
+            cudaFree(dev_bgr);
+        }
+        else{
+            EAGLEEYE_LOGD("Couldnt process non Hardware AV_PIX_FMT_CUDA format");
+            av_frame_free(&pframe);
+            continue;
+        }
 
-        cudaFree(p_src_y);
-        cudaFree(p_src_u);
-        cudaFree(p_src_v);
-        cudaFree(p_dest);
-
-        // std::cout<<"A"<<std::endl;
-        // int n_src_step_y = pframe->linesize[0];
-        // int n_src_step_uv = pframe->linesize[1];
-        // int r_src_step[3] = {n_src_step_y, n_src_step_uv/2, n_src_step_uv/2};
-
-        // std::cout<<"B"<<std::endl;
-        // NppiSize o_size_roi = {pframe->width, pframe->height};
-        // int dest_stop = pframe->width*3;
-        // int dest_size = pframe->width*pframe->height*3;
-
-        // std::cout<<"C"<<std::endl;
-        // Npp8u *p_dest;
-        // cudaMalloc(&p_dest, dest_size);
-        // // nv12->yuv420
-        // Npp8u *p_src[2] = {pframe->data[0], pframe->data[1]};
-        // Npp8u *p_yuv420_y, *p_yuv420_u, *p_yuv420_v;
-        // cudaMalloc(&p_yuv420_y, y_plane_size);
-        // cudaMalloc(&p_yuv420_u, uv_plane_size);
-        // cudaMalloc(&p_yuv420_v, uv_plane_size);
-        // Npp8u *p_yuv420[3] = {p_yuv420_y, p_yuv420_u, p_yuv420_v};
-        // int p_yuv420_step[3] = {n_src_step_y, n_src_step_uv/2, n_src_step_uv/2};
-
-        // std::cout<<"D"<<std::endl;
-        // nppiNV12ToYUV420_8u_P2P3R(p_src, pframe->width*2, p_yuv420, p_yuv420_step, o_size_roi);
-        // std::cout<<"E"<<std::endl;
-        // // yuv420->bgr
-        // nppiYUV420ToBGR_8u_P3C3R(p_yuv420, p_yuv420_step, p_dest, dest_stop, o_size_roi);
-        // std::cout<<"F"<<std::endl;
-
-        // unsigned char* dest_in_host = new unsigned char[dest_size];
-        // cudaMemcpy(dest_in_host, p_dest, dest_size, cudaMemcpyDeviceToHost);
-
-        // std::cout<<"G"<<std::endl;
-        // cudaFree(p_yuv420_y);
-        // cudaFree(p_yuv420_u);
-        // cudaFree(p_yuv420_v);
-        // cudaFree(p_dest);
-        ///////////////////////
+        ////
         this->m_image_h = pframe->height;
         this->m_image_w = pframe->width;
         {
