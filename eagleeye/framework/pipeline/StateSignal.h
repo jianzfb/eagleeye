@@ -41,7 +41,7 @@ public:
 	 * 
 	 * @return DataType 
 	 */
-	DataType getData();
+	DataType getData(bool deep_copy=false);
 
 	/**
 	 * @brief Set the Data object

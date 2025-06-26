@@ -114,7 +114,7 @@ private:
     std::thread m_auto_thread;
     bool m_is_ini;
     bool m_persistent_flag;
-    double m_last_timestamp;
+    std::vector<double> m_last_timestamp;
     std::function<void(AnyNode*, std::vector<AnySignal*>)> m_callback;
     bool m_copy_input;
 

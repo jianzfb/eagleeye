@@ -39,11 +39,11 @@ bool BooleanSignal::isempty()
     return false;
 }
 
-typename BooleanSignal::DataType BooleanSignal::getData(){
+typename BooleanSignal::DataType BooleanSignal::getData(bool deep_copy){
 	return this->m_boolean;
 }
 
-typename BooleanSignal::DataType BooleanSignal::getData(MetaData& mm){
+typename BooleanSignal::DataType BooleanSignal::getData(MetaData& mm, bool deep_copy){
 	mm = this->m_meta;
 	return this->m_boolean;
 }
@@ -62,7 +62,7 @@ void BooleanSignal::setData(void* data, MetaData meta){
 void BooleanSignal::copy(AnySignal* sig, bool is_deep){
 	if(sig->getSignalCategory() == SIGNAL_CATEGORY_CONTROL){
 		BooleanSignal* b_sig = (BooleanSignal*)sig;
-		this->setData(b_sig->getData());
+		this->setData(b_sig->getData(is_deep));
 		this->m_ini_boolean = b_sig->m_ini_boolean;
 	}
 }

@@ -31,7 +31,7 @@ void JsonSignal::copy(AnySignal* sig, bool is_deep){
 
 	JsonSignal* from_sig = (JsonSignal*)(sig);
 	MetaData from_data_meta;
-	DataType from_data = from_sig->getData(from_data_meta);
+	DataType from_data = from_sig->getData(from_data_meta, is_deep);
 	this->setData(from_data, from_data_meta);
 
 	// ignore record_name and is_record_in_message_center
@@ -54,7 +54,7 @@ bool JsonSignal::isempty(){
 	return this->m_json_obj.IsEmpty();
 }
 
-typename JsonSignal::DataType JsonSignal::getData(){
+typename JsonSignal::DataType JsonSignal::getData(bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -96,7 +96,7 @@ typename JsonSignal::DataType JsonSignal::getData(){
 	}
 }
 
-typename JsonSignal::DataType JsonSignal::getData(MetaData& mm){
+typename JsonSignal::DataType JsonSignal::getData(MetaData& mm, bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -204,6 +204,11 @@ bool JsonSignal::tryClear(){
 	}
 
 	std::unique_lock<std::mutex> locker(this->m_mu);
+	if(this->m_queue.size() == 0){
+		return false;
+	}
+
+	// 确保队列至少有一个元素
 	this->m_queue.front().second -= 1;
 	if(this->m_queue.front().second == 0){
 		this->m_queue.pop();
@@ -310,7 +315,7 @@ void JsonSignal::setData(void* data, MetaData meta){
 }
 
 void JsonSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
-	this->m_tmp_cache = this->getData();
+	this->m_tmp_cache = this->getData(false);
 	data = &this->m_tmp_cache;
 	this->m_data_size[0] = this->m_tmp_cache.size();
 	data_size = this->m_data_size;

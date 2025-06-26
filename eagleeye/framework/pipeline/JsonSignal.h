@@ -53,7 +53,7 @@ public:
 	 * 
 	 * @return DataType 
 	 */
-	DataType getData();
+	DataType getData(bool deep_copy=false);
 
 	/**
 	 * @brief Get the Data object with meta
@@ -61,7 +61,7 @@ public:
 	 * @param meta 
 	 * @return DataType 
 	 */
-	DataType getData(MetaData& mm);
+	DataType getData(MetaData& mm, bool deep_copy=false);
 
 	/**
 	 * @brief Set the Data object

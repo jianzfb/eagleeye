@@ -78,7 +78,6 @@ public:
      */
     void setMilvusIp(const std::string ip){
         this->m_ip = ip;
-        std::cout<<"set milvus ip "<<ip<<std::endl;
     }
     void getMilvusIp(std::string& ip){
         ip = this->m_ip;
@@ -89,7 +88,6 @@ public:
      */
     void setMilvusPort(const int port){
         this->m_port = port;
-        std::cout<<"set milvus port "<<port<<std::endl;
     }
     void getMilvusPort(int& port){
         port = this->m_port;
@@ -265,19 +263,35 @@ public:
         
             int person_i = 0;
             for (auto& result : search_results.Results()) {
+                char* person_id_content_ptr = person_id_content.cpu<char>() + person_i * this->m_top_k * person_id_dim;
+                float* person_score_content_ptr = person_score_content.cpu<float>() + person_i * this->m_top_k;
+
                 auto& ids = result.Ids().IntIDArray();  // = top_k
                 auto& distances = result.Scores();
+                if(ids.size() == 0 || distances.size() == 0){
+                    // 空向量库, 设置无效
+                    memset(person_id_content_ptr, '\0', this->m_top_k * person_id_dim);
+                    for(int i=0; i<this->m_top_k; ++i){
+                        person_score_content_ptr[i] = 1.0f;
+                    }
+                    person_i += 1;
+                    continue;
+                }
+
                 if (ids.size() != distances.size()) {
                     EAGLEEYE_LOGD("Illegal result!");
+                    // 无效检索，设置无效
+                    memset(person_id_content_ptr, '\0', this->m_top_k * person_id_dim);
+                    for(int i=0; i<this->m_top_k; ++i){
+                        person_score_content_ptr[i] = 1.0f;
+                    }
+                    person_i += 1;
                     continue;
                 }
 
                 auto person_id_field = result.OutputField("person_id");
                 milvus::VarCharFieldDataPtr person_ids_ptr = std::static_pointer_cast<milvus::VarCharFieldData>(person_id_field);
                 auto& person_ids = person_ids_ptr->Data();
-
-                char* person_id_content_ptr = person_id_content.cpu<char>() + person_i * this->m_top_k * person_id_dim;
-                float* person_score_content_ptr = person_score_content.cpu<float>() + person_i * this->m_top_k;
                 for(int i=0; i<std::min(int(this->m_top_k), int(person_ids.size())); ++i){
                     person_score_content_ptr[i] = distances[i];
                     memcpy(person_id_content_ptr + i * person_id_dim, person_ids[i].c_str(), person_id_dim);

@@ -24,7 +24,6 @@ AutoNode::AutoNode(std::function<AnyNode*()> generator, int queue_size, bool get
 
     this->m_thread_status = true;
     this->m_is_ini = false;
-    this->m_last_timestamp = 0.0;
     this->m_callback = nullptr;
     this->m_persistent_flag = false;
     this->m_copy_input = copy_input;
@@ -62,6 +61,11 @@ void AutoNode::run(){
 }
 
 void AutoNode::run_in_copy_input(){
+    // 记录输入信号时间戳，用于防止重复数据计算
+    if(m_last_timestamp.size() == 0){
+        m_last_timestamp = std::vector<double>(this->getNumberOfInputSignals(), 0.0);
+    }
+
     std::vector<AnySignal*> signal_list;
     for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
         AnySignal* signal_cp = this->getInputPort(signal_i)->make();
@@ -74,31 +78,58 @@ void AutoNode::run_in_copy_input(){
             break;
         }
 
-        bool is_duplicate_frame = false;
-        double input_data_timestamp = 0.0;
-        // 1.step get input
         int signal_num = this->getNumberOfInputSignals();
+        bool is_duplicate_frame = false;
+        int no_timestamp_signal_num = 0;
+        std::vector<double> input_data_timestamp(this->getNumberOfInputSignals(), 0.0);
+
+        // 1.step get input
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-            // block call
-            signal_list[signal_i]->copy(this->getInputPort(signal_i), true);
             if(!this->m_thread_status){
                 // 发现退出标记，退出线程运行
-                return;
+                break;
+            }
+
+            // block call
+            signal_list[signal_i]->copy(this->getInputPort(signal_i), false);
+            if(!this->m_thread_status){
+                // 发现退出标记，退出线程运行
+                break;
+            }
+            if(!this->getInputPort(signal_i)->isEnable()){
+                // 上游数据已经无效，主动设置退出标记
+                this->m_thread_status = false;
+                break;
             }
 
             // set input
             MetaData data_meta = signal_list[signal_i]->meta();
-            if(data_meta.timestamp > 0.0 && m_last_timestamp == data_meta.timestamp){
+            if(data_meta.timestamp > 0.0 && m_last_timestamp[signal_i] == data_meta.timestamp){
                 is_duplicate_frame = true;
             }
-            input_data_timestamp = data_meta.timestamp;
+            if(int(data_meta.timestamp) == 0){
+                no_timestamp_signal_num += 1;
+            }
+            input_data_timestamp[signal_i] = data_meta.timestamp;
         }
 
-        if(is_duplicate_frame){
-            // 重复帧，休息1ms
-            std::this_thread::sleep_for(std::chrono::microseconds(1000));
+        if(!this->m_thread_status){
+            // 发现退出标记，退出线程运行
+            break;
+        }
+
+        // 如果所有输入信号都是无时间戳信号，则忽略重复帧去除
+        if(is_duplicate_frame && no_timestamp_signal_num != signal_num){
+            // 重复帧，休息10ms
+            std::this_thread::sleep_for(std::chrono::microseconds(10000));
             continue;
         }
+        if(!this->m_thread_status){
+            // 发现退出标记，退出线程运行
+            break;
+        }
+
+        // 产生有效帧，驱动管线执行
         this->m_last_timestamp = input_data_timestamp;
 
         // 至此，已经获得一帧新数据
@@ -112,6 +143,11 @@ void AutoNode::run_in_copy_input(){
             this->getInputPort(signal_i)->tryClear();
         }
 
+        if(!this->m_thread_status){
+            // 发现退出标记，退出线程运行
+            break;
+        }
+
         // 2.step run node
         bool running_ischange = m_auto_node->start();
         if(!running_ischange){
@@ -123,7 +159,9 @@ void AutoNode::run_in_copy_input(){
         bool is_auto_stop = false;
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             // 时间戳填充
-            m_auto_node->getOutputPort(signal_i)->meta().timestamp = m_last_timestamp;
+            if(m_last_timestamp.size() > 0){
+                m_auto_node->getOutputPort(signal_i)->meta().timestamp = m_last_timestamp[0];
+            }
             this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i), true);
             if(m_auto_node->getOutputPort(signal_i)->meta().is_end_frame){
                 is_auto_stop = true;
@@ -142,9 +180,9 @@ void AutoNode::run_in_copy_input(){
         }
     }
 
-    for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
-        m_auto_node->clearInputPort(signal_i);
-    }
+    // for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
+    //     m_auto_node->clearInputPort(signal_i);
+    // }
     for(int signal_i = 0; signal_i<this->getNumberOfInputSignals(); ++signal_i){
         delete signal_list[signal_i];
     }
@@ -191,7 +229,9 @@ void AutoNode::run_in_no_copy_input(){
 
 void AutoNode::exit(){
     Superclass::exit();
-    this->m_auto_node->exit();
+    // if(m_auto_node){
+    //     this->m_auto_node->exit();
+    // }
 }
 
 void AutoNode::preexit(){
@@ -201,6 +241,20 @@ void AutoNode::preexit(){
 
     // prepare exit
     this->m_thread_status = false;
+
+    // 触发自身，跳出数据等待，并结束线程
+    // 可以保证，下游节点先退出，游节点再退出
+    int signal_num = this->getNumberOfInputSignals();
+    for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+        this->getInputPort(signal_i)->disable();
+        this->getInputPort(signal_i)->wake();
+    }
+
+    if(this->m_is_ini){
+        if(m_auto_thread.joinable()){
+            m_auto_thread.join();
+        }
+    }
 }
 
 void AutoNode::postexit(){
@@ -214,22 +268,22 @@ void AutoNode::postexit(){
     //     this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i));        
     // }
     // 触发自身，跳出数据等待，并结束线程
-    int signal_num = m_auto_node->getNumberOfInputSignals();
-    for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-        this->getInputPort(signal_i)->disable();
-        this->getInputPort(signal_i)->wake();
-    }
+    // int signal_num = m_auto_node->getNumberOfInputSignals();
+    // for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+    //     this->getInputPort(signal_i)->disable();
+    //     this->getInputPort(signal_i)->wake();
+    // }
 
-    if(this->m_is_ini){
-        if(m_auto_thread.joinable()){
-            m_auto_thread.join();
-        }
-    }
+    // if(this->m_is_ini){
+    //     if(m_auto_thread.joinable()){
+    //         m_auto_thread.join();
+    //     }
+    // }
 }
 
 void AutoNode::reset(){
     Superclass::reset();
-    
+
     m_auto_node->reset();
 }
 

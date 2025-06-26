@@ -40,10 +40,7 @@ void ImageSignal<T>::copy(AnySignal* sig, bool is_deep){
 	ImageSignal<T>* from_sig = (ImageSignal<T>*)(sig);	
 
 	MetaData from_data_meta;
-	Matrix<T> from_data = from_sig->getData(from_data_meta);
-	if(is_deep){
-		from_data = from_data.clone();
-	}
+	Matrix<T> from_data = from_sig->getData(from_data_meta, is_deep);
 	this->setData(from_data, from_data_meta);
 }
 
@@ -94,7 +91,7 @@ bool ImageSignal<T>::isempty(){
 }
 
 template<class T>
-typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
+typename ImageSignal<T>::DataType ImageSignal<T>::getData(bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -121,6 +118,9 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(){
 
 		std::pair<Matrix<T>, int> data_info = this->m_queue.front();
 		Matrix<T> data = data_info.first;
+		if(deep_copy){
+			data = data.clone();
+		}
 		if(this->m_get_then_auto_remove){
 			this->m_queue.front().second -= 1;
 			if(this->m_queue.front().second == 0){
@@ -169,7 +169,7 @@ void ImageSignal<T>::setData(ImageSignal<T>::DataType data){
 }
 
 template<class T>
-typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm){
+typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm, bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -199,6 +199,9 @@ typename ImageSignal<T>::DataType ImageSignal<T>::getData(MetaData& mm){
 
 		std::pair<Matrix<T>, int> data_info = this->m_queue.front();
 		Matrix<T> data = data_info.first;
+		if(deep_copy){
+			data = data.clone();
+		}
 		std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
 		mm = meta_info.first;
 	
@@ -294,6 +297,11 @@ bool ImageSignal<T>::tryClear(){
 	}
 
 	std::unique_lock<std::mutex> locker(this->m_mu);
+	if(this->m_queue.size() == 0){
+		return false;
+	}
+
+	// 确保队列至少有一个元素
 	this->m_queue.front().second -= 1;
 	if(record_count == -1){
 		record_count = this->getOutDegree();
@@ -310,7 +318,7 @@ bool ImageSignal<T>::tryClear(){
 
 template<class T>
 void ImageSignal<T>::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
-	this->m_tmp = this->getData();
+	this->m_tmp = this->getData(false);
 	data = (void*)this->m_tmp.dataptr();
 	this->m_data_size[0] = this->m_tmp.rows();
 	this->m_data_size[1] = this->m_tmp.cols();
@@ -323,7 +331,7 @@ void ImageSignal<T>::getSignalContent(void*& data, size_t*& data_size, int& data
 
 template<class T>
 void ImageSignal<T>::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type, MetaData& data_meta){
-	this->m_tmp = this->getData(data_meta);
+	this->m_tmp = this->getData(data_meta, false);
 	data = (void*)this->m_tmp.dataptr();
 	this->m_data_size[0] = this->m_tmp.rows();
 	this->m_data_size[1] = this->m_tmp.cols();

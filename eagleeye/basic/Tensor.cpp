@@ -106,6 +106,7 @@ Tensor Tensor::clone(){
         return Tensor();
     }
     
+    // TODO, clone 仅对非slice模式有效，需要修改
     Tensor t(this->m_dims.data(), m_data_type, m_format, m_memory_type, m_aligned, m_image_shape);
     if(m_memory_type == CPU_BUFFER){
         // CPU_BUFFER

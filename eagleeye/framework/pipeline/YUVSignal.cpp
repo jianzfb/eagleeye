@@ -23,11 +23,11 @@ void YUVSignal::copy(AnySignal* sig, bool is_deep){
 
     YUVSignal* from_sig = (YUVSignal*)(sig);
     MetaData from_meta;
-    Blob from_data = from_sig->getData(from_meta);
+    Blob from_data = from_sig->getData(from_meta, is_deep);
     this->setData(from_data, from_meta);
 }
 
-Blob YUVSignal::getData(){
+Blob YUVSignal::getData(bool deep_copy){
     return this->m_blob;
 }
 
@@ -37,7 +37,7 @@ void YUVSignal::setData(Blob data){
     modified();
 }
 
-Blob YUVSignal::getData(MetaData& m){
+Blob YUVSignal::getData(MetaData& m, bool deep_copy){
     m = this->m_meta;
     return this->m_blob;
 }
@@ -119,7 +119,7 @@ void YUVSignal::setData(void* data, MetaData meta){
 }
 
 void YUVSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
-    data = this->getData().cpu();
+    data = this->getData(false).cpu();
     data_dims = 3;
     this->m_data_size[0] = this->m_meta.rows;
     this->m_data_size[1] = this->m_meta.cols;

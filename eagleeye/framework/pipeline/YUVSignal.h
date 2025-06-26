@@ -56,7 +56,7 @@ public:
 	 * 
 	 * @return DataType 
 	 */
-	Blob getData();
+	Blob getData(bool deep_copy=false);
 
 	/**
 	 * @brief Set the Data object
@@ -71,7 +71,7 @@ public:
 	 * @param meta 
 	 * @return DataType 
 	 */
-	Blob getData(MetaData& m);
+	Blob getData(MetaData& m, bool deep_copy=false);
 
 	/**
 	 * @brief Set the Data object with meta

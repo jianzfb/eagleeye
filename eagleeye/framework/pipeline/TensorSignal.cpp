@@ -1,4 +1,4 @@
-eagleeye/framework/pipeline/TensorSignal.cpp#include "eagleeye/framework/pipeline/TensorSignal.h"
+#include "eagleeye/framework/pipeline/TensorSignal.h"
 #include "eagleeye/common/EagleeyeLog.h"
 #include <memory>
 #include <string.h>
@@ -43,7 +43,7 @@ bool TensorSignal::isempty(){
 	}
 }
 
-typename TensorSignal::DataType TensorSignal::getData(){
+typename TensorSignal::DataType TensorSignal::getData(bool deep_copy){
 	if(this->getSignalCategory() == SIGNAL_CATEGORY_TENSOR){
 		// 非队列模式
 		return m_data;
@@ -65,6 +65,9 @@ typename TensorSignal::DataType TensorSignal::getData(){
 
 		std::pair<Tensor, int> data_info = this->m_queue.front();
 		Tensor data = data_info.first;
+		if(deep_copy){
+			data = data.clone();
+		}
 		if(this->m_get_then_auto_remove){
 			this->m_queue.front().second -= 1;
 			if(this->m_queue.front().second == 0){
@@ -78,7 +81,7 @@ typename TensorSignal::DataType TensorSignal::getData(){
 	}	
 }
 
-typename TensorSignal::DataType TensorSignal::getData(MetaData& mm){
+typename TensorSignal::DataType TensorSignal::getData(MetaData& mm, bool deep_copy){
 	if(this->getSignalCategory() == SIGNAL_CATEGORY_TENSOR){
 		// 非队列模式
 		mm = this->m_meta;
@@ -103,6 +106,9 @@ typename TensorSignal::DataType TensorSignal::getData(MetaData& mm){
 
 		std::pair<Tensor, int> data_info = this->m_queue.front();
 		Tensor data = data_info.first;
+		if(deep_copy){
+			data = data.clone();
+		}
 		std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
 		mm = meta_info.first;
 
@@ -120,7 +126,7 @@ typename TensorSignal::DataType TensorSignal::getData(MetaData& mm){
 }
 
 std::vector<std::string> TensorSignal::getString(){
-	Tensor tensor = this->getData();
+	Tensor tensor = this->getData(false);
 	if(tensor.empty()){
 		return std::vector<std::string>();
 	}
@@ -238,16 +244,13 @@ void TensorSignal::copy(AnySignal* sig, bool is_deep){
 
 	TensorSignal* b_sig = (TensorSignal*)sig;
 	MetaData from_data_meta;
-	Tensor from_data = b_sig->getData(from_data_meta);
-	if(is_deep){
-		from_data = from_data.clone();
-	}
+	Tensor from_data = b_sig->getData(from_data_meta, is_deep);
 	this->setData(from_data, from_data_meta);
 }
 
 void TensorSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
 	// 获得数据
-	Tensor tensor_data = this->getData();
+	Tensor tensor_data = this->getData(false);
 	m_tmp = tensor_data;
 
 	// 导出
@@ -259,7 +262,7 @@ void TensorSignal::getSignalContent(void*& data, size_t*& data_size, int& data_d
 
 void TensorSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type, MetaData& data_meta){
 	// 获得数据
-	Tensor tensor_data = this->getData(data_meta);
+	Tensor tensor_data = this->getData(data_meta, false);
 	m_tmp = tensor_data;
 
 	// 导出
@@ -279,6 +282,11 @@ bool TensorSignal::tryClear(){
 	}
 
 	std::unique_lock<std::mutex> locker(this->m_mu);
+	if(this->m_queue.size() == 0){
+		return false;
+	}
+
+	// 确保队列至少有一个元素
 	this->m_queue.front().second -= 1;
 
 	if(record_count == -1){

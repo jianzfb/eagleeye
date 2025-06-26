@@ -24,7 +24,7 @@ void GroupSignal::copy(AnySignal* sig, bool is_deep){
 	GroupSignal* from_sig = (GroupSignal*)(sig);	
 
 	MetaData from_data_meta;
-	DataType from_data = from_sig->getData(from_data_meta);
+	DataType from_data = from_sig->getData(from_data_meta, is_deep);
 	this->setData(from_data, from_data_meta);
 }
 
@@ -46,11 +46,11 @@ bool GroupSignal::isempty(){
     return false;
 }
 
-typename GroupSignal::DataType GroupSignal::getData(){
+typename GroupSignal::DataType GroupSignal::getData(bool deep_copy){
     return this->m_data;
 }
 
-typename GroupSignal::DataType GroupSignal::getData(MetaData& mm){
+typename GroupSignal::DataType GroupSignal::getData(MetaData& mm, bool deep_copy){
     mm = this->m_meta;
     return this->m_data;
 }

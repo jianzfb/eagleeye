@@ -35,7 +35,7 @@ void StringSignal::copy(AnySignal* sig, bool is_deep){
 
 	StringSignal* from_sig = (StringSignal*)(sig);
 	MetaData from_data_meta;
-	DataType data = from_sig->getData(from_data_meta);
+	DataType data = from_sig->getData(from_data_meta, is_deep);
 	this->setData(data, from_data_meta);
 }
 
@@ -54,7 +54,7 @@ bool StringSignal::isempty(){
     return this->m_str.empty();
 }
 
-typename StringSignal::DataType StringSignal::getData(){
+typename StringSignal::DataType StringSignal::getData(bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -92,7 +92,7 @@ typename StringSignal::DataType StringSignal::getData(){
 	}
 }
 
-typename StringSignal::DataType StringSignal::getData(MetaData& mm){
+typename StringSignal::DataType StringSignal::getData(MetaData& mm, bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -193,7 +193,7 @@ void StringSignal::setData(void* data, MetaData meta){
 }
 
 void StringSignal::getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type){
-	this->m_tmp_cache = this->getData();
+	this->m_tmp_cache = this->getData(false);
 	data = &this->m_tmp_cache;
 	this->m_data_size[0] = this->m_tmp_cache.size();
 	data_size = m_data_size;
@@ -216,6 +216,11 @@ bool StringSignal::tryClear(){
 	}
 
 	std::unique_lock<std::mutex> locker(this->m_mu);
+	if(this->m_queue.size() == 0){
+		return false;
+	}
+
+	// 确保队列至少有一个元素
 	this->m_queue.front().second -= 1;
 	if(this->m_queue.front().second == 0){
 		this->m_queue.pop();
@@ -248,7 +253,7 @@ void ListStringSignal::copy(AnySignal* sig, bool is_copy){
 
 	ListStringSignal* from_sig = (ListStringSignal*)(sig);
 	MetaData from_data_meta;
-	DataType from_data = from_sig->getData(from_data_meta);
+	DataType from_data = from_sig->getData(from_data_meta, is_copy);
 	this->setData(from_data, from_data_meta);
 }
 
@@ -270,7 +275,7 @@ bool ListStringSignal::isempty(){
 	return false;
 }
 
-typename ListStringSignal::DataType ListStringSignal::getData(){
+typename ListStringSignal::DataType ListStringSignal::getData(bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -306,7 +311,7 @@ typename ListStringSignal::DataType ListStringSignal::getData(){
 	}
 }
 
-typename ListStringSignal::DataType ListStringSignal::getData(MetaData& mm){
+typename ListStringSignal::DataType ListStringSignal::getData(MetaData& mm, bool deep_copy){
 	// refresh data
 	if(this->m_link_node != NULL){
 		this->m_link_node->refresh();
@@ -412,6 +417,11 @@ bool ListStringSignal::tryClear(){
 	}
 
 	std::unique_lock<std::mutex> locker(this->m_mu);
+	if(this->m_queue.size() == 0){
+		return false;
+	}
+
+	// 确保队列至少有一个元素
 	this->m_queue.front().second -= 1;
 	if(this->m_queue.front().second == 0){
 		this->m_queue.pop();
