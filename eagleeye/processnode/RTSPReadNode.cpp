@@ -415,25 +415,15 @@ void RTSPReadNode::executeNodeInfo(){
 
                     do{
                         AVFrame* pframe = av_frame_alloc();
-                        // AVFrame* sw_frame = av_frame_alloc();
                         int ret = avcodec_receive_frame(m_pCodecCtx, pframe);
                         if (ret < 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                             av_frame_free(&pframe);
-                            // av_frame_free(&sw_frame);
                             break;
                         }
-                        __int64_t pts = pframe->pts;
-
-                        // if (pframe->format == AV_PIX_FMT_CUDA){
-                        //     av_hwframe_transfer_data(sw_frame, pframe, 1);
-                        //     av_frame_free(&pframe);
-                        //     pframe = sw_frame;
-                        // }
 
                         {
                             std::unique_lock<std::mutex> locker(this->m_postprocess_mu);
-                            m_postprocess_queue.push(std::make_pair(pframe, pts));
-                            std::cout<<"m_postprocess_queue.size() "<<m_postprocess_queue.size()<<std::endl;
+                            m_postprocess_queue.push(std::make_pair(pframe, pframe->pts));
                             locker.unlock();
                             m_postprocess_cond.notify_all();
                         }
@@ -484,7 +474,6 @@ void RTSPReadNode::executeNodeInfo(){
         }
         ntp_time = seconds + useconds + pts * av_q2d(m_format_ctx->streams[m_video_stream_index]->time_base);
 
-        std::cout<<"this->m_out_queue.size() "<<this->m_out_queue.size()<<std::endl;
         locker.unlock();
         break;
     }

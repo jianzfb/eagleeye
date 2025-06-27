@@ -92,7 +92,7 @@ int InterpolateOp::runOnCpu(const std::vector<Tensor>& input){
 
 #if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if (m_op_type == INTERPOLATE_BILINER) {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
         math::arm::bilinear_interp(din + spatial_in * i,
                         in_w,
@@ -106,7 +106,7 @@ int InterpolateOp::runOnCpu(const std::vector<Tensor>& input){
                         m_align_mode);
         }
     } else if (m_op_type == INTERPOLATE_NEAREST) {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
         math::arm::nearest_interp(din + spatial_in * i,
                         in_w,
@@ -195,7 +195,7 @@ int InterpolateWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
     int spatial_out = out_h * out_w;
 #if defined (__ARM_NEON) || defined (__ARM_NEON__)
     if (m_op_type == INTERPOLATE_BILINER) {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
         math::arm::bilinear_interp(din + spatial_in * i,
                         in_w,
@@ -209,7 +209,7 @@ int InterpolateWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
                         m_align_mode);
         }
     } else if (m_op_type == INTERPOLATE_NEAREST) {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
         math::arm::nearest_interp(din + spatial_in * i,
                         in_w,
