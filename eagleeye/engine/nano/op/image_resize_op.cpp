@@ -343,7 +343,7 @@ int ResizeWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
     unsigned char* y_ptr = (unsigned char*)this->m_outputs[0].cpu();
 #if defined (__ARM_NEON) || defined (__ARM_NEON__)      
     if(channels == 3){
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_rgb_8u_3d_interp(
                 x_ptr+i*in_width*in_height*3,
@@ -358,7 +358,7 @@ int ResizeWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
         }
     }
     else{
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::arm::bilinear_gray_8u_1d_interp(
                 x_ptr+i*in_width*in_height,
@@ -374,7 +374,7 @@ int ResizeWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
     }
 #else
     if(channels == 3){
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::x86::bilinear_rgb_8u_3d_interp(
                 x_ptr+i*in_width*in_height*3,
@@ -389,7 +389,7 @@ int ResizeWithShapeOp::runOnCpu(const std::vector<Tensor>& input){
         }
     }
     else{
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int i = 0; i < count; ++i) {
             math::x86::bilinear_gray_8u_1d_interp(
                 x_ptr+i*in_width*in_height,
