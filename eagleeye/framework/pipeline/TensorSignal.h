@@ -52,6 +52,7 @@ public:
 	 * @return DataType 
 	 */
 	DataType getData(MetaData& mm, bool deep_copy=false);
+	DataType getDataWithId(std::string id, MetaData& mm, bool deep_copy=false);
 
 	/**
 	 * @brief Set the Data object

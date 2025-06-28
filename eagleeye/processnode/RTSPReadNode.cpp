@@ -492,6 +492,7 @@ void RTSPReadNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,3>>* output_img_signal = (ImageSignal<Array<unsigned char,3>>*)(this->getOutputPort(0));
         MetaData output_meta = output_img_signal->meta();
         output_meta.timestamp = ntp_time;
+        output_meta.id = m_rtsp_address;
         output_img_signal->setData(
             Matrix<Array<unsigned char,3>>(this->m_image_h,this->m_image_w,ntp_data,false,true), 
             output_meta
@@ -502,6 +503,7 @@ void RTSPReadNode::executeNodeInfo(){
         ImageSignal<Array<unsigned char,4>>* output_img_signal = (ImageSignal<Array<unsigned char,4>>*)(this->getOutputPort(0));
         MetaData output_meta = output_img_signal->meta();
         output_meta.timestamp = ntp_time;
+        output_meta.id = m_rtsp_address;
         output_img_signal->setData(
             Matrix<Array<unsigned char,4>>(this->m_image_h,this->m_image_w,ntp_data,false,true), 
             output_meta

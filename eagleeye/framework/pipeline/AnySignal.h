@@ -15,7 +15,7 @@ class MetaData{
 public:
 	MetaData(){
 		name = "";
-		info = "";
+		id = "";
 		fps = 0.0;
 		nb_frames = 0;
 		frame = 0;
@@ -36,7 +36,7 @@ public:
 		disable = false;
 	}
 	std::string name;		// name
-	std::string info;		// info
+	std::string id;			// info
 	double fps;				// frame rate for video
 	int nb_frames;			// frame number for video
 	int frame;				// frame index for video
@@ -139,11 +139,6 @@ public:
 	 *	@note this function would be called by AnyNode object
 	 */
 	virtual void printUnit();
-
-	/**
-	 * @brief wait node
-	 */ 
-	virtual void wait();
 
 	/**
 	 * @brief reset node backward

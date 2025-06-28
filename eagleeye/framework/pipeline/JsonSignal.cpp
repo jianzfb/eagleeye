@@ -142,6 +142,58 @@ typename JsonSignal::DataType JsonSignal::getData(MetaData& mm, bool deep_copy){
 	}
 }
 
+typename JsonSignal::DataType JsonSignal::getDataWithId(std::string id, MetaData& mm, bool deep_copy){
+	// refresh data
+	if(this->m_link_node != NULL){
+		this->m_link_node->refresh();
+	}
+
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_STRING){
+		// SIGNAL_CATEGORY_STRING
+		EAGLEEYE_LOGE("Dont support get data with ID for SIGNAL_CATEGORY_STRING");
+		mm = MetaData();
+		return "";
+	}
+
+	// SIGNAL_CATEGORY_STRING_QUEUE
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	while(this->m_queue.size() == 0){
+		this->m_cond.wait(locker);
+		if(m_disable)
+			break;
+		if(this->m_queue.size() == 0)
+			continue;
+
+		std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
+		if(meta_info.first.id != id)
+			continue;
+
+		// 至此，已经存在符合要求数据
+		break;
+	}
+	if(m_disable){
+		// 由于失活，产生空数据返回
+		locker.unlock();
+		return "";
+	}
+
+	std::pair<std::string, int> data_info = this->m_queue.front();
+	std::string data = data_info.first;
+	std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
+	mm = meta_info.first;
+
+	if(this->m_get_then_auto_remove){
+		this->m_queue.front().second -= 1;
+		if(this->m_queue.front().second == 0){
+			this->m_queue.pop();
+			this->m_meta_queue.pop();
+		}
+	}
+	locker.unlock();
+	return data;
+}
+
+
 void JsonSignal::setData(JsonSignal::DataType data){
 	if(this->getSignalCategory() == SIGNAL_CATEGORY_STRING){
 		// SIGNAL_CATEGORY_STRING

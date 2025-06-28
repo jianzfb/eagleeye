@@ -82,6 +82,7 @@ void AutoNode::run_in_copy_input(){
         bool is_duplicate_frame = false;
         int no_timestamp_signal_num = 0;
         std::vector<double> input_data_timestamp(this->getNumberOfInputSignals(), 0.0);
+        std::vector<std::string> input_data_id(this->getNumberOfInputSignals());
 
         // 1.step get input
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
@@ -111,6 +112,7 @@ void AutoNode::run_in_copy_input(){
                 no_timestamp_signal_num += 1;
             }
             input_data_timestamp[signal_i] = data_meta.timestamp;
+            input_data_id[signal_i] = data_meta.id;
         }
 
         if(!this->m_thread_status){
@@ -161,6 +163,7 @@ void AutoNode::run_in_copy_input(){
             // 时间戳填充
             if(m_last_timestamp.size() > 0){
                 m_auto_node->getOutputPort(signal_i)->meta().timestamp = m_last_timestamp[0];
+                m_auto_node->getOutputPort(signal_i)->meta().id = input_data_id[0];
             }
             this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i), true);
             if(m_auto_node->getOutputPort(signal_i)->meta().is_end_frame){

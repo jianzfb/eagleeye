@@ -295,32 +295,32 @@ bool AnyPipeline::start(const char* node_name, const char* ignore_prefix){
     return is_finish;
 }
 
-void AnyPipeline::wait(const char* node_name, const char* ignore_prefix){
-    EAGLEEYE_LOGD("Pipeline %s wait", this->m_name.c_str());
+// void AnyPipeline::wait(const char* node_name, const char* ignore_prefix){
+//     EAGLEEYE_LOGD("Pipeline %s wait", this->m_name.c_str());
 
-    if(node_name == NULL){
-        // run whole pipeline
-        std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
-        for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
-            if(ignore_prefix != NULL && (ignore_prefix[0] != '\0')){
-                if(startswith(iter->first, ignore_prefix)){
-                    EAGLEEYE_LOGD("Ignore %s.", iter->first.c_str());
-                    continue;
-                }
-            }
+//     if(node_name == NULL){
+//         // run whole pipeline
+//         std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());
+//         for(iter=this->m_output_nodes.begin(); iter!=iend; ++iter){
+//             if(ignore_prefix != NULL && (ignore_prefix[0] != '\0')){
+//                 if(startswith(iter->first, ignore_prefix)){
+//                     EAGLEEYE_LOGD("Ignore %s.", iter->first.c_str());
+//                     continue;
+//                 }
+//             }
 
-            iter->second->wait();
-        }
-    }
-    else{
-        // run at ...
-        if(this->m_nodes.find(std::string(node_name)) == this->m_nodes.end()){
-            return;
-        }
+//             iter->second->wait();
+//         }
+//     }
+//     else{
+//         // run at ...
+//         if(this->m_nodes.find(std::string(node_name)) == this->m_nodes.end()){
+//             return;
+//         }
 
-        this->m_nodes[std::string(node_name)]->wait();
-    }
-}
+//         this->m_nodes[std::string(node_name)]->wait();
+//     }
+// }
 
 void AnyPipeline::reset(){
     std::map<std::string, AnyNode*>::iterator iter, iend(this->m_output_nodes.end());

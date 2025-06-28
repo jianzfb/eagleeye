@@ -53,7 +53,6 @@ void LandmarkSignal::makeempty(bool auto_empty){
 	m_landmark = Matrix<float>();
     m_joints = Matrix<int>();
 	this->m_meta.name = "";
-	this->m_meta.info = "";
 	this->m_meta.fps = 0.0;
 	this->m_meta.nb_frames = 0;
 	this->m_meta.frame = 0;

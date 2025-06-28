@@ -260,12 +260,6 @@ bool eagleeye_pipeline_get_output_config(const char* pipeline_name,
 bool eagleeye_pipeline_run(const char* pipeline_name, const char* node_name=NULL, const char* ignore_prefix=NULL);
 
 /**
- * @brief pipeline wait
- * 
- */
-bool eagleeye_pipeline_wait(const char* pipeline_name, const char* ignore_prefix=NULL);
-
-/**
  * @brief pipeline render
  */ 
 bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_prefix=NULL);
@@ -437,9 +431,6 @@ extern "C" { \
     } \
     bool eagleeye_##pipeline##_run(const char* node_name=NULL, const char* ignore_prefix=NULL){ \
         return eagleeye_pipeline_run(#pipeline, node_name, ignore_prefix); \
-    } \
-    bool eagleeye_##pipeline##_wait(){ \
-        return eagleeye_pipeline_wait(#pipeline); \
     } \
     bool eagleeye_##pipeline##_version(char* pipeline_version){ \
         return eagleeye_pipeline_version(#pipeline, pipeline_version); \

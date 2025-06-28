@@ -85,6 +85,7 @@ void AutoPipeline::run(){
         bool is_duplicate_frame = true;
         int no_timestamp_signal_num = 0;
         std::vector<double> input_data_timestamp(signal_num, 0.0);
+        std::vector<std::string> input_data_id(signal_num);
 
         // 1.step get input
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
@@ -113,6 +114,7 @@ void AutoPipeline::run(){
                 no_timestamp_signal_num += 1;
             }
             input_data_timestamp[signal_i] = data_meta.timestamp;
+            input_data_id[signal_i] = data_meta.id;
         }
 
         if(!this->m_thread_status){
@@ -187,6 +189,7 @@ void AutoPipeline::run(){
             AnySignal* output_signal = m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i);
             if(m_last_timestamp.size() > 0){
                 output_signal->meta().timestamp = m_last_timestamp[0];
+                output_signal->meta().id = input_data_id[0];
             }
             this->getOutputPort(signal_i)->copy(output_signal, true);
             if(m_auto_pipeline->getNode(node_name)->getOutputPort(node_signal_i)->meta().is_end_frame){

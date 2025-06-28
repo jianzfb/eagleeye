@@ -424,27 +424,6 @@ bool eagleeye_pipeline_run(const char* pipeline_name, const char* node_name, con
     return result;
 }
 
-bool eagleeye_pipeline_wait(const char* pipeline_name, const char* ignore_prefix){
-    std::string s_pipeline_name = pipeline_name;
-    if(s_pipeline_name.find("/") != std::string::npos){
-        std::vector<std::string> kterms = split(s_pipeline_name, "/");
-        std::string pn = kterms[0];
-        std::string nn = kterms[1];
-        
-        if(AnyPipeline::getInstance(pn.c_str()) == NULL){
-            return false;
-        }
-        AnyPipeline::getInstance(pn.c_str())->wait(nn.c_str());
-        return true;
-    }
-
-    if(AnyPipeline::getInstance(pipeline_name) == NULL){
-        return false;
-    }
-    AnyPipeline::getInstance(pipeline_name)->wait(NULL, ignore_prefix);
-    return true;
-}
-
 bool eagleeye_pipeline_render(const char* pipeline_name, const char* ignore_prefix){
     if(AnyPipeline::getInstance(pipeline_name) == NULL){
         return false;

@@ -159,7 +159,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/DottingNode.cpp
     eagleeye/processnode/MosaicNode.cpp
     eagleeye/framework/pipeline/AnyRegister.cpp
-    eagleeye/processnode/ThreadNode.cpp
     eagleeye/processnode/GroupNode.cpp
     eagleeye/processnode/IdentityNode.cpp
     eagleeye/processnode/ClassicalFilter.cpp
@@ -341,7 +340,6 @@ set(EAGLEEYE_SRC
     eagleeye/processnode/DottingNode.cpp
     eagleeye/processnode/MosaicNode.cpp
     eagleeye/framework/pipeline/AnyRegister.cpp
-    eagleeye/processnode/ThreadNode.cpp
     eagleeye/processnode/GroupNode.cpp
     eagleeye/processnode/IdentityNode.cpp
     eagleeye/processnode/ClassicalFilter.cpp

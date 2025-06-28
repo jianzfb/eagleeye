@@ -201,12 +201,12 @@ public:
      */
     bool start(const char* node_name=NULL, const char* ignore_prefix=NULL);
 
-    /**
-     * @brief run pipline
-     * 
-     * @param node_name 
-     */
-    void wait(const char* node_name=NULL, const char* ignore_prefix=NULL);
+    // /**
+    //  * @brief run pipline
+    //  * 
+    //  * @param node_name 
+    //  */
+    // void wait(const char* node_name=NULL, const char* ignore_prefix=NULL);
 
     /**
      * @brief refresh all render node

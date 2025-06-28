@@ -352,23 +352,6 @@ bool AnyNode::start(){
 	return _is_finish;
 }
 
-void AnyNode::wait(){
-	if(this->m_wait_flag){
-		return;
-	}
-	
-	//reset pipeline
-	this->m_wait_flag = true;
-	std::vector<AnySignal*>::iterator in_iter,in_iend(m_input_signals.end());
-	for (in_iter = m_input_signals.begin(); in_iter != in_iend; ++in_iter){
-		if(*in_iter != NULL){
-			(*in_iter)->wait();
-		}
-	}
-
-	this->m_wait_flag = false;
-}
-
 void AnyNode::preset(){
 	// 1.step set pipeline reset time
 	m_reset_timestamp.modified();

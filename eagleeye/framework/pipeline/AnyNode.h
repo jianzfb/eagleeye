@@ -48,11 +48,6 @@ public:
 	virtual bool start();
 
 	/**
-	 * 	@brief waiting pipeline run
-	 */ 
-	virtual void wait();
-
-	/**
 	 *	@brief reset the pipeline
 	 */
 	void preset();

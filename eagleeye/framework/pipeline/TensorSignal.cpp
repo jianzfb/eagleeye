@@ -125,6 +125,58 @@ typename TensorSignal::DataType TensorSignal::getData(MetaData& mm, bool deep_co
 	}
 }
 
+typename TensorSignal::DataType TensorSignal::getDataWithId(std::string id, MetaData& mm, bool deep_copy){
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_TENSOR){
+		// SIGNAL_CATEGORY_IMAGE
+		EAGLEEYE_LOGE("Dont support get data with ID for SIGNAL_CATEGORY_TENSOR");
+		mm = MetaData();
+		return Tensor();
+	}
+
+	// 队列模式
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	while(this->m_queue.size() == 0){
+		this->m_cond.wait(locker);
+		if(m_disable)
+			break;
+		if(this->m_queue.size() == 0)
+			continue;
+
+		std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
+		if(meta_info.first.id != id)
+			continue;
+
+		// 至此，已经存在符合要求数据
+		break;
+	}
+	if(m_disable){
+		// 由于失活，产生空数据返回
+		locker.unlock();
+		mm = MetaData();
+		mm.disable = true;
+		return Tensor();
+	}
+
+	std::pair<Tensor, int> data_info = this->m_queue.front();
+	Tensor data = data_info.first;
+	if(deep_copy){
+		data = data.clone();
+	}
+	std::pair<MetaData, int> meta_info = this->m_meta_queue.front();
+	mm = meta_info.first;
+
+	if(this->m_get_then_auto_remove){
+		this->m_queue.front().second -= 1;
+		if(this->m_queue.front().second == 0){
+			this->m_queue.pop();
+			this->m_meta_queue.pop();
+		}
+	}
+
+	locker.unlock();
+	return data;
+}
+
 std::vector<std::string> TensorSignal::getString(){
 	Tensor tensor = this->getData(false);
 	if(tensor.empty()){

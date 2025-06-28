@@ -161,12 +161,6 @@ void AnySignal::printUnit(){
 	}
 }
 
-void AnySignal::wait(){
-	if(m_link_node){
-		this->m_link_node->wait();
-	}
-}
-
 void AnySignal::reset(){
 	if(m_link_node && m_link_node->getResetTime() < m_link_node->getPipelineResetTime()){
 		this->m_link_node->reset();

@@ -52,7 +52,6 @@ void YUVSignal::setData(Blob data, MetaData m){
 void YUVSignal::makeempty(bool auto_empty){
     this->m_blob = Blob();
 	this->m_meta.name = "";
-	this->m_meta.info = "";
 	this->m_meta.fps = 0.0;
 	this->m_meta.nb_frames = 0;
 	this->m_meta.frame = 0;

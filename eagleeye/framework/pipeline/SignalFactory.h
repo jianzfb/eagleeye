@@ -30,7 +30,7 @@ public:
 	typedef BaseImageSignal						Self;
 	typedef AnySignal							Superclass;
 
-	BaseImageSignal(EagleeyeType p_type,int cha,char* info = "")
+	BaseImageSignal(EagleeyeType p_type,int cha)
 		:AnySignal("ImgSig"),pixel_type(p_type),
 		channels(cha){
 			this->setSignalType(EAGLEEYE_SIGNAL_IMAGE);
@@ -76,7 +76,7 @@ public:
 	 * @param name data name
 	 * @param info related infomation
 	 */
-	ImageSignal(Matrix<T> m=Matrix<T>(),char* n="",char* info="");
+	ImageSignal(Matrix<T> m=Matrix<T>(),char* n="");
 	virtual ~ImageSignal(){};
 
 	/**
@@ -165,6 +165,11 @@ public:
 	 */
 	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type);
 	virtual void getSignalContent(void*& data, size_t*& data_size, int& data_dims, int& data_type, MetaData& data_meta);
+
+	/**
+	 * 	@brief waiting data, by id
+	 */
+	DataType getDataWithId(std::string id, MetaData& mm, bool deep_copy=false);
 
 	/**
 	 * @brief Get the Signal Value Type object
