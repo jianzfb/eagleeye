@@ -65,7 +65,7 @@ int YuvOp::runOnCpu(const std::vector<Tensor>& input){
         }
 
         unsigned char* i420_yuv_ptr = this->m_i420_yuv.cpu<unsigned char>();
-        Android420_to_I420(yuv_ptr, i420_yuv_ptr, width, height);
+        Android420_to_I420_Rotate(yuv_ptr, i420_yuv_ptr, width, height, 0);
         yuv_ptr = i420_yuv_ptr;
     }
 

@@ -226,7 +226,7 @@ Matrix<Array<unsigned char,3>> NV12_to_BGR(unsigned char* nv12_data, int width, 
     return bgr_data;
 }
 
-void Android420_to_I420(const uint8_t* src_android_420_data, uint8_t* dst_i420_data, int width, int height, int degree){
+void Android420_to_I420_Rotate(const uint8_t* src_android_420_data, uint8_t* dst_i420_data, int width, int height, int degree){
     int src_i420_y_size = width * height;
     const uint8_t *src_i420_y_data = src_android_420_data;
     const uint8_t *src_i420_u_data = src_android_420_data + src_i420_y_size;
@@ -240,7 +240,18 @@ void Android420_to_I420(const uint8_t* src_android_420_data, uint8_t* dst_i420_d
 
     int base_dst_stride_dimension = width;
     if (90 == degree || 270 == degree) base_dst_stride_dimension = height;
-    libyuv::Android420ToI420(
+
+    libyuv::RotationMode rm = libyuv::kRotate0;
+    if(degree == 90){
+        rm = libyuv::kRotate90;
+    }
+    else if(degree == 180){
+        rm = libyuv::kRotate180;
+    }
+    else if(degree == 270){
+        rm = libyuv::kRotate270;
+    }
+    libyuv::Android420ToI420Rotate(
         src_i420_y_data, width,
         src_i420_u_data, width,
         src_i420_u_data+1, width,
@@ -249,7 +260,8 @@ void Android420_to_I420(const uint8_t* src_android_420_data, uint8_t* dst_i420_d
         dst_i420_data_u, (base_dst_stride_dimension>>1),
         dst_i420_data_v, (base_dst_stride_dimension>>1),
         width,
-        height
+        height,
+        rm
     );
 }
 } // namespace eagleeye
