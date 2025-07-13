@@ -510,6 +510,19 @@ void RTSPReadNode::executeNodeInfo(){
 
     ImageSignal<double>* output_timestamp_signal = (ImageSignal<double>*)(this->getOutputPort(1));
     output_timestamp_signal->getData().at(0,0) = ntp_time;
+
+    static int count = 0;
+    std::cout<<"CHECK RUN "<<count<<" CAMERA time "<<std::to_string(EagleeyeTime::getCurrentTime())<<" timestamp "<<std::to_string(ntp_time)<<std::endl;;
+    count += 1;
+
+    static int stats_count = 0;
+    static long stats_time = EagleeyeTime::getCurrentTime();
+    if(EagleeyeTime::getCurrentTime() - stats_time >= 1000000){
+        std::cout<<"CAMERA FPS "<<stats_count<<std::endl;
+        stats_count = 0;
+        stats_time = EagleeyeTime::getCurrentTime();
+    }
+    stats_count += 1;    
 }
 
 void RTSPReadNode::postprocess_by_rga(){

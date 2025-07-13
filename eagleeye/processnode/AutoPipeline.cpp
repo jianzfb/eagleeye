@@ -3,6 +3,8 @@
 #include <functional>
 #include <thread>
 #include <chrono>
+#include "opencv2/opencv.hpp"
+
 
 namespace eagleeye{
 AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std::vector<std::pair<std::string, int>> pipeline_node, int queue_size, bool get_then_auto_remove, bool set_then_auto_remove, bool copy_input){
@@ -144,6 +146,14 @@ void AutoPipeline::run(){
             MetaData data_meta;
             cache_input[signal_i]->getSignalContent(data, data_size, data_dims, data_type, data_meta);
 
+            // // 保存图片，并打上时间戳，调试
+            // cv::Mat image(data_size[0], data_size[1], CV_8UC3, data);
+            // std::string time_str = std::to_string(this->m_last_timestamp[signal_i]);
+            // cv::putText(image, time_str, cv::Point(100,100), 2, 1.0, cv::Scalar(255,0,0));
+
+            // static int count = 0;
+            // cv::imwrite(std::to_string(count)+".png", image);
+            // count += 1;
             data_meta.rows = data_size[0];
             data_meta.cols = data_size[1];
             data_meta.rotation = 0;
