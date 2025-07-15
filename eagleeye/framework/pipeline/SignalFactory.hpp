@@ -79,6 +79,7 @@ template<class T>
 bool ImageSignal<T>::isempty(){
 	if(this->getSignalCategory() == SIGNAL_CATEGORY_IMAGE){
 		if(img.rows() == 0 || img.cols() == 0){
+			// 内容空
 			return true;
 		}
 		else{
@@ -86,8 +87,23 @@ bool ImageSignal<T>::isempty(){
 		}
 	}
 	else{
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(m_queue.size() == 0){
+			// 队列空
+			return true;
+		}
 		return false;
 	}
+}
+
+template<class T>
+int ImageSignal<T>::getQueueSize(){
+	if(this->getSignalCategory() != SIGNAL_CATEGORY_IMAGE_QUEUE){
+		return 0;
+	}
+
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	return m_queue.size();
 }
 
 template<class T>
@@ -292,7 +308,8 @@ bool ImageSignal<T>::tryClear(){
 		EAGLEEYE_LOGE("not image-queue mode, dont exec.");
 		return false;
 	}
-	if(this->m_get_then_auto_remove){
+	if(this->m_get_then_auto_remove || this->m_set_then_auto_remove){
+		// tryclear 不能与 （m_get_then_auto_remove or m_set_then_auto_remove) 同时存在
 		return false;
 	}
 
@@ -310,6 +327,7 @@ bool ImageSignal<T>::tryClear(){
 	if(this->m_queue.front().second == 0){
 		this->m_queue.pop();
 		this->m_meta_queue.pop();
+		std::cout<<"rgbimage clear image ("<<this->m_queue.size()<<")"<<std::endl;
 		record_count = this->getOutDegree();
 		return true;
 	}

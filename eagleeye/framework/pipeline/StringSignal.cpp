@@ -51,7 +51,27 @@ void StringSignal::makeempty(bool auto_empty){
 }
 
 bool StringSignal::isempty(){
-    return this->m_str.empty();
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_STRING){
+		// 内容空
+	    return this->m_str.empty();
+	}
+	else{
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(m_queue.size() == 0){
+			// 队列空
+			return true;
+		}
+		return false;
+	}
+}
+
+int StringSignal::getQueueSize(){
+	if(this->getSignalCategory() != SIGNAL_CATEGORY_STRING_QUEUE){
+		return 0;
+	}
+
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	return m_queue.size();
 }
 
 typename StringSignal::DataType StringSignal::getData(bool deep_copy){
@@ -211,7 +231,8 @@ bool StringSignal::tryClear(){
 		EAGLEEYE_LOGE("not string-queue mode, dont exec.");
 		return false;
 	}
-	if(this->m_get_then_auto_remove){
+	if(this->m_get_then_auto_remove || this->m_set_then_auto_remove){
+		// tryclear 不能与 （m_get_then_auto_remove or m_set_then_auto_remove) 同时存在
 		return false;
 	}
 
@@ -269,10 +290,31 @@ void ListStringSignal::makeempty(bool auto_empty){
 }
 
 bool ListStringSignal::isempty(){
-    if(this->m_list.size() == 0){
-		return true;
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_STRING){
+		if(this->m_list.size() == 0){
+			// 内容空
+			return true;
+		}
+		return false;
 	}
-	return false;
+	else{
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(m_queue.size() == 0){
+			// 队列空
+			return true;
+		}
+		return false;
+	}
+
+}
+
+int ListStringSignal::getQueueSize(){
+	if(this->getSignalCategory() != SIGNAL_CATEGORY_LIST_STRING_QUEUE){
+		return 0;
+	}
+
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	return m_queue.size();
 }
 
 typename ListStringSignal::DataType ListStringSignal::getData(bool deep_copy){
@@ -412,7 +454,8 @@ bool ListStringSignal::tryClear(){
 		EAGLEEYE_LOGE("not liststring-queue mode, dont exec.");
 		return false;
 	}
-	if(this->m_get_then_auto_remove){
+	if(this->m_get_then_auto_remove || this->m_set_then_auto_remove){
+		// tryclear 不能与 （m_get_then_auto_remove or m_set_then_auto_remove) 同时存在
 		return false;
 	}
 

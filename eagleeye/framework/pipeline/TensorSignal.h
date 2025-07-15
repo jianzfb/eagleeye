@@ -88,6 +88,11 @@ public:
 	virtual bool isempty();
 
 	/**
+	 * @brief get waiting queue size (only for queue mode)
+	 */
+	virtual int getQueueSize();
+
+	/**
 	 * @brief copy content
 	 * 
 	 * @param sig 

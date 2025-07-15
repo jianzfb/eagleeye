@@ -512,7 +512,7 @@ void RTSPReadNode::executeNodeInfo(){
     output_timestamp_signal->getData().at(0,0) = ntp_time;
 
     static int count = 0;
-    std::cout<<"CHECK RUN "<<count<<" CAMERA time "<<std::to_string(EagleeyeTime::getCurrentTime())<<" timestamp "<<std::to_string(ntp_time)<<std::endl;;
+    std::cout<<"EVERY CHECK RUN "<<count<<" CAMERA time "<<std::to_string(EagleeyeTime::getCurrentTime())<<" timestamp "<<std::to_string(ntp_time)<<std::endl;;
     count += 1;
 
     static int stats_count = 0;

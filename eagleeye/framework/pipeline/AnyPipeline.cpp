@@ -885,6 +885,54 @@ void AnyPipeline::setInput(const char* node_name, std::string from_register_node
     this->m_input_nodes[input_key]->getOutputPort(port)->copy(register_sig);
 }
 
+bool AnyPipeline::isInputQueueEmpty(const char* node_name){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("Node name is empty.");
+        return true;
+    }
+    EAGLEEYE_LOGV("Set pipeline input %s.", node_name);
+    std::string input_key = std::string(node_name);    
+    int port = 0;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+
+    if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
+        EAGLEEYE_LOGE("Node %s is not input node.", node_name);
+        return true;
+    }
+    
+    SignalCategory sig_c = this->m_input_nodes[input_key]->getOutputPort(port)->getSignalCategory();
+    if(sig_c == SIGNAL_CATEGORY_IMAGE_QUEUE || sig_c == SIGNAL_CATEGORY_TENSOR_QUEUE || sig_c == SIGNAL_CATEGORY_STRING_QUEUE || sig_c == SIGNAL_CATEGORY_LIST_STRING_QUEUE){
+        return this->m_input_nodes[input_key]->getOutputPort(port)->isempty();
+    }
+    return true;
+}
+
+
+int AnyPipeline::getInputQueueSize(const char* node_name){
+    if(node_name == NULL || strcmp(node_name, "") == 0){
+        EAGLEEYE_LOGE("Node name is empty.");
+        return 0;
+    }
+    EAGLEEYE_LOGV("Set pipeline input %s.", node_name);
+    std::string input_key = std::string(node_name);    
+    int port = 0;
+    if(input_key.find("/") != std::string::npos){
+        std::vector<std::string> kterms = split(input_key, "/");
+        input_key = kterms[0];
+        port = tof<int>(kterms[1]);
+    }
+
+    if(this->m_input_nodes.find(input_key) == this->m_input_nodes.end()){
+        EAGLEEYE_LOGE("Node %s is not input node.", node_name);
+        return 0;
+    }
+    return this->m_input_nodes[input_key]->getOutputPort(port)->getQueueSize();
+}
+
 void AnyPipeline::setInputPort(const char* node_name, int node_port, AnySignal* input_sig){
     if(node_name == NULL || strcmp(node_name, "") == 0){
         EAGLEEYE_LOGE("Node name is empty.");

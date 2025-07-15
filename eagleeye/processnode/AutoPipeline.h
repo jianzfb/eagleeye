@@ -104,6 +104,8 @@ private:
 
     bool m_get_then_auto_remove;
     bool m_set_then_auto_remove;
+
+    bool m_is_first_run;
 }; 
 }
 #endif

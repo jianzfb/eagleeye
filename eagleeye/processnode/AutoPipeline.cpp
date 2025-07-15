@@ -45,6 +45,8 @@ AutoPipeline::AutoPipeline(std::function<AnyPipeline*()> pipeline_generator, std
 
     this->m_get_then_auto_remove = get_then_auto_remove;
     this->m_set_then_auto_remove = set_then_auto_remove;
+
+    this->m_is_first_run = true;
 }
 
 AutoPipeline::~AutoPipeline(){
@@ -78,6 +80,7 @@ void AutoPipeline::run(){
         cache_input.push_back(this->getInputPort(signal_i)->make());
     }
 
+    long before_time = EagleeyeTime::getCurrentTime();
     while(true){
         if(!this->m_thread_status){
             break;
@@ -136,7 +139,34 @@ void AutoPipeline::run(){
         // 产生有效帧，驱动管线执行
         this->m_last_timestamp = input_data_timestamp;
 
+        // TODO,对于异步管线，可以引入丢帧策略（如果在管线输入队列里存在超过限制，丢弃新数据）
+        // ?
+        long after_time = EagleeyeTime::getCurrentTime();
+        std::cout<<"rgbimage time use "<<after_time - before_time<<std::endl;
+        before_time = after_time;
+        if(m_auto_pipeline->isAsyn()){
+            while(true){
+                bool is_overload = false;
+                for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+                    std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
+                    if(m_auto_pipeline->getInputQueueSize(placeholder_name.c_str()) > 2){
+                        is_overload = true;
+                        break;
+                    }
+                }
+                if(is_overload){
+                    EAGLEEYE_LOGD("Waiting 10ms, pipeline overload.");
+                    std::this_thread::sleep_for(std::chrono::microseconds(10000));
+                    continue;
+                }
+                break;
+            }
+        }
+
         // 填充到管线数据
+        if(m_last_timestamp.size() > 0){
+            std::cout<<"EVERY INPUT ("<<EagleeyeTime::getCurrentTime()<<")-("<<std::to_string(m_last_timestamp[0])<<")"<<std::endl;
+        }
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
             void* data;         // data address
@@ -161,6 +191,9 @@ void AutoPipeline::run(){
             m_auto_pipeline->setInput(placeholder_name.c_str(), data, data_meta);
         }
 
+        std::cout<<"AUTOPIPE rgbimage QUEUE SIZE "<<m_auto_pipeline->getInputQueueSize("placeholder_0")<<std::endl;
+
+
         // 至此，已经获得一帧新数据
 
         // 尝试清理输入信号队列信息
@@ -168,14 +201,36 @@ void AutoPipeline::run(){
         // 1. 推入队列时，检查是否超出队列最大值，如果超出吐出尾部数据
         // 2. 读取队列时，是否直接将吐出队列数据
         // 3. 外部进行tryClear()，如果满足出度数，则吐出数据
-        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-            this->getInputPort(signal_i)->tryClear();
-        }
+        // for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+        //     this->getInputPort(signal_i)->tryClear();
+        // }
 
         // 基于pipeline是否是异步，决定是否等待返回
         if(m_auto_pipeline->isAsyn()){
             // 异步管线，无需等待返回结果
             // 底层实现需要依靠回调实现数据输出
+
+            // 仅在管线为异步时，考虑首帧问题
+            // TODO,由于代理管线的部分节点（模型推理节点）初始化时间，等待代理管线的输入队列为空
+            // 代理管线输入队列为空，表明代理管线已经整体完成一次运行
+            if(m_is_first_run){
+                while(true){
+                    bool is_empty = true;
+                    for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+                        std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
+                        if(!(m_auto_pipeline->isInputQueueEmpty(placeholder_name.c_str()))){
+                            is_empty = false;
+                        }
+                    }
+                    if(!is_empty){
+                        // 等待30ms，再进行检查
+                        EAGLEEYE_LOGD("Waiting 30ms, for pipeline first run finish");
+                        std::this_thread::sleep_for(std::chrono::microseconds(30000));
+                        break;
+                    }
+                }
+                m_is_first_run = false;
+            }
             continue;
         }
 

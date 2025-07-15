@@ -51,8 +51,29 @@ void JsonSignal::makeempty(bool auto_empty){
 }
 
 bool JsonSignal::isempty(){
-	return this->m_json_obj.IsEmpty();
+	if(this->getSignalCategory() == SIGNAL_CATEGORY_STRING){
+		// 内容空
+		return this->m_json_obj.IsEmpty();
+	}
+	else{
+		std::unique_lock<std::mutex> locker(this->m_mu);
+		if(m_queue.size() == 0){
+			// 队列空
+			return true;
+		}
+		return false;
+	}
 }
+
+int JsonSignal::getQueueSize(){
+	if(this->getSignalCategory() != SIGNAL_CATEGORY_STRING_QUEUE){
+		return 0;
+	}
+
+	std::unique_lock<std::mutex> locker(this->m_mu);
+	return m_queue.size();
+}
+
 
 typename JsonSignal::DataType JsonSignal::getData(bool deep_copy){
 	// refresh data
@@ -199,7 +220,8 @@ bool JsonSignal::tryClear(){
 		EAGLEEYE_LOGE("not string-queue mode, dont exec.");
 		return false;
 	}
-	if(this->m_get_then_auto_remove){
+	if(this->m_get_then_auto_remove || this->m_set_then_auto_remove){
+		// tryclear 不能与 （m_get_then_auto_remove or m_set_then_auto_remove) 同时存在
 		return false;
 	}
 

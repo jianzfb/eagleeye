@@ -133,16 +133,6 @@ void AutoNode::run_in_copy_input(){
         this->m_last_timestamp = input_data_timestamp;
 
         // 至此，已经获得一帧新数据
-
-        // 尝试清理输入信号队列信息
-        // 信号队列🈶三种清理队列数据机制
-        // 1. 推入队列时，检查是否超出队列最大值，如果超出吐出尾部数据
-        // 2. 读取队列时，是否直接将吐出队列数据
-        // 3. 外部进行tryClear()，如果满足出度数，则吐出数据
-        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
-            this->getInputPort(signal_i)->tryClear();
-        }
-
         if(!this->m_thread_status){
             // 发现退出标记，退出线程运行
             break;
@@ -151,7 +141,24 @@ void AutoNode::run_in_copy_input(){
         // 2.step run node
         long before_time = EagleeyeTime::getCurrentTime();
         bool running_ischange = m_auto_node->start();
-        std::cout<<"EVERY "<<std::string(this->getUnitName())<<" time "<<EagleeyeTime::getCurrentTime()-before_time<<std::endl;
+        if(m_last_timestamp.size() > 0){
+            std::cout<<"EVERY "<<std::string(this->getUnitName())<<"("<<std::to_string(EagleeyeTime::getCurrentTime())<<")"<<" time "<<EagleeyeTime::getCurrentTime()-before_time<<" ("<<std::to_string(m_last_timestamp[0])<<")"<<std::endl;
+        }
+
+        // 尝试清理输入信号队列信息
+        // 信号队列🈶三种清理队列数据机制
+        // 1. 推入队列时，检查是否超出队列最大值，如果超出吐出尾部数据
+        // 2. 读取队列时，是否直接将吐出队列数据
+        // 3. 外部进行tryClear()，如果满足出度数，则吐出数据
+        for(int signal_i = 0; signal_i<signal_num; ++signal_i){
+            bool is_clear = this->getInputPort(signal_i)->tryClear();
+            if(is_clear){
+                if(std::string(this->getInputPort(signal_i)->getLinkNode()->getUnitName())==std::string("placeholder_0")){
+                    std::cout<<"rgbimage in autonode clear"<<std::endl;
+                }
+            }
+        }
+
         if(!running_ischange){
             continue;
         }
@@ -169,7 +176,6 @@ void AutoNode::run_in_copy_input(){
                     static int count = 0;
                     std::cout<<"CHECK RUN "<<count<<" postprocess time "<<std::to_string(EagleeyeTime::getCurrentTime())<<" timestamp "<<std::to_string(m_last_timestamp[0])<<std::endl;
                     count += 1;
-
                 }
             }
 

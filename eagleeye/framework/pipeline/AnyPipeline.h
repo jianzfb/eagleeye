@@ -281,6 +281,16 @@ public:
     void setInputPort(const char* node_name, int node_port, AnySignal* input_sig);
 
     /**
+     *  @brief queue is empty (only for queue mode signal)
+     */
+    bool isInputQueueEmpty(const char* node_name);
+
+    /**
+     *  @brief get wating data number in queue (only for queue mode signal)
+     */
+    int getInputQueueSize(const char* node_name);
+
+    /**
      * @brief Get the Node Output object
      * 
      * @param node_name 

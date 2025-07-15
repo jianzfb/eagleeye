@@ -110,6 +110,11 @@ public:
 	virtual bool isempty();
 
 	/**
+	 * @brief get waiting queue size (only for queue mode)
+	 */
+	virtual int getQueueSize();
+
+	/**
 	 * @brief Get the Signal Value Type object
 	 * 
 	 * @return int 
