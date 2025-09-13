@@ -327,7 +327,6 @@ bool ImageSignal<T>::tryClear(){
 	if(this->m_queue.front().second == 0){
 		this->m_queue.pop();
 		this->m_meta_queue.pop();
-		std::cout<<"rgbimage clear image ("<<this->m_queue.size()<<")"<<std::endl;
 		record_count = this->getOutDegree();
 		return true;
 	}

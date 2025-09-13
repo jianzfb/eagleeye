@@ -80,7 +80,7 @@ void AutoPipeline::run(){
         cache_input.push_back(this->getInputPort(signal_i)->make());
     }
 
-    long before_time = EagleeyeTime::getCurrentTime();
+    // long before_time = EagleeyeTime::getCurrentTime();
     while(true){
         if(!this->m_thread_status){
             break;
@@ -140,10 +140,6 @@ void AutoPipeline::run(){
         this->m_last_timestamp = input_data_timestamp;
 
         // TODO,对于异步管线，可以引入丢帧策略（如果在管线输入队列里存在超过限制，丢弃新数据）
-        // ?
-        long after_time = EagleeyeTime::getCurrentTime();
-        std::cout<<"rgbimage time use "<<after_time - before_time<<std::endl;
-        before_time = after_time;
         if(m_auto_pipeline->isAsyn()){
             while(true){
                 bool is_overload = false;
@@ -164,9 +160,6 @@ void AutoPipeline::run(){
         }
 
         // 填充到管线数据
-        if(m_last_timestamp.size() > 0){
-            std::cout<<"EVERY INPUT ("<<EagleeyeTime::getCurrentTime()<<")-("<<std::to_string(m_last_timestamp[0])<<")"<<std::endl;
-        }
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             std::string placeholder_name = std::string("placeholder_")+std::to_string(signal_i);
             void* data;         // data address
@@ -190,9 +183,6 @@ void AutoPipeline::run(){
             data_meta.allocate_mode = 0;        // 强迫复制模式，分配输入内存
             m_auto_pipeline->setInput(placeholder_name.c_str(), data, data_meta);
         }
-
-        std::cout<<"AUTOPIPE rgbimage QUEUE SIZE "<<m_auto_pipeline->getInputQueueSize("placeholder_0")<<std::endl;
-
 
         // 至此，已经获得一帧新数据
 

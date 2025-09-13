@@ -141,9 +141,6 @@ void AutoNode::run_in_copy_input(){
         // 2.step run node
         long before_time = EagleeyeTime::getCurrentTime();
         bool running_ischange = m_auto_node->start();
-        if(m_last_timestamp.size() > 0){
-            std::cout<<"EVERY "<<std::string(this->getUnitName())<<"("<<std::to_string(EagleeyeTime::getCurrentTime())<<")"<<" time "<<EagleeyeTime::getCurrentTime()-before_time<<" ("<<std::to_string(m_last_timestamp[0])<<")"<<std::endl;
-        }
 
         // 尝试清理输入信号队列信息
         // 信号队列🈶三种清理队列数据机制
@@ -152,11 +149,6 @@ void AutoNode::run_in_copy_input(){
         // 3. 外部进行tryClear()，如果满足出度数，则吐出数据
         for(int signal_i = 0; signal_i<signal_num; ++signal_i){
             bool is_clear = this->getInputPort(signal_i)->tryClear();
-            if(is_clear){
-                if(std::string(this->getInputPort(signal_i)->getLinkNode()->getUnitName())==std::string("placeholder_0")){
-                    std::cout<<"rgbimage in autonode clear"<<std::endl;
-                }
-            }
         }
 
         if(!running_ischange){
@@ -171,12 +163,6 @@ void AutoNode::run_in_copy_input(){
             // 时间戳填充
             if(m_last_timestamp.size() > 0){
                 m_auto_node->getOutputPort(signal_i)->meta().timestamp = m_last_timestamp[0];
-                if(std::string(this->getUnitName()) == "auto-post_process_node" && signal_i == 0){
-                    // std::cout<<"CHECK TIME "<< std::to_string(m_last_timestamp[0])<<std::endl;
-                    static int count = 0;
-                    std::cout<<"CHECK RUN "<<count<<" postprocess time "<<std::to_string(EagleeyeTime::getCurrentTime())<<" timestamp "<<std::to_string(m_last_timestamp[0])<<std::endl;
-                    count += 1;
-                }
             }
 
             this->getOutputPort(signal_i)->copy(m_auto_node->getOutputPort(signal_i), true);
