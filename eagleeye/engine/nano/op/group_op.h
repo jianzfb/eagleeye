@@ -90,7 +90,7 @@ public:
         }
 
         for(int output_i=0; output_i<OUT; ++output_i){
-            this->m_outputs[output_i] = inner_data_dict[std::to_string(output_i)];
+            this->m_outputs[output_i] = m_group_output[output_i];
         }
 
         return 0;
@@ -101,6 +101,7 @@ protected:
     std::vector<Base*> m_ops;
     std::vector<std::vector<std::string>> m_relations;
     std::vector<std::string> m_group_input;
+    std::vector<std::string> m_group_output;
 };
 }
 }
