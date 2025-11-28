@@ -90,7 +90,7 @@ public:
         }
 
         for(int output_i=0; output_i<OUT; ++output_i){
-            this->m_outputs[output_i] = m_group_output[output_i];
+            this->m_outputs[output_i] = inner_data_dict[m_group_output[output_i]];
         }
 
         return 0;
