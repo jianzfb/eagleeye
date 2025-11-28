@@ -65,9 +65,18 @@ public:
             std::vector<Tensor> op_input;
             for(int op_input_i=0; op_input_i<input_terms.size(); ++op_input_i){
                 std::string op_input_i_name = input_terms[op_input_i];
-
                 if(inner_data_dict.find(op_input_i_name) == inner_data_dict.end()){
-                    op_input.push_back(input[tof<int>(op_input_i_name)]);
+                    bool is_found = false;
+                    for(int k=0; k<m_group_input.size(); ++k){
+                        if(m_group_input[k] == op_input_i_name){
+                            op_input.push_back(input[k]);
+                            is_found = true;
+                            break;
+                        }
+                    }
+                    if(!is_found){
+                        EAGLEEYE_LOGE("Group config abnormal, couldn found %s input", op_input_i_name.c_str());
+                    }
                 }
                 else{
                     op_input.push_back(inner_data_dict[op_input_i_name]);
@@ -91,6 +100,7 @@ public:
 protected:
     std::vector<Base*> m_ops;
     std::vector<std::vector<std::string>> m_relations;
+    std::vector<std::string> m_group_input;
 };
 }
 }
